@@ -1,0 +1,39 @@
+####### 图片资源文件 #######
+####### 此文件为自动生成，请勿编辑 #######
+####### AUTO GENERATED. DO NOT EDIT. #######
+import os
+
+{% for lang in data -%}
+{%- for class_name, attrs in lang.resources.items() -%}
+
+class {{ class_name }}:
+    {%- for attr in attrs.values() %}
+    # {{ attr }}
+    {% if attr.type == 'image' -%}
+    {{ attr.name }} = {{ attr.value }}
+    """
+    路径：{{ attr.rel_path }}<br>
+    模块：`{{ attr.class_path|join('.') }}.{{ attr.name }}`<br>
+    <img src="vscode-file://vscode-app/{{ attr.abspath }}" style="max-width: 200px;">
+    """
+    {%- elif attr.type == 'next_class' -%}
+    {{ attr.name }} = {{ attr.value }}
+    {%- endif -%}
+    {% endfor %}
+    pass
+
+
+{% endfor %}
+
+{# class {{ lang.language }}:
+#     {% for attr in lang.attrs %}
+#     {{ attr.name }} = os.path.abspath("{{ attr.path }}")
+#     """
+#     路径：`{{ attr.path }}`<br>
+#     模块：`{{ attr.class_path|join('.') }}.{{ attr.name }}`<br>
+#     <img src="vscode-file://vscode-app/{{ attr.abspath }}" style="max-width: 200px;">
+#     """
+#     {% endfor %}
+#}
+
+{% endfor %}
