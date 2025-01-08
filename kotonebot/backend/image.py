@@ -1,3 +1,4 @@
+import os
 from typing import NamedTuple, Protocol, TypeVar
 from logging import getLogger
 
@@ -90,7 +91,11 @@ def template_match(
     :param max_results: 最大结果数，默认为 1。
     :param remove_duplicate: 是否移除重复结果，默认为 True。
     """
-    logger.debug(f'match template: {template} threshold: {threshold} max_results: {max_results}')
+    if isinstance(template, str):
+        _template_name = os.path.relpath(template)
+    else:
+        _template_name = '<opencv Mat>'
+    logger.debug(f'match template: {_template_name} threshold: {threshold} max_results: {max_results}')
     # 统一参数
     template = _unify_image(template)
     image = _unify_image(image)
@@ -151,6 +156,24 @@ def find(
     """寻找一个模板图像"""
     matches = template_match(template, image, mask, transparent, threshold, max_results=-1)
     return matches[0] if len(matches) > 0 else None
+
+def find_any(
+    image: MatLike,
+    templates: list[MatLike | str],
+    masks: list[MatLike | str | None] | None = None,
+    transparent: bool = False,
+    threshold: float = 0.8,
+) -> TemplateMatchResult | None:
+    """指定多个模板，返回第一个匹配到的结果"""
+    if masks is None:
+        _masks = [None] * len(templates)
+    else:
+        _masks = masks
+    for template, mask in zip(templates, _masks):
+        ret = find(image, template, mask, transparent, threshold)
+        if ret is not None:
+            return ret
+    return None
 
 def count(
     image: MatLike,

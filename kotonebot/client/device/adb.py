@@ -1,24 +1,30 @@
+import logging
 from typing import Callable, cast
-import cv2
+
 import numpy as np
+import cv2
 from cv2.typing import MatLike
-
-from kotonebot.backend.util import Rect, is_rect
-from ..protocol import DeviceProtocol, ClickableObjectProtocol
-
 from adbutils import AdbClient, adb
 from adbutils._device import AdbDevice as Device
 
-class AdbDevice(DeviceProtocol):
+from kotonebot.backend.util import Rect, is_rect
+from ..protocol import DeviceABC, ClickableObjectProtocol
+
+
+logger = logging.getLogger(__name__)
+
+class AdbDevice(DeviceABC):
     def __init__(self, device: Device) -> None:
+        super().__init__()
         self.device = device
-        self.screenshot_hook: Callable[[MatLike], MatLike] | None = None
 
     def launch_app(self, package_name: str) -> None:
         self.device.shell(f"monkey -p {package_name} 1")
     
-    def click(self, arg1, arg2=None) -> None:
-        if is_rect(arg1):
+    def click(self, arg1=None, arg2=None) -> None:
+        if arg1 is None:
+            self.__click_last()
+        elif is_rect(arg1):
             self.__click_rect(arg1)
         elif isinstance(arg1, int) and isinstance(arg2, int):
             self.__click_point(arg1, arg2)
@@ -26,6 +32,11 @@ class AdbDevice(DeviceProtocol):
             self.__click_clickable(arg1)
         else:
             raise ValueError(f"Invalid arguments: {arg1}, {arg2}")
+
+    def __click_last(self) -> None:
+        if self.last_find is None:
+            raise ValueError("No last find result")
+        self.click(self.last_find)
 
     def __click_rect(self, rect: Rect) -> None:
         # 从矩形中心的 60% 内部随机选择一点
@@ -45,10 +56,19 @@ class AdbDevice(DeviceProtocol):
         self.device.shell(f"input swipe {x1} {y1} {x2} {y2} {duration}")
 
     def screenshot(self) -> MatLike:
-        img = cv2.cvtColor(np.array(self.device.screenshot()), cv2.COLOR_RGB2BGR)
-        if self.screenshot_hook is not None:
-            img = self.screenshot_hook(img)
+        if self.screenshot_hook_before is not None:
+            logger.debug("execute screenshot hook before")
+            img = self.screenshot_hook_before()
+            if img is not None:
+                logger.debug("screenshot hook before returned image")
+                return img
+        img = self.screenshot_raw()
+        if self.screenshot_hook_after is not None:
+            img = self.screenshot_hook_after(img)
         return img
+
+    def screenshot_raw(self) -> MatLike:
+        return cv2.cvtColor(np.array(self.device.screenshot()), cv2.COLOR_RGB2BGR)
 
     @property
     def screen_size(self) -> tuple[int, int]:

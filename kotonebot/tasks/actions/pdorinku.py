@@ -2,6 +2,7 @@ from time import sleep
 from logging import getLogger
 
 from kotonebot import device, ocr, image, Rect
+from kotonebot.backend.util import contains
 from .. import R
 
 logger = getLogger(__name__)
@@ -23,7 +24,7 @@ def list_pdorinku() -> list[tuple[str, Rect]]:
     """
     # 截图所有饮料
     # TODO: 自动记录未知饮料
-    dorinkus = image.find_crop(
+    dorinkus = image.find_crop_many(
         R.InPurodyuusu.Action.PDorinkuBg,
         mask=R.InPurodyuusu.Action.PDorinkuBgMask,
     )
@@ -38,20 +39,28 @@ def acquire_pdorinku(index: int):
     :param index: 要领取的 P 饮料的索引。从 0 开始。
     """
     # TODO: 随机领取一个饮料改成根据具体情况确定最佳
-    # 点击饮料
-    drinks = list_pdorinku()
-    dorinku = drinks[index]
-    device.click(dorinku[1])
-    logger.debug(f"Pドリンク clicked: {dorinku[0]}")
-    sleep(0.3)
-    # 确定按钮
-    ret = ocr.expect('受け取る')
-    device.click(ret.rect)
-    logger.debug("受け取る clicked")
-    sleep(1.3)
-    # 再次确定
-    device.click_center()
-    logger.debug("再次确定 clicked")
+    # 如果能不领取，就不领取
+    if ocr.find(contains('受け取らない')):
+        device.click()
+        sleep(0.5)
+        device.click(image.expect(R.InPurodyuusu.ButtonNotAcquire))
+        sleep(0.5)
+        device.click(image.expect(R.InPurodyuusu.ButtonConfirm))
+    else:
+        # 点击饮料
+        drinks = list_pdorinku()
+        dorinku = drinks[index]
+        device.click(dorinku[1])
+        logger.debug(f"Pドリンク clicked: {dorinku[0]}")
+        sleep(0.3)
+        # 确定按钮
+        ret = ocr.expect('受け取る')
+        device.click(ret.rect)
+        logger.debug("受け取る clicked")
+        sleep(1.3)
+        # 再次确定
+        device.click_center()
+        logger.debug("再次确定 clicked")
 
 
 __actions__ = [acquire_pdorinku]

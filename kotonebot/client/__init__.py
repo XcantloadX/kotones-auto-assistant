@@ -1,1 +1,1 @@
-from .protocol import DeviceProtocol
+from .protocol import DeviceABC

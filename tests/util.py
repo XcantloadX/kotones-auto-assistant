@@ -5,21 +5,21 @@ import cv2
 from cv2.typing import MatLike
 
 from kotonebot.backend.util import Rect
-from kotonebot.client.protocol import DeviceProtocol
+from kotonebot.client.protocol import DeviceABC
 
-class MockDevice(DeviceProtocol):
+class MockDevice(DeviceABC):
     def __init__(
         self,
         screenshot_path: str = '',
     ):
         self.screenshot_path = screenshot_path
-        self.screenshot_hook = None
+        self.screenshot_hook_after = None
  
     @override
     def screenshot(self) -> MatLike:
         img = cv2.imread(self.screenshot_path)
-        if self.screenshot_hook is not None:
-            img = self.screenshot_hook(img)
+        if self.screenshot_hook_after is not None:
+            img = self.screenshot_hook_after(img)
         return img
 
     @staticmethod

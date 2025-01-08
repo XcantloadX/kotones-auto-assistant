@@ -1,6 +1,7 @@
 import random
 import re
 import time
+from typing import Literal
 from typing_extensions import deprecated
 import numpy as np
 import cv2
@@ -9,14 +10,16 @@ import logging
 from time import sleep
 
 from kotonebot import ocr, device, fuzz, contains, image, debug, regex
-from kotonebot.backend.util import crop_y, cropper_y
+from kotonebot.backend.context import init_context
+from kotonebot.backend.util import crop_y, cropper_y, grayscale, grayscale_cached
 from kotonebot.tasks import R
 from kotonebot.tasks.actions import loading
 from kotonebot.tasks.actions.pdorinku import acquire_pdorinku
 
 logger = logging.getLogger(__name__)
 
-def enter_recommended_action(final_week: bool = False) -> bool:
+ActionType = None | Literal['lesson', 'rest']
+def enter_recommended_action(final_week: bool = False) -> ActionType:
     """
     在行动选择页面，执行推荐行动
 
@@ -29,25 +32,25 @@ def enter_recommended_action(final_week: bool = False) -> bool:
         ret = ocr.wait_for(regex('ボーカル|ダンス|ビジュアル|休|体力'))
     logger.debug("ocr.wait_for: %s", ret)
     if ret is None:
-        return False
+        return None
     if not final_week:
         if "ボーカル" in ret.text:
-            lesson_text = "Vo.レッスン"
+            lesson_text = "Vo"
         elif "ダンス" in ret.text:
-            lesson_text = "Da.レッスン"
+            lesson_text = "Da"
         elif "ビジュアル" in ret.text:
-            lesson_text = "Vi.レッスン"
+            lesson_text = "Vi"
         elif "休" in ret.text or "体力" in ret.text:
             rest()
-            return True
+            return 'rest'
         else:
-            return False
+            return None
         logger.info("Rec. lesson: %s", lesson_text)
         # 点击课程
         logger.debug("Try clicking lesson...")
         lesson_ret = ocr.expect(contains(lesson_text))
         device.double_click(lesson_ret.rect)
-        return True
+        return 'lesson'
     else:
         if "ボーカル" in ret.text:
             template = R.InPurodyuusu.ButtonFinalPracticeVocal
@@ -56,10 +59,10 @@ def enter_recommended_action(final_week: bool = False) -> bool:
         elif "ビジュアル" in ret.text:
             template = R.InPurodyuusu.ButtonFinalPracticeVisual
         else:
-            return False
+            return None
         logger.debug("Try clicking lesson...")
         device.double_click(image.expect_wait(template))
-        return True
+        return 'lesson'
 
 def before_start_action():
     """检测支援卡剧情、领取资源等"""
@@ -86,27 +89,28 @@ def click_recommended_card(timeout: float = 7, card_count: int = 3) -> int:
 
     # 固定的卡片坐标 (for 720x1280)
     CARD_POSITIONS_1 = [
-        (264, 883, 192, 252)
+        # 格式：(x, y, w, h, return_value)
+        (264, 883, 192, 252, 0)
     ]
     CARD_POSITIONS_2 = [
-        (156, 883, 192, 252),
-        (372, 883, 192, 252),
+        (156, 883, 192, 252, 1),
+        (372, 883, 192, 252, 2),
         # delta_x = 216, delta_x-width = 24
     ]
     CARD_POSITIONS_3 = [
-        (47, 883, 192, 252),  # 左卡片 (x, y, w, h)
-        (264, 883, 192, 252),  # 中卡片
-        (481, 883, 192, 252)   # 右卡片
+        (47, 883, 192, 252, 0),  # 左卡片 (x, y, w, h)
+        (264, 883, 192, 252, 1),  # 中卡片
+        (481, 883, 192, 252, 2)   # 右卡片
         # delta_x = 217, delta_x-width = 25
     ]
     CARD_POSITIONS_4 = [
-        (17, 883, 192, 252),
-        (182, 883, 192, 252),
-        (346, 883, 192, 252),
-        (511, 883, 192, 252),
+        (17, 883, 192, 252, 0),
+        (182, 883, 192, 252, 1),
+        (346, 883, 192, 252, 2),
+        (511, 883, 192, 252, 3),
         # delta_x = 165, delta_x-width = -27
     ]
-    SKIP_POSITION = (621, 739, 85, 85)
+    SKIP_POSITION = (621, 739, 85, 85, 10)
 
     @deprecated('此方法待改进')
     def calc_pos(card_count: int):
@@ -160,14 +164,24 @@ def click_recommended_card(timeout: float = 7, card_count: int = 3) -> int:
         else:
             raise ValueError(f"Unsupported card count: {card_count}")
 
-    logger.debug("等待截图...")
+    if card_count == 4:
+        # 随机选择一张卡片点击
+        # TODO: 支持对四张卡片进行检测
+        logger.warning("4 cards detected, detecting glowing card in 4 cards is not supported yet.")
+        logger.info("Click random card")
+        card_index = random.randint(0, 3)
+        device.click(CARD_POSITIONS_4[card_index][:4])
+        sleep(1)
+        device.click(CARD_POSITIONS_4[card_index][:4])
+        return card_index
+
     start_time = time.time()
     while time.time() - start_time < timeout:
         img = device.screenshot()
 
         # 检测卡片
         card_glows = []
-        for x, y, w, h in calc_pos2(card_count) + [SKIP_POSITION]:
+        for x, y, w, h, return_value in calc_pos2(card_count) + [SKIP_POSITION]:
             # 获取扩展后的卡片区域坐标
             outer_x = max(0, x - GLOW_EXTENSION)
             outer_y = max(0, y - GLOW_EXTENSION)
@@ -193,7 +207,7 @@ def click_recommended_card(timeout: float = 7, card_count: int = 3) -> int:
             # 计算环形区域的荧光值
             glow_value = cv2.countNonZero(ring_mask)
             
-            card_glows.append((x, y, w, h, glow_value))
+            card_glows.append((x, y, w, h, glow_value, return_value))
 
         # 找到荧光值最高的卡片
         if not card_glows:
@@ -201,7 +215,7 @@ def click_recommended_card(timeout: float = 7, card_count: int = 3) -> int:
             continue
         else:
             max_glow_card = max(card_glows, key=lambda x: x[4])
-            x, y, w, h, glow_value = max_glow_card
+            x, y, w, h, glow_value, return_value = max_glow_card
             if glow_value < GLOW_THRESHOLD:
                 logger.debug("Glow value is too low, retrying...")
                 continue
@@ -211,8 +225,19 @@ def click_recommended_card(timeout: float = 7, card_count: int = 3) -> int:
             device.click(x + w//2, y + h//2)
             sleep(random.uniform(0.5, 1.5))
             device.click(x + w//2, y + h//2)
-            return True
-    return False
+            # 体力溢出提示框
+            ret = image.wait_for(R.InPurodyuusu.ButtonConfirm, timeout=1)
+            if ret is not None:
+                logger.info("Skill card confirmation dialog detected")
+                device.click(ret)
+            if return_value == 10:
+                logger.info("No enough AP. Skip this turn")
+            elif return_value == -1:
+                logger.warning("No glowing card found")
+            else:
+                logger.info("Recommended card is Card %d", return_value + 1)
+            return return_value
+    return -1
 
 @deprecated('此方法待改进')
 def skill_card_count1():
@@ -303,55 +328,86 @@ def rest():
     # 确定
     device.click(image.expect_wait(R.InPurodyuusu.RestConfirmBtn))
 
-def acquisitions():
-    """处理行动结束可能需要处理的事件，直到到行动页面为止"""
-    logger.info("Action end stuffs...")
+AcquisitionType = Literal[
+    "PDrinkAcquire", # P饮料被动领取
+    "PDrinkSelect", # P饮料主动领取
+    "PDrinkMax", # P饮料到达上限
+    "PSkillCardAcquire", # 技能卡被动领取
+    "PSkillCardSelect", # 技能卡主动领取
+    "PItem", # P物品
+    "Clear", # 目标达成
+]
+def acquisitions() -> AcquisitionType | None:
+    """处理行动开始前和结束后可能需要处理的事件，直到到行动页面为止"""
+    img = device.screenshot_raw()
+    gray_img = grayscale(img)
+    logger.info("Acquisition stuffs...")
+
     # P饮料被动领取
     logger.info("Check PDrink acquisition...")
-    if image.find(R.InPurodyuusu.PDrinkIcon):
+    if image.raw().find(img, R.InPurodyuusu.PDrinkIcon):
         logger.info("Click to finish animation")
         device.click_center()
         sleep(1)
-    # P物品
-    # logger.info("Check PItem acquisition...")
-    # if image.wait_for(R.InPurodyuusu.PItemIcon, timeout=1):
-    #     logger.info("Click to finish animation")
-    #     device.click_center()
-    #     sleep(1)
+        return "PDrinkAcquire"
+    # P饮料主动领取
+    # if ocr.raw().find(img, contains("受け取るＰドリンクを選れでください")):
+    if image.raw().find(img, R.InPurodyuusu.TextPleaseSelectPDrink):
+        logger.info("PDrink acquisition")
+        # 不领取
+        # device.click(ocr.expect(contains("受け取らない")))
+        # sleep(0.5)
+        # device.click(image.expect(R.InPurodyuusu.ButtonNotAcquire))
+        # sleep(0.5)
+        # device.click(image.expect(R.InPurodyuusu.ButtonConfirm))
+        acquire_pdorinku(index=0)
+        return "PDrinkSelect"
+    # P饮料到达上限
+    if image.raw().find(img, R.InPurodyuusu.TextPDrinkMax):
+        device.click(image.expect(R.InPurodyuusu.ButtonLeave))
+        sleep(0.7)
+        # 可能需要点击确认
+        device.click(image.expect(R.InPurodyuusu.ButtonConfirm, threshold=0.8))
+        return "PDrinkMax"
     # 技能卡被动领取
     logger.info("Check skill card acquisition...")
-    if image.wait_for_any([
+    if image.raw().find_any(img, [
         R.InPurodyuusu.PSkillCardIconBlue,
         R.InPurodyuusu.PSkillCardIconColorful
-    ], timeout=1):
+    ]):
         logger.info("Acquire skill card")
         device.click_center()
+        return "PSkillCardAcquire"
     # 技能卡主动领取
-    if ocr.find(contains("受け取るスキルカードを選んでください")):
+    if ocr.raw().find(img, contains("受け取るスキルカードを選んでください")):
         logger.info("Acquire skill card")
         acquire_skill_card()
-    # P饮料主动领取
-    if ocr.find(contains("受け取るＰドリンクを選れでください")):
-        # 不领取
-        device.click(ocr.expect(contains("受け取らない")))
-        sleep(0.5)
-        device.click(image.expect(R.InPurodyuusu.ButtonNotAcquire))
-        sleep(0.5)
-        device.click(image.expect(R.InPurodyuusu.ButtonConfirm))
+        sleep(5)
+        return "PSkillCardSelect"
 
-    # 检测目标达成
-    if ocr.find(contains("達成")):
+    # 目标达成
+    if image.raw().find(gray_img, grayscale_cached(R.InPurodyuusu.IconClearBlue)):
         logger.debug("達成: clicked")
         device.click_center()
-        sleep(2)
-        logger.debug("達成: clicked 2")
+        sleep(5)
+        # TODO: 可能不存在 達成 NEXT
+        logger.debug("達成 NEXT: clicked")
         device.click_center()
+        return "Clear"
+    # P物品
+    if image.raw().find(img, R.InPurodyuusu.PItemIconColorful):
+        logger.info("Click to finish PItem acquisition")
+        device.click_center()
+        sleep(1)
+        return "PItem"
     # 支援卡
     # logger.info("Check support card acquisition...")
     # 记忆
     # 未跳过剧情
+    return None
 
 def until_action_scene():
+    """等待进入行动场景"""
     # 检测是否到行动页面
     while not image.wait_for_any([
         R.InPurodyuusu.TextPDiary, # 普通周
@@ -365,7 +421,14 @@ def until_action_scene():
         return 
 
 def until_practice_scene():
-    while not image.wait_for(R.InPurodyuusu.TextClearUntil, timeout=1):
+    """等待进入练习场景"""
+    while image.wait_for(R.InPurodyuusu.TextClearUntil, timeout=1) is None:
+        acquisitions()
+        sleep(1)
+
+def until_exam_scene():
+    """等待进入考试场景"""
+    while ocr.find(regex("合格条件|三位以上")) is None:
         acquisitions()
         sleep(1)
 
@@ -376,51 +439,34 @@ def practice():
     no_card_count = 0
     MAX_NO_CARD_COUNT = 3
     while True:
-        count = skill_card_count()
-        if count == 0:
-            logger.info("No skill card found. Wait and retry...")
-            no_card_count += 1
-            if no_card_count >= MAX_NO_CARD_COUNT:
-                break
-            sleep(3)
+        with device.pinned():
+            count = skill_card_count()
+            if count == 0:
+                logger.info("No skill card found. Wait and retry...")
+                # no_card_count += 1
+                # if no_card_count >= MAX_NO_CARD_COUNT:
+                #     break
+                if not image.find_any([
+                    R.InPurodyuusu.TextPerfectUntil,
+                    R.InPurodyuusu.TextClearUntil
+                ]):
+                    logger.info("PERFECTまで/CLEARまで not found. Practice finished.")
+                    break
+                sleep(3)
+                continue
+        if click_recommended_card(card_count=count) == -1:
+            logger.info("Click recommended card failed. Retry...")
             continue
-        if not click_recommended_card(card_count=count):
-            break
+        logger.info("Wait for next turn...")
         sleep(9) # TODO: 采用更好的方式检测练习结束
     # 跳过动画
     logger.info("Recommend card not found. Practice finished.")
     ocr.expect_wait(contains("上昇"))
+    logger.info("Click to finish 上昇 ")
     device.click_center()
-    logger.info("Wait practice finish animation...")
-    # # 领取P饮料
-    # sleep(7) # TODO: 采用更好的方式检测动画结束
-    # if image.wait_for(R.InPurodyuusu.PDrinkIcon, timeout=5):
-    #     logger.info("Click to finish animation")
-    #     device.click_center()
-    #     sleep(1)
-    # # 领取技能卡
-    # ocr.wait_for(contains("受け取るスキルカードを選んでください"))
-    # logger.info("Acquire skill card")
-    # acquire_skill_card()
-
-    # # 等待加载动画
-    # loading.wait_loading_start()
-    # logger.info("Loading...")
-    # loading.wait_loading_end()
-    # logger.info("Loading end")
-
-    # # 检测目标达成
-    # if ocr.wait_for(contains("達成"), timeout=5):
-    #     logger.debug("達成: clicked")
-    #     device.click_center()
-    #     sleep(2)
-    #     logger.debug("達成: clicked 2")
-    #     device.click_center()
 
 def exam():
     """执行考试"""
-    logger.info("Wait for exam scene...")
-    # TODO: 等待考试开始
     logger.info("Exam started")
     # 循环打出推荐卡
     no_card_count = 0
@@ -434,7 +480,7 @@ def exam():
                 break
             sleep(3)
             continue
-        if not click_recommended_card(card_count=count):
+        if click_recommended_card(card_count=count) == -1:
             break
         sleep(9) # TODO: 采用更好的方式检测练习结束
     
@@ -442,14 +488,81 @@ def exam():
     device.click(image.expect_wait(R.InPurodyuusu.NextBtn))
     while ocr.wait_for(contains("メモリー"), timeout=7):
         device.click_center()
-    # 领取技能卡
-    acquire_skill_card()
+
+def produce_end():
+    """执行考试结束"""
+    # 考试结束对话
+    image.expect_wait(R.InPurodyuusu.TextAsariProduceEnd, timeout=30)
+    bottom = (int(device.screen_size[0] / 2), int(device.screen_size[1] * 0.9))
+    device.click(*bottom)
+    sleep(3)
+    device.click_center()
+    sleep(3)
+    device.click(*bottom)
+    sleep(3)
+    device.click(*bottom)
+    sleep(3)
+
+    # MV
+    # 等就可以了，反正又不要自己操作（
+
+    # 结算
+    # 最終プロデュース評価
+    image.expect_wait(R.InPurodyuusu.TextFinalProduceRating, timeout=60 * 2.5)
+    device.click_center()
+    sleep(3)
+    # 次へ
+    device.click(image.expect_wait(R.InPurodyuusu.ButtonNextNoIcon))
+    sleep(1)
+    # 決定
+    device.click(image.expect_wait(R.InPurodyuusu.ButtonConfirm, threshold=0.8))
+    sleep(1)
+    # 上传图片。注意网络可能会很慢，可能出现上传失败对话框
+    retry_count = 0
+    MAX_RETRY_COUNT = 5
+    while True:
+        # 处理上传失败
+        if image.find(R.InPurodyuusu.ButtonRetry):
+            logger.info("Upload failed. Retry...")
+            retry_count += 1
+            if retry_count >= MAX_RETRY_COUNT:
+                logger.info("Upload failed. Max retry count reached.")
+                logger.info("Cancel upload.")
+                device.click(image.expect_wait(R.InPurodyuusu.ButtonCancel))
+                sleep(2)
+                continue
+            device.click()
+        # 记忆封面保存失败提示
+        elif image.find(R.InPurodyuusu.ButtonClose):
+            logger.info("Memory cover save failed. Click to close.")
+            device.click()
+        # 结算完毕
+        elif image.find(R.InPurodyuusu.ButtonNextNoIcon):
+            logger.info("Finalize")
+            device.click()
+            device.click(image.expect_wait(R.InPurodyuusu.ButtonNextNoIcon))
+            device.click(image.expect_wait(R.InPurodyuusu.ButtonNextNoIcon))
+            device.click(image.expect_wait(R.InPurodyuusu.ButtonComplete))
+            # 关注提示
+            # if image.wait_for(R.InPurodyuusu.ButtonFollowProducer, timeout=2):
+            #     device.click(image.expect_wait(R.InPurodyuusu.ButtonCancel))
+            break
+        # 开始生成记忆
+        # elif image.find(R.InPurodyuusu.ButtonGenerateMemory):
+        #     logger.info("Click generate memory button")
+        #     device.click()
+        # 跳过结算内容
+        else:
+            device.click_center()
+        sleep(2)
 
 
-def hajime_regular(week: int = -1, start_from: int = 0):
+def hajime_regular(week: int = -1, start_from: int = 1):
     """
     「初」 Regular 模式
+
     :param week: 第几周，从1开始，-1表示全部
+    :param start_from: 从第几周开始，从1开始。
     """
     def week1():
         """
@@ -470,7 +583,6 @@ def hajime_regular(week: int = -1, start_from: int = 0):
         第二周 期中考试剩余4周\n
         行动：授業（学习）
         """
-        logger.info("Regular week 2 started.")
         # 点击“授業”
         rect = image.expect_wait(R.InPurodyuusu.Action.ActionStudy).rect
         device.click(rect)
@@ -523,7 +635,6 @@ def hajime_regular(week: int = -1, start_from: int = 0):
         第三周 期中考试剩余3周\n
         行动：Vo.レッスン、Da.レッスン、Vi.レッスン、授業
         """
-        logger.info("Regular week 3 started.")
         week1()
 
     def week4():
@@ -531,7 +642,6 @@ def hajime_regular(week: int = -1, start_from: int = 0):
         第四周 期中考试剩余2周\n
         行动：おでかけ、相談、活動支給
         """
-        logger.info("Regular week 4 started.")
         week3()
 
     def week5():
@@ -539,11 +649,9 @@ def hajime_regular(week: int = -1, start_from: int = 0):
 
     def week6():
         """期中考试"""
-        logger.info("Regular week 6 started.")
 
     def week7():
         """第七周 期末考试剩余6周"""
-        logger.info("Regular week 7 started.")
         if not enter_recommended_action():
             rest()
 
@@ -552,47 +660,75 @@ def hajime_regular(week: int = -1, start_from: int = 0):
         第八周 期末考试剩余5周\n
         行动：授業、活動支給
         """
-        logger.info("Regular week 8 started.")
         if not enter_recommended_action():
             rest()
 
     def week_common():
-        if not enter_recommended_action():
-            rest()
-        else:
+        until_action_scene()
+        executed_action = enter_recommended_action()
+        logger.info("Executed recommended action: %s", executed_action)
+        if executed_action == 'lesson':
             sleep(5)
             until_practice_scene()
             practice()
+        elif executed_action == 'rest':
+            pass
+        elif executed_action is None:
+            rest()
         until_action_scene()
         
 
     def week_final():
-        if not enter_recommended_action(final_week=True):
+        if enter_recommended_action(final_week=True) != 'lesson':
             raise ValueError("Failed to enter recommended action on final week.")
         sleep(5)
         until_practice_scene()
         practice()
         # until_exam_scene()
-        
+    
+    def week_mid_exam():
+        logger.info("Week mid exam started.")
+        logger.info("Wait for exam scene...")
+        until_exam_scene()
+        logger.info("Exam scene detected.")
+        sleep(5)
+        device.click_center()
+        sleep(5)
+        exam()
+        until_action_scene()
+    
+    def week_final_exam():
+        logger.info("Week final exam started.")
+        logger.info("Wait for exam scene...")
+        until_exam_scene()
+        logger.info("Exam scene detected.")
+        sleep(5)
+        device.click_center()
+        sleep(5)
+        exam()
+        produce_end()
+    
     weeks = [
         week_common, # 1
         week_common, # 2
         week_common, # 3
         week_common, # 4
         week_final, # 5
-        exam, # 6
+        week_mid_exam, # 6
         week_common, # 7
         week_common, # 8
         week_common, # 9
         week_common, # 10
         week_common, # 11
         week_final, # 12
-        exam, # 13
+        week_final_exam, # 13
     ]
     if week != -1:
+        logger.info("Week %d started.", week)
         weeks[week - 1]()
     else:
-        for w in weeks[start_from-1:]:
+        for i, w in enumerate(weeks[start_from-1:]):
+            logger.info("Week %d started.", i + start_from)
             w()
 
 def purodyuusu(
@@ -613,15 +749,18 @@ if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO, format='[%(asctime)s] [%(levelname)s] [%(name)s] %(message)s')
     getLogger('kotonebot').setLevel(logging.DEBUG)
     getLogger(__name__).setLevel(logging.DEBUG)
+    init_context()
 
+    # produce_end()
     # exam()
     # enter_recommended_action()
     # remaing_turns_and_points()
     practice()
-    # action_end()
+    until_action_scene()
+    # acquisitions()
     # acquire_pdorinku(0)
     # image.wait_for(R.InPurodyuusu.InPractice.PDorinkuIcon)
-    # hajime_regular(start_from=5)
+    # hajime_regular(start_from=1)
     # until_practice_scene()
     # device.click(image.expect_wait_any([
     #     R.InPurodyuusu.PSkillCardIconBlue,

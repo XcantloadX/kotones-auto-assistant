@@ -1,7 +1,7 @@
 import unittest
 
 from kotonebot import _c
-from kotonebot.tasks.actions.in_purodyuusu import skill_card_count
+from kotonebot.tasks.actions.in_purodyuusu import skill_card_count, click_recommended_card
 from util import MockDevice
 
 
@@ -11,6 +11,13 @@ class TestActionInProduce(unittest.TestCase):
     def setUpClass(cls):
         cls.d = MockDevice()
         _c.inject_device(cls.d)
+
+    def test_click_recommended_card(self):
+        # 文件命名格式：卡片数量_预期返回值_编号.png
+        self.d.screenshot_path = 'tests/images/produce/recommended_card_3_-1_0.png'
+        self.assertEqual(click_recommended_card(timeout=1), -1)
+        self.d.screenshot_path = 'tests/images/produce/recommended_card_4_3_0.png'
+        self.assertEqual(click_recommended_card(timeout=1), 0)
 
     def test_current_skill_card_count(self):
         cards_1 = 'tests/images/produce/in_produce_cards_1.png'

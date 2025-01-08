@@ -8,13 +8,13 @@ from typing import Callable, TYPE_CHECKING, cast, overload, Any, TypeVar, Litera
 from kotonebot.client.device.adb import AdbDevice
 
 import cv2
-if TYPE_CHECKING:
-    from cv2.typing import MatLike
+from cv2.typing import MatLike
+
 
 import kotonebot.backend.image as raw_image
-from kotonebot.backend.image import CropResult, TemplateMatchResult, find_crop, expect, find
+from kotonebot.backend.image import CropResult, TemplateMatchResult, find_crop, expect, find, find_any
 from kotonebot.backend.util import Rect
-from kotonebot.client import DeviceProtocol
+from kotonebot.client import DeviceABC
 from kotonebot.backend.ocr import Ocr, OcrResult, jp, en, StringMatchFunction
 
 OcrLanguage = Literal['jp', 'en']
@@ -25,7 +25,7 @@ class ContextOcr:
         self.context = context
         self.__engine = jp
 
-    def raw(self, lang: OcrLanguage) -> Ocr:
+    def raw(self, lang: OcrLanguage = 'jp') -> Ocr:
         """
         返回 `kotonebot.backend.ocr` 中的 Ocr 对象。\n
         Ocr 对象与此对象的区别是，此对象会自动截图，而 Ocr 对象需要手动传入图像参数。
@@ -65,9 +65,13 @@ class ContextOcr:
     def find(self, *args, **kwargs) -> OcrResult | None:
         """检查指定图像是否包含指定文本。"""
         if len(args) == 1 and len(kwargs) == 0:
-            return self.__engine.find(self.context.device.screenshot(), args[0])
+            ret = self.__engine.find(self.context.device.screenshot(), args[0])
+            self.context.device.last_find = ret
+            return ret
         elif len(args) == 2 and len(kwargs) == 0:
-            return self.__engine.find(args[0], args[1])
+            ret = self.__engine.find(args[0], args[1])
+            self.context.device.last_find = ret
+            return ret
         else:
             raise ValueError("Invalid arguments")
     
@@ -80,7 +84,9 @@ class ContextOcr:
 
         与 `find()` 的区别在于，`expect()` 未找到时会抛出异常。
         """
-        return self.__engine.expect(self.context.device.screenshot(), pattern)
+        ret = self.__engine.expect(self.context.device.screenshot(), pattern)
+        self.context.device.last_find = ret
+        return ret
     
     def expect_wait(self, pattern: str | re.Pattern | StringMatchFunction, timeout: float = 10) -> OcrResult:
         """
@@ -90,6 +96,7 @@ class ContextOcr:
         while True:
             result = self.find(pattern)
             if result is not None:
+                self.context.device.last_find = result
                 return result
             if time.time() - start_time > timeout:
                 raise TimeoutError(f"Timeout waiting for {pattern}")
@@ -103,6 +110,7 @@ class ContextOcr:
         while True:
             result = self.find(pattern)
             if result is not None:
+                self.context.device.last_find = result
                 return result
             if time.time() - start_time > timeout:
                 return None
@@ -116,16 +124,18 @@ class ContextImage:
     def raw(self):
         return raw_image
 
-    def wait_for(self, template: str, mask: str | None = None, threshold: float = 0.9, timeout: float = 10) -> bool:
+    def wait_for(self, template: str, mask: str | None = None, threshold: float = 0.9, timeout: float = 10) -> TemplateMatchResult | None:
         """
         等待指定图像出现。
         """
         start_time = time.time()
         while True:
-            if self.find(template, mask, threshold):
-                return True
+            ret = self.find(template, mask, threshold)
+            if ret is not None:
+                self.context.device.last_find = ret
+                return ret
             if time.time() - start_time > timeout:
-                return False
+                return None
             time.sleep(0.1)
 
     def wait_for_any(self, templates: list[str], masks: list[str | None] | None = None, threshold: float = 0.9, timeout: float = 10):
@@ -159,6 +169,7 @@ class ContextImage:
         while True:
             ret = self.find(template, mask, threshold)
             if ret is not None:
+                self.context.device.last_find = ret
                 return ret
             if time.time() - start_time > timeout:
                 raise TimeoutError(f"Timeout waiting for {template}")
@@ -183,6 +194,7 @@ class ContextImage:
             for template, mask in zip(templates, _masks):
                 ret = self.find(template, mask, threshold)
                 if ret is not None:
+                    self.context.device.last_find = ret
                     return ret
             if time.time() - start_time > timeout:
                 raise TimeoutError(f"Timeout waiting for any of {templates}")
@@ -195,15 +207,32 @@ class ContextImage:
 
         与 `find()` 的区别在于，`expect()` 未找到时会抛出异常。
         """
-        return expect(self.context.device.screenshot(), template, mask, threshold=threshold)
+        ret = expect(self.context.device.screenshot(), template, mask, threshold=threshold)
+        self.context.device.last_find = ret
+        return ret
 
-    def find(self, template: str, mask: str | None = None, threshold: float = 0.9):
+    def find(self, template: 'str | MatLike', mask: str | None = None, threshold: float = 0.9):
         """
         寻找指定图像。
         """
-        return find(self.context.device.screenshot(), template, mask, threshold=threshold)
+        ret = find(self.context.device.screenshot(), template, mask, threshold=threshold)
+        self.context.device.last_find = ret
+        return ret
 
-    def find_crop(
+    def find_any(
+            self,
+            templates: list[str | MatLike],
+            masks: list[str | MatLike | None] | None = None,
+            threshold: float = 0.9
+        ) -> TemplateMatchResult | None:
+        """
+        寻找指定图像中的任意一个。
+        """
+        ret = find_any(self.context.device.screenshot(), templates, masks, threshold=threshold)
+        self.context.device.last_find = ret
+        return ret
+
+    def find_crop_many(
             self,
             template: str,
             mask: str | None = None,
@@ -244,15 +273,15 @@ class ContextDebug:
         cv2.waitKey(1)
 
 
-@cache
-def _forward_from(getter: Callable[[], T]) -> T:
-    class Forwarded:
-        def __getattr__(self, name: str) -> Any:
-            return getattr(getter(), name)
+class Forwarded:
+    def __init__(self, getter: Callable[[], T] | None = None, name: str | None = None):
+        self.getter = getter
+        self.name = name
 
-        def __repr__(self) -> str:
-            return f"Forwarded({object})"
-    return cast(T, Forwarded())  
+    def __getattr__(self, name: str) -> Any:
+        if self.getter is None:
+            raise ValueError(f"Forwarded object {self.name} called before initialization.")
+        return getattr(self.getter(), name)
 
 class Context:
     def __init__(self):
@@ -260,48 +289,58 @@ class Context:
         from adbutils import adb
         adb.connect('127.0.0.1:16384')
         self.__device = AdbDevice(adb.device_list()[0])
+        # self.__device = None
         self.__ocr = ContextOcr(self)
         self.__image = ContextImage(self)
         self.__vars = ContextGlobalVars()
         self.__debug = ContextDebug(self)
         self.actions = []
 
-    def inject_device(self, device: DeviceProtocol):
+    def inject_device(self, device: DeviceABC):
         self.__device = device
 
     @property
-    def device(self) -> DeviceProtocol:
-        return cast(DeviceProtocol, _forward_from(lambda: self.__device))
+    def device(self) -> DeviceABC:
+        return self.__device
 
     @property
     def ocr(self) -> 'ContextOcr':
-        return cast(ContextOcr, _forward_from(lambda: self.__ocr))
+        return self.__ocr
     
     @property
     def image(self) -> 'ContextImage':
-        return cast(ContextImage, _forward_from(lambda: self.__image))
+        return self.__image
 
     @property
     def vars(self) -> 'ContextGlobalVars':
-        return cast(ContextGlobalVars, _forward_from(lambda: self.__vars))
+        return self.__vars
     
     @property
     def debug(self) -> 'ContextDebug':
-        return cast(ContextDebug, _forward_from(lambda: self.__debug))
+        return self.__debug
 
 # 暴露 Context 的属性到模块级别
-_c = Context()
-device: DeviceProtocol = _c.device
+_c: Context
+device: DeviceABC = cast(DeviceABC, Forwarded(name="device"))
 """当前正在执行任务的设备。"""
-ocr: ContextOcr = _c.ocr
+ocr: ContextOcr = cast(ContextOcr, Forwarded(name="ocr"))
 """OCR 引擎。"""
-image: ContextImage = _c.image
+image: ContextImage = cast(ContextImage, Forwarded(name="image"))
 """图像识别。"""
-vars: ContextGlobalVars = _c.vars
+vars: ContextGlobalVars = cast(ContextGlobalVars, Forwarded(name="vars"))
 """全局变量。"""
-debug: ContextDebug = _c.debug
+debug: ContextDebug = cast(ContextDebug, Forwarded(name="debug"))
 """调试工具。"""
 
 # def __getattr__(name: str) -> Any:
 #     return getattr(_c, name)
+
+def init_context():
+    global _c, device, ocr, image, vars, debug
+    _c = Context()
+    device.getter = lambda: _c.device # type: ignore
+    ocr.getter = lambda: _c.ocr # type: ignore
+    image.getter = lambda: _c.image # type: ignore
+    vars.getter = lambda: _c.vars # type: ignore
+    debug.getter = lambda: _c.debug # type: ignore
 

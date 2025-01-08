@@ -1,12 +1,10 @@
 import cv2
 from cv2.typing import MatLike
 import numpy as np
-from client.device.adb import AdbDevice
+from kotonebot.client.device.adb import AdbDevice
 from adbutils import adb
 from typing import NamedTuple
-# 初始化ADB设备
-adb.connect("127.0.0.1:16384")
-device = AdbDevice(adb.device_list()[0])
+
 
 # 定义检测参数
 TARGET_ASPECT_RATIO_RANGE = (0.73, 0.80)
@@ -164,30 +162,40 @@ def detect_cards(image: MatLike, card_dimensions: list[tuple[int, int, int, int]
     return card_contours
 
 def main():
-    # while True:
-    #     # 获取屏幕截图
-    #     img = device.screenshot()
+    # 初始化ADB设备
+    # adb.connect("127.0.0.1:16384")
+    # device = AdbDevice(adb.device_list()[0])
+    CARD_POSITIONS_4 = [
+        (17, 883, 192, 252),
+        (182, 883, 192, 252),
+        (346, 883, 192, 252),
+        (511, 883, 192, 252),
+        # delta_x = 165, delta_x-width = -27
+    ]
+    while True:
+        # 获取屏幕截图
+        img = cv2.imread('tests/images/produce/recommended_card_4_3_0.png')
         
-    #     # 检测卡片
-    #     cards = detect_cards(img)
+        # 检测卡片
+        cards = detect_cards(img, CARD_POSITIONS_4)
         
-    #     # 如果检测到3个或更多卡片
-    #     if len(cards) >= 3:
-    #         print("检测到3个卡片！")
-    #         # 在图像上绘制检测结果
-    #         for i, (x, y, w, h, glow) in enumerate(cards[:3]):
-    #             cv2.rectangle(img, (x, y), (x+w, y+h), (0, 255, 0), 2)
-    #             cv2.putText(img, f"Card {i+1}", (x, y-10), 
-    #                        cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
+        # 如果检测到3个或更多卡片
+        if len(cards) >= 3:
+            print("检测到3个卡片！")
+            # 在图像上绘制检测结果
+            for i, (x, y, w, h, glow, is_target) in enumerate(cards[:3]):
+                cv2.rectangle(img, (x, y), (x+w, y+h), (0, 255, 0), 2)
+                cv2.putText(img, f"Card {i+1}", (x, y-10), 
+                           cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
             
-    #         # 显示结果
-    #         cv2.imshow("Detected Cards", img)
-    #         # cv2.waitKey(0)
-    #         # cv2.destroyAllWindows()
-    #         # break
+            # 显示结果
+            cv2.imshow("Detected Cards", img)
+            # cv2.waitKey(0)
+            # cv2.destroyAllWindows()
+            # break
             
-    #     # 等待1秒后继续检测
-    #     cv2.waitKey(1000)
+        # 等待1秒后继续检测
+        cv2.waitKey(1000)
 
     from kotonebot.client.device.fast_screenshot import AdbFastScreenshots
     with AdbFastScreenshots(
