@@ -4,10 +4,11 @@ import unicodedata
 from os import PathLike
 from typing import TYPE_CHECKING, Callable, NamedTuple, overload
 
-from kotonebot.backend.util import Rect
+from .util import Rect
+from .debug import result as debug_result, debug
 
-if TYPE_CHECKING:
-    from cv2.typing import MatLike
+import cv2
+from cv2.typing import MatLike
 from rapidocr_onnxruntime import RapidOCR
 
 _engine_jp = RapidOCR(
@@ -48,6 +49,66 @@ def _is_match(text: str, pattern: re.Pattern | str | StringMatchFunction) -> boo
     else:
         return text == pattern
 
+def _draw_result(image: 'MatLike', result: list[OcrResult]) -> 'MatLike':
+    import numpy as np
+    from PIL import Image, ImageDraw, ImageFont
+    
+    # 转换为PIL图像
+    result_image = cv2.cvtColor(image.copy(), cv2.COLOR_BGR2RGB)
+    pil_image = Image.fromarray(result_image)
+    draw = ImageDraw.Draw(pil_image, 'RGBA')
+    
+    # 加载字体
+    try:
+        font = ImageFont.truetype(r'res\fonts\SourceHanSansHW-Regular.otf', 16)
+    except:
+        font = ImageFont.load_default()
+    
+    for r in result:
+        # 画矩形框
+        draw.rectangle(
+            [r.rect[0], r.rect[1], r.rect[0] + r.rect[2], r.rect[1] + r.rect[3]], 
+            outline=(255, 0, 0), 
+            width=2
+        )
+        
+        # 获取文本大小
+        text = r.text + f" ({r.confidence:.2f})"  # 添加置信度显示
+        text_bbox = draw.textbbox((0, 0), text, font=font)
+        text_width = text_bbox[2] - text_bbox[0]
+        text_height = text_bbox[3] - text_bbox[1]
+        
+        # 计算文本位置
+        text_x = r.rect[0]
+        text_y = r.rect[1] - text_height - 5 if r.rect[1] > text_height + 5 else r.rect[1] + r.rect[3] + 5
+        
+        # 添加padding
+        padding = 4
+        bg_rect = [
+            text_x - padding,
+            text_y - padding,
+            text_x + text_width + padding,
+            text_y + text_height + padding
+        ]
+        
+        # 画半透明背景
+        draw.rectangle(
+            bg_rect,
+            fill=(0, 0, 0, 128)
+        )
+        
+        # 画文字
+        draw.text(
+            (text_x, text_y),
+            text,
+            font=font,
+            fill=(255, 255, 255)
+        )
+    
+    # 转回OpenCV格式
+    result_image = cv2.cvtColor(np.array(pil_image), cv2.COLOR_RGB2BGR)
+    return result_image
+
 class Ocr:
     def __init__(self, engine: RapidOCR):
         self.__engine = engine
@@ -64,7 +125,7 @@ class Ocr:
         result, elapse = self.__engine(img_content)
         if result is None:
             return []
-        return [OcrResult(
+        ret = [OcrResult(
             text=unicodedata.normalize('NFKC', r[1]).replace('ą', 'a'), # HACK: 识别结果中包含奇怪的符号，暂时替换掉
             rect=(
                 int(r[0][0][0]),  # 左上x
@@ -74,6 +135,17 @@ class Ocr:
             ),
             confidence=r[2] # type: ignore
         ) for r in result] # type: ignore
+        if debug.enabled:
+            result_image = _draw_result(img, ret)
+            debug_result(
+                'ocr',
+                result_image,
+                f"result: \n" + \
+                "<table class='result-table'><tr><th>Text</th><th>Confidence</th></tr>" + \
+                "\n".join([f"<tr><td>{r.text}</td><td>{r.confidence:.2f}</td></tr>" for r in ret]) + \
+                "</table>"
+            )
+        return ret
 
     def find(self, img: 'MatLike', text: str | re.Pattern | StringMatchFunction) -> OcrResult | None:
         """

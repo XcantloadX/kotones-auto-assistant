@@ -1,6 +1,15 @@
-adbutils==2.8.0
+# 图像处理 & OCR
 opencv-python==4.10.0.84
 rapidocr_onnxruntime==1.4.3
 av==14.0.1
 thefuzz==0.22.1
+# Adb 控制
+adbutils==2.8.0
+# 可视化调试页面
+fastapi==0.115.6
+uvicorn==0.34.0
+python-multipart==0.0.20
+websockets==14.1
+numpy==2.2.1
+# 其他
 typing-extensions==4.12.2

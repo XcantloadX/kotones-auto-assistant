@@ -2,6 +2,8 @@ import os
 from typing import NamedTuple, Protocol, TypeVar
 from logging import getLogger
 
+from .debug import result, debug, img
+
 import cv2
 import numpy as np
 from cv2.typing import MatLike, Rect, Point, Size
@@ -19,6 +21,7 @@ class TemplateNotFoundError(Exception):
 class ResultProtocol(Protocol):
     score: float
     position: Point
+
 
 class TemplateMatchResult(NamedTuple):
     score: float
@@ -65,6 +68,16 @@ def _remove_duplicate_matches(
             continue
         result.append(match)
     return result
+
+def _draw_result(image: MatLike, matches: list[TemplateMatchResult] | TemplateMatchResult | None) -> MatLike:
+    if matches is None:
+        return image
+    if isinstance(matches, TemplateMatchResult):
+        matches = [matches]
+    result_image = image.copy()
+    for match in matches:
+        cv2.rectangle(result_image, match.rect, (0, 0, 255), 2)
+    return result_image
 
 def template_match(
     template: MatLike | str,
@@ -152,9 +165,19 @@ def find(
     mask: MatLike | str | None = None,
     transparent: bool = False,
     threshold: float = 0.8,
+    *,
+    debug_output: bool = True,
 ) -> TemplateMatchResult | None:
     """寻找一个模板图像"""
     matches = template_match(template, image, mask, transparent, threshold, max_results=-1)
+    # 调试输出
+    if debug.enabled and debug_output:
+        result_image = _draw_result(image, matches)
+        result_text = f"template: {img(template)} \n"
+        result_text += f"matches: {len(matches)} \n"
+        for match in matches:
+            result_text += f"score: {match.score} position: {match.position} size: {match.size} \n"
+        result(f"image.find", result_image, result_text)
     return matches[0] if len(matches) > 0 else None
 
 def find_any(
@@ -165,15 +188,32 @@ def find_any(
     threshold: float = 0.8,
 ) -> TemplateMatchResult | None:
     """指定多个模板，返回第一个匹配到的结果"""
+    ret = None
     if masks is None:
         _masks = [None] * len(templates)
     else:
         _masks = masks
     for template, mask in zip(templates, _masks):
-        ret = find(image, template, mask, transparent, threshold)
+        ret = find(image, template, mask, transparent, threshold, debug_output=False)
+        # 调试输出
         if ret is not None:
-            return ret
-    return None
+            break
+    if debug.enabled:
+        msg = (
+            "<table class='result-table'>" +
+            "<tr><th>Template</th><th>Mask</th><th>Result</th></tr>" +
+            "\n".join([
+                f"<tr><td>{img(t)}</td><td>{img(m)}</td><td>{'✓' if ret and t == templates[0] else '✗'}</td></tr>"
+                for t, m in zip(templates, _masks)
+            ]) +
+            "</table>\n"
+        )
+        result(
+            'image.find_any',
+            _draw_result(image, ret),
+            msg
+        )
+    return ret
 
 def count(
     image: MatLike,
@@ -186,11 +226,19 @@ def count(
     results = template_match(template, image, mask, transparent, threshold, max_results=-1)
     if remove_duplicate:
         results = _remove_duplicate_matches(results)
-    # 画出结果
-    # for result in results:
-    #     cv2.rectangle(image, result.rect, (0, 0, 255), 2)
-    # cv2.imshow('count', image)
-    # cv2.waitKey(0)
+    if debug.enabled:
+        result_image = _draw_result(image, results)
+        result(
+            'image.count',
+            result_image,
+            (
+                f"template: {img(template)} \n"
+                f"mask: {img(mask)} \n"
+                f"transparent: {transparent} \n"
+                f"threshold: {threshold} \n"
+                f"count: {len(results)} \n"
+            )
+        )
     return len(results)
 
 def expect(
@@ -201,7 +249,21 @@ def expect(
     threshold: float = 0.9,
 ) -> TemplateMatchResult:
     ret = find(image, template, mask, transparent, threshold)
+    if debug.enabled:
+        result(
+            'image.expect',
+            _draw_result(image, ret),
+            (
+                f"template: {img(template)} \n"
+                f"mask: {img(mask)} \n"
+                f"args: transparent={transparent} threshold={threshold} \n"
+                f"result: {ret}  "
+                '<span class="text-success">SUCCESS</span>' if ret is not None 
+                    else '<span class="text-danger">FAILED</span>'
+            )
+        )
     if ret is None:
         raise TemplateNotFoundError(image, template)
-    return ret
+    else:
+        return ret
 

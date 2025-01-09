@@ -751,12 +751,27 @@ if __name__ == '__main__':
     getLogger(__name__).setLevel(logging.DEBUG)
     init_context()
 
-    # produce_end()
+    while not image.wait_for_any([
+        R.InPurodyuusu.TextPDiary, # 普通周
+        R.InPurodyuusu.ButtonFinalPracticeDance # 离考试剩余一周
+    ], timeout=2):
+        logger.info("Action scene not detected. Retry...")
+        acquisitions()
+        sleep(3)
+
+    # image.wait_for_any([
+    #     R.InPurodyuusu.TextPDiary, # 普通周
+    #     R.InPurodyuusu.ButtonFinalPracticeDance # 离考试剩余一周
+    # ], timeout=2)
+    # while True:
+    #     sleep(10)
+
     # exam()
+    # produce_end()
     # enter_recommended_action()
     # remaing_turns_and_points()
-    practice()
-    until_action_scene()
+    # practice()
+    # until_action_scene()
     # acquisitions()
     # acquire_pdorinku(0)
     # image.wait_for(R.InPurodyuusu.InPractice.PDorinkuIcon)

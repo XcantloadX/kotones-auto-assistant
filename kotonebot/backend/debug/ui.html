@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图片查看器</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body, html {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container-fluid {
+            height: 100%;
+            padding: 0;
+        }
+
+        .main-row {
+            height: 100%;
+            margin: 0;
+        }
+
+        .image-viewer-col {
+            height: 100%;
+            padding: 0;
+            transition: width 0.3s ease;
+        }
+
+        .image-viewer {
+            height: 100%;
+            border: 1px solid #ddd;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .image-container {
+            flex: 1;
+            border: 1px solid #eee;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .image-container img {
+            max-width: none;
+            max-height: none;
+            transform-origin: center center;
+            cursor: grab;
+            user-select: none;
+            position: relative;
+        }
+
+        .image-container img.dragging {
+            cursor: grabbing;
+        }
+
+        .info-panel-col {
+            height: 100%;
+            padding: 0;
+            transition: none;
+            position: relative;
+        }
+
+        /* 拖拽条样式 */
+        .resize-handle {
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background-color: transparent;
+            cursor: col-resize;
+            z-index: 1001;
+            transition: background-color 0.2s;
+        }
+
+        .resize-handle:hover,
+        .resize-handle.dragging {
+            background-color: #0d6efd;
+        }
+
+        .method-panel {
+            height: 100%;
+            border: 1px solid #ddd;
+            border-left: none;
+            padding: 15px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .toggle-panel-btn {
+            position: absolute;
+            right: 15px;
+            top: 15px;
+            z-index: 1000;
+        }
+
+        .navigation-buttons {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .navigation-buttons .btn {
+            margin: 0 5px;
+            min-width: 40px;
+        }
+
+        .navigation-buttons .btn:first-child {
+            margin-right: 5px;
+        }
+
+        .expand-panel-btn {
+            position: fixed;
+            right: 15px;
+            top: 15px;
+            z-index: 1000;
+            display: none;  /* 初始状态隐藏 */
+        }
+
+        /* 可选：鼠标悬停时稍微放大按钮 */
+        .expand-panel-btn:hover {
+            transform: scale(1.1);
+            transition: transform 0.2s;
+        }
+
+        .zoom-controls {
+            text-align: center;
+            margin: 10px 0;
+        }
+
+        .zoom-controls .btn {
+            margin: 0 5px;
+        }
+
+        .zoom-level {
+            display: inline-block;
+            margin: 0 10px;
+            min-width: 60px;
+        }
+
+        .connection-status {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background-color: #dc3545;
+            color: white;
+            text-align: center;
+            padding: 8px;
+            font-weight: bold;
+            z-index: 2000;
+            display: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .connection-status.show {
+            display: block;
+            opacity: 1;
+        }
+
+        /* 下载按钮样式 */
+        .download-btn {
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+
+        .download-btn:hover {
+            opacity: 1;
+        }
+
+        #customMessage {
+            flex: 1;
+            overflow-y: auto;
+            margin-top: 10px;
+            padding: 10px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        /* 结果表格。用在 Python 代码里 */
+        .result-table {
+            text-align: center;
+            width: 100%;
+            border-collapse: collapse;
+            border: 1px solid #ddd;
+        }
+
+        .result-table td {
+            border: 1px solid #ddd;
+            padding: 5px;
+        }
+    </style>
+</head>
+<body>
+    <!-- 添加连接状态提示 -->
+    <div class="connection-status" id="connectionStatus">
+        WebSocket 连接已断开，正在尝试重新连接...
+    </div>
+
+    <!-- 添加展开按钮 -->
+    <button class="btn btn-sm btn-secondary expand-panel-btn" id="expandPanel">
+        <i class="bi bi-layout-sidebar"></i>
+    </button>
+
+    <div class="container-fluid">
+        <div class="row main-row">
+            <div class="col image-viewer-col" id="imageViewerCol">
+                <div class="image-viewer">
+                    <div class="image-container" id="imageViewer">
+                        <!-- 图片将在这里显示 -->
+                    </div>
+                    <div class="zoom-controls">
+                        <button class="btn btn-sm btn-outline-secondary" id="zoomOutBtn" alt="缩小">
+                            <i class="bi bi-zoom-out"></i>
+                        </button>
+                        <span class="zoom-level" id="zoomLevel">100%</span>
+                        <button class="btn btn-sm btn-outline-secondary" id="zoomInBtn" alt="放大">
+                            <i class="bi bi-zoom-in"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary" id="resetZoomBtn" alt="重置缩放">
+                            <i class="bi bi-arrow-counterclockwise"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary" id="downloadBtn" alt="下载图片">
+                            <i class="bi bi-download"></i>
+                        </button>
+                    </div>
+                    <div class="navigation-buttons">
+                        <button class="btn btn-sm btn-outline-secondary" id="firstBtn" alt="第一张">
+                            <i class="bi bi-chevron-bar-left"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary" id="prevBtn" alt="上一张">
+                            <i class="bi bi-chevron-left"></i>
+                        </button>
+                        <span id="imageCount" style="margin: 0 10px">0/0</span>
+                        <button class="btn btn-sm btn-outline-secondary" id="nextBtn" alt="下一张">
+                            <i class="bi bi-chevron-right"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary" id="lastBtn" alt="最后一张">
+                            <i class="bi bi-chevron-bar-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <!-- 信息面板 -->
+            <div class="col-md-4 info-panel-col" id="infoPanelCol">
+                <div class="resize-handle" id="resizeHandle"></div>
+                <div class="method-panel">
+                    <button class="btn btn-sm btn-secondary toggle-panel-btn" id="togglePanel">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                    <h4 style="margin-top: 40px">&lt;method name&gt;</h4>
+                    <div id="customMessage" style="white-space: pre-wrap;">
+                        &lt;Custom message&gt;
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 添加 Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            let ws = null;
+            let currentScale = 1.0;
+            const ZOOM_STEP = 0.1;
+            const MIN_SCALE = 0.1;
+            const MAX_SCALE = 5.0;
+            let isDragging = false;
+            let startX, startY;
+            let translateX = 0, translateY = 0;
+            let isReconnecting = false;
+            let imageHistory = [];
+            let currentImageIndex = -1;
+            let isResizing = false;
+            let startWidth = 0;
+            let minWidth = 200;  // 最小宽度
+            let maxWidth = 800;  // 最大宽度
+
+            // 显示/隐藏连接状态
+            function showConnectionStatus(show) {
+                const status = $('#connectionStatus');
+                if (show) {
+                    status.addClass('show');
+                } else {
+                    status.removeClass('show');
+                }
+            }
+
+            // 检查服务器状态
+            async function checkServerStatus() {
+                try {
+                    const response = await fetch('/api/ping');
+                    if (response.ok) {
+                        // 服务器恢复了，刷新页面
+                        window.location.reload();
+                    }
+                } catch (e) {
+                    // 服务器仍然不可用，继续尝试
+                    setTimeout(checkServerStatus, 2000);
+                }
+            }
+
+            // 更新图片计数
+            function updateImageCount() {
+                $('#imageCount').text(`${currentImageIndex + 1}/${imageHistory.length}`);
+                $('#firstBtn').prop('disabled', currentImageIndex <= 0);
+                $('#prevBtn').prop('disabled', currentImageIndex <= 0);
+                $('#nextBtn').prop('disabled', currentImageIndex >= imageHistory.length - 1);
+                $('#lastBtn').prop('disabled', currentImageIndex >= imageHistory.length - 1);
+            }
+
+            // 显示历史图片
+            function showHistoryImage(index) {
+                if (index < 0 || index >= imageHistory.length) return;
+                currentImageIndex = index;
+                const imageData = imageHistory[index];
+                
+                // 更新图片
+                const imageContainer = $('#imageViewer');
+                const img = $('<img>');
+                if (imageData.type === 'memory') {
+                    img.attr('src', `/api/read_memory?key=${imageData.value}`);
+                } else if (imageData.type === 'file') {
+                    img.attr('src', `/api/read_file?path=${imageData.value}`);
+                }
+                imageContainer.empty().append(img);
+                
+                // 更新标题和详情
+                $('h4').text(imageData.name);
+                $('#customMessage').html(imageData.details);
+                
+                // 应用当前的缩放和位移
+                updateImageTransform(img);
+                updateZoomLevel();
+                
+                // 初始化拖拽事件
+                initDragEvents();
+                
+                // 更新计数
+                updateImageCount();
+            }
+
+            // 连接 WebSocket
+            function connectWebSocket() {
+                if (isReconnecting) return;
+                isReconnecting = true;
+                showConnectionStatus(true);
+                
+                ws = new WebSocket(`ws://${window.location.host}/ws`);
+                
+                ws.onopen = function() {
+                    console.log('WebSocket connected');
+                    isReconnecting = false;
+                    showConnectionStatus(false);
+                };
+                
+                ws.onmessage = function(event) {
+                    const data = JSON.parse(event.data);
+                    console.log(data);
+                    if (data.error) {
+                        console.error('WebSocket error:', data.error);
+                        return;
+                    }
+                    
+                    if (data.type === 'visual') {
+                        // 保存图片数据到历史记录
+                        imageHistory.push({
+                            type: data.data.image.type,
+                            value: data.data.image.value,
+                            name: data.data.name,
+                            details: data.data.details
+                        });
+                        
+                        // 只有当前正在查看最后一张图片时，才自动显示新图片
+                        if (currentImageIndex === imageHistory.length - 2 || currentImageIndex === -1) {
+                            currentImageIndex = imageHistory.length - 1;
+                            showHistoryImage(currentImageIndex);
+                        } else {
+                            // 否则只更新计数和按钮状态
+                            updateImageCount();
+                        }
+                    }
+                };
+                
+                ws.onclose = function() {
+                    console.log('WebSocket disconnected');
+                    showConnectionStatus(true);
+                    // 开始检查服务器状态
+                    checkServerStatus();
+                };
+                
+                ws.onerror = function(error) {
+                    console.error('WebSocket error:', error);
+                    showConnectionStatus(true);
+                };
+            }
+
+            // 更新缩放级别显示
+            function updateZoomLevel() {
+                $('#zoomLevel').text(Math.round(currentScale * 100) + '%');
+            }
+
+            // 更新图片变换
+            function updateImageTransform(img) {
+                img.css('transform', `translate(${translateX}px, ${translateY}px) scale(${currentScale})`);
+            }
+
+            // 设置图片缩放
+            function setImageScale(scale) {
+                currentScale = Math.min(Math.max(scale, MIN_SCALE), MAX_SCALE);
+                const img = $('#imageViewer img');
+                updateImageTransform(img);
+                updateZoomLevel();
+            }
+
+            // 初始化拖拽事件
+            function initDragEvents() {
+                const container = $('#imageViewer');
+                const img = container.find('img');
+
+                img.on('mousedown', function(e) {
+                    isDragging = true;
+                    startX = e.clientX - translateX;
+                    startY = e.clientY - translateY;
+                    img.addClass('dragging');
+                });
+
+                $(document).on('mousemove', function(e) {
+                    if (!isDragging) return;
+                    translateX = e.clientX - startX;
+                    translateY = e.clientY - startY;
+                    updateImageTransform(img);
+                });
+
+                $(document).on('mouseup', function() {
+                    if (!isDragging) return;
+                    isDragging = false;
+                    img.removeClass('dragging');
+                });
+
+                // 防止拖拽时选中文本
+                container.on('dragstart', function(e) {
+                    e.preventDefault();
+                });
+            }
+
+            // 缩放按钮事件
+            $('#zoomInBtn').click(() => setImageScale(currentScale + ZOOM_STEP));
+            $('#zoomOutBtn').click(() => setImageScale(currentScale - ZOOM_STEP));
+            $('#resetZoomBtn').click(() => setImageScale(1.0));
+
+            // 鼠标滚轮缩放
+            $('#imageViewer').on('wheel', function(e) {
+                e.preventDefault();
+                const delta = e.originalEvent.deltaY;
+                setImageScale(currentScale + (delta > 0 ? -ZOOM_STEP : ZOOM_STEP));
+            });
+
+            // 面板切换
+            $('#togglePanel').click(function() {
+                const infoPanel = $('#infoPanelCol');
+                const imageViewer = $('#imageViewerCol');
+                const expandBtn = $('#expandPanel');
+
+                if (infoPanel.is(':visible')) {
+                    infoPanel.hide();
+                    imageViewer.removeClass('col').addClass('col-12');
+                    expandBtn.show();
+                }
+            });
+
+            $('#expandPanel').click(function() {
+                const infoPanel = $('#infoPanelCol');
+                const imageViewer = $('#imageViewerCol');
+                $(this).hide();
+
+                imageViewer.removeClass('col-12').addClass('col');
+                infoPanel.show();
+            });
+
+            // 导航按钮事件
+            $('#firstBtn').click(() => showHistoryImage(0));
+            $('#prevBtn').click(() => showHistoryImage(currentImageIndex - 1));
+            $('#nextBtn').click(() => showHistoryImage(currentImageIndex + 1));
+            $('#lastBtn').click(() => showHistoryImage(imageHistory.length - 1));
+
+            // 初始化拖拽调整宽度
+            function initResizeHandle() {
+                const handle = $('#resizeHandle');
+                const panel = $('#infoPanelCol');
+                
+                handle.on('mousedown', function(e) {
+                    isResizing = true;
+                    startWidth = panel.width();
+                    startX = e.clientX;
+                    handle.addClass('dragging');
+                    e.preventDefault();
+                });
+                
+                $(document).on('mousemove', function(e) {
+                    if (!isResizing) return;
+                    
+                    const delta = startX - e.clientX;
+                    let newWidth = startWidth + delta;
+                    
+                    // 限制最小和最大宽度
+                    newWidth = Math.max(minWidth, Math.min(maxWidth, newWidth));
+                    
+                    // 更新面板宽度
+                    panel.css('width', newWidth + 'px');
+                    panel.css('flex', 'none');  // 防止 flex 布局影响宽度
+                });
+                
+                $(document).on('mouseup', function() {
+                    if (!isResizing) return;
+                    isResizing = false;
+                    handle.removeClass('dragging');
+                });
+            }
+
+            // 下载当前图片
+            function downloadCurrentImage() {
+                if (currentImageIndex < 0 || currentImageIndex >= imageHistory.length) return;
+                
+                const imageData = imageHistory[currentImageIndex];
+                const img = $('#imageViewer img');
+                const link = document.createElement('a');
+                
+                // 使用原始图片URL
+                link.href = img.attr('src');
+                
+                // 生成文件名
+                const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+                const extension = imageData.type === 'memory' ? 'jpg' : 'png';
+                link.download = `${imageData.name}_${timestamp}.${extension}`;
+                
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+
+            // 键盘控制
+            $(document).keydown(function(e) {
+                // 如果正在输入，不处理键盘事件
+                if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+                
+                switch(e.key) {
+                    case 'ArrowLeft':
+                        if (!$('#prevBtn').prop('disabled')) {
+                            showHistoryImage(currentImageIndex - 1);
+                        }
+                        break;
+                    case 'ArrowRight':
+                        if (!$('#nextBtn').prop('disabled')) {
+                            showHistoryImage(currentImageIndex + 1);
+                        }
+                        break;
+                    case 'Home':
+                        if (!$('#firstBtn').prop('disabled')) {
+                            showHistoryImage(0);
+                        }
+                        break;
+                    case 'End':
+                        if (!$('#lastBtn').prop('disabled')) {
+                            showHistoryImage(imageHistory.length - 1);
+                        }
+                        break;
+                }
+            });
+
+            // 下载按钮事件
+            $('#downloadBtn').click(downloadCurrentImage);
+
+            // 初始化所有功能
+            connectWebSocket();
+            initResizeHandle();
+        });
+    </script>
+
+    <script>
+    // 通信代码
+    
+    </script>
+</body>
+</html>
