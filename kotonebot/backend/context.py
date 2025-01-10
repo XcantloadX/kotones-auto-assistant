@@ -1,20 +1,27 @@
 import os
 import re
 import time
-from functools import cache
 from datetime import datetime
-from typing import Callable, TYPE_CHECKING, cast, overload, Any, TypeVar, Literal
+from typing import Callable, cast, overload, Any, TypeVar, Literal
 
-from kotonebot.client.device.adb import AdbDevice
 
 import cv2
 from cv2.typing import MatLike
 
-
-import kotonebot.backend.image as raw_image
-from kotonebot.backend.image import CropResult, TemplateMatchResult, MultipleTemplateMatchResult, find_crop, expect, find, find_any
-from kotonebot.backend.util import Rect
 from kotonebot.client import DeviceABC
+from kotonebot.backend.util import Rect
+import kotonebot.backend.image as raw_image
+from kotonebot.client.device.adb import AdbDevice
+from kotonebot.backend.image import (
+    CropResult,
+    TemplateMatchResult,
+    MultipleTemplateMatchResult,
+    find_crop,
+    expect,
+    find,
+    find_any,
+    find_many,
+)
 from kotonebot.backend.ocr import Ocr, OcrResult, jp, en, StringMatchFunction
 
 OcrLanguage = Literal['jp', 'en']
@@ -124,13 +131,20 @@ class ContextImage:
     def raw(self):
         return raw_image
 
-    def wait_for(self, template: str, mask: str | None = None, threshold: float = 0.9, timeout: float = 10) -> TemplateMatchResult | None:
+    def wait_for(
+            self,
+            template: MatLike | str,
+            mask: MatLike | str | None = None,
+            threshold: float = 0.9,
+            timeout: float = 10,
+            colored: bool = False
+        ) -> TemplateMatchResult | None:
         """
         等待指定图像出现。
         """
         start_time = time.time()
         while True:
-            ret = self.find(template, mask, threshold)
+            ret = self.find(template, mask, threshold, colored)
             if ret is not None:
                 self.context.device.last_find = ret
                 return ret
@@ -138,7 +152,14 @@ class ContextImage:
                 return None
             time.sleep(0.1)
 
-    def wait_for_any(self, templates: list[str], masks: list[str | None] | None = None, threshold: float = 0.9, timeout: float = 10):
+    def wait_for_any(
+            self,
+            templates: list[str],
+            masks: list[str | None] | None = None,
+            threshold: float = 0.9,
+            timeout: float = 10,
+            colored: bool = False
+        ):
         """
         等待指定图像中的任意一个出现。
         """
@@ -149,7 +170,7 @@ class ContextImage:
         start_time = time.time()
         while True:
             for template, mask in zip(templates, _masks):
-                if self.find(template, mask, threshold):
+                if self.find(template, mask, threshold, colored):
                     return True
             if time.time() - start_time > timeout:
                 return False
@@ -160,14 +181,15 @@ class ContextImage:
             template: str,
             mask: str | None = None,
             threshold: float = 0.9,
-            timeout: float = 10
+            timeout: float = 10,
+            colored: bool = False
         ) -> TemplateMatchResult:
         """
         等待指定图像出现。
         """
         start_time = time.time()
         while True:
-            ret = self.find(template, mask, threshold)
+            ret = self.find(template, mask, threshold, colored)
             if ret is not None:
                 self.context.device.last_find = ret
                 return ret
@@ -180,7 +202,8 @@ class ContextImage:
             templates: list[str],
             masks: list[str | None] | None = None,
             threshold: float = 0.9,
-            timeout: float = 10
+            timeout: float = 10,
+            colored: bool = False
         ) -> TemplateMatchResult:
         """
         等待指定图像中的任意一个出现。
@@ -192,7 +215,7 @@ class ContextImage:
         start_time = time.time()
         while True:
             for template, mask in zip(templates, _masks):
-                ret = self.find(template, mask, threshold)
+                ret = self.find(template, mask, threshold, colored)
                 if ret is not None:
                     self.context.device.last_find = ret
                     return ret
@@ -201,34 +224,67 @@ class ContextImage:
             time.sleep(0.1)
 
 
-    def expect(self, template: str | MatLike, mask: str | None = None, threshold: float = 0.9) -> TemplateMatchResult:
+    def expect(
+            self,
+            template: str | MatLike,
+            mask: str | None = None,
+            threshold: float = 0.9,
+            colored: bool = False
+        ) -> TemplateMatchResult:
         """
         寻找指定图像。
 
         与 `find()` 的区别在于，`expect()` 未找到时会抛出异常。
         """
-        ret = expect(self.context.device.screenshot(), template, mask, threshold=threshold)
+        ret = expect(self.context.device.screenshot(), template, mask, threshold=threshold, colored=colored)
         self.context.device.last_find = ret
         return ret
 
-    def find(self, template: 'str | MatLike', mask: str | None = None, threshold: float = 0.9):
+    def find(
+            self,
+            template: 'MatLike | str',
+            mask: 'MatLike | str | None' = None,
+            threshold: float = 0.9,
+            colored: bool = False
+        ):
         """
         寻找指定图像。
         """
-        ret = find(self.context.device.screenshot(), template, mask, threshold=threshold)
+        ret = find(self.context.device.screenshot(), template, mask, threshold=threshold, colored=colored)
         self.context.device.last_find = ret
+        return ret
+
+    def find_many(
+            self,
+            template: 'str | MatLike',
+            mask: str | None = None,
+            threshold: float = 0.9,
+            colored: bool = False
+        ):
+        """
+        指定一个模板，寻找所有出现的位置。
+
+        :param image: 图像，可以是图像路径或 cv2.Mat。
+        :param template: 模板图像，可以是图像路径或 cv2.Mat。
+        :param mask: 掩码图像，可以是图像路径或 cv2.Mat。
+        :param transparent: 若为 True，则认为输入模板是透明的，并自动将透明模板转换为 Mask 图像。
+        :param threshold: 阈值，默认为 0.8。
+        :param remove_duplicate: 是否移除重复结果，默认为 True。
+        """
+        ret = find_many(self.context.device.screenshot(), template, mask, threshold=threshold, colored=colored)
         return ret
 
     def find_any(
             self,
             templates: list[str | MatLike],
             masks: list[str | MatLike | None] | None = None,
-            threshold: float = 0.9
+            threshold: float = 0.9,
+            colored: bool = False
         ) -> MultipleTemplateMatchResult | None:
         """
         寻找指定图像中的任意一个。
         """
-        ret = find_any(self.context.device.screenshot(), templates, masks, threshold=threshold)
+        ret = find_any(self.context.device.screenshot(), templates, masks, threshold=threshold, colored=colored)
         self.context.device.last_find = ret
         return ret
 
@@ -237,6 +293,7 @@ class ContextImage:
             template: str,
             mask: str | None = None,
             threshold: float = 0.999,
+            colored: bool = False
         ) -> list[CropResult]:
         """
         在当前设备画面中查找指定模板，并裁剪出结果。
@@ -246,6 +303,7 @@ class ContextImage:
             template,
             mask,
             threshold=threshold,
+            colored=colored
         )
 
 class ContextGlobalVars:
@@ -275,13 +333,22 @@ class ContextDebug:
 
 class Forwarded:
     def __init__(self, getter: Callable[[], T] | None = None, name: str | None = None):
-        self.getter = getter
-        self.name = name
+        self._FORWARD_getter = getter
+        self._FORWARD_name = name
 
     def __getattr__(self, name: str) -> Any:
-        if self.getter is None:
-            raise ValueError(f"Forwarded object {self.name} called before initialization.")
-        return getattr(self.getter(), name)
+        if name.startswith('_FORWARD_'):
+            return object.__getattribute__(self, name)
+        if self._FORWARD_getter is None:
+            raise ValueError(f"Forwarded object {self._FORWARD_name} called before initialization.")
+        return getattr(self._FORWARD_getter(), name)
+    
+    def __setattr__(self, name: str, value: Any):
+        if name.startswith('_FORWARD_'):
+            return object.__setattr__(self, name, value)
+        if self._FORWARD_getter is None:
+            raise ValueError(f"Forwarded object {self._FORWARD_name} called before initialization.")
+        setattr(self._FORWARD_getter(), name, value)
 
 class Context:
     def __init__(self):
@@ -320,7 +387,7 @@ class Context:
         return self.__debug
 
 # 暴露 Context 的属性到模块级别
-_c: Context
+_c: Context | None = None
 device: DeviceABC = cast(DeviceABC, Forwarded(name="device"))
 """当前正在执行任务的设备。"""
 ocr: ContextOcr = cast(ContextOcr, Forwarded(name="ocr"))
@@ -338,9 +405,9 @@ debug: ContextDebug = cast(ContextDebug, Forwarded(name="debug"))
 def init_context():
     global _c, device, ocr, image, vars, debug
     _c = Context()
-    device.getter = lambda: _c.device # type: ignore
-    ocr.getter = lambda: _c.ocr # type: ignore
-    image.getter = lambda: _c.image # type: ignore
-    vars.getter = lambda: _c.vars # type: ignore
-    debug.getter = lambda: _c.debug # type: ignore
+    device._FORWARD_getter = lambda: _c.device # type: ignore
+    ocr._FORWARD_getter = lambda: _c.ocr # type: ignore
+    image._FORWARD_getter = lambda: _c.image # type: ignore
+    vars._FORWARD_getter = lambda: _c.vars # type: ignore
+    debug._FORWARD_getter = lambda: _c.debug # type: ignore
 

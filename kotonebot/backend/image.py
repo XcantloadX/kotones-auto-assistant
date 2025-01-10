@@ -107,7 +107,6 @@ def template_match(
     transparent: bool = False,
     threshold: float = 0.8,
     max_results: int = 5,
-    remove_duplicate: bool = True,
 ) -> list[TemplateMatchResult]:
     """
     寻找模板在图像中的位置。
@@ -159,18 +158,94 @@ def template_match(
         
     return matches
 
+def hist_match(
+    image: MatLike | str,
+    template: MatLike | str,
+    rect: Rect,
+    threshold: float = 0.8,
+) -> bool:
+    """
+    对输入图像的矩形部分与模板进行颜色直方图匹配。
+    将图像分为上中下三个区域，分别计算直方图并比较相似度。
+
+    https://answers.opencv.org/question/59027/template-matching-using-color/
+
+    :param image: 输入图像
+    :param template: 模板图像
+    :param rect: 待匹配的矩形区域
+    :param threshold: 相似度阈值，默认为 0.8
+    :return: 是否匹配成功
+    """
+    # 统一参数
+    image = _unify_image(image)
+    template = _unify_image(template)
+
+    # 从图像中裁剪出矩形区域
+    x, y, w, h = rect
+    roi = image[y:y+h, x:x+w]
+
+    # 确保尺寸一致
+    if roi.shape != template.shape:
+        roi = cv2.resize(roi, (template.shape[1], template.shape[0]))
+
+    # 将图像分为上中下三个区域
+    h = roi.shape[0]
+    h_band = h // 3
+    bands_roi = [
+        roi[0:h_band],
+        roi[h_band:2*h_band],
+        roi[2*h_band:h]
+    ]
+    bands_template = [
+        template[0:h_band],
+        template[h_band:2*h_band],
+        template[2*h_band:h]
+    ]
+
+    # 计算每个区域的直方图
+    total_score = 0
+    for roi_band, template_band in zip(bands_roi, bands_template):
+        hist_roi = cv2.calcHist([roi_band], [0, 1, 2], None, [8, 8, 8], [0, 256, 0, 256, 0, 256])
+        hist_template = cv2.calcHist([template_band], [0, 1, 2], None, [8, 8, 8], [0, 256, 0, 256, 0, 256])
+        
+        # 归一化直方图
+        cv2.normalize(hist_roi, hist_roi)
+        cv2.normalize(hist_template, hist_template)
+        
+        # 计算直方图相似度
+        score = cv2.compareHist(hist_roi, hist_template, cv2.HISTCMP_CORREL)
+        total_score += score
+
+    # 计算平均相似度
+    avg_score = total_score / 3
+    return avg_score >= threshold
+
 def find_crop(
     image: MatLike | str,
     template: MatLike | str,
     mask: MatLike | str | None = None,
     transparent: bool = False,
     threshold: float = 0.8,
+    *,
+    colored: bool = False,
 ) -> list[CropResult]:
     """
-    使用 Mask 寻找指定图像，并裁剪出结果。
+    指定一个模板，寻找其出现的所有位置，并裁剪出结果。
+
+    :param image: 图像，可以是图像路径或 cv2.Mat。
+    :param template: 模板图像，可以是图像路径或 cv2.Mat。
+    :param mask: 掩码图像，可以是图像路径或 cv2.Mat。
+    :param transparent: 若为 True，则认为输入模板是透明的，并自动将透明模板转换为 Mask 图像。
+    :param threshold: 阈值，默认为 0.8。
+    :param colored: 是否匹配颜色，默认为 False。
     """
     matches = template_match(template, image, mask, transparent, threshold, max_results=-1)
     matches = _remove_duplicate_matches(matches)
+    if colored:
+        matches = [
+            match for match in matches 
+            if hist_match(image, template, match.rect, threshold)
+        ]
     return [CropResult(
         match.score,
         match.position,
@@ -186,9 +261,25 @@ def find(
     threshold: float = 0.8,
     *,
     debug_output: bool = True,
+    colored: bool = False,
 ) -> TemplateMatchResult | None:
-    """寻找一个模板图像"""
+    """
+    指定一个模板，寻找其出现的第一个位置。
+
+    :param image: 图像，可以是图像路径或 cv2.Mat。
+    :param template: 模板图像，可以是图像路径或 cv2.Mat。
+    :param mask: 掩码图像，可以是图像路径或 cv2.Mat。
+    :param transparent: 若为 True，则认为输入模板是透明的，并自动将透明模板转换为 Mask 图像。
+    :param threshold: 阈值，默认为 0.8。
+    :param debug_output: 是否输出调试信息，默认为 True。
+    :param colored: 是否匹配颜色，默认为 False。
+    """
     matches = template_match(template, image, mask, transparent, threshold, max_results=-1)
+    if colored:
+        matches = [
+            match for match in matches 
+            if hist_match(image, template, match.rect, threshold)
+        ]
     # 调试输出
     if debug.enabled and debug_output:
         result_image = _draw_result(image, matches)
@@ -199,21 +290,71 @@ def find(
         result(f"image.find", result_image, result_text)
     return matches[0] if len(matches) > 0 else None
 
+def find_many(
+    image: MatLike,
+    template: MatLike | str,
+    mask: MatLike | str | None = None,
+    transparent: bool = False,
+    threshold: float = 0.8,
+    remove_duplicate: bool = True,
+    *,
+    colored: bool = False,
+) -> list[TemplateMatchResult]:
+    """
+    指定一个模板，寻找所有出现的位置。
+
+    :param image: 图像，可以是图像路径或 cv2.Mat。
+    :param template: 模板图像，可以是图像路径或 cv2.Mat。
+    :param mask: 掩码图像，可以是图像路径或 cv2.Mat。
+    :param transparent: 若为 True，则认为输入模板是透明的，并自动将透明模板转换为 Mask 图像。
+    :param threshold: 阈值，默认为 0.8。
+    :param remove_duplicate: 是否移除重复结果，默认为 True。
+    :param colored: 是否匹配颜色，默认为 False。
+    """
+    results = template_match(template, image, mask, transparent, threshold, max_results=-1)
+    if remove_duplicate:
+        results = _remove_duplicate_matches(results)
+    if colored:
+        results = [
+            match for match in results 
+            if hist_match(image, template, match.rect, threshold)
+        ]
+    if debug.enabled:
+        result_image = _draw_result(image, results)
+        result(
+            'image.find_many',
+            result_image,
+            f"template: {img(template)} \n"
+            f"matches: {len(results)} \n"
+        )
+    return results
+
 def find_any(
     image: MatLike,
     templates: list[MatLike | str],
     masks: list[MatLike | str | None] | None = None,
     transparent: bool = False,
     threshold: float = 0.8,
+    *,
+    colored: bool = False,
 ) -> MultipleTemplateMatchResult | None:
-    """指定多个模板，返回第一个匹配到的结果"""
+    """
+    指定多个模板，返回第一个匹配到的结果。
+
+    :param image: 图像，可以是图像路径或 cv2.Mat。
+    :param templates: 模板图像列表，可以是图像路径或 cv2.Mat。
+    :param masks: 掩码图像列表，可以是图像路径或 cv2.Mat。
+    :param transparent: 若为 True，则认为输入模板是透明的，并自动将透明模板转换为 Mask 图像。
+    :param threshold: 阈值，默认为 0.8。
+    :param colored: 是否匹配颜色，默认为 False。
+    """
     ret = None
     if masks is None:
         _masks = [None] * len(templates)
     else:
         _masks = masks
     for index, (template, mask) in enumerate(zip(templates, _masks)):
-        find_result = find(image, template, mask, transparent, threshold, debug_output=False)
+        find_result = find(image, template, mask, transparent, threshold, colored=colored, debug_output=False)
         # 调试输出
         if find_result is not None:
             ret = MultipleTemplateMatchResult(
@@ -247,10 +388,28 @@ def count(
     transparent: bool = False,
     threshold: float = 0.9,
     remove_duplicate: bool = True,
+    *,
+    colored: bool = False,
 ) -> int:
+    """
+    指定一个模板，统计其出现的次数。
+
+    :param image: 图像，可以是图像路径或 cv2.Mat。
+    :param template: 模板图像，可以是图像路径或 cv2.Mat。
+    :param mask: 掩码图像，可以是图像路径或 cv2.Mat。
+    :param transparent: 若为 True，则认为输入模板是透明的，并自动将透明模板转换为 Mask 图像。
+    :param threshold: 阈值，默认为 0.8。
+    :param remove_duplicate: 是否移除重复结果，默认为 True。
+    :param colored: 是否匹配颜色，默认为 False。
+    """
     results = template_match(template, image, mask, transparent, threshold, max_results=-1)
     if remove_duplicate:
         results = _remove_duplicate_matches(results)
+    if colored:
+        results = [
+            match for match in results 
+            if hist_match(image, template, match.rect, threshold)
+        ]
     if debug.enabled:
         result_image = _draw_result(image, results)
         result(
@@ -272,8 +431,20 @@ def expect(
     mask: MatLike | str | None = None,
     transparent: bool = False,
     threshold: float = 0.9,
+    *,
+    colored: bool = False,
 ) -> TemplateMatchResult:
-    ret = find(image, template, mask, transparent, threshold)
+    """
+    指定一个模板，寻找其出现的第一个位置。若未找到，则抛出异常。
+
+    :param image: 图像，可以是图像路径或 cv2.Mat。
+    :param template: 模板图像，可以是图像路径或 cv2.Mat。
+    :param mask: 掩码图像，可以是图像路径或 cv2.Mat。
+    :param transparent: 若为 True，则认为输入模板是透明的，并自动将透明模板转换为 Mask 图像。
+    :param threshold: 阈值，默认为 0.8。
+    :param colored: 是否匹配颜色，默认为 False。
+    """
+    ret = find(image, template, mask, transparent, threshold, colored=colored)
     if debug.enabled:
         result(
             'image.expect',
