@@ -4,7 +4,7 @@ import unicodedata
 from os import PathLike
 from typing import TYPE_CHECKING, Callable, NamedTuple, overload
 
-from .util import Rect
+from .util import Rect, grayscaled
 from .debug import result as debug_result, debug
 
 import cv2
@@ -121,7 +121,7 @@ class Ocr:
 
         :return: 所有识别结果
         """
-        img_content = img
+        img_content = grayscaled(img)
         result, elapse = self.__engine(img_content)
         if result is None:
             return []

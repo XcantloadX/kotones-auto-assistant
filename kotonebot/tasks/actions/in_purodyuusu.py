@@ -18,7 +18,8 @@ from .common import acquisitions, AcquisitionType, acquire_skill_card
 logger = logging.getLogger(__name__)
 
 ActionType = None | Literal['lesson', 'rest']
-def enter_recommended_action(final_week: bool = False) -> ActionType:
+@deprecated('OCR 方法效果不佳')
+def enter_recommended_action_ocr(final_week: bool = False) -> ActionType:
     """
     在行动选择页面，执行推荐行动
 
@@ -56,6 +57,57 @@ def enter_recommended_action(final_week: bool = False) -> ActionType:
         elif "ダンス" in ret.text:
             template = R.InPurodyuusu.ButtonFinalPracticeDance
         elif "ビジュアル" in ret.text:
+            template = R.InPurodyuusu.ButtonFinalPracticeVisual
+        else:
+            return None
+        logger.debug("Try clicking lesson...")
+        device.double_click(image.expect_wait(template))
+        return 'lesson'
+
+def enter_recommended_action(final_week: bool = False) -> ActionType:
+    """
+    在行动选择页面，执行推荐行动
+
+    :param final_week: 是否是考试前复习周
+    :return: 是否成功执行推荐行动
+    """
+    # 获取课程
+    logger.debug("Getting recommended lesson...")
+    with device.hook(cropper_y(0.00, 0.30)):
+        result = image.find_any([
+            R.InPurodyuusu.TextSenseiTipDance,
+            R.InPurodyuusu.TextSenseiTipVocal,
+            R.InPurodyuusu.TextSenseiTipVisual,
+            # R.InPurodyuusu.TextSenseiTipRest, # TODO: 体力提示截图
+        ])
+    logger.debug("ocr.wait_for: %s", result)
+    if result is None:
+        logger.debug("No recommended lesson found")
+        return None
+    if not final_week:
+        if result.index == 0:
+            lesson_text = "Vo"
+        elif result.index == 1:
+            lesson_text = "Da"
+        elif result.index == 2:
+            lesson_text = "Vi"
+        elif result.index == 3:
+            rest()
+            return 'rest'
+        else:
+            return None
+        logger.info("Rec. lesson: %s", lesson_text)
+        # 点击课程
+        logger.debug("Try clicking lesson...")
+        lesson_ret = ocr.expect(contains(lesson_text))
+        device.double_click(lesson_ret.rect)
+        return 'lesson'
+    else:
+        if result.index == 0:
+            template = R.InPurodyuusu.ButtonFinalPracticeVocal
+        elif result.index == 1:
+            template = R.InPurodyuusu.ButtonFinalPracticeDance
+        elif result.index == 2:
             template = R.InPurodyuusu.ButtonFinalPracticeVisual
         else:
             return None
@@ -395,13 +447,14 @@ def exam():
 
 def produce_end():
     """执行考试结束"""
-    # 考试结束对话
+    # 考试结束对话 [screenshots\produce_end\step2.jpg]
     image.expect_wait(R.InPurodyuusu.TextAsariProduceEnd, timeout=30)
     bottom = (int(device.screen_size[0] / 2), int(device.screen_size[1] * 0.9))
     device.click(*bottom)
+    # 对话第二句 [screenshots\produce_end\step3.jpg]
     sleep(3)
     device.click_center()
-    sleep(3)
+    sleep(6)
     device.click(*bottom)
     sleep(3)
     device.click(*bottom)
@@ -412,7 +465,7 @@ def produce_end():
 
     # 结算
     # 最終プロデュース評価
-    image.expect_wait(R.InPurodyuusu.TextFinalProduceRating, timeout=60 * 2.5)
+    image.expect_wait(R.InPurodyuusu.TextFinalProduceRating, timeout=60 * 4)
     device.click_center()
     sleep(3)
     # 次へ
@@ -687,7 +740,7 @@ if __name__ == '__main__':
     # acquisitions()
     # acquire_pdorinku(0)
     # image.wait_for(R.InPurodyuusu.InPractice.PDorinkuIcon)
-    hajime_regular(start_from=9)
+    hajime_regular(start_from=12)
     # until_practice_scene()
     # device.click(image.expect_wait_any([
     #     R.InPurodyuusu.PSkillCardIconBlue,

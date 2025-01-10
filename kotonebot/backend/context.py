@@ -12,7 +12,7 @@ from cv2.typing import MatLike
 
 
 import kotonebot.backend.image as raw_image
-from kotonebot.backend.image import CropResult, TemplateMatchResult, find_crop, expect, find, find_any
+from kotonebot.backend.image import CropResult, TemplateMatchResult, MultipleTemplateMatchResult, find_crop, expect, find, find_any
 from kotonebot.backend.util import Rect
 from kotonebot.client import DeviceABC
 from kotonebot.backend.ocr import Ocr, OcrResult, jp, en, StringMatchFunction
@@ -224,7 +224,7 @@ class ContextImage:
             templates: list[str | MatLike],
             masks: list[str | MatLike | None] | None = None,
             threshold: float = 0.9
-        ) -> TemplateMatchResult | None:
+        ) -> MultipleTemplateMatchResult | None:
         """
         寻找指定图像中的任意一个。
         """

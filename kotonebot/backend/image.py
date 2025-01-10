@@ -1,5 +1,5 @@
 import os
-from typing import NamedTuple, Protocol, TypeVar
+from typing import NamedTuple, Protocol, TypeVar, Sequence, runtime_checkable
 from logging import getLogger
 
 from .debug import result, debug, img
@@ -17,10 +17,12 @@ class TemplateNotFoundError(Exception):
         self.template = template
         super().__init__(f"Template not found: {template}")
 
-
+@runtime_checkable
 class ResultProtocol(Protocol):
-    score: float
-    position: Point
+    @property
+    def rect(self) -> Rect:
+        """结果区域。左上角坐标和宽高。"""
+        ...
 
 
 class TemplateMatchResult(NamedTuple):
@@ -29,6 +31,25 @@ class TemplateMatchResult(NamedTuple):
     """结果位置。左上角坐标。"""
     size: Size
     """输入模板的大小。宽高。"""
+
+    @property
+    def rect(self) -> Rect:
+        """结果区域。左上角坐标和宽高。"""
+        return (self.position[0], self.position[1], self.size[0], self.size[1])
+    
+    @property
+    def right_bottom(self) -> Point:
+        """结果右下角坐标。"""
+        return (self.position[0] + self.size[0], self.position[1] + self.size[1])
+
+class MultipleTemplateMatchResult(NamedTuple):
+    score: float
+    position: Point
+    """结果位置。左上角坐标。"""
+    size: Size
+    """命中模板的大小。宽高。"""
+    index: int
+    """命中模板在列表中的索引。"""
 
     @property
     def rect(self) -> Rect:
@@ -69,10 +90,10 @@ def _remove_duplicate_matches(
         result.append(match)
     return result
 
-def _draw_result(image: MatLike, matches: list[TemplateMatchResult] | TemplateMatchResult | None) -> MatLike:
+def _draw_result(image: MatLike, matches: Sequence[ResultProtocol] | ResultProtocol | None) -> MatLike:
     if matches is None:
         return image
-    if isinstance(matches, TemplateMatchResult):
+    if isinstance(matches, ResultProtocol):
         matches = [matches]
     result_image = image.copy()
     for match in matches:
@@ -93,8 +114,6 @@ def template_match(
 
     .. note::
         `mask` 和 `transparent` 参数不能同时使用。
-
-    <img src="vscode-file://vscode-app/E:/GithubRepos/KotonesAutoAssistant/original.png" width="100">
 
     :param template: 模板图像，可以是图像路径或 cv2.Mat。
     :param image: 图像，可以是图像路径或 cv2.Mat。
@@ -186,17 +205,23 @@ def find_any(
     masks: list[MatLike | str | None] | None = None,
     transparent: bool = False,
     threshold: float = 0.8,
-) -> TemplateMatchResult | None:
+) -> MultipleTemplateMatchResult | None:
     """指定多个模板，返回第一个匹配到的结果"""
     ret = None
     if masks is None:
         _masks = [None] * len(templates)
     else:
         _masks = masks
-    for template, mask in zip(templates, _masks):
-        ret = find(image, template, mask, transparent, threshold, debug_output=False)
+    for index, (template, mask) in enumerate(zip(templates, _masks)):
+        find_result = find(image, template, mask, transparent, threshold, debug_output=False)
         # 调试输出
-        if ret is not None:
+        if find_result is not None:
+            ret = MultipleTemplateMatchResult(
+                score=find_result.score,
+                position=find_result.position,
+                size=find_result.size,
+                index=index
+            )
             break
     if debug.enabled:
         msg = (
