@@ -76,12 +76,12 @@ def cropper_x(x1: float, x2: float) -> Callable[[MatLike], MatLike]:
     return lambda img: crop_x(img, x1, x2)  
 
 
-def grayscale(img: MatLike | str) -> MatLike:
+def grayscaled(img: MatLike | str) -> MatLike:
     if isinstance(img, str):
         img = cv2.imread(img)
     return cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
 @lru_cache
 def grayscale_cached(img: MatLike | str) -> MatLike:
-    return grayscale(img)
+    return grayscaled(img)
 

@@ -35,7 +35,7 @@ class AdbDevice(DeviceABC):
 
     def __click_last(self) -> None:
         if self.last_find is None:
-            raise ValueError("No last find result")
+            raise ValueError("No last find result. Make sure you are not calling the 'raw' functions.")
         self.click(self.last_find)
 
     def __click_rect(self, rect: Rect) -> None:

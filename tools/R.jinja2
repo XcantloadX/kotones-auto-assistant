@@ -14,7 +14,7 @@ class {{ class_name }}:
     """
     路径：{{ attr.rel_path }}<br>
     模块：`{{ attr.class_path|join('.') }}.{{ attr.name }}`<br>
-    <img src="vscode-file://vscode-app/{{ attr.abspath }}" style="max-width: 200px;">
+    <img src="vscode-file://vscode-app/{{ attr.abspath }}" style="max-width: 70%; max-height: 200px;">
     """
     {%- elif attr.type == 'next_class' -%}
     {{ attr.name }} = {{ attr.value }}

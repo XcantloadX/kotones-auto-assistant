@@ -1,20 +1,19 @@
 import random
-import re
 import time
 from typing import Literal
 from typing_extensions import deprecated
-import numpy as np
 import cv2
 import unicodedata
 import logging
 from time import sleep
 
-from kotonebot import ocr, device, fuzz, contains, image, debug, regex
+from kotonebot import ocr, device, contains, image, debug, regex
 from kotonebot.backend.context import init_context
-from kotonebot.backend.util import crop_y, cropper_y, grayscale, grayscale_cached
+from kotonebot.backend.util import crop_y, cropper_y
 from kotonebot.tasks import R
 from kotonebot.tasks.actions import loading
-from kotonebot.tasks.actions.pdorinku import acquire_pdorinku
+from .non_lesson_actions import enter_allowance, study_available, enter_study, allowance_available
+from .common import acquisitions, AcquisitionType, acquire_skill_card
 
 logger = logging.getLogger(__name__)
 
@@ -299,26 +298,7 @@ def remaing_turns_and_points():
     turns_ocr = ocr.ocr(turns_img)
     logger.debug("turns_ocr: %s", turns_ocr)
 
-def acquire_skill_card():
-    """获取技能卡（スキルカード）"""
-    # TODO: 识别卡片内容，而不是固定选卡
-    # TODO: 不硬编码坐标
-    CARD_POSITIONS = [
-        (157, 820, 128, 128),
-        (296, 820, 128, 128),
-        (435, 820, 128, 128),
-    ]
-    logger.info("Click first skill card")
-    device.click(CARD_POSITIONS[0])
-    sleep(0.5)
-    # 确定
-    logger.info("Click 受け取る")
-    device.click(ocr.expect(contains("受け取る")).rect)
-    # 跳过动画
-    device.click(image.expect_wait_any([
-        R.InPurodyuusu.PSkillCardIconBlue,
-        R.InPurodyuusu.PSkillCardIconColorful
-    ]))
+
 
 def rest():
     """执行休息"""
@@ -328,83 +308,7 @@ def rest():
     # 确定
     device.click(image.expect_wait(R.InPurodyuusu.RestConfirmBtn))
 
-AcquisitionType = Literal[
-    "PDrinkAcquire", # P饮料被动领取
-    "PDrinkSelect", # P饮料主动领取
-    "PDrinkMax", # P饮料到达上限
-    "PSkillCardAcquire", # 技能卡被动领取
-    "PSkillCardSelect", # 技能卡主动领取
-    "PItem", # P物品
-    "Clear", # 目标达成
-]
-def acquisitions() -> AcquisitionType | None:
-    """处理行动开始前和结束后可能需要处理的事件，直到到行动页面为止"""
-    img = device.screenshot_raw()
-    gray_img = grayscale(img)
-    logger.info("Acquisition stuffs...")
 
-    # P饮料被动领取
-    logger.info("Check PDrink acquisition...")
-    if image.raw().find(img, R.InPurodyuusu.PDrinkIcon):
-        logger.info("Click to finish animation")
-        device.click_center()
-        sleep(1)
-        return "PDrinkAcquire"
-    # P饮料主动领取
-    # if ocr.raw().find(img, contains("受け取るＰドリンクを選れでください")):
-    if image.raw().find(img, R.InPurodyuusu.TextPleaseSelectPDrink):
-        logger.info("PDrink acquisition")
-        # 不领取
-        # device.click(ocr.expect(contains("受け取らない")))
-        # sleep(0.5)
-        # device.click(image.expect(R.InPurodyuusu.ButtonNotAcquire))
-        # sleep(0.5)
-        # device.click(image.expect(R.InPurodyuusu.ButtonConfirm))
-        acquire_pdorinku(index=0)
-        return "PDrinkSelect"
-    # P饮料到达上限
-    if image.raw().find(img, R.InPurodyuusu.TextPDrinkMax):
-        device.click(image.expect(R.InPurodyuusu.ButtonLeave))
-        sleep(0.7)
-        # 可能需要点击确认
-        device.click(image.expect(R.InPurodyuusu.ButtonConfirm, threshold=0.8))
-        return "PDrinkMax"
-    # 技能卡被动领取
-    logger.info("Check skill card acquisition...")
-    if image.raw().find_any(img, [
-        R.InPurodyuusu.PSkillCardIconBlue,
-        R.InPurodyuusu.PSkillCardIconColorful
-    ]):
-        logger.info("Acquire skill card")
-        device.click_center()
-        return "PSkillCardAcquire"
-    # 技能卡主动领取
-    if ocr.raw().find(img, contains("受け取るスキルカードを選んでください")):
-        logger.info("Acquire skill card")
-        acquire_skill_card()
-        sleep(5)
-        return "PSkillCardSelect"
-
-    # 目标达成
-    if image.raw().find(gray_img, grayscale_cached(R.InPurodyuusu.IconClearBlue)):
-        logger.debug("達成: clicked")
-        device.click_center()
-        sleep(5)
-        # TODO: 可能不存在 達成 NEXT
-        logger.debug("達成 NEXT: clicked")
-        device.click_center()
-        return "Clear"
-    # P物品
-    if image.raw().find(img, R.InPurodyuusu.PItemIconColorful):
-        logger.info("Click to finish PItem acquisition")
-        device.click_center()
-        sleep(1)
-        return "PItem"
-    # 支援卡
-    # logger.info("Check support card acquisition...")
-    # 记忆
-    # 未跳过剧情
-    return None
 
 def until_action_scene():
     """等待进入行动场景"""
@@ -663,7 +567,7 @@ def hajime_regular(week: int = -1, start_from: int = 1):
         if not enter_recommended_action():
             rest()
 
-    def week_common():
+    def week_lesson():
         until_action_scene()
         executed_action = enter_recommended_action()
         logger.info("Executed recommended action: %s", executed_action)
@@ -677,8 +581,16 @@ def hajime_regular(week: int = -1, start_from: int = 1):
             rest()
         until_action_scene()
         
+    def week_non_lesson():
+        """非练习周。可能可用行动包括：おでかけ、相談、活動支給、授業"""
+        until_action_scene()
+        if allowance_available():
+            enter_allowance()
+        # elif study_available():
+        #     enter_study()
+        until_action_scene()
 
-    def week_final():
+    def week_final_lesson():
         if enter_recommended_action(final_week=True) != 'lesson':
             raise ValueError("Failed to enter recommended action on final week.")
         sleep(5)
@@ -709,19 +621,19 @@ def hajime_regular(week: int = -1, start_from: int = 1):
         produce_end()
     
     weeks = [
-        week_common, # 1
-        week_common, # 2
-        week_common, # 3
-        week_common, # 4
-        week_final, # 5
-        week_mid_exam, # 6
-        week_common, # 7
-        week_common, # 8
-        week_common, # 9
-        week_common, # 10
-        week_common, # 11
-        week_final, # 12
-        week_final_exam, # 13
+        week_lesson, # 1: Vo.レッスン、Da.レッスン、Vi.レッスン
+        week_lesson, # 2: 授業
+        week_lesson, # 3: Vo.レッスン、Da.レッスン、Vi.レッスン、授業
+        week_non_lesson, # 4: おでかけ、相談、活動支給
+        week_final_lesson, # 5: 追い込みレッスン
+        week_mid_exam, # 6: 中間試験
+        week_non_lesson, # 7: おでかけ、活動支給
+        week_non_lesson, # 8: 授業、活動支給
+        week_lesson, # 9: Vo.レッスン、Da.レッスン、Vi.レッスン
+        week_lesson, # 10: Vo.レッスン、Da.レッスン、Vi.レッスン、授業
+        week_non_lesson, # 11: おでかけ、相談、活動支給
+        week_final_lesson, # 12: 追い込みレッスン
+        week_final_exam, # 13: 最終試験
     ]
     if week != -1:
         logger.info("Week %d started.", week)
@@ -751,13 +663,13 @@ if __name__ == '__main__':
     getLogger(__name__).setLevel(logging.DEBUG)
     init_context()
 
-    while not image.wait_for_any([
-        R.InPurodyuusu.TextPDiary, # 普通周
-        R.InPurodyuusu.ButtonFinalPracticeDance # 离考试剩余一周
-    ], timeout=2):
-        logger.info("Action scene not detected. Retry...")
-        acquisitions()
-        sleep(3)
+    # while not image.wait_for_any([
+    #     R.InPurodyuusu.TextPDiary, # 普通周
+    #     R.InPurodyuusu.ButtonFinalPracticeDance # 离考试剩余一周
+    # ], timeout=2):
+    #     logger.info("Action scene not detected. Retry...")
+    #     acquisitions()
+    #     sleep(3)
 
     # image.wait_for_any([
     #     R.InPurodyuusu.TextPDiary, # 普通周
@@ -775,7 +687,7 @@ if __name__ == '__main__':
     # acquisitions()
     # acquire_pdorinku(0)
     # image.wait_for(R.InPurodyuusu.InPractice.PDorinkuIcon)
-    # hajime_regular(start_from=1)
+    hajime_regular(start_from=9)
     # until_practice_scene()
     # device.click(image.expect_wait_any([
     #     R.InPurodyuusu.PSkillCardIconBlue,

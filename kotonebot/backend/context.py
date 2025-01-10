@@ -28,7 +28,7 @@ class ContextOcr:
     def raw(self, lang: OcrLanguage = 'jp') -> Ocr:
         """
         返回 `kotonebot.backend.ocr` 中的 Ocr 对象。\n
-        Ocr 对象与此对象的区别是，此对象会自动截图，而 Ocr 对象需要手动传入图像参数。
+        Ocr 对象与此对象（ContextOcr）的区别是，此对象会自动截图，而 Ocr 对象需要手动传入图像参数。
         """
         match lang:
             case 'jp':
@@ -201,7 +201,7 @@ class ContextImage:
             time.sleep(0.1)
 
 
-    def expect(self, template: str, mask: str | None = None, threshold: float = 0.9) -> TemplateMatchResult:
+    def expect(self, template: str | MatLike, mask: str | None = None, threshold: float = 0.9) -> TemplateMatchResult:
         """
         寻找指定图像。
 
