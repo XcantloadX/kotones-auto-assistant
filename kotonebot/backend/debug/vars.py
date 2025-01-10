@@ -93,12 +93,22 @@ def result(
         _results.pop(next(iter(_results)))
     # 拼接消息
     now_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-4]
+    # 获取完整堆栈
     callstack = [frame.replace(str(Path.cwd()), '.') for frame in traceback.format_stack() 
                 if not re.search(r'Python\d*[\/\\]lib|debugpy', frame)]
+    
+    # 获取简化堆栈(只包含函数名)
+    simple_callstack = []
+    for frame in traceback.extract_stack():
+        if not re.search(r'Python\d*[\/\\]lib|debugpy', frame.filename):
+            module = Path(frame.filename).stem # 只获取文件名,不含路径和扩展名
+            simple_callstack.append(f"{module}.{frame.name}")
+    
     final_text = (
         f"Time: {now_time}\n" +
-        f"\n{text}\n" +
-        f"<details><summary>Callstack</summary>{''.join(callstack)}</details>"
+        f"Callstack: \n{' -> '.join(simple_callstack)}\n" +
+        f"<details><summary>Full Callstack</summary>{''.join(callstack)}</details>" +
+        f"<hr>{text}\n"
     )
     # 发送 WS 消息
     from .server import send_ws_message

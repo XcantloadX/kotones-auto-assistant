@@ -84,51 +84,8 @@ async def websocket_endpoint(websocket: WebSocket):
         while True:
             if len(message_queue) > 0:
                 message = message_queue.pop()
-                # print('send message', message)
                 await websocket.send_json(message)
             await asyncio.sleep(0.1)
-            # data = await websocket.receive_text()
-            # try:
-            #     message = json.loads(data)
-            #     if message["type"] == "visual":
-            #         # 处理可视化消息
-            #         image_data = message["data"]["image"]
-            #         if image_data["type"] == "path":
-            #             # 从文件读取
-            #             full_path = (CURRENT_DIR / image_data["value"]).resolve()
-            #             if not str(full_path).startswith(str(CURRENT_DIR)):
-            #                 await websocket.send_json({"error": "Access denied"})
-            #                 continue
-                        
-            #             if not full_path.exists():
-            #                 await websocket.send_json({"error": "File not found"})
-            #                 continue
-                        
-            #             with open(full_path, 'rb') as f:
-            #                 content = base64.b64encode(f.read()).decode()
-            #         else:  # memory
-            #             key = image_data["value"]
-            #             if key not in vars._results:
-            #                 await websocket.send_json({"error": "Key not found"})
-            #                 continue
-                        
-            #             result = vars._results[key]
-            #             _, buffer = cv2.imencode('.png', result.image)
-            #             content = base64.b64encode(buffer).decode()
-                    
-            #         # 发送响应
-            #         await websocket.send_json({
-            #             "type": "visual",
-            #             "data": {
-            #                 "image": content,
-            #                 "name": message["data"]["name"],
-            #                 "details": message["data"]["details"]
-            #             }
-            #         })
-            # except json.JSONDecodeError:
-            #     await websocket.send_json({"error": "Invalid JSON"})
-            # except Exception as e:
-            #     await websocket.send_json({"error": str(e)})
     except:
         await websocket.close()
 
