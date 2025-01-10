@@ -277,7 +277,7 @@ def click_recommended_card(timeout: float = 7, card_count: int = 3) -> int:
             sleep(random.uniform(0.5, 1.5))
             device.click(x + w//2, y + h//2)
             # 体力溢出提示框
-            ret = image.wait_for(R.InPurodyuusu.ButtonConfirm, timeout=1)
+            ret = image.wait_for(R.Common.ButtonConfirm, timeout=1)
             if ret is not None:
                 logger.info("Skill card confirmation dialog detected")
                 device.click(ret)
@@ -472,7 +472,7 @@ def produce_end():
     device.click(image.expect_wait(R.InPurodyuusu.ButtonNextNoIcon))
     sleep(1)
     # 決定
-    device.click(image.expect_wait(R.InPurodyuusu.ButtonConfirm, threshold=0.8))
+    device.click(image.expect_wait(R.Common.ButtonConfirm, threshold=0.8))
     sleep(1)
     # 上传图片。注意网络可能会很慢，可能出现上传失败对话框
     retry_count = 0
@@ -716,13 +716,13 @@ if __name__ == '__main__':
     getLogger(__name__).setLevel(logging.DEBUG)
     init_context()
 
-    # while not image.wait_for_any([
-    #     R.InPurodyuusu.TextPDiary, # 普通周
-    #     R.InPurodyuusu.ButtonFinalPracticeDance # 离考试剩余一周
-    # ], timeout=2):
-    #     logger.info("Action scene not detected. Retry...")
-    #     acquisitions()
-    #     sleep(3)
+    while not image.wait_for_any([
+        R.InPurodyuusu.TextPDiary, # 普通周
+        R.InPurodyuusu.ButtonFinalPracticeDance # 离考试剩余一周
+    ], timeout=2):
+        logger.info("Action scene not detected. Retry...")
+        acquisitions()
+        sleep(3)
 
     # image.wait_for_any([
     #     R.InPurodyuusu.TextPDiary, # 普通周
@@ -740,7 +740,7 @@ if __name__ == '__main__':
     # acquisitions()
     # acquire_pdorinku(0)
     # image.wait_for(R.InPurodyuusu.InPractice.PDorinkuIcon)
-    hajime_regular(start_from=12)
+    # hajime_regular(start_from=12)
     # until_practice_scene()
     # device.click(image.expect_wait_any([
     #     R.InPurodyuusu.PSkillCardIconBlue,

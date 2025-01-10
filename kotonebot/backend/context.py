@@ -268,7 +268,7 @@ class ContextImage:
         :param template: 模板图像，可以是图像路径或 cv2.Mat。
         :param mask: 掩码图像，可以是图像路径或 cv2.Mat。
         :param transparent: 若为 True，则认为输入模板是透明的，并自动将透明模板转换为 Mask 图像。
-        :param threshold: 阈值，默认为 0.8。
+        :param threshold: 阈值，默认为 0.9。
         :param remove_duplicate: 是否移除重复结果，默认为 True。
         """
         ret = find_many(self.context.device.screenshot(), template, mask, threshold=threshold, colored=colored)

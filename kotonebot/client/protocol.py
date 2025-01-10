@@ -69,7 +69,9 @@ class DeviceABC(ABC):
         self.screenshot_hook_after: Callable[[MatLike], MatLike] | None = None
         """截图后调用的函数"""
         self.screenshot_hook_before: Callable[[], MatLike | None] | None = None
-        """截图前调用的函数"""
+        """截图前调用的函数。返回修改后的截图。"""
+        self.click_hooks_before: list[Callable[[int, int], tuple[int, int]]] = []
+        """点击前调用的函数。返回修改后的点击坐标。"""
         self.last_find: Rect | ClickableObjectProtocol | None = None
         """上次 image 对象或 ocr 对象的寻找结果"""
 
@@ -197,7 +199,9 @@ class DeviceABC(ABC):
     @property
     def screen_size(self) -> tuple[int, int]:
         """
-        屏幕尺寸
+        屏幕尺寸。
+
+        :return: 屏幕尺寸，格式为 (width, height)
         """
         ...
 

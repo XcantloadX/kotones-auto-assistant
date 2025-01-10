@@ -77,7 +77,7 @@ def acquisitions() -> AcquisitionType | None:
         device.click(image.expect(R.InPurodyuusu.ButtonLeave))
         sleep(0.7)
         # 可能需要点击确认
-        device.click(image.expect(R.InPurodyuusu.ButtonConfirm, threshold=0.8))
+        device.click(image.expect(R.Common.ButtonConfirm, threshold=0.8))
         return "PDrinkMax"
     # 技能卡被动领取（支援卡效果）
     logger.info("Check skill card acquisition...")
