@@ -20,12 +20,15 @@
         .main-row {
             height: 100%;
             margin: 0;
+            flex-wrap: nowrap;
         }
 
         .image-viewer-col {
             height: 100%;
             padding: 0;
             transition: width 0.3s ease;
+            flex: 1;
+            min-width: 0;
         }
 
         .image-viewer {
@@ -65,6 +68,9 @@
             padding: 0;
             transition: none;
             position: relative;
+            width: 400px;
+            flex: 0 0 auto;
+            max-width: 800px;
         }
 
         /* 拖拽条样式 */
