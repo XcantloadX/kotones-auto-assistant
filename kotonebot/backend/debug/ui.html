@@ -231,6 +231,13 @@
                         <button class="btn btn-sm btn-outline-secondary" id="downloadBtn" alt="下载图片">
                             <i class="bi bi-download"></i>
                         </button>
+                        <div class="form-check form-check-inline ms-2">
+                            <input class="form-check-input" type="checkbox" id="lockViewCheckbox">
+                            <label class="form-check-label" for="lockViewCheckbox">锁定视图</label>
+                        </div>
+                    </div>
+                    <div class="slider-container mb-2">
+                        <input type="range" class="form-range" id="pageSlider" value="0" min="0" max="0">
                     </div>
                     <div class="navigation-buttons">
                         <button class="btn btn-sm btn-outline-secondary" id="firstBtn" alt="第一张">
@@ -287,6 +294,10 @@
             let startWidth = 0;
             let minWidth = 200;  // 最小宽度
             let maxWidth = 800;  // 最大宽度
+            let isViewLocked = false;  // 视图锁定状态
+            let lastScale = 1.0;  // 上一次的缩放值
+            let lastTranslateX = 0;  // 上一次的X位移
+            let lastTranslateY = 0;  // 上一次的Y位移
 
             // 显示/隐藏连接状态
             function showConnectionStatus(show) {
@@ -319,6 +330,10 @@
                 $('#prevBtn').prop('disabled', currentImageIndex <= 0);
                 $('#nextBtn').prop('disabled', currentImageIndex >= imageHistory.length - 1);
                 $('#lastBtn').prop('disabled', currentImageIndex >= imageHistory.length - 1);
+                
+                // 更新滑块最大值
+                const slider = $('#pageSlider');
+                slider.attr('max', Math.max(0, imageHistory.length - 1));
             }
 
             // 显示历史图片
@@ -341,6 +356,31 @@
                 $('h4').text(imageData.name);
                 $('#customMessage').html(imageData.details);
                 
+                // 根据锁定状态决定是否保持视图
+                if (isViewLocked) {
+                    currentScale = lastScale;
+                    translateX = lastTranslateX;
+                    translateY = lastTranslateY;
+                } else {
+                    // 重置位移
+                    translateX = 0;
+                    translateY = 0;
+                    // 图片加载完成后调整缩放以适应容器
+                    img.on('load', function() {
+                        const container = imageContainer;
+                        const containerRatio = container.width() / container.height();
+                        const imageRatio = this.width / this.height;
+                        
+                        if (imageRatio > containerRatio) {
+                            currentScale = container.width() / this.width * 0.9;
+                        } else {
+                            currentScale = container.height() / this.height * 0.9;
+                        }
+                        updateImageTransform(img);
+                        updateZoomLevel();
+                    });
+                }
+                
                 // 应用当前的缩放和位移
                 updateImageTransform(img);
                 updateZoomLevel();
@@ -348,8 +388,9 @@
                 // 初始化拖拽事件
                 initDragEvents();
                 
-                // 更新计数
+                // 更新计数和滑块
                 updateImageCount();
+                $('#pageSlider').val(currentImageIndex);
             }
 
             // 连接 WebSocket
@@ -415,6 +456,10 @@
             // 更新图片变换
             function updateImageTransform(img) {
                 img.css('transform', `translate(${translateX}px, ${translateY}px) scale(${currentScale})`);
+                // 保存当前视图状态
+                lastScale = currentScale;
+                lastTranslateX = translateX;
+                lastTranslateY = translateY;
             }
 
             // 设置图片缩放
@@ -584,8 +629,23 @@
             $('#downloadBtn').click(downloadCurrentImage);
 
             // 初始化所有功能
-            connectWebSocket();
-            initResizeHandle();
+            function initializeUI() {
+                connectWebSocket();
+                initResizeHandle();
+                
+                // 初始化滑块事件
+                $('#pageSlider').on('input', function() {
+                    showHistoryImage(parseInt($(this).val()));
+                });
+                
+                // 初始化锁定视图复选框事件
+                $('#lockViewCheckbox').on('change', function() {
+                    isViewLocked = $(this).prop('checked');
+                });
+            }
+
+            // 修改初始化调用
+            initializeUI();
         });
     </script>
 
