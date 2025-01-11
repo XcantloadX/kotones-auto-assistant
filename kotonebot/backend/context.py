@@ -138,14 +138,16 @@ class ContextImage:
             threshold: float = 0.9,
             timeout: float = 10,
             colored: bool = False,
-            interval: float = 0.1
+            interval: float = 0.1,
+            *,
+            transparent: bool = False
         ) -> TemplateMatchResult | None:
         """
         等待指定图像出现。
         """
         start_time = time.time()
         while True:
-            ret = self.find(template, mask, threshold, colored)
+            ret = self.find(template, mask, threshold, colored, transparent=transparent)
             if ret is not None:
                 self.context.device.last_find = ret
                 return ret
@@ -159,7 +161,9 @@ class ContextImage:
             masks: list[str | None] | None = None,
             threshold: float = 0.9,
             timeout: float = 10,
-            colored: bool = False
+            colored: bool = False,
+            *,
+            transparent: bool = False
         ):
         """
         等待指定图像中的任意一个出现。
@@ -171,7 +175,7 @@ class ContextImage:
         start_time = time.time()
         while True:
             for template, mask in zip(templates, _masks):
-                if self.find(template, mask, threshold, colored):
+                if self.find(template, mask, threshold, colored, transparent=transparent):
                     return True
             if time.time() - start_time > timeout:
                 return False
@@ -183,14 +187,16 @@ class ContextImage:
             mask: str | None = None,
             threshold: float = 0.9,
             timeout: float = 10,
-            colored: bool = False
+            colored: bool = False,
+            *,
+            transparent: bool = False
         ) -> TemplateMatchResult:
         """
         等待指定图像出现。
         """
         start_time = time.time()
         while True:
-            ret = self.find(template, mask, threshold, colored)
+            ret = self.find(template, mask, threshold, colored, transparent=transparent)
             if ret is not None:
                 self.context.device.last_find = ret
                 return ret
@@ -204,7 +210,9 @@ class ContextImage:
             masks: list[str | None] | None = None,
             threshold: float = 0.9,
             timeout: float = 10,
-            colored: bool = False
+            colored: bool = False,
+            *,
+            transparent: bool = False
         ) -> TemplateMatchResult:
         """
         等待指定图像中的任意一个出现。
@@ -216,7 +224,7 @@ class ContextImage:
         start_time = time.time()
         while True:
             for template, mask in zip(templates, _masks):
-                ret = self.find(template, mask, threshold, colored)
+                ret = self.find(template, mask, threshold, colored, transparent=transparent)
                 if ret is not None:
                     self.context.device.last_find = ret
                     return ret
@@ -230,14 +238,23 @@ class ContextImage:
             template: str | MatLike,
             mask: str | None = None,
             threshold: float = 0.9,
-            colored: bool = False
+            colored: bool = False,
+            *,
+            transparent: bool = False
         ) -> TemplateMatchResult:
         """
         寻找指定图像。
 
         与 `find()` 的区别在于，`expect()` 未找到时会抛出异常。
         """
-        ret = expect(self.context.device.screenshot(), template, mask, threshold=threshold, colored=colored)
+        ret = expect(
+            self.context.device.screenshot(),
+            template,
+            mask,
+            threshold=threshold,
+            colored=colored,
+            transparent=transparent
+        )
         self.context.device.last_find = ret
         return ret
 
@@ -246,12 +263,21 @@ class ContextImage:
             template: 'MatLike | str',
             mask: 'MatLike | str | None' = None,
             threshold: float = 0.9,
-            colored: bool = False
+            colored: bool = False,
+            *,
+            transparent: bool = False
         ):
         """
         寻找指定图像。
         """
-        ret = find(self.context.device.screenshot(), template, mask, threshold=threshold, colored=colored)
+        ret = find(
+            self.context.device.screenshot(),
+            template,
+            mask,
+            threshold=threshold,
+            colored=colored,
+            transparent=transparent
+        )
         self.context.device.last_find = ret
         return ret
 
@@ -260,7 +286,9 @@ class ContextImage:
             template: 'str | MatLike',
             mask: str | None = None,
             threshold: float = 0.9,
-            colored: bool = False
+            colored: bool = False,
+            *,
+            transparent: bool = False
         ):
         """
         指定一个模板，寻找所有出现的位置。
@@ -272,7 +300,14 @@ class ContextImage:
         :param threshold: 阈值，默认为 0.9。
         :param remove_duplicate: 是否移除重复结果，默认为 True。
         """
-        ret = find_many(self.context.device.screenshot(), template, mask, threshold=threshold, colored=colored)
+        ret = find_many(
+            self.context.device.screenshot(),
+            template,
+            mask,
+            threshold=threshold,
+            colored=colored,
+            transparent=transparent
+        )
         return ret
 
     def find_any(
@@ -280,12 +315,21 @@ class ContextImage:
             templates: list[str | MatLike],
             masks: list[str | MatLike | None] | None = None,
             threshold: float = 0.9,
-            colored: bool = False
+            colored: bool = False,
+            *,
+            transparent: bool = False
         ) -> MultipleTemplateMatchResult | None:
         """
         寻找指定图像中的任意一个。
         """
-        ret = find_any(self.context.device.screenshot(), templates, masks, threshold=threshold, colored=colored)
+        ret = find_any(
+            self.context.device.screenshot(),
+            templates,
+            masks,
+            threshold=threshold,
+            colored=colored,
+            transparent=transparent
+        )
         self.context.device.last_find = ret
         return ret
 
@@ -294,7 +338,9 @@ class ContextImage:
             template: str,
             mask: str | None = None,
             threshold: float = 0.999,
-            colored: bool = False
+            colored: bool = False,
+            *,
+            transparent: bool = False
         ) -> list[CropResult]:
         """
         在当前设备画面中查找指定模板，并裁剪出结果。
@@ -304,7 +350,8 @@ class ContextImage:
             template,
             mask,
             threshold=threshold,
-            colored=colored
+            colored=colored,
+            transparent=transparent
         )
 
 class ContextGlobalVars:
@@ -399,9 +446,6 @@ vars: ContextGlobalVars = cast(ContextGlobalVars, Forwarded(name="vars"))
 """全局变量。"""
 debug: ContextDebug = cast(ContextDebug, Forwarded(name="debug"))
 """调试工具。"""
-
-# def __getattr__(name: str) -> Any:
-#     return getattr(_c, name)
 
 def init_context():
     global _c, device, ocr, image, vars, debug

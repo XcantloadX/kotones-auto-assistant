@@ -11,7 +11,7 @@ from skimage.metrics import structural_similarity
 
 logger = getLogger(__name__)
 
-class TemplateNotFoundError(Exception):
+class TemplateNoMatchError(Exception):
     """模板未找到异常。"""
     def __init__(self, image: MatLike, template: MatLike | str):
         self.image = image
@@ -72,40 +72,16 @@ class CropResult(NamedTuple):
     def rect(self) -> Rect:
         return (self.position[0], self.position[1], self.size[0], self.size[1])
 
-def _unify_image(image: MatLike | str) -> MatLike:
+def _unify_image(image: MatLike | str, transparent: bool = False) -> MatLike:
     if isinstance(image, str):
-        image = cv2.imread(image)
+        if not transparent:
+            image = cv2.imread(image)
+        else:
+            image = cv2.imread(image, cv2.IMREAD_UNCHANGED)
     return image
 
-T = TypeVar('T')
-# TODO: 这个方法太慢了，需要优化
-def _remove_duplicate_matches(
-        matches: list[T],
-        offset: int = 10
-    ) -> list[T]:
-    result = []
-    # 创建一个掩码来标记已匹配区域
-    mask = np.zeros((2000, 2000), np.uint8) # 使用足够大的尺寸
-    
-    # 按匹配分数排序,优先保留分数高的
-    sorted_matches = sorted(matches, key=lambda x: x.score, reverse=True) # type: ignore
-    
-    for match in sorted_matches:
-        # 获取匹配区域的中心点
-        x = match.position[0] + match.size[0] // 2 # type: ignore
-        y = match.position[1] + match.size[1] // 2 # type: ignore
-        
-        # 检查该区域是否已被标记
-        if mask[y, x] != 255:
-            # 将整个匹配区域标记为已匹配
-            x1, y1 = match.position # type: ignore
-            w, h = match.size # type: ignore
-            mask[y1:y1+h, x1:x1+w] = 255
-            result.append(match)
-            
-    return result
-
 def _draw_result(image: MatLike, matches: Sequence[ResultProtocol] | ResultProtocol | None) -> MatLike:
+    """在图像上绘制匹配结果的矩形框。"""
     if matches is None:
         return image
     if isinstance(matches, ResultProtocol):
@@ -121,13 +97,17 @@ def template_match(
     mask: MatLike | str | None = None,
     transparent: bool = False,
     threshold: float = 0.8,
+    *,
     max_results: int = 5,
+    remove_duplicate: bool = True,
+    colored: bool = False,
 ) -> list[TemplateMatchResult]:
     """
     寻找模板在图像中的位置。
 
     .. note::
         `mask` 和 `transparent` 参数不能同时使用。
+        如果使用透明图像，所有透明像素必须为 100% 透明，不能包含半透明像素。
 
     :param template: 模板图像，可以是图像路径或 cv2.Mat。
     :param image: 图像，可以是图像路径或 cv2.Mat。
@@ -136,6 +116,7 @@ def template_match(
     :param threshold: 阈值，默认为 0.8。
     :param max_results: 最大结果数，默认为 1。
     :param remove_duplicate: 是否移除重复结果，默认为 True。
+    :param colored: 是否匹配颜色，默认为 False。
     """
     if isinstance(template, str):
         _template_name = os.path.relpath(template)
@@ -143,12 +124,24 @@ def template_match(
         _template_name = '<opencv Mat>'
     logger.debug(f'match template: {_template_name} threshold: {threshold} max_results: {max_results}')
     # 统一参数
-    template = _unify_image(template)
+    template = _unify_image(template, transparent)
     image = _unify_image(image)
+    if transparent is True and mask is not None:
+        raise ValueError('mask and transparent cannot be used together')
     if mask is not None:
         mask = _unify_image(mask)
         mask = cv2.threshold(mask, 127, 255, cv2.THRESH_BINARY)[1]
-    
+    if transparent is True:
+        # https://stackoverflow.com/questions/57899997/how-to-create-mask-from-alpha-channel-in-opencv
+        # 从透明图像中提取 alpha 通道作为 mask
+        mask = cv2.threshold(template[:, :, 3], 0, 255, cv2.THRESH_BINARY)[1]
+        template = template[:, :, :3]
+    if (transparent or mask is not None) and threshold < 0.999:
+        logger.warning(
+            f'For template matching with transparent image or mask, '
+            'threshold is recommended to be set to 0.999 or higher. '
+            f'Got {threshold}'
+        )
     # 匹配模板
     if mask is not None:
         # https://stackoverflow.com/questions/35642497/python-opencv-cv2-matchtemplate-with-transparency
@@ -156,21 +149,60 @@ def template_match(
         result = cv2.matchTemplate(image, template, cv2.TM_CCORR_NORMED, mask=mask)
     else:
         result = cv2.matchTemplate(image, template, cv2.TM_CCOEFF_NORMED)
-    # 获取所有大于阈值的匹配结果
-    locations = list(zip(*np.where(result >= threshold)))
     
-    # 转换为 TemplateMatchResult 列表
+    # ========== 整理结果 ==========
+    # 去重、排序、转换为 TemplateMatchResult
+
+    # 获取所有大于阈值的匹配结果并按分数排序
+    h, w = template.shape[:2]
     matches = []
-    for y, x in locations:
-        h, w = template.shape[:2]
-        score = float(result[y, x])
-        matches.append(TemplateMatchResult(score=score, position=(int(x), int(y)), size=(int(w), int(h))))
+    if remove_duplicate:
+        # 创建一个掩码来标记已匹配区域
+        used_mask = np.zeros((image.shape[0], image.shape[1]), np.uint8)
     
-    # 按分数排序并限制结果数量
-    matches.sort(key=lambda x: x.score, reverse=True)
-    if max_results > 0:
-        matches = matches[:max_results]
+    # 获取所有匹配点并按分数从高到低排序
+    match_points = np.where(result >= threshold)
+    scores = result[match_points]
+    sorted_indices = np.argsort(-scores)  # 降序排序
+    
+    for idx in sorted_indices:
+        y, x = match_points[0][idx], match_points[1][idx]
+        score = float(scores[idx])
         
+        # 去重
+        if remove_duplicate:
+            # 获取匹配区域的中心点
+            center_x = x + w // 2
+            center_y = y + h // 2
+            
+            # 如果中心点已被标记，跳过此匹配
+            if used_mask[center_y, center_x] == 255:
+                continue
+                
+            # 标记整个匹配区域
+            used_mask[y:y+h, x:x+w] = 255
+        
+        # 颜色匹配
+        if colored:
+            img1, img2 = image[y:y+h, x:x+w], template
+            if mask is not None:
+                # 如果用了 Mask，需要裁剪出 Mask 区域，其余部分置黑
+                img1 = cv2.bitwise_and(img1, img1, mask=mask)
+                img2 = cv2.bitwise_and(img2, img2, mask=mask)
+
+            if not hist_match(img1, img2, (0, 0, w, h), threshold):
+                continue
+        
+        matches.append(TemplateMatchResult(
+            score=score,
+            position=(int(x), int(y)),
+            size=(int(w), int(h))
+        ))
+        
+        # 如果达到最大结果数，提前结束
+        if max_results > 0 and len(matches) >= max_results:
+            break
+    
     return matches
 
 def hist_match(
@@ -243,6 +275,7 @@ def find_crop(
     threshold: float = 0.8,
     *,
     colored: bool = False,
+    remove_duplicate: bool = True,
 ) -> list[CropResult]:
     """
     指定一个模板，寻找其出现的所有位置，并裁剪出结果。
@@ -253,14 +286,18 @@ def find_crop(
     :param transparent: 若为 True，则认为输入模板是透明的，并自动将透明模板转换为 Mask 图像。
     :param threshold: 阈值，默认为 0.8。
     :param colored: 是否匹配颜色，默认为 False。
+    :param remove_duplicate: 是否移除重复结果，默认为 True。
     """
-    matches = template_match(template, image, mask, transparent, threshold, max_results=-1)
-    matches = _remove_duplicate_matches(matches)
-    if colored:
-        matches = [
-            match for match in matches 
-            if hist_match(image, template, match.rect, threshold)
-        ]
+    matches = template_match(
+        template,
+        image,
+        mask,
+        transparent,
+        threshold,
+        max_results=-1,
+        remove_duplicate=remove_duplicate,
+        colored=colored,
+    )
     return [CropResult(
         match.score,
         match.position,
@@ -277,6 +314,7 @@ def find(
     *,
     debug_output: bool = True,
     colored: bool = False,
+    remove_duplicate: bool = True,
 ) -> TemplateMatchResult | None:
     """
     指定一个模板，寻找其出现的第一个位置。
@@ -288,13 +326,18 @@ def find(
     :param threshold: 阈值，默认为 0.8。
     :param debug_output: 是否输出调试信息，默认为 True。
     :param colored: 是否匹配颜色，默认为 False。
+    :param remove_duplicate: 是否移除重复结果，默认为 True。
     """
-    matches = template_match(template, image, mask, transparent, threshold, max_results=-1)
-    if colored:
-        matches = [
-            match for match in matches 
-            if hist_match(image, template, match.rect, threshold)
-        ]
+    matches = template_match(
+        template,
+        image,
+        mask,
+        transparent,
+        threshold,
+        max_results=1,
+        remove_duplicate=remove_duplicate,
+        colored=colored,
+    )
     # 调试输出
     if debug.enabled and debug_output:
         result_image = _draw_result(image, matches)
@@ -326,14 +369,16 @@ def find_many(
     :param remove_duplicate: 是否移除重复结果，默认为 True。
     :param colored: 是否匹配颜色，默认为 False。
     """
-    results = template_match(template, image, mask, transparent, threshold, max_results=-1)
-    if remove_duplicate:
-        results = _remove_duplicate_matches(results)
-    if colored:
-        results = [
-            match for match in results 
-            if hist_match(image, template, match.rect, threshold)
-        ]
+    results = template_match(
+        template,
+        image,
+        mask,
+        transparent,
+        threshold,
+        max_results=-1,
+        remove_duplicate=remove_duplicate,
+        colored=colored,
+    )
     if debug.enabled:
         result_image = _draw_result(image, results)
         debug_result(
@@ -352,6 +397,7 @@ def find_any(
     threshold: float = 0.8,
     *,
     colored: bool = False,
+    remove_duplicate: bool = True,
 ) -> MultipleTemplateMatchResult | None:
     """
     指定多个模板，返回第一个匹配到的结果。
@@ -362,6 +408,7 @@ def find_any(
     :param transparent: 若为 True，则认为输入模板是透明的，并自动将透明模板转换为 Mask 图像。
     :param threshold: 阈值，默认为 0.8。
     :param colored: 是否匹配颜色，默认为 False。
+    :param remove_duplicate: 是否移除重复结果，默认为 True。
     """
     ret = None
     if masks is None:
@@ -369,7 +416,16 @@ def find_any(
     else:
         _masks = masks
     for index, (template, mask) in enumerate(zip(templates, _masks)):
-        find_result = find(image, template, mask, transparent, threshold, colored=colored, debug_output=False)
+        find_result = find(
+            image,
+            template,
+            mask,
+            transparent,
+            threshold,
+            colored=colored,
+            debug_output=False,
+            remove_duplicate=remove_duplicate,
+        )
         # 调试输出
         if find_result is not None:
             ret = MultipleTemplateMatchResult(
@@ -402,8 +458,8 @@ def count(
     mask: MatLike | str | None = None,
     transparent: bool = False,
     threshold: float = 0.9,
-    remove_duplicate: bool = True,
     *,
+    remove_duplicate: bool = True,
     colored: bool = False,
 ) -> int:
     """
@@ -417,14 +473,16 @@ def count(
     :param remove_duplicate: 是否移除重复结果，默认为 True。
     :param colored: 是否匹配颜色，默认为 False。
     """
-    results = template_match(template, image, mask, transparent, threshold, max_results=-1)
-    if remove_duplicate:
-        results = _remove_duplicate_matches(results)
-    if colored:
-        results = [
-            match for match in results 
-            if hist_match(image, template, match.rect, threshold)
-        ]
+    results = template_match(
+        template,
+        image,
+        mask,
+        transparent,
+        threshold,
+        max_results=-1,
+        remove_duplicate=remove_duplicate,
+        colored=colored,
+    )
     if debug.enabled:
         result_image = _draw_result(image, results)
         debug_result(
@@ -448,6 +506,7 @@ def expect(
     threshold: float = 0.9,
     *,
     colored: bool = False,
+    remove_duplicate: bool = True,
 ) -> TemplateMatchResult:
     """
     指定一个模板，寻找其出现的第一个位置。若未找到，则抛出异常。
@@ -458,8 +517,18 @@ def expect(
     :param transparent: 若为 True，则认为输入模板是透明的，并自动将透明模板转换为 Mask 图像。
     :param threshold: 阈值，默认为 0.8。
     :param colored: 是否匹配颜色，默认为 False。
+    :param remove_duplicate: 是否移除重复结果，默认为 True。
     """
-    ret = find(image, template, mask, transparent, threshold, colored=colored)
+    ret = find(
+        image,
+        template,
+        mask,
+        transparent,
+        threshold,
+        colored=colored,
+        remove_duplicate=remove_duplicate,
+        debug_output=False,
+    )
     if debug.enabled:
         debug_result(
             'image.expect',
@@ -474,7 +543,7 @@ def expect(
             )
         )
     if ret is None:
-        raise TemplateNotFoundError(image, template)
+        raise TemplateNoMatchError(image, template)
     else:
         return ret
 
