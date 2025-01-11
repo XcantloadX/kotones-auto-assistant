@@ -25,4 +25,4 @@ if __name__ == "__main__":
     _start_task_thread()
     
     # 启动服务器
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    uvicorn.run(app, host="127.0.0.1", port=8000, log_level='critical' if debug.hide_server_log else None)

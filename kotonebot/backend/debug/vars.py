@@ -23,6 +23,8 @@ class _Vars:
     """最多保存的结果数量。"""
     wait_for_message_sent: bool = False
     """是否等待消息发送完成才继续下一个操作。"""
+    hide_server_log: bool = True
+    """是否隐藏服务器日志。"""
 
 debug = _Vars()
 

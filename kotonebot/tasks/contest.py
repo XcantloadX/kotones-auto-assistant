@@ -17,6 +17,7 @@ def goto_contest():
     结束状态：位于竞赛界面，且已经点击了各种奖励领取提示
     """
     device.click(image.expect(R.Common.ButtonContest))
+    sleep(0.5)
     device.click(image.expect_wait(R.Daily.TextContest, colored=True, transparent=True, threshold=0.9999))
     sleep(0.5)
     wait_loading_end()

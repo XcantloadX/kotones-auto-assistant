@@ -1,5 +1,6 @@
 """收取活动费"""
 import logging
+from time import sleep
 
 from kotonebot import task, device, image, cropped
 from .actions.scenes import at_home, goto_home
@@ -11,6 +12,7 @@ logger = logging.getLogger(__name__)
 def acquire_activity_funds():
     if not at_home():
         goto_home()
+    sleep(1)
     if image.find(R.Daily.TextActivityFundsMax):
         logger.info('Activity funds maxed out.')
         device.click()

@@ -49,7 +49,6 @@ async def read_file(path: str):
 @app.get("/api/read_memory")
 async def read_memory(key: str):
     """读取内存中的数据"""
-    print('read_memory', key)
     try:
         image = None
         if key in vars._results:
@@ -115,7 +114,7 @@ thread = None
 def start_server():
     global thread
     def run_server():
-        uvicorn.run(app, host="127.0.0.1", port=8000)
+        uvicorn.run(app, host="127.0.0.1", port=8000, log_level='critical' if vars.debug.hide_server_log else None)
     if thread is None:
         thread = threading.Thread(target=run_server, daemon=True)
         thread.start()
