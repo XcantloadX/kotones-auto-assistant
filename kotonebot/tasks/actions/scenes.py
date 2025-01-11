@@ -39,10 +39,14 @@ def at_shop() -> bool:
         return image.find(R.Daily.IconShopTitle) is not None
 
 @action
+def goto_home():
+    pass
+
+@action
 def goto_shop():
     """
     从首页进入 ショップ。
-    
+
     前置条件：位于首页 \n
     结束状态：位于商店页面
     """

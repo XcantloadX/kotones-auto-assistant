@@ -137,7 +137,8 @@ class ContextImage:
             mask: MatLike | str | None = None,
             threshold: float = 0.9,
             timeout: float = 10,
-            colored: bool = False
+            colored: bool = False,
+            interval: float = 0.1
         ) -> TemplateMatchResult | None:
         """
         等待指定图像出现。
@@ -150,7 +151,7 @@ class ContextImage:
                 return ret
             if time.time() - start_time > timeout:
                 return None
-            time.sleep(0.1)
+            time.sleep(interval)
 
     def wait_for_any(
             self,

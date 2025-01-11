@@ -205,3 +205,14 @@ class DeviceABC(ABC):
         """
         ...
 
+    def current_package(self) -> str:
+        """
+        前台 APP 的包名
+        """
+        ...
+
+    def start_app(self, package_name: str) -> None:
+        """
+        启动某个 APP
+        """
+        ...

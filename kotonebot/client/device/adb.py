@@ -84,6 +84,13 @@ class AdbDevice(DeviceABC):
     @staticmethod
     def list_devices() -> list[str]:
         raise NotImplementedError
+    
+
+    def start_app(self, package_name: str) -> None:
+        self.device.shell(f"monkey -p {package_name} 1")
+    
+    def current_package(self) -> str:
+        raise NotImplementedError
 
         
 if __name__ == "__main__":

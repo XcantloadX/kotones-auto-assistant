@@ -1,4 +1,7 @@
-from typing import Callable, overload, Any
+from typing import Callable, ParamSpec, TypeVar, overload, Any
+
+P = ParamSpec('P')
+R = TypeVar('R')
 
 def task(
     name: str,
@@ -10,15 +13,15 @@ def task(
     :param name: 任务名称
     :param description: 任务描述。如果为 None，则使用函数的 docstring 作为描述。
     """
-    def _task_decorator(func: Callable):
+    def _task_decorator(func: Callable[P, R]) -> Callable[P, R]:
         return func
     return _task_decorator
 
 @overload
-def action(func: Callable[..., Any]) -> Callable[..., Any]: ...
+def action(func: Callable[P, R]) -> Callable[P, R]: ...
 
 @overload
-def action(name: str, description: str|None = None) -> Callable[..., Any]:
+def action(name: str, description: str|None = None) -> Callable[[Callable[P, R]], Callable[P, R]]:
     """
     `action` 装饰器，用于标记一个函数为动作函数。
 

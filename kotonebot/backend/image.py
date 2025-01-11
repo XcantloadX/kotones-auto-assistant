@@ -7,6 +7,7 @@ from .debug import result, debug, img
 import cv2
 import numpy as np
 from cv2.typing import MatLike, Rect, Point, Size
+from skimage.metrics import structural_similarity
 
 logger = getLogger(__name__)
 
@@ -477,3 +478,14 @@ def expect(
     else:
         return ret
 
+def similar(
+    image1: MatLike,
+    image2: MatLike,
+    threshold: float = 0.8
+) -> bool:
+    """
+    判断两张图像是否相似。输入的两张图片必须为相同尺寸。
+    """
+    if image1.shape != image2.shape:
+        raise ValueError('Expected two images with the same size.')
+    return structural_similarity(image1, image2, multichannel=True) >= threshold
