@@ -1,6 +1,6 @@
 import unittest
 
-from kotonebot import _c
+from kotonebot.backend.context import _c
 from kotonebot.tasks.actions.in_purodyuusu import skill_card_count, click_recommended_card
 from util import MockDevice
 
@@ -9,6 +9,7 @@ class TestActionInProduce(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        assert _c is not None, 'context is not initialized'
         cls.d = MockDevice()
         _c.inject_device(cls.d)
 

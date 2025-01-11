@@ -4,10 +4,9 @@ import time
 import uuid
 import traceback
 from datetime import datetime
-from typing import Callable, NamedTuple
+from dataclasses import dataclass
+from typing import NamedTuple
 
-import cv2
-import numpy as np
 from cv2.typing import MatLike
 
 class Result(NamedTuple):
@@ -15,29 +14,15 @@ class Result(NamedTuple):
     image: MatLike
     text: str
 
+@dataclass
 class _Vars:
-    def __init__(self):
-        self.__enabled: bool = False
-
-        self.__max_results: int = 200
-    
-    @property
-    def enabled(self) -> bool:
-        """是否启用调试结果显示。"""
-        return self.__enabled
-    
-    @enabled.setter
-    def enabled(self, value: bool):
-        self.__enabled = value
-
-    @property
-    def max_results(self) -> int:
-        """最多保存的结果数量。"""
-        return self.__max_results
-    
-    @max_results.setter
-    def max_results(self, value: int):
-        self.__max_results = value
+    """调试变量类"""
+    enabled: bool = False
+    """是否启用调试结果显示。"""
+    max_results: int = 200
+    """最多保存的结果数量。"""
+    wait_for_message_sent: bool = False
+    """是否等待消息发送完成才继续下一个操作。"""
 
 debug = _Vars()
 
@@ -112,5 +97,5 @@ def result(
     )
     # 发送 WS 消息
     from .server import send_ws_message
-    send_ws_message(title, key, final_text)
+    send_ws_message(title, key, final_text, wait=debug.wait_for_message_sent)
 

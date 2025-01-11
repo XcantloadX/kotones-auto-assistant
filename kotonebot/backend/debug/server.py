@@ -1,11 +1,14 @@
+import time
+import asyncio
+import threading
 from pathlib import Path
 from collections import deque
-import asyncio
 
 import cv2
-from fastapi import FastAPI, WebSocket, HTTPException
-from fastapi.responses import FileResponse, Response
+import uvicorn
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse, Response
+from fastapi import FastAPI, WebSocket, HTTPException
 
 from . import vars
 
@@ -89,10 +92,8 @@ async def websocket_endpoint(websocket: WebSocket):
     except:
         await websocket.close()
 
-# 修改 vars.py 中的 result 函数
-def send_ws_message(title: str, image: str, text: str = ''):
+def send_ws_message(title: str, image: str, text: str = '', wait: bool = False):
     """发送 WebSocket 消息"""
-    # 这个函数将在 vars.py 中被调用
     message = {
         "type": "visual",
         "data": {
@@ -104,5 +105,26 @@ def send_ws_message(title: str, image: str, text: str = ''):
             "details": text
         }
     }
-    # 发送消息到所有连接的客户端
     message_queue.append(message)
+    if wait:
+        while len(message_queue) > 0:
+            time.sleep(0.3)
+
+
+thread = None
+def start_server():
+    global thread
+    def run_server():
+        uvicorn.run(app, host="127.0.0.1", port=8000)
+    if thread is None:
+        thread = threading.Thread(target=run_server, daemon=True)
+        thread.start()
+
+def wait_message_all_done():
+    global thread
+    def _wait():
+        while len(message_queue) > 0:
+            time.sleep(0.1)
+    if thread is not None:
+        threading.Thread(target=_wait, daemon=True).start()
+

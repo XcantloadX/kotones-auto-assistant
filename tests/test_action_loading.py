@@ -4,8 +4,6 @@ from kotonebot.backend.context import _c
 from kotonebot import device, debug
 from util import *
 
-debug.save_images = True
-debug.save_images_dir = "tests/output_images"
 
 class TestActionLoading(unittest.TestCase):
     loadings = [f'tests/images/ui/loading_{i}.png' for i in range(1, 10)]
@@ -14,6 +12,7 @@ class TestActionLoading(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        assert _c is not None, 'context is not initialized'
         cls.d = MockDevice('')
         _c.inject_device(cls.d)
 
