@@ -2,7 +2,7 @@ import os
 from typing import NamedTuple, Protocol, TypeVar, Sequence, runtime_checkable
 from logging import getLogger
 
-from .debug import result, debug, img
+from .debug import result as debug_result, debug, img
 
 import cv2
 import numpy as np
@@ -302,7 +302,7 @@ def find(
         result_text += f"matches: {len(matches)} \n"
         for match in matches:
             result_text += f"score: {match.score} position: {match.position} size: {match.size} \n"
-        result(f"image.find", result_image, result_text)
+        debug_result(f"image.find", result_image, result_text)
     return matches[0] if len(matches) > 0 else None
 
 def find_many(
@@ -336,7 +336,7 @@ def find_many(
         ]
     if debug.enabled:
         result_image = _draw_result(image, results)
-        result(
+        debug_result(
             'image.find_many',
             result_image,
             f"template: {img(template)} \n"
@@ -389,7 +389,7 @@ def find_any(
             ]) +
             "</table>\n"
         )
-        result(
+        debug_result(
             'image.find_any',
             _draw_result(image, ret),
             msg
@@ -427,7 +427,7 @@ def count(
         ]
     if debug.enabled:
         result_image = _draw_result(image, results)
-        result(
+        debug_result(
             'image.count',
             result_image,
             (
@@ -461,7 +461,7 @@ def expect(
     """
     ret = find(image, template, mask, transparent, threshold, colored=colored)
     if debug.enabled:
-        result(
+        debug_result(
             'image.expect',
             _draw_result(image, ret),
             (
@@ -481,11 +481,23 @@ def expect(
 def similar(
     image1: MatLike,
     image2: MatLike,
-    threshold: float = 0.8
+    threshold: float = 0.9
 ) -> bool:
     """
-    判断两张图像是否相似。输入的两张图片必须为相同尺寸。
+    判断两张图像是否相似（灰度）。输入的两张图片必须为相同尺寸。
     """
     if image1.shape != image2.shape:
         raise ValueError('Expected two images with the same size.')
-    return structural_similarity(image1, image2, multichannel=True) >= threshold
+    image1 = cv2.cvtColor(image1, cv2.COLOR_BGR2GRAY)
+    image2 = cv2.cvtColor(image2, cv2.COLOR_BGR2GRAY)
+    result = structural_similarity(image1, image2, multichannel=True)
+    # 调试输出
+    if debug.enabled:
+        result_image = np.hstack([image1, image2])
+        debug_result(
+            'image.similar',
+            result_image,
+            f"result: {result} >= {threshold} == {result >= threshold} \n"
+        )
+    return result >= threshold
+
