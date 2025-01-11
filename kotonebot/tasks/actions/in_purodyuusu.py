@@ -441,7 +441,7 @@ def exam():
         sleep(9) # TODO: 采用更好的方式检测练习结束
     
     # 点击“次へ”
-    device.click(image.expect_wait(R.InPurodyuusu.NextBtn))
+    device.click(image.expect_wait(R.Common.ButtonNext))
     while ocr.wait_for(contains("メモリー"), timeout=7):
         device.click_center()
 
@@ -490,7 +490,7 @@ def produce_end():
                 continue
             device.click()
         # 记忆封面保存失败提示
-        elif image.find(R.InPurodyuusu.ButtonClose):
+        elif image.find(R.Common.ButtonClose):
             logger.info("Memory cover save failed. Click to close.")
             device.click()
         # 结算完毕

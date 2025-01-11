@@ -1,9 +1,11 @@
 import logging
 import time
+from time import sleep
 from typing import Callable
 
 from .. import R
-from kotonebot import device, image, ocr, action, cropper, x, y
+from .loading import loading
+from kotonebot import device, image, action, cropped, UnrecoverableError
 
 logger = logging.getLogger(__name__)
 
@@ -32,18 +34,38 @@ def until(
 
 @action
 def at_home() -> bool:
-    with device.hook(cropper(y(from_=0.7))):
+    with cropped(device, y1=0.7):
         return image.find(R.Daily.ButtonHomeCurrent) is not None
 
 @action
 def at_shop() -> bool:
-    with device.hook(cropper(y(to=0.3))):
+    with cropped(device, y2=0.3):
         return image.find(R.Daily.IconShopTitle) is not None
 
 @action
 def goto_home():
+    """
+    从其他场景返回首页。
+
+    前置条件：无 \n
+    结束状态：位于首页
+    """
     logger.info("Going home.")
-    device.click(image.expect(R.Common.ButtonToolbarHome, transparent=True, threshold=0.9999, colored=True))
+    with cropped(device, y1=0.7):
+        if image.find(
+            R.Common.ButtonToolbarHome,
+            transparent=True,
+            threshold=0.9999,
+            colored=True
+        ):
+            device.click()
+            while loading():
+                sleep(0.5)
+        elif image.find(R.Common.ButtonHome):
+            device.click()
+        else:
+            raise UnrecoverableError("Failed to go home.")
+    image.expect_wait(R.Daily.ButtonHomeCurrent, timeout=20)
 
 @action
 def goto_shop():

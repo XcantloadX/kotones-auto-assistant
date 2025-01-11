@@ -14,7 +14,7 @@ def acquire_activity_funds():
     if image.find(R.Daily.TextActivityFundsMax):
         logger.info('Activity funds maxed out.')
         device.click()
-        device.click(image.expect_wait(R.InPurodyuusu.ButtonClose, timeout=2))
+        device.click(image.expect_wait(R.Common.ButtonClose, timeout=2))
         logger.info('Activity funds acquired.')
     else:
         logger.info('Activity funds not maxed out. No action needed.')

@@ -15,6 +15,9 @@ class TaskInfo(NamedTuple):
     description: str
     entry: Callable[[], None]
 
+class UnrecoverableError(Exception):
+    pass
+
 Rect = typing.Sequence[int]
 """左上X, 左上Y, 宽度, 高度"""
 
