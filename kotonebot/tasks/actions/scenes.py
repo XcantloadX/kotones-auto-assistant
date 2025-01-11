@@ -1,9 +1,11 @@
+import logging
 import time
 from typing import Callable
 
 from .. import R
 from kotonebot import device, image, ocr, action, cropper, x, y
 
+logger = logging.getLogger(__name__)
 
 def until(
     condition: Callable[[], bool],
@@ -40,16 +42,20 @@ def at_shop() -> bool:
 
 @action
 def goto_home():
-    pass
+    logger.info("Going home.")
+    device.click(image.expect(R.Common.ButtonToolbarHome, transparent=True, threshold=0.9999, colored=True))
 
 @action
 def goto_shop():
     """
     从首页进入 ショップ。
 
-    前置条件：位于首页 \n
+    前置条件：无 \n
     结束状态：位于商店页面
     """
+    logger.info("Going to shop.")
+    if not at_home():
+        goto_home()
     device.click(image.expect(R.Daily.ButtonShop))
     until(at_shop, critical=True)
 
