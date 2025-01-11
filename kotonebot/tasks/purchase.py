@@ -5,7 +5,7 @@ from time import sleep
 from kotonebot import task
 from kotonebot import device, image, ocr, action
 from kotonebot.backend.util import cropped
-from .actions.scenes import goto_shop, at_shop
+from .actions.scenes import goto_home, goto_shop, at_shop
 from . import R
 
 logger = logging.getLogger(__name__)
@@ -28,7 +28,7 @@ def money_items():
         device.click(result)
         sleep(0.5)
         with cropped(device, y1=0.3):
-            purchased = image.expect_wait(R.Daily.TextShopPurchased, timeout=1)
+            purchased = image.wait_for(R.Daily.TextShopPurchased, timeout=1)
             if purchased is not None:
                 logger.info(f'AP item #{index} already purchased.')
                 continue
@@ -55,7 +55,7 @@ def ap_items(item_indices: list[int]):
     # [screenshots\shop\ap1.png]
     logger.info(f'Purchasing AP items.')
     results = image.find_many(R.Daily.IconShopAp, threshold=0.7)
-    sleep(10)
+    sleep(1)
     # 按 X, Y 坐标排序从小到大
     results = sorted(results, key=lambda x: (x.position[0], x.position[1]))
     for index in item_indices:
@@ -64,7 +64,7 @@ def ap_items(item_indices: list[int]):
             device.click(results[index])
             sleep(0.5)
             with cropped(device, y1=0.3):
-                purchased = image.expect_wait(R.Daily.TextShopPurchased, timeout=1)
+                purchased = image.wait_for(R.Daily.TextShopPurchased, timeout=1)
                 if purchased is not None:
                     logger.info(f'AP item #{index} already purchased.')
                     continue
@@ -100,6 +100,8 @@ def purchase():
     # 等待 AP 选项卡加载完成
     image.expect_wait(R.Daily.IconShopAp)
     ap_items([0, 1, 2, 3])
+    sleep(0.5)
+    goto_home()
 
 if __name__ == '__main__':
     from kotonebot.backend.context import init_context
