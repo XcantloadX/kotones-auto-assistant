@@ -83,11 +83,25 @@ def _remove_duplicate_matches(
         offset: int = 10
     ) -> list[T]:
     result = []
-    # TODO: 解决这个函数的 typing 问题
-    for match in matches:
-        if any(abs(match.position[0] - r.position[0]) < offset for r in result): # type: ignore
-            continue
-        result.append(match)
+    # 创建一个掩码来标记已匹配区域
+    mask = np.zeros((2000, 2000), np.uint8) # 使用足够大的尺寸
+    
+    # 按匹配分数排序,优先保留分数高的
+    sorted_matches = sorted(matches, key=lambda x: x.score, reverse=True) # type: ignore
+    
+    for match in sorted_matches:
+        # 获取匹配区域的中心点
+        x = match.position[0] + match.size[0] // 2 # type: ignore
+        y = match.position[1] + match.size[1] // 2 # type: ignore
+        
+        # 检查该区域是否已被标记
+        if mask[y, x] != 255:
+            # 将整个匹配区域标记为已匹配
+            x1, y1 = match.position # type: ignore
+            w, h = match.size # type: ignore
+            mask[y1:y1+h, x1:x1+w] = 255
+            result.append(match)
+            
     return result
 
 def _draw_result(image: MatLike, matches: Sequence[ResultProtocol] | ResultProtocol | None) -> MatLike:
