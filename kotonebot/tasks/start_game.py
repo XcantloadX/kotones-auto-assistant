@@ -1,12 +1,14 @@
 """启动游戏，领取登录奖励，直到首页为止"""
 import logging
 from time import sleep
+
 from kotonebot import task, device, image, cropped
 from . import R
+from .common import Priority
 
 logger = logging.getLogger(__name__)
 
-@task('启动游戏')
+@task('启动游戏', priority=Priority.START_GAME)
 def start_game():
     """
     启动游戏，直到游戏进入首页为止。
@@ -18,8 +20,16 @@ def start_game():
     image.wait_for(R.Daily.ButonLinkData, timeout=30)
     sleep(2)
     device.click_center()
-    while not image.wait_for(R.Daily.ButtonHomeCurrent, timeout=3):
-        device.click_center()
+    while True:
+        with device.pinned():
+            if image.find(R.Daily.ButtonHomeCurrent):
+                break
+            # [screenshots/startup/announcement1.png]
+            elif image.find(R.Common.ButtonIconClose):
+                device.click()
+            else:
+                device.click_center()
+            sleep(2)
 
 if __name__ == '__main__':
     from kotonebot.backend.context import init_context
