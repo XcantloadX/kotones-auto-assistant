@@ -2,8 +2,7 @@ import os
 import re
 import time
 from datetime import datetime
-from typing import Callable, cast, overload, Any, TypeVar, Literal
-
+from typing import Callable, cast, overload, Any, TypeVar, Literal, ParamSpec, Concatenate
 
 import cv2
 from cv2.typing import MatLike
@@ -25,7 +24,63 @@ from kotonebot.backend.image import (
 from kotonebot.backend.ocr import Ocr, OcrResult, jp, en, StringMatchFunction
 
 OcrLanguage = Literal['jp', 'en']
+
+# https://stackoverflow.com/questions/74714300/paramspec-for-a-pre-defined-function-without-using-generic-callablep
 T = TypeVar('T')
+P = ParamSpec('P')
+ContextClass = TypeVar("ContextClass")
+def context(
+    _: Callable[Concatenate[MatLike, P], T] # 输入函数
+) -> Callable[
+    [Callable[Concatenate[ContextClass, P], T]], # 被装饰函数
+    Callable[Concatenate[ContextClass, P], T] # 结果函数
+]:
+    """
+    用于标记 Context 类方法的装饰器。
+    此装饰器仅用于辅助类型标注，运行时无实际功能。
+
+    装饰器输入的函数类型为 `(img: MatLike, a, b, c, ...) -> T`，
+    被装饰的函数类型为 `(self: ContextClass, *args, **kwargs) -> T`，
+    结果类型为 `(self: ContextClass, a, b, c, ...) -> T`。
+
+    也就是说，`@context` 会把输入函数的第一个参数 `img: MatLike` 删除，
+    然后再添加 `self` 作为第一个参数。
+
+    【例】
+    ```python
+    def find_image(
+        img: MatLike,
+        mask: MatLike,
+        threshold: float = 0.9
+    ) -> TemplateMatchResult | None:
+        ...
+    ```
+    ```python
+    class ContextImage:
+        @context(find_image)
+        def find_image(self, *args, **kwargs):
+            return find_image(
+                self.context.device.screenshot(),
+                *args,
+                **kwargs
+            )
+
+    ```
+    ```python
+
+    c = ContextImage()
+    c.find_image()
+    # 此函数类型推断为 (
+    #   self: ContextImage,
+    #   img: MatLike,
+    #   mask: MatLike,
+    #   threshold: float = 0.9
+    # ) -> TemplateMatchResult | None
+    ```
+    """
+    def _decorator(func):
+        return func
+    return _decorator
 
 class ContextOcr:
     def __init__(self, context: 'Context'):
@@ -123,6 +178,7 @@ class ContextOcr:
                 return None
             time.sleep(0.1)
 
+
 class ContextImage:
     def __init__(self, context: 'Context', crop_rect: Rect | None = None):
         self.context = context
@@ -147,7 +203,7 @@ class ContextImage:
         """
         start_time = time.time()
         while True:
-            ret = self.find(template, mask, threshold, colored, transparent=transparent)
+            ret = self.find(template, mask, transparent=transparent, threshold=threshold, colored=colored)
             if ret is not None:
                 self.context.device.last_find = ret
                 return ret
@@ -175,7 +231,7 @@ class ContextImage:
         start_time = time.time()
         while True:
             for template, mask in zip(templates, _masks):
-                if self.find(template, mask, threshold, colored, transparent=transparent):
+                if self.find(template, mask, transparent=transparent, threshold=threshold, colored=colored):
                     return True
             if time.time() - start_time > timeout:
                 return False
@@ -196,7 +252,7 @@ class ContextImage:
         """
         start_time = time.time()
         while True:
-            ret = self.find(template, mask, threshold, colored, transparent=transparent)
+            ret = self.find(template, mask, transparent=transparent, threshold=threshold, colored=colored)
             if ret is not None:
                 self.context.device.last_find = ret
                 return ret
@@ -224,7 +280,7 @@ class ContextImage:
         start_time = time.time()
         while True:
             for template, mask in zip(templates, _masks):
-                ret = self.find(template, mask, threshold, colored, transparent=transparent)
+                ret = self.find(template, mask, transparent=transparent, threshold=threshold, colored=colored)
                 if ret is not None:
                     self.context.device.last_find = ret
                     return ret
@@ -232,128 +288,32 @@ class ContextImage:
                 raise TimeoutError(f"Timeout waiting for any of {templates}")
             time.sleep(0.1)
 
-
-    def expect(
-            self,
-            template: str | MatLike,
-            mask: str | None = None,
-            threshold: float = 0.9,
-            colored: bool = False,
-            *,
-            transparent: bool = False
-        ) -> TemplateMatchResult:
-        """
-        寻找指定图像。
-
-        与 `find()` 的区别在于，`expect()` 未找到时会抛出异常。
-        """
-        ret = expect(
-            self.context.device.screenshot(),
-            template,
-            mask,
-            threshold=threshold,
-            colored=colored,
-            transparent=transparent
-        )
+    @context(expect)
+    def expect(self, *args, **kwargs):
+        ret = expect(self.context.device.screenshot(), *args, **kwargs)
         self.context.device.last_find = ret
         return ret
 
-    def find(
-            self,
-            template: 'MatLike | str',
-            mask: 'MatLike | str | None' = None,
-            threshold: float = 0.9,
-            colored: bool = False,
-            *,
-            transparent: bool = False
-        ):
-        """
-        寻找指定图像。
-        """
-        ret = find(
-            self.context.device.screenshot(),
-            template,
-            mask,
-            threshold=threshold,
-            colored=colored,
-            transparent=transparent
-        )
+    @context(find)
+    def find(self, *args, **kwargs):
+        ret = find(self.context.device.screenshot(), *args, **kwargs)
         self.context.device.last_find = ret
         return ret
 
-    def find_many(
-            self,
-            template: 'str | MatLike',
-            mask: str | None = None,
-            threshold: float = 0.9,
-            colored: bool = False,
-            *,
-            transparent: bool = False
-        ):
-        """
-        指定一个模板，寻找所有出现的位置。
+    @context(find_many)
+    def find_many(self, *args, **kwargs):
+        return find_many(self.context.device.screenshot(), *args, **kwargs)
 
-        :param image: 图像，可以是图像路径或 cv2.Mat。
-        :param template: 模板图像，可以是图像路径或 cv2.Mat。
-        :param mask: 掩码图像，可以是图像路径或 cv2.Mat。
-        :param transparent: 若为 True，则认为输入模板是透明的，并自动将透明模板转换为 Mask 图像。
-        :param threshold: 阈值，默认为 0.9。
-        :param remove_duplicate: 是否移除重复结果，默认为 True。
-        """
-        ret = find_many(
-            self.context.device.screenshot(),
-            template,
-            mask,
-            threshold=threshold,
-            colored=colored,
-            transparent=transparent
-        )
-        return ret
-
-    def find_any(
-            self,
-            templates: list[str | MatLike],
-            masks: list[str | MatLike | None] | None = None,
-            threshold: float = 0.9,
-            colored: bool = False,
-            *,
-            transparent: bool = False
-        ) -> MultipleTemplateMatchResult | None:
-        """
-        寻找指定图像中的任意一个。
-        """
-        ret = find_any(
-            self.context.device.screenshot(),
-            templates,
-            masks,
-            threshold=threshold,
-            colored=colored,
-            transparent=transparent
-        )
+    @context(find_any)
+    def find_any(self, *args, **kwargs):
+        ret = find_any(self.context.device.screenshot(), *args, **kwargs)
         self.context.device.last_find = ret
         return ret
 
-    def find_crop_many(
-            self,
-            template: str,
-            mask: str | None = None,
-            threshold: float = 0.999,
-            colored: bool = False,
-            *,
-            transparent: bool = False
-        ) -> list[CropResult]:
-        """
-        在当前设备画面中查找指定模板，并裁剪出结果。
-        """
-        return find_crop(
-            self.context.device.screenshot(),
-            template,
-            mask,
-            threshold=threshold,
-            colored=colored,
-            transparent=transparent
-        )
-
+    @context(find_crop)
+    def find_crop_many(self, *args, **kwargs):
+        return find_crop(self.context.device.screenshot(), *args, **kwargs)
+    
 class ContextGlobalVars:
     def __init__(self):
         self.auto_collect: bool = False
