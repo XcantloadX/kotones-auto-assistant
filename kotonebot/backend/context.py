@@ -2,7 +2,16 @@ import os
 import re
 import time
 from datetime import datetime
-from typing import Callable, cast, overload, Any, TypeVar, Literal, ParamSpec, Concatenate
+from typing import (
+    Callable,
+    cast,
+    overload,
+    Any,
+    TypeVar,
+    Literal,
+    ParamSpec,
+    Concatenate,
+)
 
 import cv2
 from cv2.typing import MatLike
@@ -21,6 +30,7 @@ from kotonebot.backend.image import (
     find_any,
     find_many,
 )
+from kotonebot.backend.color import find_rgb
 from kotonebot.backend.ocr import Ocr, OcrResult, jp, en, StringMatchFunction
 
 OcrLanguage = Literal['jp', 'en']
@@ -314,11 +324,13 @@ class ContextImage:
     def find_crop_many(self, *args, **kwargs):
         return find_crop(self.context.device.screenshot(), *args, **kwargs)
     
+
 class ContextGlobalVars:
     def __init__(self):
         self.auto_collect: bool = False
         """遇到未知P饮料/卡片时，是否自动截图并收集"""
         self.debug: bool = True
+
 
 class ContextDebug:
     def __init__(self, context: 'Context'):
@@ -337,6 +349,15 @@ class ContextDebug:
             cv2.imwrite(f"{self.save_images_dir}/{title}_{time_str}.png", img)
         cv2.imshow(title, img)
         cv2.waitKey(1)
+
+
+class ContextColor:
+    def __init__(self, context: 'Context'):
+        self.context = context
+
+    @context(find_rgb)
+    def find_rgb(self, *args, **kwargs):
+        return find_rgb(self.context.device.screenshot(), *args, **kwargs)
 
 
 class Forwarded:
@@ -367,6 +388,7 @@ class Context:
         # self.__device = None
         self.__ocr = ContextOcr(self)
         self.__image = ContextImage(self)
+        self.__color = ContextColor(self)
         self.__vars = ContextGlobalVars()
         self.__debug = ContextDebug(self)
         self.actions = []
@@ -387,6 +409,10 @@ class Context:
         return self.__image
 
     @property
+    def color(self) -> 'ContextColor':
+        return self.__color
+
+    @property
     def vars(self) -> 'ContextGlobalVars':
         return self.__vars
     
@@ -402,17 +428,20 @@ ocr: ContextOcr = cast(ContextOcr, Forwarded(name="ocr"))
 """OCR 引擎。"""
 image: ContextImage = cast(ContextImage, Forwarded(name="image"))
 """图像识别。"""
+color: ContextColor = cast(ContextColor, Forwarded(name="color"))
+"""颜色识别。"""
 vars: ContextGlobalVars = cast(ContextGlobalVars, Forwarded(name="vars"))
 """全局变量。"""
 debug: ContextDebug = cast(ContextDebug, Forwarded(name="debug"))
 """调试工具。"""
 
 def init_context():
-    global _c, device, ocr, image, vars, debug
+    global _c, device, ocr, image, color, vars, debug
     _c = Context()
     device._FORWARD_getter = lambda: _c.device # type: ignore
     ocr._FORWARD_getter = lambda: _c.ocr # type: ignore
     image._FORWARD_getter = lambda: _c.image # type: ignore
+    color._FORWARD_getter = lambda: _c.color # type: ignore
     vars._FORWARD_getter = lambda: _c.vars # type: ignore
     debug._FORWARD_getter = lambda: _c.debug # type: ignore
 
