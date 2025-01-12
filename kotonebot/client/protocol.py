@@ -163,11 +163,24 @@ class DeviceABC(ABC):
             sleep(interval)
             self.click(x, y)
 
-    def swipe(self, x1: int, y1: int, x2: int, y2: int) -> None:
+    def swipe(self, x1: int, y1: int, x2: int, y2: int, duration: float|None = None) -> None:
         """
         滑动屏幕
         """
         ...
+
+    def swipe_scaled(self, x1: float, y1: float, x2: float, y2: float, duration: float|None = None) -> None:
+        """
+        滑动屏幕，参数为屏幕坐标的百分比
+
+        :param x1: 起始点 x 坐标百分比。范围 [0, 1]
+        :param y1: 起始点 y 坐标百分比。范围 [0, 1]
+        :param x2: 结束点 x 坐标百分比。范围 [0, 1]
+        :param y2: 结束点 y 坐标百分比。范围 [0, 1]
+        :param duration: 滑动持续时间，单位秒。None 表示使用默认值。
+        """
+        w, h = self.screen_size
+        self.swipe(int(w * x1), int(h * y1), int(w * x2), int(h * y2), duration)
     
     def screenshot(self) -> MatLike:
         """

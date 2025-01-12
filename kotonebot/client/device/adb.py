@@ -55,8 +55,10 @@ class AdbDevice(DeviceABC):
     def __click_clickable(self, clickable: ClickableObjectProtocol) -> None:
         self.click(clickable.rect)
 
-    def swipe(self, x1: int, y1: int, x2: int, y2: int, duration: int = 100) -> None:
-        self.device.shell(f"input swipe {x1} {y1} {x2} {y2} {duration}")
+    def swipe(self, x1: int, y1: int, x2: int, y2: int, duration: float|None = None) -> None:
+        if duration is not None:
+            logger.warning("Swipe duration is not supported with AdbDevice. Ignoring duration.")
+        self.device.shell(f"input touchscreen swipe {x1} {y1} {x2} {y2}")
 
     def screenshot(self) -> MatLike:
         if self.screenshot_hook_before is not None:

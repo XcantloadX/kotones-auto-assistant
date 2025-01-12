@@ -26,7 +26,7 @@ def initialize(module: str):
             importlib.import_module(name)
         except Exception as e:
             logger.error(f'Failed to load sub-module: {name}')
-            logger.exception(f'Error: ', e)
+            logger.exception(f'Error: ')
     
     logger.info('Tasks and actions initialized.')
     logger.info(f'{len(task_registry)} task(s) and {len(action_registry)} action(s) loaded.')
@@ -35,11 +35,12 @@ def run(
     no_try: bool = False,
 ):
     """
-    顺序运行所有任务。
+    按优先级顺序运行所有任务。
 
     :param no_try: 是否不捕获异常。
     """
-    for task in task_registry.values():
+    tasks = sorted(task_registry.values(), key=lambda x: x.priority, reverse=True)
+    for task in tasks:
         logger.info(f'Task started: {task.name}')
         if no_try:
             task.func()
