@@ -7,7 +7,7 @@ import unicodedata
 import logging
 from time import sleep
 
-from kotonebot import ocr, device, contains, image, debug, regex
+from kotonebot import ocr, device, contains, image, regex, action, debug
 from kotonebot.backend.context import init_context
 from kotonebot.backend.util import crop_y, cropper_y
 from kotonebot.tasks import R
@@ -64,6 +64,7 @@ def enter_recommended_action_ocr(final_week: bool = False) -> ActionType:
         device.double_click(image.expect_wait(template))
         return 'lesson'
 
+@action('执行推荐行动')
 def enter_recommended_action(final_week: bool = False) -> ActionType:
     """
     在行动选择页面，执行推荐行动
@@ -119,6 +120,7 @@ def before_start_action():
     """检测支援卡剧情、领取资源等"""
     raise NotImplementedError()
 
+@action('打出推荐卡')
 def click_recommended_card(timeout: float = 7, card_count: int = 3) -> int:
     """点击推荐卡片
     
@@ -312,6 +314,7 @@ def skill_card_count1():
     logger.info("Current skill card count: %d", count)
     return count
 
+@action('获取当前卡片数量')
 def skill_card_count():
     """获取当前持有的技能卡数量"""
     img = device.screenshot()
@@ -321,6 +324,7 @@ def skill_card_count():
     logger.info("Current skill card count: %d", count)
     return count
 
+@action('获取剩余回合数和积分')
 def remaing_turns_and_points():
     """获取剩余回合数和积分"""
     ret = ocr.ocr()
@@ -351,7 +355,7 @@ def remaing_turns_and_points():
     logger.debug("turns_ocr: %s", turns_ocr)
 
 
-
+@action('执行休息')
 def rest():
     """执行休息"""
     logger.info("Rest for this week.")
@@ -361,7 +365,7 @@ def rest():
     device.click(image.expect_wait(R.InPurodyuusu.RestConfirmBtn))
 
 
-
+@action('等待进入行动场景')
 def until_action_scene():
     """等待进入行动场景"""
     # 检测是否到行动页面
@@ -376,18 +380,21 @@ def until_action_scene():
         logger.info("Now at action scene.")
         return 
 
+@action('等待进入练习场景')
 def until_practice_scene():
     """等待进入练习场景"""
     while image.wait_for(R.InPurodyuusu.TextClearUntil, timeout=1) is None:
         acquisitions()
         sleep(1)
 
+@action('等待进入考试场景')
 def until_exam_scene():
     """等待进入考试场景"""
     while ocr.find(regex("合格条件|三位以上")) is None:
         acquisitions()
         sleep(1)
 
+@action('执行练习')
 def practice():
     """执行练习"""
     logger.info("Practice started")
@@ -421,6 +428,7 @@ def practice():
     logger.info("Click to finish 上昇 ")
     device.click_center()
 
+@action('执行考试')
 def exam():
     """执行考试"""
     logger.info("Exam started")
@@ -445,6 +453,7 @@ def exam():
     while ocr.wait_for(contains("メモリー"), timeout=7):
         device.click_center()
 
+@action('执行考试结束')
 def produce_end():
     """执行考试结束"""
     # 考试结束对话 [screenshots\produce_end\step2.jpg]
@@ -513,7 +522,7 @@ def produce_end():
             device.click_center()
         sleep(2)
 
-
+@action('执行 Regular 培育')
 def hajime_regular(week: int = -1, start_from: int = 1):
     """
     「初」 Regular 模式

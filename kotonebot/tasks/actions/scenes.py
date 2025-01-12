@@ -32,17 +32,17 @@ def until(
         time.sleep(interval)
     return True
 
-@action
+@action('检测是否位于首页')
 def at_home() -> bool:
     with cropped(device, y1=0.7):
         return image.find(R.Daily.ButtonHomeCurrent) is not None
 
-@action
+@action('检测是否位于商店页面')
 def at_shop() -> bool:
     with cropped(device, y2=0.3):
         return image.find(R.Daily.IconShopTitle) is not None
 
-@action
+@action('返回首页')
 def goto_home():
     """
     从其他场景返回首页。
@@ -67,7 +67,7 @@ def goto_home():
             raise UnrecoverableError("Failed to go home.")
     image.expect_wait(R.Daily.ButtonHomeCurrent, timeout=20)
 
-@action
+@action('前往商店页面')
 def goto_shop():
     """
     从首页进入 ショップ。

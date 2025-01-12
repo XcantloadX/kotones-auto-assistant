@@ -5,7 +5,7 @@ from logging import getLogger
 import cv2
 import numpy as np
 
-from kotonebot import image, device, debug
+from kotonebot import image, device, debug, action
 from kotonebot.backend.debug import result
 
 logger = getLogger(__name__)
@@ -25,6 +25,7 @@ def loading() -> bool:
     result('tasks.actions.loading', img, f'result={ret}')
     return ret
 
+@action('等待加载开始')
 def wait_loading_start(timeout: float = 60):
     """等待加载开始"""
     start_time = time.time()
@@ -34,6 +35,7 @@ def wait_loading_start(timeout: float = 60):
         logger.debug('Not loading...')
         sleep(1)
 
+@action('等待加载结束')
 def wait_loading_end(timeout: float = 60):
     """等待加载结束"""
     start_time = time.time()

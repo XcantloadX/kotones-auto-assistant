@@ -10,7 +10,7 @@ from . import R
 
 logger = logging.getLogger(__name__)
 
-@action
+@action('购买 Money 物品')
 def money_items():
     """
     购买マニー物品
@@ -43,12 +43,12 @@ def money_items():
             sleep(1.5)
     logger.info(f'Purchasing マニー items completed. {index} items purchased.')
 
-@action
+@action('购买 AP 物品')
 def ap_items(item_indices: list[int]):
     """
-    购买AP物品
+    购买 AP 物品
 
-    前置条件：位于商店页面的AP Tab
+    前置条件：位于商店页面的 AP Tab
 
     :param item_indices: 要购买的物品索引列表，从 0 开始。
     """

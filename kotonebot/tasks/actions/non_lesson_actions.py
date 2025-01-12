@@ -6,30 +6,34 @@
 from time import sleep
 from logging import getLogger
 
-from kotonebot import device, image, ocr, debug
+from kotonebot import device, image, ocr, debug, action
 from kotonebot.tasks import R
 from .common import acquisitions, AcquisitionType
 
 logger = getLogger(__name__)
 
+@action('检测是否可以执行活動支給')
 def allowance_available():
     """
     判断是否可以执行活動支給。
     """
     return image.expect(R.InPurodyuusu.ButtonTextAllowance) is not None
 
+@action('检测是否可以执行授業')
 def study_available():
     """
     判断是否可以执行授業。
     """
     return image.expect(R.InPurodyuusu.ButtonTextStudy) is not None
 
+@action('执行授業')
 def enter_study():
     """
     执行授業。
     """
     raise NotImplementedError("授業功能未实现")
 
+@action('执行活動支給')
 def enter_allowance():
     """
     执行活動支給。

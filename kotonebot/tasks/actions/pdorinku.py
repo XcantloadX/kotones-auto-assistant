@@ -1,7 +1,7 @@
 from time import sleep
 from logging import getLogger
 
-from kotonebot import device, ocr, image, Rect
+from kotonebot import device, ocr, image, Rect, action
 from kotonebot.backend.util import contains
 from .. import R
 
@@ -11,11 +11,12 @@ logger = getLogger(__name__)
 # TODO: 比较 OCR 和模板匹配文字的性能，如果模板匹配更好，
 # 则首次使用 OCR，找到结果后自动截图，后续使用模板匹配。
 
-
+@action('检测是否在 P 饮料领取中')
 def is_on_pdorinku_acquisition() -> bool:
     """检查是否在 P 饮料领取中"""
     return ocr.find('受け取るＰドリンクを選んでください。') is not None
 
+@action('列出当前要领取的 P 饮料')
 def list_pdorinku() -> list[tuple[str, Rect]]:
     """
     列出当前要领取的 P 饮料
@@ -33,6 +34,7 @@ def list_pdorinku() -> list[tuple[str, Rect]]:
         for dorinku in dorinkus
     ]
 
+@action('领取 P 饮料')
 def acquire_pdorinku(index: int):
     """
     领取 P 饮料

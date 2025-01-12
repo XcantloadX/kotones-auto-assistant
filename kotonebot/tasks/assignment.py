@@ -8,7 +8,7 @@ from . import R
 
 logger = logging.getLogger(__name__)
 
-@action
+@action('领取工作奖励')
 def acquire_assignment():
     """
     领取工作奖励
@@ -21,45 +21,7 @@ def acquire_assignment():
         device.click()
         sleep(5)
 
-@action
-def assign_mini_live():
-    """
-    分配 MiniLive
-
-    前置条件：分配工作页面 \n
-    结束状态：工作开始动画
-    """
-    # [kotonebot/tasks/assignment.py]
-    device.click(image.expect_wait(R.Daily.IconAssignMiniLive, timeout=2))
-    # MiniLive 页面 [screenshots/assignment/assign_mini_live.png]
-    # 等待加载完成
-    image.expect_wait(R.Common.ButtonSelect, timeout=5)
-    results = image.find_many(R.Daily.IconAssignKouchou, threshold=0.8)
-    results.sort(key=lambda r: tuple(r.position))
-    results.pop(0) # 第一个是说明文字里的图标
-    # 选择第一个好调
-    target = results.pop()
-    device.click(target)
-    # 点击选择
-    sleep(0.5)
-    device.click(image.expect(R.Common.ButtonSelect))
-    # 等待页面加载
-    confirm = image.expect_wait(R.Common.ButtonConfirmNoIcon)
-    # 选择时间 [screenshots/assignment/assign_mini_live2.png]
-    # CONFIG: 工作时长
-    if ocr.find(contains('12時間')):
-        logger.info('12時間 selected.')
-        device.click()
-    else:
-        logger.warning('12時間 not found. Using default duration.')
-    sleep(0.5)
-    # 点击 决定する
-    device.click(confirm)
-    # 点击 開始する [screenshots/assignment/assign_mini_live3.png]
-    device.click(image.expect_wait(R.Common.ButtonStart, timeout=5))
-
-
-@action
+@action('重新分配工作')
 def assign(type: Literal['mini', 'online']):
     """
     分配工作

@@ -10,7 +10,7 @@ from kotonebot import device, image, ocr, action, task, user
 
 logger = logging.getLogger(__name__)
 
-@action
+@action('前往竞赛页面')
 def goto_contest():
     """
     前置条件：位于首页 \n
@@ -28,7 +28,7 @@ def goto_contest():
         sleep(1)
     # [screenshots/contest/main.png]
 
-@action
+@action('选择并挑战')
 def pick_and_contest() -> bool:
     """
     选择并挑战

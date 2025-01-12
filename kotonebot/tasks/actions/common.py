@@ -7,16 +7,16 @@ from kotonebot import (
     device,
     contains,
     image,
-    debug,
-    regex,
     grayscaled,
-    grayscale_cached
+    grayscale_cached,
+    action
 )
 from .. import R
 from .pdorinku import acquire_pdorinku
 
 logger = getLogger(__name__)
 
+@action('领取技能卡')
 def acquire_skill_card():
     """获取技能卡（スキルカード）"""
     # TODO: 识别卡片内容，而不是固定选卡
@@ -47,6 +47,8 @@ AcquisitionType = Literal[
     "PItem", # P物品
     "Clear", # 目标达成
 ]
+
+@action('检测并领取奖励')
 def acquisitions() -> AcquisitionType | None:
     """处理行动开始前和结束后可能需要处理的事件，直到到行动页面为止"""
     img = device.screenshot_raw()
