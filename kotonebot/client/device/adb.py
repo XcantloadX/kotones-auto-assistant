@@ -79,6 +79,7 @@ class AdbDevice(DeviceABC):
     def screen_size(self) -> tuple[int, int]:
         ret = cast(str, self.device.shell("wm size")).strip('Physical size: ')
         spiltted = tuple(map(int, ret.split("x")))
+        spiltted = tuple(sorted(spiltted, reverse=True))
         if len(spiltted) != 2:
             raise ValueError(f"Invalid screen size: {ret}")
         return spiltted

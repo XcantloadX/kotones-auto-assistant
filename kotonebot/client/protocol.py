@@ -212,9 +212,12 @@ class DeviceABC(ABC):
     @property
     def screen_size(self) -> tuple[int, int]:
         """
-        屏幕尺寸。
-
-        :return: 屏幕尺寸，格式为 (width, height)
+        屏幕尺寸。格式为 `(width, height)`。
+        
+        **注意**： `width` 总为分辨率中较长的那一边，
+        并不会随横竖屏变化，即此属性返回的总是
+        横屏下的分辨率。如果当前设备 APP 为竖屏运行，
+        需要反转元组顺序。
         """
         ...
 
