@@ -383,7 +383,7 @@ class Context:
     def __init__(self):
         # HACK: 暂时写死
         from adbutils import adb
-        adb.connect('127.0.0.1:16384')
+        adb.connect('127.0.0.1:5555')
         self.__device = AdbDevice(adb.device_list()[0])
         # self.__device = None
         self.__ocr = ContextOcr(self)

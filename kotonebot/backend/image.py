@@ -190,7 +190,7 @@ def template_match(
                 img1 = cv2.bitwise_and(img1, img1, mask=mask)
                 img2 = cv2.bitwise_and(img2, img2, mask=mask)
 
-            if not hist_match(img1, img2, (0, 0, w, h), threshold):
+            if not hist_match(img1, img2, (0, 0, w, h)):
                 continue
         
         matches.append(TemplateMatchResult(
@@ -208,8 +208,8 @@ def template_match(
 def hist_match(
     image: MatLike | str,
     template: MatLike | str,
-    rect: Rect,
-    threshold: float = 0.8,
+    rect: Rect | None = None,
+    threshold: float = 0.9,
 ) -> bool:
     """
     对输入图像的矩形部分与模板进行颜色直方图匹配。
@@ -219,7 +219,7 @@ def hist_match(
 
     :param image: 输入图像
     :param template: 模板图像
-    :param rect: 待匹配的矩形区域
+    :param rect: 输入图像中待匹配的矩形区域
     :param threshold: 相似度阈值，默认为 0.8
     :return: 是否匹配成功
     """
@@ -228,12 +228,16 @@ def hist_match(
     template = _unify_image(template)
 
     # 从图像中裁剪出矩形区域
-    x, y, w, h = rect
-    roi = image[y:y+h, x:x+w]
+    if rect is None:
+        roi = image
+    else:
+        x, y, w, h = rect
+        roi = image[y:y+h, x:x+w]
 
     # 确保尺寸一致
     if roi.shape != template.shape:
-        roi = cv2.resize(roi, (template.shape[1], template.shape[0]))
+        # roi = cv2.resize(roi, (template.shape[1], template.shape[0]))
+        raise ValueError('Expected two images with the same size.')
 
     # 将图像分为上中下三个区域
     h = roi.shape[0]
