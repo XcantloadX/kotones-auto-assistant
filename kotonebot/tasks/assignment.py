@@ -118,6 +118,7 @@ def assignment():
         assign('mini')
         image.expect_wait(R.Daily.IconAssignOnlineLive, timeout=7)
         assign('online')
+        sleep(4) # 等待动画结束
     else:
         logger.info('Assignment not completed yet. Skipped.')
 
