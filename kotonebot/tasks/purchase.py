@@ -5,7 +5,7 @@ from time import sleep
 from kotonebot import task
 from kotonebot import device, image, ocr, action
 from kotonebot.backend.util import cropped
-from .actions.scenes import goto_home, goto_shop, at_shop
+from .actions.scenes import goto_home, goto_shop, at_daily_shop
 from . import R
 
 logger = logging.getLogger(__name__)
@@ -86,7 +86,7 @@ def purchase():
     """
     从商店购买物品
     """
-    if not at_shop():
+    if not at_daily_shop():
         goto_shop()
     # 进入每日商店 [screenshots\shop\shop.png]
     # [ap1.png]

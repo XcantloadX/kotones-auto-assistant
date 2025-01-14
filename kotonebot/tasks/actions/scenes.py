@@ -37,10 +37,20 @@ def at_home() -> bool:
     with cropped(device, y1=0.7):
         return image.find(R.Daily.ButtonHomeCurrent) is not None
 
-@action('检测是否位于商店页面')
-def at_shop() -> bool:
-    with cropped(device, y2=0.3):
-        return image.find(R.Daily.IconShopTitle) is not None
+@action('检测是否位于日常商店页面')
+def at_daily_shop() -> bool:
+    icon = image.find(R.Daily.IconShopTitle)
+    if icon is not None:
+        return True
+    else:
+        # 调整默认购买数量的设置弹窗
+        # [screenshots/contest/settings_popup.png]
+        if image.find(R.Common.ButtonIconClose):
+            device.click()
+            sleep(1)
+            return at_daily_shop()
+        else:
+            return False
 
 @action('返回首页')
 def goto_home():
@@ -79,12 +89,12 @@ def goto_shop():
     if not at_home():
         goto_home()
     device.click(image.expect(R.Daily.ButtonShop))
-    until(at_shop, critical=True)
+    until(at_daily_shop, critical=True)
 
 
 if __name__ == "__main__":
     from kotonebot.backend.context import init_context
     init_context()
     print(at_home())
-    print(at_shop())
+    print(at_daily_shop())
     goto_shop()

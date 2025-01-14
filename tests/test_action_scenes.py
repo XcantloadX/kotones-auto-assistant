@@ -5,7 +5,7 @@ from kotonebot.tasks.actions.scenes import (
     goto_home,
     goto_shop,
     at_home,
-    at_shop,
+    at_daily_shop,
 )
 img_assign = 'tests/images/scenes/assign.png'
 img_commu = 'tests/images/scenes/commu.png'
