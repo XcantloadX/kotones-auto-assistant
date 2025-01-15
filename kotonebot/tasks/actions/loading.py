@@ -13,6 +13,7 @@ logger = getLogger(__name__)
 def loading() -> bool:
     """检测是否在场景加载页面"""
     img = device.screenshot()
+    original_img = img.copy()
     # 二值化图片
     _, img = cv2.threshold(img, 127, 255, cv2.THRESH_BINARY)
     # 裁剪上面 10%
@@ -22,7 +23,7 @@ def loading() -> bool:
     b,g,r = cv2.split(img)
     shiftet_im = b.astype(np.int64) + 1000 * (g.astype(np.int64) + 1) + 1000 * 1000 * (r.astype(np.int64) + 1)
     ret = len(np.unique(shiftet_im)) <= 2
-    result('tasks.actions.loading', img, f'result={ret}')
+    result('tasks.actions.loading', [img, original_img], f'result={ret}')
     return ret
 
 @action('等待加载开始')

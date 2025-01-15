@@ -91,5 +91,9 @@ def find_rgb(
             x, y, w, h = rect
             # 红色圈出rect
             cv2.rectangle(result_image, (x, y), (x+w, y+h), (255, 0, 0), 2)
-        debug_result('find_rgb', result_image, f'color={color}, rect={rect}, result={ret}')
+        debug_result(
+            'find_rgb',
+            [result_image, image],
+            f'color={color}, rect={rect}, result={ret}'
+        )
     return ret

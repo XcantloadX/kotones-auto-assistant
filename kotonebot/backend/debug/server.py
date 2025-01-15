@@ -51,16 +51,14 @@ async def read_memory(key: str):
     """读取内存中的数据"""
     try:
         image = None
-        if key in vars._results:
-            image = vars._results[key].image
-        elif key in vars._images:
+        if key in vars._images:
             image = vars._images[key]
         else:
             raise HTTPException(status_code=404, detail="Key not found")
         
         # 编码图片
-        encode_params = [cv2.IMWRITE_JPEG_QUALITY, 85, cv2.IMWRITE_JPEG_PROGRESSIVE, 1]
-        _, buffer = cv2.imencode('.jpg', image, encode_params)
+        encode_params = [cv2.IMWRITE_PNG_COMPRESSION, 4]
+        _, buffer = cv2.imencode('.png', image, encode_params)
         # 添加缓存控制头
         headers = {
             "Cache-Control": "public, max-age=3600",  # 缓存1小时
@@ -91,7 +89,7 @@ async def websocket_endpoint(websocket: WebSocket):
     except:
         await websocket.close()
 
-def send_ws_message(title: str, image: str, text: str = '', wait: bool = False):
+def send_ws_message(title: str, image: list[str], text: str = '', wait: bool = False):
     """发送 WebSocket 消息"""
     message = {
         "type": "visual",

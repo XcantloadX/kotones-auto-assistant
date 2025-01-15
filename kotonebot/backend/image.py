@@ -349,7 +349,11 @@ def find(
         result_text += f"matches: {len(matches)} \n"
         for match in matches:
             result_text += f"score: {match.score} position: {match.position} size: {match.size} \n"
-        debug_result(f"image.find", result_image, result_text)
+        debug_result(
+            'image.find',
+            [result_image, image],
+            result_text
+        )
     return matches[0] if len(matches) > 0 else None
 
 def find_many(
@@ -387,7 +391,7 @@ def find_many(
         result_image = _draw_result(image, results)
         debug_result(
             'image.find_many',
-            result_image,
+            [result_image, image],
             f"template: {img(template)} \n"
             f"matches: {len(results)} \n"
         )
@@ -451,7 +455,7 @@ def find_any(
         )
         debug_result(
             'image.find_any',
-            _draw_result(image, ret),
+            [_draw_result(image, ret), image],
             msg
         )
     return ret
@@ -491,7 +495,7 @@ def count(
         result_image = _draw_result(image, results)
         debug_result(
             'image.count',
-            result_image,
+            [result_image, image],
             (
                 f"template: {img(template)} \n"
                 f"mask: {img(mask)} \n"
@@ -536,7 +540,7 @@ def expect(
     if debug.enabled:
         debug_result(
             'image.expect',
-            _draw_result(image, ret),
+            [_draw_result(image, ret), image],
             (
                 f"template: {img(template)} \n"
                 f"mask: {img(mask)} \n"
@@ -569,8 +573,9 @@ def similar(
         result_image = np.hstack([image1, image2])
         debug_result(
             'image.similar',
-            result_image,
+            [result_image, image1, image2],
             f"result: {result} >= {threshold} == {result >= threshold} \n"
         )
     return result >= threshold
+
 

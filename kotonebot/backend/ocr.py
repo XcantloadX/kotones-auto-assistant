@@ -139,7 +139,7 @@ class Ocr:
             result_image = _draw_result(img, ret)
             debug_result(
                 'ocr',
-                result_image,
+                [result_image, img],
                 f"result: \n" + \
                 "<table class='result-table'><tr><th>Text</th><th>Confidence</th></tr>" + \
                 "\n".join([f"<tr><td>{r.text}</td><td>{r.confidence:.2f}</td></tr>" for r in ret]) + \

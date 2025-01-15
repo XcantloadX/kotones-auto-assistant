@@ -11,18 +11,22 @@ from cv2.typing import MatLike
 
 class Result(NamedTuple):
     title: str
-    image: MatLike
-    text: str
+    image: list[str]
+    description: str
 
 @dataclass
 class _Vars:
     """调试变量类"""
     enabled: bool = False
     """是否启用调试结果显示。"""
-    max_results: int = 200
-    """最多保存的结果数量。"""
+    max_results: int = -1
+    """最多保存的结果数量。-1 表示不限制。"""
     wait_for_message_sent: bool = False
-    """是否等待消息发送完成才继续下一个操作。"""
+    """
+    是否等待消息发送完成才继续后续代码。
+
+    启用此选项可能会降低运行速度。
+    """
     hide_server_log: bool = True
     """是否隐藏服务器日志。"""
 
@@ -32,6 +36,16 @@ debug = _Vars()
 _results: dict[str, Result] = {}
 _images: dict[str, MatLike] = {}
 """存放临时图片的字典。"""
+
+def _save_image(image: MatLike) -> str:
+    """缓存图片数据到 _images 字典中。返回 key。"""
+    key = str(uuid.uuid4())
+    _images[key] = image
+    return key
+
+def _save_images(images: list[MatLike]) -> list[str]:
+    """缓存图片数据到 _images 字典中。返回 key 列表。"""
+    return [_save_image(image) for image in images]
 
 def img(image: str | MatLike | None) -> str:
     """
@@ -52,7 +66,7 @@ def img(image: str | MatLike | None) -> str:
 # TODO: 保存原图。原图用 PNG，结果用 JPG 压缩。
 def result(
         title: str,
-        image: MatLike,
+        image: MatLike | list[MatLike],
         text: str = ''
     ):
     """
@@ -74,8 +88,13 @@ def result(
     """
     if not debug.enabled:
         return
+    if not isinstance(image, list):
+        image = [image]
+    
     key = 'result_' + title + '_' + str(time.time())
-    _results[key] = Result(title, image, text)
+    # 保存图片
+    saved_images = _save_images(image)
+    _results[key] = Result(title, saved_images, text)
     if len(_results) > debug.max_results:
         _results.pop(next(iter(_results)))
     # 拼接消息
@@ -99,5 +118,5 @@ def result(
     )
     # 发送 WS 消息
     from .server import send_ws_message
-    send_ws_message(title, key, final_text, wait=debug.wait_for_message_sent)
+    send_ws_message(title, saved_images, final_text, wait=debug.wait_for_message_sent)
 

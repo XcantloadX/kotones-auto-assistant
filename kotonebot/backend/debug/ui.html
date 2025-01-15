@@ -241,6 +241,15 @@
                             <input class="form-check-input" type="checkbox" id="lockViewCheckbox">
                             <label class="form-check-label" for="lockViewCheckbox">锁定视图</label>
                         </div>
+                        <div class="image-pagination ms-2 d-inline-block">
+                            <button class="btn btn-sm btn-outline-secondary" id="prevImageBtn" disabled>
+                                <i class="bi bi-arrow-left-short"></i>
+                            </button>
+                            <span id="imagePageCount" class="mx-2">1/1</span>
+                            <button class="btn btn-sm btn-outline-secondary" id="nextImageBtn" disabled>
+                                <i class="bi bi-arrow-right-short"></i>
+                            </button>
+                        </div>
                     </div>
                     <div class="slider-container mb-2">
                         <input type="range" class="form-range" id="pageSlider" value="0" min="0" max="0">
@@ -252,7 +261,7 @@
                         <button class="btn btn-sm btn-outline-secondary" id="prevBtn" alt="上一张">
                             <i class="bi bi-chevron-left"></i>
                         </button>
-                        <span id="imageCount" style="margin: 0 10px">0/0</span>
+                        <span id="funcCount" style="margin: 0 10px">0/0</span>
                         <button class="btn btn-sm btn-outline-secondary" id="nextBtn" alt="下一张">
                             <i class="bi bi-chevron-right"></i>
                         </button>
@@ -294,8 +303,9 @@
             let startX, startY;
             let translateX = 0, translateY = 0;
             let isReconnecting = false;
-            let imageHistory = [];
-            let currentImageIndex = -1;
+            let funcHistory = []; // 服务器推送的函数执行结果
+            let currentFuncIndex = -1;
+            let currentImageIndex = 0;  // 当前图片页码
             let isResizing = false;
             let startWidth = 0;
             let minWidth = 200;  // 最小宽度
@@ -331,36 +341,52 @@
 
             // 更新图片计数
             function updateImageCount() {
-                $('#imageCount').text(`${currentImageIndex + 1}/${imageHistory.length}`);
-                $('#firstBtn').prop('disabled', currentImageIndex <= 0);
-                $('#prevBtn').prop('disabled', currentImageIndex <= 0);
-                $('#nextBtn').prop('disabled', currentImageIndex >= imageHistory.length - 1);
-                $('#lastBtn').prop('disabled', currentImageIndex >= imageHistory.length - 1);
+                $('#funcCount').text(`${currentFuncIndex + 1}/${funcHistory.length}`);
+                $('#firstBtn').prop('disabled', currentFuncIndex <= 0);
+                $('#prevBtn').prop('disabled', currentFuncIndex <= 0);
+                $('#nextBtn').prop('disabled', currentFuncIndex >= funcHistory.length - 1);
+                $('#lastBtn').prop('disabled', currentFuncIndex >= funcHistory.length - 1);
                 
                 // 更新滑块最大值
                 const slider = $('#pageSlider');
-                slider.attr('max', Math.max(0, imageHistory.length - 1));
+                slider.attr('max', Math.max(0, funcHistory.length - 1));
             }
 
             // 显示历史图片
             function showHistoryImage(index) {
-                if (index < 0 || index >= imageHistory.length) return;
-                currentImageIndex = index;
-                const imageData = imageHistory[index];
+                if (index < 0 || index >= funcHistory.length) return;
+                currentFuncIndex = index;
+                const imageData = funcHistory[index];
                 
-                // 更新图片
-                const imageContainer = $('#imageViewer');
-                const img = $('<img>');
-                if (imageData.type === 'memory') {
-                    img.attr('src', `/api/read_memory?key=${imageData.value}`);
-                } else if (imageData.type === 'file') {
-                    img.attr('src', `/api/read_file?path=${imageData.value}`);
-                }
-                imageContainer.empty().append(img);
+                // 重置当前图片页码
+                currentImageIndex = 0;
+                showCurrentImage();
                 
                 // 更新标题和详情
                 $('h4').text(imageData.name);
                 $('#customMessage').html(imageData.details);
+                
+                // 更新计数和滑块
+                updateImageCount();
+                $('#pageSlider').val(currentFuncIndex);
+            }
+
+            // 显示当前结果中的指定页码图片
+            function showCurrentImage() {
+                if (currentFuncIndex < 0) return;
+                
+                const imageData = funcHistory[currentFuncIndex].image;
+                const imageValues = imageData;
+
+                // 更新图片
+                const imageContainer = $('#imageViewer');
+                const img = $('<img>');
+                if (imageData.type === 'memory') {
+                    img.attr('src', `/api/read_memory?key=${imageValues.value[currentImageIndex]}`);
+                } else if (imageData.type === 'file') {
+                    img.attr('src', `/api/read_file?path=${imageValues.value[currentImageIndex]}`);
+                }
+                imageContainer.empty().append(img);
                 
                 // 根据锁定状态决定是否保持视图
                 if (isViewLocked) {
@@ -394,9 +420,19 @@
                 // 初始化拖拽事件
                 initDragEvents();
                 
-                // 更新计数和滑块
-                updateImageCount();
-                $('#pageSlider').val(currentImageIndex);
+                // 更新图片页码显示和按钮状态
+                updateImagePageCount();
+            }
+
+            // 更新图片页码显示
+            function updateImagePageCount() {
+                if (currentFuncIndex < 0) return;
+                
+                const imageData = funcHistory[currentFuncIndex].image.value;
+                
+                $('#imagePageCount').text(`${currentImageIndex + 1}/${imageData.length}`);
+                $('#prevImageBtn').prop('disabled', currentImageIndex <= 0);
+                $('#nextImageBtn').prop('disabled', currentImageIndex >= imageData.length - 1);
             }
 
             // 连接 WebSocket
@@ -423,17 +459,12 @@
                     
                     if (data.type === 'visual') {
                         // 保存图片数据到历史记录
-                        imageHistory.push({
-                            type: data.data.image.type,
-                            value: data.data.image.value,
-                            name: data.data.name,
-                            details: data.data.details
-                        });
+                        funcHistory.push(data.data);
                         
                         // 只有当前正在查看最后一张图片时，才自动显示新图片
-                        if (currentImageIndex === imageHistory.length - 2 || currentImageIndex === -1) {
-                            currentImageIndex = imageHistory.length - 1;
-                            showHistoryImage(currentImageIndex);
+                        if (currentFuncIndex === funcHistory.length - 2 || currentFuncIndex === -1) {
+                            currentFuncIndex = funcHistory.length - 1;
+                            showHistoryImage(currentFuncIndex);
                         } else {
                             // 否则只更新计数和按钮状态
                             updateImageCount();
@@ -543,9 +574,9 @@
 
             // 导航按钮事件
             $('#firstBtn').click(() => showHistoryImage(0));
-            $('#prevBtn').click(() => showHistoryImage(currentImageIndex - 1));
-            $('#nextBtn').click(() => showHistoryImage(currentImageIndex + 1));
-            $('#lastBtn').click(() => showHistoryImage(imageHistory.length - 1));
+            $('#prevBtn').click(() => showHistoryImage(currentFuncIndex - 1));
+            $('#nextBtn').click(() => showHistoryImage(currentFuncIndex + 1));
+            $('#lastBtn').click(() => showHistoryImage(funcHistory.length - 1));
 
             // 初始化拖拽调整宽度
             function initResizeHandle() {
@@ -581,25 +612,34 @@
                 });
             }
 
-            // 下载当前图片
+            // 下载当前图片组
             function downloadCurrentImage() {
-                if (currentImageIndex < 0 || currentImageIndex >= imageHistory.length) return;
+                if (currentFuncIndex < 0 || currentFuncIndex >= funcHistory.length) return;
+                const imageData = funcHistory[currentFuncIndex].image;
                 
-                const imageData = imageHistory[currentImageIndex];
-                const img = $('#imageViewer img');
-                const link = document.createElement('a');
-                
-                // 使用原始图片URL
-                link.href = img.attr('src');
-                
-                // 生成文件名
+                // 生成基础文件名
+                const name = funcHistory[currentFuncIndex].name;
                 const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-                const extension = imageData.type === 'memory' ? 'jpg' : 'png';
-                link.download = `${imageData.name}_${timestamp}.${extension}`;
                 
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
+                // 下载所有图片
+                imageData.value.forEach((val, index) => {
+                    const link = document.createElement('a');
+                    if (imageData.type === 'memory') {
+                        link.href = `/api/read_memory?key=${val}`;
+                    } else {
+                        link.href = `/api/read_file?path=${val}`;
+                    }
+                    
+                    // 如果只有一张图片，不添加索引
+                    const fileName = imageData.length > 1 
+                        ? `${name}_${index + 1}_${timestamp}.png`
+                        : `${name}_${timestamp}.png`;
+                    
+                    link.download = fileName;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                });
             }
 
             // 键盘控制
@@ -610,12 +650,12 @@
                 switch(e.key) {
                     case 'ArrowLeft':
                         if (!$('#prevBtn').prop('disabled')) {
-                            showHistoryImage(currentImageIndex - 1);
+                            showHistoryImage(currentFuncIndex - 1);
                         }
                         break;
                     case 'ArrowRight':
                         if (!$('#nextBtn').prop('disabled')) {
-                            showHistoryImage(currentImageIndex + 1);
+                            showHistoryImage(currentFuncIndex + 1);
                         }
                         break;
                     case 'Home':
@@ -625,7 +665,7 @@
                         break;
                     case 'End':
                         if (!$('#lastBtn').prop('disabled')) {
-                            showHistoryImage(imageHistory.length - 1);
+                            showHistoryImage(funcHistory.length - 1);
                         }
                         break;
                 }
@@ -647,6 +687,22 @@
                 // 初始化锁定视图复选框事件
                 $('#lockViewCheckbox').on('change', function() {
                     isViewLocked = $(this).prop('checked');
+                });
+                
+                // 初始化图片分页按钮事件
+                $('#prevImageBtn').click(function() {
+                    if (currentImageIndex > 0) {
+                        currentImageIndex--;
+                        showCurrentImage();
+                    }
+                });
+                
+                $('#nextImageBtn').click(function() {
+                    const func = funcHistory[currentFuncIndex];
+                    if (currentImageIndex < func.image.value.length - 1) {
+                        currentImageIndex++;
+                        showCurrentImage();
+                    }
                 });
             }
 
