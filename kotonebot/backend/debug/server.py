@@ -16,15 +16,16 @@ app = FastAPI()
 
 # 获取当前文件夹路径
 CURRENT_DIR = Path(__file__).parent
+STATIC_DIR = CURRENT_DIR / "web"
 APP_DIR = Path.cwd()
 
 # 挂载静态文件
-app.mount("/static", StaticFiles(directory=str(CURRENT_DIR)), name="static")
+app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 @app.get("/")
 async def get_root():
     """返回 UI 页面"""
-    return FileResponse(CURRENT_DIR / "ui.html")
+    return FileResponse(STATIC_DIR / "ui.html")
 
 @app.get("/api/read_file")
 async def read_file(path: str):

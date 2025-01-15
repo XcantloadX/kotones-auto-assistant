@@ -292,9 +292,9 @@
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/client.js"></script>
     <script>
         $(document).ready(function() {
-            let ws = null;
             let currentScale = 1.0;
             const ZOOM_STEP = 0.1;
             const MIN_SCALE = 0.1;
@@ -302,7 +302,6 @@
             let isDragging = false;
             let startX, startY;
             let translateX = 0, translateY = 0;
-            let isReconnecting = false;
             let funcHistory = []; // 服务器推送的函数执行结果
             let currentFuncIndex = -1;
             let currentImageIndex = 0;  // 当前图片页码
@@ -322,20 +321,6 @@
                     status.addClass('show');
                 } else {
                     status.removeClass('show');
-                }
-            }
-
-            // 检查服务器状态
-            async function checkServerStatus() {
-                try {
-                    const response = await fetch('/api/ping');
-                    if (response.ok) {
-                        // 服务器恢复了，刷新页面
-                        window.location.reload();
-                    }
-                } catch (e) {
-                    // 服务器仍然不可用，继续尝试
-                    setTimeout(checkServerStatus, 2000);
                 }
             }
 
@@ -433,56 +418,6 @@
                 $('#imagePageCount').text(`${currentImageIndex + 1}/${imageData.length}`);
                 $('#prevImageBtn').prop('disabled', currentImageIndex <= 0);
                 $('#nextImageBtn').prop('disabled', currentImageIndex >= imageData.length - 1);
-            }
-
-            // 连接 WebSocket
-            function connectWebSocket() {
-                if (isReconnecting) return;
-                isReconnecting = true;
-                showConnectionStatus(true);
-                
-                ws = new WebSocket(`ws://${window.location.host}/ws`);
-                
-                ws.onopen = function() {
-                    console.log('WebSocket connected');
-                    isReconnecting = false;
-                    showConnectionStatus(false);
-                };
-                
-                ws.onmessage = function(event) {
-                    const data = JSON.parse(event.data);
-                    console.log(data);
-                    if (data.error) {
-                        console.error('WebSocket error:', data.error);
-                        return;
-                    }
-                    
-                    if (data.type === 'visual') {
-                        // 保存图片数据到历史记录
-                        funcHistory.push(data.data);
-                        
-                        // 只有当前正在查看最后一张图片时，才自动显示新图片
-                        if (currentFuncIndex === funcHistory.length - 2 || currentFuncIndex === -1) {
-                            currentFuncIndex = funcHistory.length - 1;
-                            showHistoryImage(currentFuncIndex);
-                        } else {
-                            // 否则只更新计数和按钮状态
-                            updateImageCount();
-                        }
-                    }
-                };
-                
-                ws.onclose = function() {
-                    console.log('WebSocket disconnected');
-                    showConnectionStatus(true);
-                    // 开始检查服务器状态
-                    checkServerStatus();
-                };
-                
-                ws.onerror = function(error) {
-                    console.error('WebSocket error:', error);
-                    showConnectionStatus(true);
-                };
             }
 
             // 更新缩放级别显示
@@ -676,7 +611,26 @@
 
             // 初始化所有功能
             function initializeUI() {
-                connectWebSocket();
+                const client = new KotoneDebugClient(window.location.host);
+                
+                // 监听连接状态
+                client.addEventListener('connectionStatus', (e) => {
+                    showConnectionStatus(!e.connected);
+                });
+                
+                // 监听可视化事件
+                client.addEventListener('visual', (e) => {
+                    funcHistory.push(e.data);
+                    // 只有当前正在查看最后一张图片时，才自动显示新图片
+                    if (currentFuncIndex === funcHistory.length - 2 || currentFuncIndex === -1) {
+                        currentFuncIndex = funcHistory.length - 1;
+                        showHistoryImage(currentFuncIndex);
+                    } else {
+                        // 否则只更新计数和按钮状态
+                        updateImageCount();
+                    }
+                });
+                
                 initResizeHandle();
                 
                 // 初始化滑块事件
@@ -709,11 +663,6 @@
             // 修改初始化调用
             initializeUI();
         });
-    </script>
-
-    <script>
-    // 通信代码
-    
     </script>
 </body>
 </html>
