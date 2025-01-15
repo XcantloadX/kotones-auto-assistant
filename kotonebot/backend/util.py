@@ -151,7 +151,7 @@ def cropped(
     def _screenshot_hook(img: MatLike) -> MatLike:
         return crop(img, x1, y1, x2, y2)
     def _click_hook(x: int, y: int) -> tuple[int, int]:
-        h, w = device.screen_size # 竖屏下宽高反转
+        w, h = device.screen_size
         x_px = int(x1 * w + x)
         y_px = int(y1 * h + y)
         return x_px, y_px

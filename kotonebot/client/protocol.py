@@ -1,5 +1,5 @@
 from time import sleep
-from typing import Callable, Protocol, TYPE_CHECKING, overload, runtime_checkable
+from typing import Callable, Protocol, TYPE_CHECKING, overload, runtime_checkable, Literal
 from abc import ABC
 
 from cv2.typing import MatLike
@@ -74,6 +74,12 @@ class DeviceABC(ABC):
         """点击前调用的函数。返回修改后的点击坐标。"""
         self.last_find: Rect | ClickableObjectProtocol | None = None
         """上次 image 对象或 ocr 对象的寻找结果"""
+        self.orientation: Literal['portrait', 'landscape'] = 'portrait'
+        """
+        设备当前方向。默认为竖屏。
+
+        横屏时为 'landscape'，竖屏时为 'portrait'。
+        """
 
     @staticmethod
     def list_devices() -> list[str]:
@@ -121,7 +127,11 @@ class DeviceABC(ABC):
 
     def click_center(self) -> None:
         """
-        点击屏幕中心
+        点击屏幕中心。
+        
+        此方法会受到 `self.orientation` 的影响。
+        调用前确保 `orientation` 属性与设备方向一致，
+        否则点击位置会不正确。
         """
         x, y = self.screen_size[0] // 2, self.screen_size[1] // 2
         self.click(x, y)
@@ -214,16 +224,27 @@ class DeviceABC(ABC):
         """
         屏幕尺寸。格式为 `(width, height)`。
         
-        **注意**： `width` 总为分辨率中较长的那一边，
-        并不会随横竖屏变化，即此属性返回的总是
-        横屏下的分辨率。如果当前设备 APP 为竖屏运行，
-        需要反转元组顺序。
+        **注意**： 此属性返回的分辨率会随设备方向变化。
+        如果 `self.orientation` 为 `landscape`，则返回的分辨率是横屏下的分辨率，
+        否则返回竖屏下的分辨率。
+
+        `self.orientation` 属性默认为竖屏。如果需要自动检测，
+        调用 `self.detect_orientation()` 方法。
+        如果已知方向，也可以直接设置 `self.orientation` 属性。
         """
         ...
 
     def current_package(self) -> str:
         """
         前台 APP 的包名
+        """
+        ...
+
+    def detect_orientation(self) -> Literal['portrait', 'landscape'] | None:
+        """
+        检测当前设备方向并设置 `self.orientation` 属性。
+
+        :return: 检测到的方向，如果无法检测到则返回 None。
         """
         ...
 

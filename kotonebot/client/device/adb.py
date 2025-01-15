@@ -1,5 +1,6 @@
 import logging
 from typing import Callable, cast
+from typing_extensions import override
 
 import numpy as np
 import cv2
@@ -18,9 +19,11 @@ class AdbDevice(DeviceABC):
         super().__init__()
         self.device = device
 
+    @override
     def launch_app(self, package_name: str) -> None:
         self.device.shell(f"monkey -p {package_name} 1")
     
+    @override
     def click(self, arg1=None, arg2=None) -> None:
         if arg1 is None:
             self.__click_last()
@@ -55,11 +58,13 @@ class AdbDevice(DeviceABC):
     def __click_clickable(self, clickable: ClickableObjectProtocol) -> None:
         self.click(clickable.rect)
 
+    @override
     def swipe(self, x1: int, y1: int, x2: int, y2: int, duration: float|None = None) -> None:
         if duration is not None:
             logger.warning("Swipe duration is not supported with AdbDevice. Ignoring duration.")
         self.device.shell(f"input touchscreen swipe {x1} {y1} {x2} {y2}")
 
+    @override
     def screenshot(self) -> MatLike:
         if self.screenshot_hook_before is not None:
             logger.debug("execute screenshot hook before")
@@ -72,6 +77,7 @@ class AdbDevice(DeviceABC):
             img = self.screenshot_hook_after(img)
         return img
 
+    @override
     def screenshot_raw(self) -> MatLike:
         return cv2.cvtColor(np.array(self.device.screenshot()), cv2.COLOR_RGB2BGR)
 
@@ -79,19 +85,31 @@ class AdbDevice(DeviceABC):
     def screen_size(self) -> tuple[int, int]:
         ret = cast(str, self.device.shell("wm size")).strip('Physical size: ')
         spiltted = tuple(map(int, ret.split("x")))
-        spiltted = tuple(sorted(spiltted, reverse=True))
+        landscape = self.orientation == 'landscape'
+        spiltted = tuple(sorted(spiltted, reverse=landscape))
         if len(spiltted) != 2:
             raise ValueError(f"Invalid screen size: {ret}")
         return spiltted
-
+    
     @staticmethod
     def list_devices() -> list[str]:
         raise NotImplementedError
     
-
+    @override
     def start_app(self, package_name: str) -> None:
         self.device.shell(f"monkey -p {package_name} 1")
+
+    @override
+    def detect_orientation(self):
+        # 判断方向：https://stackoverflow.com/questions/10040624/check-if-device-is-landscape-via-adb
+        # 但是上面这种方法不准确
+        # 因此这里直接通过截图判断方向
+        img = self.screenshot()
+        if img.shape[0] > img.shape[1]:
+            return 'portrait'
+        return 'landscape'
     
+    @override
     def current_package(self) -> str:
         raise NotImplementedError
 
