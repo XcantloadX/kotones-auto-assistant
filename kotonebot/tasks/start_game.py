@@ -5,6 +5,7 @@ from time import sleep
 from kotonebot import task, device, image, cropped
 from . import R
 from .common import Priority
+from .actions.loading import loading
 
 logger = logging.getLogger(__name__)
 
@@ -21,11 +22,16 @@ def start_game():
     sleep(2)
     device.click_center()
     while True:
+        while loading():
+            sleep(3)
         with device.pinned():
             if image.find(R.Daily.ButtonHomeCurrent):
                 break
             # [screenshots/startup/announcement1.png]
             elif image.find(R.Common.ButtonIconClose):
+                device.click()
+            # [screenshots/startup/update.png]
+            elif image.find(R.Common.ButtonConfirm):
                 device.click()
             else:
                 device.click_center()
