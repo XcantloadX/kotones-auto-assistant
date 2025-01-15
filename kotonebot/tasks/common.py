@@ -1,5 +1,6 @@
 from enum import IntEnum
 
 class Priority(IntEnum):
-    DEFAULT = 0
     START_GAME = 1
+    DEFAULT = 0
+    CLAIM_MISSION_REWARD = -1

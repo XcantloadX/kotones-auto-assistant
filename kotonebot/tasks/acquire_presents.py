@@ -35,5 +35,7 @@ if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO, format='[%(asctime)s] [%(levelname)s] [%(name)s] [%(funcName)s] [%(lineno)d] %(message)s')
     logger.setLevel(logging.DEBUG)
     init_context()
-    acquire_presents()
+    # acquire_presents()
+    print(image.find(R.Common.ButtonIconArrowShort, colored=True))
+    print(image.find(R.Common.ButtonIconArrowShortDisabled, colored=True))
 
