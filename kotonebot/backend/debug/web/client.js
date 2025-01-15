@@ -5,16 +5,16 @@
  */
 
 /**
- * @typedef {Object} VisualData
+ * @typedef {Object} VisualEventData
  * @property {ImageData} image - 图片数据
- * @property {string} name - 可视化标题
+ * @property {string} name - 函数名称
  * @property {string} details - 详细文本信息
  */
 
 /**
  * @typedef {Object} VisualEvent
  * @property {'visual'} type - 事件类型
- * @property {VisualData} data - 可视化数据
+ * @property {VisualEventData} data - 可视化数据
  */
 
 /**
@@ -36,7 +36,7 @@
  * @typedef {T extends 'visual' ? VisualEvent : T extends 'connectionStatus' ? ConnectionStatusEvent : never} EventTypeMap
  */
 
-class KotoneDebugClient {
+export class KotoneDebugClient {
     /** @type {WebSocket} */
     #ws;
     /** @type {Map<string, Function[]>} */

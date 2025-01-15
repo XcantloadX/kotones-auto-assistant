@@ -1,12 +1,15 @@
-from pathlib import Path
+import os
 import re
+import json
 import time
 import uuid
 import traceback
+from pathlib import Path
+from typing import NamedTuple, TextIO
 from datetime import datetime
 from dataclasses import dataclass
-from typing import NamedTuple
 
+import cv2
 from cv2.typing import MatLike
 
 class Result(NamedTuple):
@@ -29,6 +32,12 @@ class _Vars:
     """
     hide_server_log: bool = True
     """是否隐藏服务器日志。"""
+    save_to_folder: str | None = None
+    """
+    是否将结果保存到指定文件夹。
+    
+    如果为 None，则不保存。
+    """
 
 debug = _Vars()
 
@@ -36,11 +45,17 @@ debug = _Vars()
 _results: dict[str, Result] = {}
 _images: dict[str, MatLike] = {}
 """存放临时图片的字典。"""
+_result_file: TextIO | None = None
 
 def _save_image(image: MatLike) -> str:
     """缓存图片数据到 _images 字典中。返回 key。"""
     key = str(uuid.uuid4())
     _images[key] = image
+    if debug.save_to_folder:
+        if not os.path.exists(debug.save_to_folder):
+            os.makedirs(debug.save_to_folder)
+        file_name = f"{key}.png"
+        cv2.imwrite(os.path.join(debug.save_to_folder, file_name), image)
     return key
 
 def _save_images(images: list[MatLike]) -> list[str]:
@@ -56,12 +71,17 @@ def img(image: str | MatLike | None) -> str:
     """
     if image is None:
         return 'None'
-    elif isinstance(image, str):
-        return f'<img src="/api/read_file?path={image}" />'
+    if debug.save_to_folder:
+        if isinstance(image, str):
+            image = cv2.imread(image)
+        key = _save_image(image)
+        return f'[img]{key}[/img]'
     else:
-        key = str(uuid.uuid4())
-        _images[key] = image
-        return f'<img src="/api/read_memory?key={key}" />'
+        if isinstance(image, str):
+            return f'<img src="/api/read_file?path={image}" />'
+        else:
+            key = _save_image(image)
+            return f'<img src="/api/read_memory?key={key}" />'
 
 # TODO: 保存原图。原图用 PNG，结果用 JPG 压缩。
 def result(
@@ -86,6 +106,7 @@ def result(
     :param image: 图片。
     :param text: 详细文本。可以是 HTML 代码，空格和换行将会保留。如果需要嵌入图片，使用 `img()` 函数。
     """
+    global _result_file
     if not debug.enabled:
         return
     if not isinstance(image, list):
@@ -119,4 +140,22 @@ def result(
     # 发送 WS 消息
     from .server import send_ws_message
     send_ws_message(title, saved_images, final_text, wait=debug.wait_for_message_sent)
+
+    # 保存到文件
+    # TODO: 把这个类型转换为 dataclass/namedtuple
+    if debug.save_to_folder:
+        if _result_file is None:
+            if not os.path.exists(debug.save_to_folder):
+                os.makedirs(debug.save_to_folder)
+            log_file_name = f"dump_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.json"
+            _result_file = open(os.path.join(debug.save_to_folder, log_file_name), "w")
+        _result_file.write(json.dumps({
+            "image": {
+                "type": "memory",
+                "value": saved_images
+            },
+            "name": title,
+            "details": final_text
+        }))
+        _result_file.write("\n")
 

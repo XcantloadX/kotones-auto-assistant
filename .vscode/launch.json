@@ -26,7 +26,12 @@
             "request": "launch",
             "console": "integratedTerminal",
             "module": "kotonebot.backend.debug.entry",
-            "args": ["${command:extension.commandvariable.file.relativeDirDots}.${fileBasenameNoExtension}"]
+            "args": [
+                "-s",
+                "${workspaceFolder}/dumps",
+                "-c",
+                "${command:extension.commandvariable.file.relativeDirDots}.${fileBasenameNoExtension}"
+            ]
         }
     ]
 }

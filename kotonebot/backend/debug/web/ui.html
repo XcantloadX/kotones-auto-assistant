@@ -10,10 +10,11 @@
             height: 100%;
             margin: 0;
             padding: 0;
+            overflow: hidden;
         }
 
         .container-fluid {
-            height: 100%;
+            height: calc(100% - 42px); /* 减去工具栏高度 */
             padding: 0;
         }
 
@@ -203,9 +204,38 @@
             border: 1px solid #ddd;
             padding: 5px;
         }
+
+        .toolbar {
+            background-color: #f8f9fa;
+            padding: 6px;
+            text-align: center;
+            border-bottom: 1px solid #ddd;
+            height: 42px; /* 减小工具栏高度 */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .toolbar .btn {
+            margin: 0 5px;
+            padding: 3px 10px;
+            font-size: 0.875rem;
+        }
+
+        .toolbar .btn i {
+            font-size: 0.875rem;
+            margin-right: 4px;
+        }
     </style>
 </head>
 <body>
+    <!-- 工具栏 -->
+    <div class="toolbar">
+        <button class="btn btn-outline-primary" id="openLocalBtn">
+            <i class="bi bi-folder2-open"></i> 打开
+        </button>
+    </div>
+
     <!-- 添加连接状态提示 -->
     <div class="connection-status" id="connectionStatus">
         WebSocket 连接已断开，正在尝试重新连接...
@@ -292,8 +322,12 @@
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="/static/client.js"></script>
-    <script>
+    <script type="module" src="/static/util.js"></script>
+    <script type="module" src="/static/client.js"></script>
+    <script type="module">
+        import { KotoneDebugClient } from '/static/client.js';
+        import { parseImages } from '/static/util.js';
+        
         $(document).ready(function() {
             let currentScale = 1.0;
             const ZOOM_STEP = 0.1;
@@ -313,6 +347,77 @@
             let lastScale = 1.0;  // 上一次的缩放值
             let lastTranslateX = 0;  // 上一次的X位移
             let lastTranslateY = 0;  // 上一次的Y位移
+            let localImageMap = new Map();  // 本地图片映射表
+            let localMode = false;  // 是否为本地模式
+
+            // 处理本地文件夹选择
+            async function handleLocalFolder() {
+                try {
+                    const dirHandle = await window.showDirectoryPicker();
+                    
+                    // 清空之前的数据
+                    localImageMap.clear();
+                    funcHistory = [];
+                    currentFuncIndex = -1;
+                    localMode = true;  // 切换到本地模式
+                    
+                    // 读取所有文件
+                    for await (const entry of dirHandle.values()) {
+                        if (entry.kind === 'file') {
+                            const file = await entry.getFile();
+                            
+                            // 处理图片文件
+                            if (file.type.startsWith('image/')) {
+                                const fileName = entry.name.replace(/\.[^/.]+$/, ""); // 移除扩展名
+                                const dataUrl = await readFileAsDataURL(file);
+                                localImageMap.set(fileName, dataUrl);
+                            }
+                            
+                            // 处理 JSON 文件
+                            if (file.name.endsWith('.json')) {
+                                const text = await file.text();
+                                const lines = text.split('\n').filter(line => line.trim());
+                                
+                                for (const line of lines) {
+                                    try {
+                                        const data = JSON.parse(line);
+                                        if (data.image && data.name && data.details) {
+                                            funcHistory.push(data);
+                                        }
+                                    } catch (e) {
+                                        console.error('Invalid JSON line:', line);
+                                    }
+                                }
+                                
+                                // 只处理第一个 JSON 文件
+                                break;
+                            }
+                        }
+                    }
+                    
+                    // 如果有数据，显示第一条记录
+                    if (funcHistory.length > 0) {
+                        showHistoryImage(0);
+                    }
+                } catch (err) {
+                    // 如果是用户取消选择，直接返回
+                    if (err.name === 'AbortError') {
+                        return;
+                    }
+                    console.error('Error reading local folder:', err);
+                    alert('读取文件夹失败：' + err.message);
+                }
+            }
+
+            // 读取文件为 DataURL
+            function readFileAsDataURL(file) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(reader.result);
+                    reader.onerror = reject;
+                    reader.readAsDataURL(file);
+                });
+            }
 
             // 显示/隐藏连接状态
             function showConnectionStatus(show) {
@@ -349,7 +454,13 @@
                 
                 // 更新标题和详情
                 $('h4').text(imageData.name);
-                $('#customMessage').html(imageData.details);
+                $('#customMessage').html(parseImages(imageData.details, (key) => {
+                    // 根据模式选择图片来源
+                    if (localMode && localImageMap.has(key)) {
+                        return localImageMap.get(key);
+                    }
+                    return '/api/read_memory?key=' + key;
+                }));
                 
                 // 更新计数和滑块
                 updateImageCount();
@@ -366,11 +477,17 @@
                 // 更新图片
                 const imageContainer = $('#imageViewer');
                 const img = $('<img>');
-                if (imageData.type === 'memory') {
-                    img.attr('src', `/api/read_memory?key=${imageValues.value[currentImageIndex]}`);
+                
+                // 根据模式和图片类型设置图片 URL
+                const imgValue = imageValues.value[currentImageIndex];
+                if (localMode && localImageMap.has(imgValue)) {
+                    img.attr('src', localImageMap.get(imgValue));
+                } else if (imageData.type === 'memory') {
+                    img.attr('src', `/api/read_memory?key=${imgValue}`);
                 } else if (imageData.type === 'file') {
-                    img.attr('src', `/api/read_file?path=${imageValues.value[currentImageIndex]}`);
+                    img.attr('src', `/api/read_file?path=${imgValue}`);
                 }
+                
                 imageContainer.empty().append(img);
                 
                 // 根据锁定状态决定是否保持视图
@@ -620,6 +737,7 @@
                 
                 // 监听可视化事件
                 client.addEventListener('visual', (e) => {
+                    if (localMode) return;  // 本地模式下不接收服务器事件
                     funcHistory.push(e.data);
                     // 只有当前正在查看最后一张图片时，才自动显示新图片
                     if (currentFuncIndex === funcHistory.length - 2 || currentFuncIndex === -1) {
@@ -630,6 +748,9 @@
                         updateImageCount();
                     }
                 });
+
+                // 添加本地文件夹打开按钮事件
+                $('#openLocalBtn').click(handleLocalFolder);
                 
                 initResizeHandle();
                 
