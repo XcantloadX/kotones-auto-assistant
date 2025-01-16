@@ -9,6 +9,7 @@ from .backend.context import (
     image,
     debug,
     color,
+    rect_expand
 )
 from .backend.util import (
     Rect,
@@ -22,6 +23,8 @@ from .backend.util import (
     y,
     cropped,
     UnrecoverableError,
+    AdaptiveWait,
+    
 )
 from .backend.core import task, action
 from .ui import user

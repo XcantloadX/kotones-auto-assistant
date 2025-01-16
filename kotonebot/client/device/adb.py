@@ -51,8 +51,10 @@ class AdbDevice(DeviceABC):
 
     def __click_point(self, x: int, y: int) -> None:
         for hook in self.click_hooks_before:
-            logger.debug("execute click hook before")
+            logger.debug(f"Executing click hook before: ({x}, {y})")
             x, y = hook(x, y)
+            logger.debug(f"Click hook before result: ({x}, {y})")
+        logger.debug(f"Click: {x}, {y}")
         self.device.shell(f"input tap {x} {y}")
 
     def __click_clickable(self, clickable: ClickableObjectProtocol) -> None:

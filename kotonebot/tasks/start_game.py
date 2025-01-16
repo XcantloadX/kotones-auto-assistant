@@ -2,7 +2,7 @@
 import logging
 from time import sleep
 
-from kotonebot import task, device, image, cropped
+from kotonebot import task, device, image, cropped, AdaptiveWait
 from . import R
 from .common import Priority
 from .actions.loading import loading
@@ -21,9 +21,10 @@ def start_game():
     image.wait_for(R.Daily.ButonLinkData, timeout=30)
     sleep(2)
     device.click_center()
+    wait = AdaptiveWait(timeout=240, timeout_message='Game startup loading timeout')
     while True:
         while loading():
-            sleep(3)
+            wait()
         with device.pinned():
             if image.find(R.Daily.ButtonHomeCurrent):
                 break
@@ -35,7 +36,7 @@ def start_game():
                 device.click()
             else:
                 device.click_center()
-            sleep(2)
+            wait()
 
 if __name__ == '__main__':
     from kotonebot.backend.context import init_context

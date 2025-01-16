@@ -32,6 +32,19 @@
                 "-c",
                 "${command:extension.commandvariable.file.relativeDirDots}.${fileBasenameNoExtension}"
             ]
+        },
+        {
+            "name": "KotonebotDebug: All tasks",
+            "type": "debugpy",
+            "request": "launch",
+            "console": "integratedTerminal",
+            "module": "kotonebot.backend.debug.entry",
+            "args": [
+                "-s",
+                "${workspaceFolder}/dumps",
+                "-c",
+                "kotonebot.run.run"
+            ]
         }
     ]
 }

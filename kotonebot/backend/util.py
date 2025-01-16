@@ -1,6 +1,8 @@
-from functools import lru_cache
 import re
+import time
 import typing
+from time import sleep
+from functools import lru_cache
 from typing import Literal, NamedTuple, Callable, TYPE_CHECKING
 
 import cv2
@@ -170,3 +172,43 @@ def grayscaled(img: MatLike | str) -> MatLike:
 def grayscale_cached(img: MatLike | str) -> MatLike:
     return grayscaled(img)
 
+
+class AdaptiveWait:
+    """
+    自适应延时。延迟时间会随着时间逐渐增加，直到达到最大延迟时间。
+    """
+    def __init__(
+        self,
+        base_interval: float = 0.5,
+        max_interval: float = 10,
+        *,
+        timeout: float = -1,
+        timeout_message: str = "Timeout",
+        factor: float = 1.15,
+    ):
+        self.base_interval = base_interval
+        self.max_interval = max_interval
+        self.interval = base_interval
+        self.factor = factor
+        self.timeout = timeout
+        self.start_time: float | None = time.time()
+        self.timeout_message = timeout_message
+
+    def __enter__(self):
+        self.start_time = time.time()
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.reset()
+
+    def __call__(self):
+        if self.start_time is None:
+            self.start_time = time.time()
+        sleep(self.interval)
+        self.interval = min(self.interval * self.factor, self.max_interval)
+        if self.timeout > 0 and time.time() - self.start_time > self.timeout:
+            raise TimeoutError(self.timeout_message)
+
+    def reset(self):
+        self.interval = self.base_interval
+        self.start_time = None

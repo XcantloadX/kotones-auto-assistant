@@ -34,6 +34,8 @@ from kotonebot.backend.color import find_rgb
 from kotonebot.backend.ocr import Ocr, OcrResult, jp, en, StringMatchFunction
 
 OcrLanguage = Literal['jp', 'en']
+DEFAULT_TIMEOUT = 120
+DEFAULT_INTERVAL = 0.4
 
 # https://stackoverflow.com/questions/74714300/paramspec-for-a-pre-defined-function-without-using-generic-callablep
 T = TypeVar('T')
@@ -160,7 +162,13 @@ class ContextOcr:
         self.context.device.last_find = ret
         return ret
     
-    def expect_wait(self, pattern: str | re.Pattern | StringMatchFunction, timeout: float = 10) -> OcrResult:
+    def expect_wait(
+            self,
+            pattern: str | re.Pattern | StringMatchFunction,
+            timeout: float = DEFAULT_TIMEOUT,
+            *,
+            interval: float = DEFAULT_INTERVAL
+        ) -> OcrResult:
         """
         等待指定文本出现。
         """
@@ -172,9 +180,15 @@ class ContextOcr:
                 return result
             if time.time() - start_time > timeout:
                 raise TimeoutError(f"Timeout waiting for {pattern}")
-            time.sleep(0.1)
+            time.sleep(interval)
 
-    def wait_for(self, pattern: str | re.Pattern | StringMatchFunction, timeout: float = 10) -> OcrResult | None:
+    def wait_for(
+            self,
+            pattern: str | re.Pattern | StringMatchFunction,
+            timeout: float = DEFAULT_TIMEOUT,
+            *,
+            interval: float = DEFAULT_INTERVAL
+        ) -> OcrResult | None:
         """
         等待指定文本出现。
         """
@@ -186,7 +200,7 @@ class ContextOcr:
                 return result
             if time.time() - start_time > timeout:
                 return None
-            time.sleep(0.1)
+            time.sleep(interval)
 
 
 class ContextImage:
@@ -202,11 +216,11 @@ class ContextImage:
             template: MatLike | str,
             mask: MatLike | str | None = None,
             threshold: float = 0.9,
-            timeout: float = 10,
+            timeout: float = DEFAULT_TIMEOUT,
             colored: bool = False,
-            interval: float = 0.1,
             *,
-            transparent: bool = False
+            transparent: bool = False,
+            interval: float = DEFAULT_INTERVAL,
         ) -> TemplateMatchResult | None:
         """
         等待指定图像出现。
@@ -226,10 +240,11 @@ class ContextImage:
             templates: list[str],
             masks: list[str | None] | None = None,
             threshold: float = 0.9,
-            timeout: float = 10,
+            timeout: float = DEFAULT_TIMEOUT,
             colored: bool = False,
             *,
-            transparent: bool = False
+            transparent: bool = False,
+            interval: float = DEFAULT_INTERVAL
         ):
         """
         等待指定图像中的任意一个出现。
@@ -245,17 +260,18 @@ class ContextImage:
                     return True
             if time.time() - start_time > timeout:
                 return False
-            time.sleep(0.1)
+            time.sleep(interval)
 
     def expect_wait(
             self,
             template: str,
             mask: str | None = None,
             threshold: float = 0.9,
-            timeout: float = 10,
+            timeout: float = DEFAULT_TIMEOUT,
             colored: bool = False,
             *,
-            transparent: bool = False
+            transparent: bool = False,
+            interval: float = DEFAULT_INTERVAL
         ) -> TemplateMatchResult:
         """
         等待指定图像出现。
@@ -268,17 +284,18 @@ class ContextImage:
                 return ret
             if time.time() - start_time > timeout:
                 raise TimeoutError(f"Timeout waiting for {template}")
-            time.sleep(0.1)
+            time.sleep(interval)
 
     def expect_wait_any(
             self,
             templates: list[str],
             masks: list[str | None] | None = None,
             threshold: float = 0.9,
-            timeout: float = 10,
+            timeout: float = DEFAULT_TIMEOUT,
             colored: bool = False,
             *,
-            transparent: bool = False
+            transparent: bool = False,
+            interval: float = DEFAULT_INTERVAL
         ) -> TemplateMatchResult:
         """
         等待指定图像中的任意一个出现。
@@ -296,7 +313,7 @@ class ContextImage:
                     return ret
             if time.time() - start_time > timeout:
                 raise TimeoutError(f"Timeout waiting for any of {templates}")
-            time.sleep(0.1)
+            time.sleep(interval)
 
     @context(expect)
     def expect(self, *args, **kwargs):
@@ -419,6 +436,12 @@ class Context:
     @property
     def debug(self) -> 'ContextDebug':
         return self.__debug
+
+def rect_expand(rect: Rect, left: int = 0, top: int = 0, right: int = 0, bottom: int = 0) -> Rect:
+    """
+    向四个方向扩展矩形区域。
+    """
+    return (rect[0] - left, rect[1] - top, rect[2] + right, rect[3] + bottom)
 
 # 暴露 Context 的属性到模块级别
 _c: Context | None = None
