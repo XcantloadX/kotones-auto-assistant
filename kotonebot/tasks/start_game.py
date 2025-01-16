@@ -27,11 +27,11 @@ def start_game():
         with device.pinned():
             if image.find(R.Daily.ButtonHomeCurrent):
                 break
+            # [screenshots/startup/update.png]
+            elif image.find(R.Common.TextGameUpdate):
+                device.click(image.expect(R.Common.ButtonConfirm))
             # [screenshots/startup/announcement1.png]
             elif image.find(R.Common.ButtonIconClose):
-                device.click()
-            # [screenshots/startup/update.png]
-            elif image.find(R.Common.ButtonConfirm):
                 device.click()
             else:
                 device.click_center()
