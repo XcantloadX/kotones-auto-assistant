@@ -3,11 +3,12 @@ import re
 import json
 import time
 import uuid
+import psutil
 import traceback
 from pathlib import Path
-from typing import NamedTuple, TextIO
 from datetime import datetime
 from dataclasses import dataclass
+from typing import NamedTuple, TextIO, Literal
 
 import cv2
 from cv2.typing import MatLike
@@ -83,7 +84,45 @@ def img(image: str | MatLike | None) -> str:
             key = _save_image(image)
             return f'<img src="/api/read_memory?key={key}" />'
 
-# TODO: 保存原图。原图用 PNG，结果用 JPG 压缩。
+IDEType = Literal['vscode', 'cursor', 'windsurf']
+
+def get_current_ide() -> IDEType | None:
+    """获取当前IDE类型"""
+    me = psutil.Process()
+    while True:
+        parent = me.parent()
+        if parent is None:
+            break
+        name = parent.name()
+        if name.lower() == 'code.exe':
+            return 'vscode'
+        elif name.lower() == 'cursor.exe':
+            return 'cursor'
+        elif name.lower() == 'windsurf.exe':
+            return 'windsurf'
+        me = parent
+    return None
+
+def _make_code_file_url(
+    text: str,
+    full_path: str,
+    line: int = 0,
+) -> str:
+    """
+    将代码文本转换为 VSCode 的文件 URL。
+    """
+    ide = get_current_ide()
+    if ide == 'vscode':
+        prefix = 'vscode'
+    elif ide == 'cursor':
+        prefix = 'cursor'
+    elif ide == 'windsurf':
+        prefix = 'windsurf'
+    else:
+        return text
+    url = f"{prefix}://file/{full_path}:{line}:0"
+    return f'<a href="{url}">{text}</a>'
+
 def result(
         title: str,
         image: MatLike | list[MatLike],
@@ -121,8 +160,22 @@ def result(
     # 拼接消息
     now_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-4]
     # 获取完整堆栈
-    callstack = [frame.replace(str(Path.cwd()), '.') for frame in traceback.format_stack() 
-                if not re.search(r'Python\d*[\/\\]lib|debugpy', frame)]
+    callstack = []
+    for frame in traceback.format_stack():
+        if not re.search(r'Python\d*[\/\\]lib|debugpy', frame):
+            # 提取文件路径和行号
+            match = re.search(r'File "([^"]+)", line (\d+)', frame)
+            if match:
+                file_path = match.group(1)
+                line_num = match.group(2)
+                # 将绝对路径转换为相对路径
+                rel_path = file_path.replace(str(Path.cwd()), '.')
+                # 将文件路径和行号转换为链接
+                frame = frame.replace(
+                    f'File "{file_path}", line {line_num}',
+                    f'File "{_make_code_file_url(rel_path, file_path, int(line_num))}", line {line_num}'
+                )
+            callstack.append(frame)
     
     # 获取简化堆栈(只包含函数名)
     simple_callstack = []

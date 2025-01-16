@@ -12,5 +12,6 @@ uvicorn==0.34.0
 python-multipart==0.0.20
 websockets==14.1
 numpy==2.2.1
+psutil==6.1.1
 # 其他
 typing-extensions==4.12.2
