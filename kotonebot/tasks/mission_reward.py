@@ -2,7 +2,7 @@
 from time import sleep
 import logging
 
-from kotonebot import device, image, color, task, action
+from kotonebot import device, image, color, task, action, rect_expand
 from .actions.scenes import at_home, goto_home
 from .common import Priority
 from . import R
@@ -20,7 +20,7 @@ def check_and_goto_mission() -> bool:
     """
     rect = image.expect_wait(R.Daily.ButtonMission, timeout=1).rect
     # 向上、向右扩展 50px
-    color_rect = (rect[0], rect[1] - 50, rect[2] + 50, rect[3] + 50)
+    color_rect = rect_expand(rect, top=50, right=50)
     if not color.find_rgb('#ff1249', rect=color_rect):
         logger.info('No mission reward to claim.')
         return False

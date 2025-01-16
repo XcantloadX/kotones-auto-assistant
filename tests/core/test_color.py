@@ -1,7 +1,15 @@
+import numpy as np
 import cv2
 
 from util import BaseTestCase
 from kotonebot.backend.color import find_rgb
+
+def _img_rgb_to_bgr(img: np.ndarray) -> np.ndarray:
+    return cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+
+def hex2rgb(hex: str) -> tuple[int, int, int]:
+    hex = hex.lstrip('#')
+    return (int(hex[0:2], 16), int(hex[2:4], 16), int(hex[4:6], 16))
 
 class TestColor(BaseTestCase):
     def test_find_rgb(self):
@@ -17,7 +25,7 @@ class TestColor(BaseTestCase):
         ]
         for color, expected, path in test_cases:
             image = cv2.imread(path)
-            self.assertEqual(find_rgb(image, color), expected, f'{path} {color}')
+            self.assertEqual(find_rgb(image, color, threshold=1), expected, f'{path} {color}')
         # 错误格式
         with self.assertRaises(ValueError):
             find_rgb('tests/images/acquire_pdorinku.png', '')
@@ -44,4 +52,37 @@ class TestColor(BaseTestCase):
         ]
         for color, expected, rect, path in test_cases:
             image = cv2.imread(path)
-            self.assertEqual(find_rgb(image, color, rect=rect), expected, f'{path} {color} {rect}')
+            self.assertEqual(find_rgb(image, color, rect=rect, threshold=1), expected, f'{path} {color} {rect}')
+
+    def test_find_rgb_with_threshold(self):
+        target_color = (252, 61, 74) # RGB
+        threshold = 0.9
+        colors = [
+            '#fc545f',
+            '#fc1d2c',
+            '#f12735',
+            '#fc1d2c'
+        ]
+        # 纯色图片测试
+        for color in colors:
+            img = np.full((100, 100, 3), target_color, dtype=np.uint8)
+            img = _img_rgb_to_bgr(img)
+            self.assertEqual(find_rgb(img, color, threshold=threshold), (0, 0), f'color={color}')
+        # 随机图片测试
+        for color in colors:
+            # 生成10x10的随机颜色块
+            img = np.zeros((100, 100, 3), dtype=np.uint8)
+            for i in range(0, 100, 10):
+                for j in range(0, 100, 10):
+                    random_color = np.random.randint(0, 256, 3)
+                    random_color[0] //= 3
+                    img[i:i+10, j:j+10] = random_color
+            
+            # 随机选择一个10x10的块放置目标颜色
+            x = np.random.randint(0, 10) * 10
+            y = np.random.randint(0, 10) * 10
+            img[y:y+10, x:x+10] = hex2rgb(color)
+            
+            img = _img_rgb_to_bgr(img)
+            self.assertEqual(find_rgb(img, target_color, threshold=threshold), (x, y), f'color={color}')
+

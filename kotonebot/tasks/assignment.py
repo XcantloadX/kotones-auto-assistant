@@ -2,7 +2,8 @@
 import logging
 from time import sleep
 from typing import Literal
-from kotonebot import task, device, image, action, ocr, contains, cropped
+from kotonebot import task, device, image, action, ocr, contains, cropped, rect_expand, color
+from kotonebot.tasks.actions.loading import wait_loading_end
 from .actions.scenes import at_home, goto_home
 from . import R
 
@@ -103,24 +104,38 @@ def assign(type: Literal['mini', 'online']) -> bool:
 
 @task('工作')
 def assignment():
+    """领取工作奖励并重新分配工作"""
     if not at_home():
         goto_home()
-    # 由于“完了”标签会有高光特效，所以要多试几次
-    if image.wait_for(R.Daily.TextAssignmentCompleted, timeout=6, interval=0):
-        logger.info('Assignment completed. Acquiring...')
-        device.click()
-        # 加载页面等待
-        sleep(4)
+    btn_assignment = image.expect_wait(R.Daily.ButtonAssignmentPartial)
+    notification_rect = rect_expand(btn_assignment.rect, top=40, right=40)
+    complete_rect = rect_expand(btn_assignment.rect, right=40, bottom=60)
+    with device.pinned():
+        completed = color.find_rgb('#ff6085', rect=complete_rect)
+        if completed:
+            logger.info('Assignment completed. Acquiring...')
+        notification_dot = color.find_rgb('#ff134a', rect=notification_rect)
+        if not notification_dot and not completed:
+            logger.info('No action needed.')
+            return
+
+    # 点击工作按钮
+    logger.debug('Clicking assignment icon.')
+    device.click(btn_assignment)
+    # 加载页面等待
+    wait_loading_end()
+    if completed:
         acquire_assignment()
         logger.info('Assignment acquired.')
-        # 领取完后会自动进入分配页面
-        image.expect_wait(R.Daily.IconAssignMiniLive, timeout=7)
+    # 领取完后会自动进入分配页面
+    image.expect_wait(R.Daily.IconTitleAssign)
+    if image.find(R.Daily.IconAssignMiniLive):
         assign('mini')
-        image.expect_wait(R.Daily.IconAssignOnlineLive, timeout=7)
+        sleep(6) # 等待动画结束
+        # TODO: 更好的方法来等待动画结束。
+    if image.find(R.Daily.IconAssignOnlineLive):
         assign('online')
-        sleep(4) # 等待动画结束
-    else:
-        logger.info('Assignment not completed yet. Skipped.')
+        sleep(6) # 等待动画结束
 
 if __name__ == '__main__':
     from kotonebot.backend.context import init_context
@@ -128,12 +143,4 @@ if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO, format='[%(asctime)s] [%(levelname)s] [%(name)s] [%(funcName)s] [%(lineno)d] %(message)s')
     logger.setLevel(logging.DEBUG)
     init_context()
-    # assignment()
-    # acquire_assignment()
-    # logger.info('Assignment acquired.')
-    # # 领取完后会自动进入分配页面
-    # image.expect_wait(R.Daily.IconAssignMiniLive, timeout=7)
-    # assign_mini_live()
-    assign('mini')
-    assign('online')
-    # device.swipe_scaled(0.6, 0.7, 0.2, 0.7)
+    assignment()

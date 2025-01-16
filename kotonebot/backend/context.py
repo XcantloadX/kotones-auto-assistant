@@ -441,7 +441,7 @@ def rect_expand(rect: Rect, left: int = 0, top: int = 0, right: int = 0, bottom:
     """
     向四个方向扩展矩形区域。
     """
-    return (rect[0] - left, rect[1] - top, rect[2] + right, rect[3] + bottom)
+    return (rect[0] - left, rect[1] - top, rect[2] + right + left, rect[3] + bottom + top)
 
 # 暴露 Context 的属性到模块级别
 _c: Context | None = None
