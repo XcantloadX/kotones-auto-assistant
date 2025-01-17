@@ -677,7 +677,9 @@
                 // 下载所有图片
                 imageData.value.forEach((val, index) => {
                     const link = document.createElement('a');
-                    if (imageData.type === 'memory') {
+                    if (localMode && localImageMap.has(val)) {
+                        link.href = localImageMap.get(val);
+                    } else if (imageData.type === 'memory') {
                         link.href = `/api/read_memory?key=${val}`;
                     } else {
                         link.href = `/api/read_file?path=${val}`;
