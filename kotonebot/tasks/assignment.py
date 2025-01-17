@@ -56,14 +56,13 @@ def assign(type: Literal['mini', 'online']) -> bool:
     attempts = 0
     while not selected:
         # 寻找所有好调图标
-        results = image.find_many(R.Daily.IconAssignKouchou, threshold=0.8)
+        results = image.find_many(R.Daily.IconAssignKouchou, threshold=0.7)
         results.sort(key=lambda r: tuple(r.position))
         results.pop(0) # 第一个是说明文字里的图标
         # 尝试点击所有目标
         for target in results:
             with cropped(device, y2=0.3):
                 img1 = device.screenshot()
-                target = results.pop()
                 # 选择偶像并判断是否选择成功
                 device.click(target)
                 sleep(1)

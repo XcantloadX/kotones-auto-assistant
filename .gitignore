@@ -4,7 +4,7 @@ tests/output_images/*
 R.py
 kotonebot-ui/node_modules
 kotonebot-ui/.vite
-dumps
+dumps*/
 ##########################
 
 # Byte-compiled / optimized / DLL files
