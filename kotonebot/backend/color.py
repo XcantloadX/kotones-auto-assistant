@@ -5,7 +5,7 @@ import cv2
 from cv2.typing import MatLike, Point
 
 from .util import Rect
-from .debug import result as debug_result, debug
+from .debug import result as debug_result, debug, color as debug_color
 
 Color = tuple[int, int, int] | str
 """颜色。三元组 `(r, g, b)` 或十六进制颜色字符串 `#RRGGBB`"""
@@ -106,7 +106,7 @@ def find_rgb(
             # 转换回原图坐标
             ret = (int(x + min_x), int(y + min_y))
             ret_similarity = 1 - local_dist[min_y, min_x]
-            found_color = image_rgb[y+min_y, x+min_x]
+            found_color = tuple(image_rgb[y+min_y, x+min_x])
     # 在全图中找到最小距离的点
     else:
         if matches.any():
@@ -114,7 +114,7 @@ def find_rgb(
             min_y, min_x = np.unravel_index(np.argmin(dist), dist.shape)
             ret = (int(min_x), int(min_y))
             ret_similarity = 1 - dist[min_y, min_x]
-            found_color = image_rgb[min_y, min_x]
+            found_color = tuple(image_rgb[min_y, min_x])
     # 调试输出
     if debug.enabled:
         result_image = image.copy()
@@ -134,11 +134,11 @@ def find_rgb(
         debug_result(
             'find_rgb',
             [result_image, image],
-            f'target={color}\n'
+            f'target={debug_color(color)}\n'
             f'rect={rect}\n'
             f'result={ret}\n'
             f'similarity={ret_similarity}\n'
-            f'found_color={found_color}'
+            f'found_color={debug_color(found_color)}\n'
             '(Red rect for search area, blue rect for result area)'
         )
     return ret

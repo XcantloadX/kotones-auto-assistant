@@ -1,1 +1,1 @@
-from .vars import result, debug, img
+from .vars import result, debug, img, color

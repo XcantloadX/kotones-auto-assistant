@@ -84,6 +84,25 @@ def img(image: str | MatLike | None) -> str:
             key = _save_image(image)
             return f'<img src="/api/read_memory?key={key}" />'
 
+def color(color: str | tuple[int, int, int] | None) -> str:
+    """
+    用于在调试结果中嵌入颜色。
+    """
+    if color is None:
+        return 'None'
+    if isinstance(color, tuple):
+        color = '#{:02X}{:02X}{:02X}'.format(color[0], color[1], color[2])
+        return f'<kbd-color style="display:inline-block; white-space:initial;" color="{color}"></kbd-color>'
+    else:
+        return f'<kbd-color style="display:inline-block; white-space:initial;" color="{color}"></kbd-color>'
+
+def to_html(text: str) -> str:
+    """将文本转换为 HTML 代码。"""
+    text = text.replace('<', '&lt;').replace('>', '&gt;')
+    text = text.replace('\n', '<br>')
+    text = text.replace(' ', '&nbsp;')
+    return text
+
 IDEType = Literal['vscode', 'cursor', 'windsurf']
 
 def get_current_ide() -> IDEType | None:
@@ -167,6 +186,7 @@ def result(
             match = re.search(r'File "([^"]+)", line (\d+)', frame)
             if match:
                 file_path = match.group(1)
+                file_path = to_html(file_path)
                 line_num = match.group(2)
                 # 将绝对路径转换为相对路径
                 rel_path = file_path.replace(str(Path.cwd()), '.')
@@ -176,19 +196,22 @@ def result(
                     f'File "{_make_code_file_url(rel_path, file_path, int(line_num))}", line {line_num}'
                 )
             callstack.append(frame)
-    
+    callstack_str = '\n'.join(callstack)
+
     # 获取简化堆栈(只包含函数名)
     simple_callstack = []
     for frame in traceback.extract_stack():
         if not re.search(r'Python\d*[\/\\]lib|debugpy', frame.filename):
             module = Path(frame.filename).stem # 只获取文件名,不含路径和扩展名
             simple_callstack.append(f"{module}.{frame.name}")
-    
+    simple_callstack_str = ' -> '.join(simple_callstack)
+    simple_callstack_str = to_html(simple_callstack_str)
+
     final_text = (
-        f"Time: {now_time}\n" +
-        f"Callstack: \n{' -> '.join(simple_callstack)}\n" +
-        f"<details><summary>Full Callstack</summary>{''.join(callstack)}</details>" +
-        f"<hr>{text}\n"
+        f"Time: {now_time}<br>" +
+        f"Callstack: {simple_callstack_str}<br>" +
+        f"<details><summary>Full Callstack</summary>{callstack_str}</details><br>" +
+        f"<hr>{text}"
     )
     # 发送 WS 消息
     from .server import send_ws_message

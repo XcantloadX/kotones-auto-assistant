@@ -309,7 +309,7 @@
                         <i class="bi bi-x-lg"></i>
                     </button>
                     <h4 style="margin-top: 40px">&lt;method name&gt;</h4>
-                    <div id="customMessage" style="white-space: pre-wrap;">
+                    <div id="customMessage">
                         &lt;Custom message&gt;
                     </div>
                 </div>
@@ -326,7 +326,8 @@
     <script type="module" src="/static/client.js"></script>
     <script type="module">
         import { KotoneDebugClient } from '/static/client.js';
-        import { parseImages } from '/static/util.js';
+        import { render, loadComponent } from '/static/util.js';
+        loadComponent('/static/kbd-color.html');
         
         $(document).ready(function() {
             let currentScale = 1.0;
@@ -454,7 +455,7 @@
                 
                 // 更新标题和详情
                 $('h4').text(imageData.name);
-                $('#customMessage').html(parseImages(imageData.details, (key) => {
+                $('#customMessage').html(render(imageData.details, (key) => {
                     // 根据模式选择图片来源
                     if (localMode && localImageMap.has(key)) {
                         return localImageMap.get(key);
