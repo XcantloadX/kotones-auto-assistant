@@ -112,8 +112,20 @@ class AdbDevice(DeviceABC):
         return 'landscape'
     
     @override
-    def current_package(self) -> str:
-        raise NotImplementedError
+    def current_package(self) -> str | None:
+        # https://blog.csdn.net/guangdeshishe/article/details/117154406
+        result_text = self.device.shell('dumpsys activity top | grep ACTIVITY | tail -n 1')
+        logger.debug(f"adb returned: {result_text}")
+        if not isinstance(result_text, str):
+            logger.error(f"Invalid result_text: {result_text}")
+            return None
+        result_text = result_text.strip()
+        if result_text == '':
+            logger.error("No current package found")
+            return None
+        _, activity, _, pid = result_text.split(' ')
+        package = activity.split('/')[0]
+        return package
 
         
 if __name__ == "__main__":

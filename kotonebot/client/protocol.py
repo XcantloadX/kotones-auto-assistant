@@ -234,9 +234,12 @@ class DeviceABC(ABC):
         """
         ...
 
-    def current_package(self) -> str:
+    def current_package(self) -> str | None:
         """
-        前台 APP 的包名
+        获取前台 APP 的包名。
+
+        :return: 前台 APP 的包名。如果获取失败，则返回 None。
+        :exception: 如果设备不支持此功能，则抛出 NotImplementedError。
         """
         ...
 

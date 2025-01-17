@@ -6,7 +6,7 @@ from kotonebot import task, device, image, cropped, AdaptiveWait
 from . import R
 from .common import Priority
 from .actions.loading import loading
-
+from .actions.scenes import at_home, goto_home
 logger = logging.getLogger(__name__)
 
 @task('启动游戏', priority=Priority.START_GAME)
@@ -16,7 +16,14 @@ def start_game():
     
     执行前游戏必须处于未启动状态。
     """
-    device.start_app('com.bandainamcoent.idolmaster_gakuen') # TODO: 包名放到配置文件里
+    # TODO: 包名放到配置文件里
+    if device.current_package() == 'com.bandainamcoent.idolmaster_gakuen':
+        logger.info("Game already started")
+        if not at_home():
+            logger.info("Not at home, going to home")
+            goto_home()
+        return
+    device.start_app('com.bandainamcoent.idolmaster_gakuen')
     # [screenshots/startup/1.png]
     image.wait_for(R.Daily.ButonLinkData, timeout=30)
     sleep(2)
