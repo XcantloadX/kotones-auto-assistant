@@ -771,6 +771,19 @@
                 // 监听可视化事件
                 client.addEventListener('visual', (e) => {
                     if (localMode) return;  // 本地模式下不接收服务器事件
+                    
+                    // 访问接收到的图片，让浏览器立刻在本地缓存图片，
+                    // 避免之后服务器被异常阻塞的时候，无法显示图片
+                    const imageData = e.data.image;
+                    if (imageData && imageData.value) {
+                        imageData.value.forEach(val => {
+                            const imgUrl = imageData.type === 'memory' 
+                                ? `/api/read_memory?key=${val}`
+                                : `/api/read_file?path=${val}`;
+                            fetch(imgUrl).catch(err => console.warn('Failed to preload image:', err));
+                        });
+                    }
+                    
                     funcHistory.push(e.data);
                     // 只有当前正在查看最后一张图片时，才自动显示新图片
                     if (currentFuncIndex === funcHistory.length - 2 || currentFuncIndex === -1) {
