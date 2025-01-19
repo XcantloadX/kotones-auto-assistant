@@ -1,3 +1,4 @@
+from os import name
 from typing import Literal
 
 import numpy as np
@@ -7,10 +8,21 @@ from cv2.typing import MatLike, Point
 from .util import Rect
 from .debug import result as debug_result, debug, color as debug_color
 
-Color = tuple[int, int, int] | str
+RgbColorTuple = tuple[int, int, int]
+RgbColorStr = str
+RgbColor = RgbColorTuple | RgbColorStr
 """颜色。三元组 `(r, g, b)` 或十六进制颜色字符串 `#RRGGBB`"""
 
-def _unify_color(color: Color) -> Color:
+HsbColor = tuple[int, int, int]
+"""
+HSB颜色。三元组 `(h, s, b)`。
+
+h: 0-180
+s: 0-255
+b: 0-255
+"""
+
+def _unify_color(color: RgbColor) -> RgbColor:
     if isinstance(color, str):
         if not color.startswith('#'):
             raise ValueError('Hex color string must start with #')
@@ -36,9 +48,21 @@ def _unify_image(image: MatLike | str) -> MatLike:
         image = cv2.imread(image)
     return image
 
+def in_range(color: HsbColor, range: tuple[HsbColor, HsbColor]) -> bool:
+    """
+    判断颜色是否在范围内。
+
+    :param color: 颜色。
+    :param range: 范围。
+    """
+    h, s, b = color
+    h1, s1, b1 = range[0]
+    h2, s2, b2 = range[1]
+    return h1 <= h <= h2 and s1 <= s <= s2 and b1 <= b <= b2
+
 def find_rgb(
     image: MatLike | str,
-    color: Color,
+    color: RgbColor,
     *,
     rect: Rect | None = None,
     threshold: float = 0.95,
@@ -142,3 +166,61 @@ def find_rgb(
             '(Red rect for search area, blue rect for result area)'
         )
     return ret
+
+# https://stackoverflow.com/questions/43111029/how-to-find-the-average-colour-of-an-image-in-python-with-opencv
+def dominant_color(
+    image: MatLike | str,
+    count: int = 1,
+    *,
+    rect: Rect | None = None,
+) -> list[RgbColorStr]:
+    """
+    提取图像的主色调。
+
+    :param image:
+        图像。可以是 MatLike 或图像文件路径。
+        如果是 MatLike，则颜色格式必须为 BGR。
+    :param count: 提取的颜色数量。默认为 1。
+    :param rect: 提取范围。如果为 None，则在整个图像中提取。
+    """
+    # 载入/裁剪图像
+    img = _unify_image(image)
+    if rect is not None:
+        x, y, w, h = rect
+        img = img[y:y+h, x:x+w]
+    
+    pixels = np.float32(img.reshape(-1, 3))
+
+    n_colors = count
+    criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 200, .1)
+    flags = cv2.KMEANS_RANDOM_CENTERS
+
+    _, labels, palette = cv2.kmeans(pixels, n_colors, None, criteria, 10, flags) # type: ignore
+    _, counts = np.unique(labels, return_counts=True)
+
+    # 将颜色按出现次数排序
+    indices = (-counts).argsort()
+    dominant = palette[indices]
+    
+    # 转换为 RGB 格式并转为 16 进制颜色代码
+    result: list[RgbColorStr] = []
+    for i in range(min(n_colors, len(dominant))):
+        color = dominant[i]
+        # BGR -> RGB
+        rgb = tuple(map(int, color[::-1]))
+        hex_color = f'#{rgb[0]:02x}{rgb[1]:02x}{rgb[2]:02x}'
+        result.append(hex_color)
+    
+    return result
+
+if __name__ == '__main__':
+    img = cv2.imread('tests/images/ui/commu_fast_forward_enabled.png')
+    colors = dominant_color(img, 3)
+    print("主调颜色:")
+    for i, color in enumerate(colors, 1):
+        print(f"{i}. {color}")
+        # 创建一个纯色图像来展示颜色
+        color_block = np.full((100, 100, 3), _unify_color(color)[::-1], dtype=np.uint8)
+        cv2.imshow(f"Color {i}", color_block)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
