@@ -60,8 +60,13 @@
             position: relative;
         }
 
+        .image-container img.with-animation {
+            transition: transform 0.2s ease-out;
+        }
+
         .image-container img.dragging {
             cursor: grabbing;
+            transition: none;
         }
 
         .info-panel-col {
@@ -329,7 +334,7 @@
     <script type="module" src="/static/client.js"></script>
     <script type="module">
         import { KotoneDebugClient } from '/static/client.js';
-        import { render, loadComponent } from '/static/util.js';
+        import { render, loadComponent, debounce } from '/static/util.js';
         loadComponent('/static/kbd-color.html');
         
         $(document).ready(function() {
@@ -499,6 +504,7 @@
                     currentScale = lastScale;
                     translateX = lastTranslateX;
                     translateY = lastTranslateY;
+                    updateImageTransform(img, false);  // 移除动画效果
                 } else {
                     // 重置位移
                     translateX = 0;
@@ -514,13 +520,13 @@
                         } else {
                             currentScale = container.height() / this.height * 0.9;
                         }
-                        updateImageTransform(img);
+                        updateImageTransform(img, false);  // 移除动画效果
                         updateZoomLevel();
                     });
                 }
                 
                 // 应用当前的缩放和位移
-                updateImageTransform(img);
+                updateImageTransform(img, false);  // 移除动画效果
                 updateZoomLevel();
                 
                 // 初始化拖拽事件
@@ -547,19 +553,35 @@
             }
 
             // 更新图片变换
-            function updateImageTransform(img) {
-                img.css('transform', `translate(${translateX}px, ${translateY}px) scale(${currentScale})`);
-                // 保存当前视图状态
-                lastScale = currentScale;
-                lastTranslateX = translateX;
-                lastTranslateY = translateY;
+            function updateImageTransform(img, useAnimation = false) {
+                requestAnimationFrame(() => {
+                    if (useAnimation) {
+                        img.addClass('with-animation');
+                    } else {
+                        img.removeClass('with-animation');
+                    }
+                    
+                    img.css('transform', `translate(${translateX}px, ${translateY}px) scale(${currentScale})`);
+                    
+                    // 如果使用了动画，等动画结束后移除动画类
+                    if (useAnimation) {
+                        debounce(() => {
+                            img.removeClass('with-animation');
+                        }, 200); // 与 CSS 中的动画时间相匹配
+                    }
+                    
+                    // 保存当前视图状态
+                    lastScale = currentScale;
+                    lastTranslateX = translateX;
+                    lastTranslateY = translateY;
+                });
             }
 
             // 设置图片缩放
-            function setImageScale(scale) {
+            function setImageScale(scale, useAnimation = false) {
                 currentScale = Math.min(Math.max(scale, MIN_SCALE), MAX_SCALE);
                 const img = $('#imageViewer img');
-                updateImageTransform(img);
+                updateImageTransform(img, useAnimation);
                 updateZoomLevel();
             }
 
@@ -594,16 +616,16 @@
                 });
             }
 
-            // 缩放按钮事件
-            $('#zoomInBtn').click(() => setImageScale(currentScale + ZOOM_STEP));
-            $('#zoomOutBtn').click(() => setImageScale(currentScale - ZOOM_STEP));
-            $('#resetZoomBtn').click(() => setImageScale(1.0));
+            // 缩放按钮事件（手动缩放，使用动画）
+            $('#zoomInBtn').click(() => setImageScale(currentScale + ZOOM_STEP, true));
+            $('#zoomOutBtn').click(() => setImageScale(currentScale - ZOOM_STEP, true));
+            $('#resetZoomBtn').click(() => setImageScale(1.0, true));
 
-            // 鼠标滚轮缩放
+            // 鼠标滚轮缩放（手动缩放，使用动画）
             $('#imageViewer').on('wheel', function(e) {
                 e.preventDefault();
                 const delta = e.originalEvent.deltaY;
-                setImageScale(currentScale + (delta > 0 ? -ZOOM_STEP : ZOOM_STEP));
+                setImageScale(currentScale + (delta > 0 ? -ZOOM_STEP : ZOOM_STEP), true);
             });
 
             // 面板切换
