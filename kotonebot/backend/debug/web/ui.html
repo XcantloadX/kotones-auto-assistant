@@ -234,6 +234,9 @@
         <button class="btn btn-outline-primary" id="openLocalBtn">
             <i class="bi bi-folder2-open"></i> 打开
         </button>
+        <button class="btn btn-outline-danger" id="clearBtn">
+            <i class="bi bi-trash"></i> 清除记录
+        </button>
     </div>
 
     <!-- 添加连接状态提示 -->
@@ -729,6 +732,29 @@
             // 下载按钮事件
             $('#downloadBtn').click(downloadCurrentImage);
 
+            // 清除所有数据
+            function clear() {
+                funcHistory = [];
+                currentFuncIndex = -1;
+                currentImageIndex = 0;
+                localImageMap.clear();
+                localMode = false;
+                
+                // 清除图片显示
+                $('#imageViewer').empty();
+                
+                // 重置标题和详情
+                $('h4').text('<method name>');
+                $('#customMessage').html('<Custom message>');
+                
+                // 更新计数和滑块
+                updateImageCount();
+                $('#pageSlider').val(0);
+                
+                // 更新图片页码显示
+                updateImagePageCount();
+            }
+
             // 初始化所有功能
             function initializeUI() {
                 const client = new KotoneDebugClient(window.location.host);
@@ -736,6 +762,10 @@
                 // 监听连接状态
                 client.addEventListener('connectionStatus', (e) => {
                     showConnectionStatus(!e.connected);
+                    if (e.connected) {
+                        // 连接恢复时清除数据
+                        clear();
+                    }
                 });
                 
                 // 监听可视化事件
@@ -754,6 +784,9 @@
 
                 // 添加本地文件夹打开按钮事件
                 $('#openLocalBtn').click(handleLocalFolder);
+                
+                // 添加清除按钮事件
+                $('#clearBtn').click(clear);
                 
                 initResizeHandle();
                 
