@@ -24,12 +24,14 @@ from kotonebot.backend.image import (
     CropResult,
     TemplateMatchResult,
     MultipleTemplateMatchResult,
-    find_crop,
+    find_all_crop,
     expect,
     find,
-    find_any,
-    find_many,
+    find_multi,
+    find_all,
+    find_all_multi,
 )
+import kotonebot.backend.color as raw_color
 from kotonebot.backend.color import find_rgb
 from kotonebot.backend.ocr import Ocr, OcrResult, jp, en, StringMatchFunction
 
@@ -215,7 +217,7 @@ class ContextImage:
             self,
             template: MatLike | str,
             mask: MatLike | str | None = None,
-            threshold: float = 0.9,
+            threshold: float = 0.8,
             timeout: float = DEFAULT_TIMEOUT,
             colored: bool = False,
             *,
@@ -239,7 +241,7 @@ class ContextImage:
             self,
             templates: list[str],
             masks: list[str | None] | None = None,
-            threshold: float = 0.9,
+            threshold: float = 0.8,
             timeout: float = DEFAULT_TIMEOUT,
             colored: bool = False,
             *,
@@ -266,7 +268,7 @@ class ContextImage:
             self,
             template: str,
             mask: str | None = None,
-            threshold: float = 0.9,
+            threshold: float = 0.8,
             timeout: float = DEFAULT_TIMEOUT,
             colored: bool = False,
             *,
@@ -290,7 +292,7 @@ class ContextImage:
             self,
             templates: list[str],
             masks: list[str | None] | None = None,
-            threshold: float = 0.9,
+            threshold: float = 0.8,
             timeout: float = DEFAULT_TIMEOUT,
             colored: bool = False,
             *,
@@ -327,19 +329,23 @@ class ContextImage:
         self.context.device.last_find = ret
         return ret
 
-    @context(find_many)
-    def find_many(self, *args, **kwargs):
-        return find_many(self.context.device.screenshot(), *args, **kwargs)
+    @context(find_all)
+    def find_all(self, *args, **kwargs):
+        return find_all(self.context.device.screenshot(), *args, **kwargs)
 
-    @context(find_any)
-    def find_any(self, *args, **kwargs):
-        ret = find_any(self.context.device.screenshot(), *args, **kwargs)
+    @context(find_multi)
+    def find_multi(self, *args, **kwargs):
+        ret = find_multi(self.context.device.screenshot(), *args, **kwargs)
         self.context.device.last_find = ret
         return ret
 
-    @context(find_crop)
-    def find_crop_many(self, *args, **kwargs):
-        return find_crop(self.context.device.screenshot(), *args, **kwargs)
+    @context(find_all_multi)
+    def find_all_multi(self, *args, **kwargs):
+        return find_all_multi(self.context.device.screenshot(), *args, **kwargs)
+
+    @context(find_all_crop)
+    def find_all_crop(self, *args, **kwargs):
+        return find_all_crop(self.context.device.screenshot(), *args, **kwargs)
     
 
 class ContextGlobalVars:
@@ -372,6 +378,9 @@ class ContextColor:
     def __init__(self, context: 'Context'):
         self.context = context
 
+    def raw(self):
+        return raw_color
+
     @context(find_rgb)
     def find_rgb(self, *args, **kwargs):
         return find_rgb(self.context.device.screenshot(), *args, **kwargs)
@@ -401,7 +410,9 @@ class Context:
         # HACK: 暂时写死
         from adbutils import adb
         adb.connect('127.0.0.1:5555')
-        self.__device = AdbDevice(adb.device_list()[0])
+        adb.connect('127.0.0.1:16384')
+        d = [d for d in adb.device_list() if d.serial == '127.0.0.1:5555']
+        self.__device = AdbDevice(d[0])
         # self.__device = None
         self.__ocr = ContextOcr(self)
         self.__image = ContextImage(self)

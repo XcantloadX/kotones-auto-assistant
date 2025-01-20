@@ -11,6 +11,7 @@ from thefuzz import fuzz as _fuzz
 
 if TYPE_CHECKING:
     from kotonebot.client.protocol import DeviceABC
+    from kotonebot.backend.color import HsvColor
 
 class TaskInfo(NamedTuple):
     name: str
@@ -171,6 +172,29 @@ def grayscaled(img: MatLike | str) -> MatLike:
 @lru_cache
 def grayscale_cached(img: MatLike | str) -> MatLike:
     return grayscaled(img)
+
+def until(
+    condition: Callable[[], bool],
+    timeout: float=60,
+    interval: float=0.5,
+    critical: bool=False
+) -> bool:
+    """
+    等待条件成立，如果条件不成立，则返回 False 或抛出异常。
+
+    :param condition: 条件函数。
+    :param timeout: 等待时间，单位为秒。
+    :param interval: 检查条件的时间间隔，单位为秒。
+    :param critical: 如果条件不成立，是否抛出异常。
+    """
+    start = time.time()
+    while not condition():
+        if time.time() - start > timeout:
+            if critical:
+                raise TimeoutError(f"Timeout while waiting for condition {condition.__name__}.")
+            return False
+        time.sleep(interval)
+    return True
 
 
 class AdaptiveWait:

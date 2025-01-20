@@ -8,6 +8,7 @@ from logging import getLogger
 
 from kotonebot import device, image, ocr, debug, action
 from kotonebot.tasks import R
+from ..actions.loading import wait_loading_end, wait_loading_start
 from .common import acquisitions, AcquisitionType
 
 logger = getLogger(__name__)
@@ -46,7 +47,11 @@ def enter_allowance():
     logger.info("Double clicking on 活動支給.")
     device.double_click(image.expect(R.InPurodyuusu.ButtonTextAllowance), interval=1)
     # 等待进入页面
-    sleep(3)
+    wait_loading_end()
+    # 处理可能会出现的支援卡奖励
+    while not image.find(R.InPurodyuusu.IconTitleAllowance):
+        logger.debug("Waiting for 活動支給 screen.")
+        acquisitions()
     # 第一个箱子 [screenshots\allowance\step_2.png]
     logger.info("Clicking on the first lootbox.")
     device.click(image.expect_wait_any([
@@ -64,6 +69,9 @@ def enter_allowance():
         logger.info("Waiting for acquisitions finished.")
         sleep(2)
     logger.info("活動支給 completed.")
+    # wait_loading_start() # 可能会因为加载太快，截图没截到，导致抛出异常
+    sleep(1)
+    wait_loading_end()
     # 可能会出现的新动画
     # 技能卡：[screenshots\allowance\step_4.png]
 

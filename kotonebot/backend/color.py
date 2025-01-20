@@ -1,4 +1,4 @@
-from os import name
+import colorsys
 from typing import Literal
 
 import numpy as np
@@ -13,16 +13,61 @@ RgbColorStr = str
 RgbColor = RgbColorTuple | RgbColorStr
 """颜色。三元组 `(r, g, b)` 或十六进制颜色字符串 `#RRGGBB`"""
 
-HsbColor = tuple[int, int, int]
+HsvColor = tuple[int, int, int]
 """
-HSB颜色。三元组 `(h, s, b)`。
-
-h: 0-180
-s: 0-255
-b: 0-255
+HSV颜色。三元组 `(h, s, v)`。
 """
 
-def _unify_color(color: RgbColor) -> RgbColor:
+def hsv_web2cv(h: int, s: int, v: int) -> 'HsvColor':
+    """
+    将 HSV 颜色从 Web 格式转换为 OpenCV 格式。
+    
+    :param h: 色相，范围 [0, 360]
+    :param s: 饱和度，范围 [0, 100]
+    :param v: 亮度，范围 [0, 100]
+    :return: OpenCV 格式 HSV 颜色。三元组 `(h, s, v)`，范围分别为 (0-180, 0-255, 0-255)。
+    """
+    h = round(h / 2)  # web 的色相范围是 0-360，转为 0-180
+    s = round(s / 100 * 255)  # web 的饱和度范围是 0-100，转为 0-255
+    v = round(v / 100 * 255)  # web 的亮度范围是 0-100，转为 0-255
+    return (h, s, v)
+
+def hsv_cv2web(h: int, s: int, v: int) -> 'HsvColor':
+    """
+    将 HSV 颜色从 OpenCV 格式转换为 Web 格式。
+    
+    :param h: 色相，范围 [0, 180]
+    :param s: 饱和度，范围 [0, 255]
+    :param v: 亮度，范围 [0, 255]
+    :return: Web 格式 HSV 颜色。三元组 `(h, s, v)`，范围分别为 (0-360, 0-100, 0-100)。
+    """
+    h = round(h * 2)  # opencv 的色相范围是 0-180，转为 0-360
+    s = round(s / 255 * 100)  # opencv 的饱和度范围是 0-255，转为 0-100
+    v = round(v / 255 * 100)  # opencv 的亮度范围是 0-255，转为 0-100
+    return (h, s, v)
+
+def rgb_to_hsv(c: RgbColor) -> 'HsvColor':
+    """
+    将 RGB 颜色转换为 HSV 颜色。
+
+    :param c: RGB 颜色。十六进制颜色字符串 `#RRGGBB` 或整数三元组 `(r, g, b)`。
+    :return: Web 格式 HSV 颜色。三元组 `(h, s, v)`，范围分别为 (0-360, 0-100, 0-100)。
+    """
+    c = _unify_color(c)
+    ret = colorsys.rgb_to_hsv(c[0] / 255, c[1] / 255, c[2] / 255)
+    return (round(ret[0] * 360), round(ret[1] * 100), round(ret[2] * 100))
+
+def hsv_to_rgb(c: HsvColor) -> 'RgbColor':
+    """
+    将 HSV 颜色转换为 RGB 颜色。
+
+    :param c: Web 格式 HSV 颜色。三元组 `(h, s, v)`，范围分别为 (0-360, 0-100, 0-100)。
+    :return: RGB 颜色。整数三元组 `(r, g, b)`。
+    """
+    ret = colorsys.hsv_to_rgb(c[0] / 360, c[1] / 100, c[2] / 100)
+    return (round(ret[0] * 255), round(ret[1] * 255), round(ret[2] * 255))
+
+def _unify_color(color: RgbColor) -> RgbColorTuple:
     if isinstance(color, str):
         if not color.startswith('#'):
             raise ValueError('Hex color string must start with #')
@@ -48,17 +93,17 @@ def _unify_image(image: MatLike | str) -> MatLike:
         image = cv2.imread(image)
     return image
 
-def in_range(color: HsbColor, range: tuple[HsbColor, HsbColor]) -> bool:
+def in_range(color: RgbColor, range: tuple[HsvColor, HsvColor]) -> bool:
     """
     判断颜色是否在范围内。
 
-    :param color: 颜色。
-    :param range: 范围。
+    :param color: RGB 颜色。
+    :param range: Web HSV 颜色范围。
     """
-    h, s, b = color
-    h1, s1, b1 = range[0]
-    h2, s2, b2 = range[1]
-    return h1 <= h <= h2 and s1 <= s <= s2 and b1 <= b <= b2
+    h, s, v = rgb_to_hsv(color)
+    h1, s1, v1 = range[0]
+    h2, s2, v2 = range[1]
+    return h1 <= h <= h2 and s1 <= s <= s2 and v1 <= v <= v2
 
 def find_rgb(
     image: MatLike | str,
@@ -211,6 +256,19 @@ def dominant_color(
         hex_color = f'#{rgb[0]:02x}{rgb[1]:02x}{rgb[2]:02x}'
         result.append(hex_color)
     
+    if debug.enabled:
+        origin_image = _unify_image(image)
+        result_image = origin_image.copy()
+        if rect is not None:
+            x, y, w, h = rect
+            cv2.rectangle(result_image, (x, y), (x + w, y + h), (0, 0, 255), 2)
+        debug_result(
+            'color.dominant_color',
+            [result_image, origin_image],
+            f'arguments:\n \tcount={count}\n \trect={rect}\n'
+            f'result={", ".join(map(debug_color, result))}'
+        )
+
     return result
 
 if __name__ == '__main__':

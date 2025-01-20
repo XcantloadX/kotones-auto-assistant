@@ -86,3 +86,59 @@ class TestColor(BaseTestCase):
             img = _img_rgb_to_bgr(img)
             self.assertEqual(find_rgb(img, target_color, threshold=threshold), (x, y), f'color={color}')
 
+    def test_hsv_web2cv(self):
+        test_cases = [
+            # (h, s, v) Web format -> (h, s, v) OpenCV format
+            ((0, 0, 0), (0, 0, 0)),
+            ((360, 100, 100), (180, 255, 255)),
+            ((180, 50, 50), (90, 128, 128)),
+            ((240, 75, 80), (120, 191, 204)),
+        ]
+        from kotonebot.backend.color import hsv_web2cv
+        for input_hsv, expected in test_cases:
+            self.assertEqual(hsv_web2cv(*input_hsv), expected, f'input={input_hsv}')
+
+    def test_hsv_cv2web(self):
+        test_cases = [
+            # (h, s, v) OpenCV -> (h, s, v) Web format
+            ((0, 0, 0), (0, 0, 0)),
+            ((180, 255, 255), (360, 100, 100)),
+            ((90, 128, 128), (180, 50, 50)),
+            ((120, 191, 204), (240, 75, 80)),
+        ]
+        from kotonebot.backend.color import hsv_cv2web
+        for input_hsv, expected in test_cases:
+            self.assertEqual(hsv_cv2web(*input_hsv), expected, f'input={input_hsv}')
+
+    def test_rgb_to_hsv(self):
+        test_cases = [
+            # RGB -> HSV (web format)
+            ('#000000', (0, 0, 0)),
+            ('#FFFFFF', (0, 0, 100)),
+            ('#FF0000', (0, 100, 100)),
+            ('#00FF00', (120, 100, 100)),
+            ('#0000FF', (240, 100, 100)),
+            # RGB tuple -> HSV
+            ((255, 0, 0), (0, 100, 100)),
+            ((0, 255, 0), (120, 100, 100)),
+            ((0, 0, 255), (240, 100, 100)),
+            ((128, 128, 128), (0, 0, 50)),
+        ]
+        from kotonebot.backend.color import rgb_to_hsv
+        for input_rgb, expected in test_cases:
+            self.assertEqual(rgb_to_hsv(input_rgb), expected, f'input={input_rgb}')
+
+    def test_hsv_to_rgb(self):
+        test_cases = [
+            # HSV (Web format) -> RGB
+            ((0, 0, 0), (0, 0, 0)),
+            ((0, 100, 100), (255, 0, 0)),
+            ((120, 100, 100), (0, 255, 0)),
+            ((240, 100, 100), (0, 0, 255)),
+            ((60, 100, 100), (255, 255, 0)),
+            ((180, 100, 100), (0, 255, 255)),
+        ]
+        from kotonebot.backend.color import hsv_to_rgb
+        for input_hsv, expected in test_cases:
+            self.assertEqual(hsv_to_rgb(input_hsv), expected, f'input={input_hsv}')
+

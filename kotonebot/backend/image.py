@@ -62,6 +62,15 @@ class MultipleTemplateMatchResult(NamedTuple):
         """结果右下角坐标。"""
         return (self.position[0] + self.size[0], self.position[1] + self.size[1])
 
+    @classmethod
+    def from_template_match_result(cls, result: TemplateMatchResult, index: int):
+        return cls(
+            score=result.score,
+            position=result.position,
+            size=result.size,
+            index=index
+        )
+
 class CropResult(NamedTuple):
     score: float
     position: Point
@@ -271,7 +280,7 @@ def hist_match(
     avg_score = total_score / 3
     return avg_score >= threshold
 
-def find_crop(
+def find_all_crop(
     image: MatLike | str,
     template: MatLike | str,
     mask: MatLike | str | None = None,
@@ -282,7 +291,7 @@ def find_crop(
     remove_duplicate: bool = True,
 ) -> list[CropResult]:
     """
-    指定一个模板，寻找其出现的所有位置，并裁剪出结果。
+    指定一个模板，在输入图像中寻找其出现的所有位置，并裁剪出结果。
 
     :param image: 图像，可以是图像路径或 cv2.Mat。
     :param template: 模板图像，可以是图像路径或 cv2.Mat。
@@ -321,7 +330,7 @@ def find(
     remove_duplicate: bool = True,
 ) -> TemplateMatchResult | None:
     """
-    指定一个模板，寻找其出现的第一个位置。
+    指定一个模板，在输入图像中寻找其出现的第一个位置。
 
     :param image: 图像，可以是图像路径或 cv2.Mat。
     :param template: 模板图像，可以是图像路径或 cv2.Mat。
@@ -356,7 +365,7 @@ def find(
         )
     return matches[0] if len(matches) > 0 else None
 
-def find_many(
+def find_all(
     image: MatLike,
     template: MatLike | str,
     mask: MatLike | str | None = None,
@@ -365,9 +374,10 @@ def find_many(
     threshold: float = 0.8,
     remove_duplicate: bool = True,
     colored: bool = False,
+    debug_output: bool = True,
 ) -> list[TemplateMatchResult]:
     """
-    指定一个模板，寻找所有出现的位置。
+    指定一个模板，在输入图像中寻找其出现的所有位置。
 
     :param image: 图像，可以是图像路径或 cv2.Mat。
     :param template: 模板图像，可以是图像路径或 cv2.Mat。
@@ -387,17 +397,17 @@ def find_many(
         remove_duplicate=remove_duplicate,
         colored=colored,
     )
-    if debug.enabled:
+    if debug.enabled and debug_output:
         result_image = _draw_result(image, results)
         debug_result(
-            'image.find_many',
+            'image.find_all',
             [result_image, image],
             f"template: {img(template)} \n"
             f"matches: {len(results)} \n"
         )
     return results
 
-def find_any(
+def find_multi(
     image: MatLike,
     templates: list[MatLike | str],
     masks: list[MatLike | str | None] | None = None,
@@ -408,7 +418,7 @@ def find_any(
     remove_duplicate: bool = True,
 ) -> MultipleTemplateMatchResult | None:
     """
-    指定多个模板，返回第一个匹配到的结果。
+    指定多个模板，在输入图像中逐个寻找模板，返回第一个匹配到的结果。
 
     :param image: 图像，可以是图像路径或 cv2.Mat。
     :param templates: 模板图像列表，可以是图像路径或 cv2.Mat。
@@ -454,8 +464,88 @@ def find_any(
             "</table>\n"
         )
         debug_result(
-            'image.find_any',
+            'image.find_multi',
             [_draw_result(image, ret), image],
+            msg
+        )
+    return ret
+
+def find_all_multi(
+    image: MatLike,
+    templates: list[MatLike | str],
+    masks: list[MatLike | str | None] | None = None,
+    *,
+    transparent: bool = False,
+    threshold: float = 0.8,
+    colored: bool = False,
+    remove_duplicate: bool = True,
+) -> list[MultipleTemplateMatchResult]:
+    """
+    指定多个模板，在输入图像中逐个寻找模板，返回所有匹配到的结果。
+
+    此函数等价于
+    ```python
+    result = []
+    for template in templates:
+        result.append(find_all(template, ...))
+    ```
+
+    :param image: 图像，可以是图像路径或 cv2.Mat。
+    :param templates: 模板图像列表，可以是图像路径或 cv2.Mat。
+    :param masks: 掩码图像列表，可以是图像路径或 cv2.Mat。
+    :param transparent: 若为 True，则认为输入模板是透明的，并自动将透明模板转换为 Mask 图像。
+    :param threshold: 阈值，默认为 0.8。
+    :param colored: 是否匹配颜色，默认为 False。
+    :param remove_duplicate: 是否移除重复结果，默认为 True。
+    :return: 匹配到的一维结果列表。
+    """
+    ret: list[MultipleTemplateMatchResult] = []
+    if masks is None:
+        _masks = [None] * len(templates)
+    else:
+        _masks = masks
+
+    for index, (template, mask) in enumerate(zip(templates, _masks)):
+        results = find_all(
+            image,
+            template,
+            mask,
+            transparent=transparent,
+            threshold=threshold,
+            colored=colored,
+            remove_duplicate=remove_duplicate,
+            debug_output=False,
+        )
+        ret.extend([
+            MultipleTemplateMatchResult.from_template_match_result(r, index)
+            for r in results
+        ])
+
+    if debug.enabled:
+        # 参数表格
+        msg = (
+            "<center>Templates</center>"
+            "<table class='result-table'>"
+            "<tr><th>Template</th><th>Mask</th></tr>"
+        )
+        for t, m in zip(templates, _masks):
+            msg += f"<tr><td>{img(t)}</td><td>{img(m)}</td></tr>"
+        msg += "</table>"
+        msg += "<br>"
+        # 结果表格
+        msg += (
+            "<center>Results</center>"
+            "<table class='result-table'>"
+            "<tr><th>Template</th><th>Mask</th><th>Result</th></tr>"
+        )
+        for result in ret:
+            template = templates[result.index]
+            mask = _masks[result.index]
+            msg += f"<tr><td>{img(template)}</td><td>{img(mask)}</td><td>{result.position}</td></tr>"
+        msg += "</table>"
+        debug_result(
+            'image.find_all_multi',
+            [_draw_result(image, ret), image], 
             msg
         )
     return ret
@@ -466,7 +556,7 @@ def count(
     mask: MatLike | str | None = None,
     *,
     transparent: bool = False,
-    threshold: float = 0.9,
+    threshold: float = 0.8,
     remove_duplicate: bool = True,
     colored: bool = False,
 ) -> int:
@@ -512,7 +602,7 @@ def expect(
     mask: MatLike | str | None = None,
     *,
     transparent: bool = False,
-    threshold: float = 0.9,
+    threshold: float = 0.8,
     colored: bool = False,
     remove_duplicate: bool = True,
 ) -> TemplateMatchResult:

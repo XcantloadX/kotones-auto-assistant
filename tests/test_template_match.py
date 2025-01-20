@@ -2,7 +2,7 @@ import unittest
 
 import cv2
 
-from kotonebot.backend.image import template_match, find_crop
+from kotonebot.backend.image import template_match, find_all_crop
 
 def save(image, name: str):
     import os
@@ -58,7 +58,7 @@ class TestTemplateMatch(unittest.TestCase):
         self.__assert_pos(result[2], 444, 829)
 
     def test_crop(self):
-        result = find_crop(
+        result = find_all_crop(
             self.image,
             self.template,
             self.mask,

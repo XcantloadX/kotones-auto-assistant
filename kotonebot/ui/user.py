@@ -1,4 +1,10 @@
 """消息框、通知、推送等 UI 相关函数"""
+import logging
+from typing import Callable
+
+from cv2.typing import MatLike
+
+logger = logging.getLogger(__name__)
 
 def ask(
     question: str,
@@ -11,8 +17,21 @@ def ask(
     """
     raise NotImplementedError
 
+def info(
+    message: str,
+    images: list[MatLike],
+    *,
+    once: bool = False
+):
+    """
+    信息
+    """
+    logger.debug('user.info: %s', message)
+
 def warning(
     message: str,
+    images: list[MatLike],
+    *,
     once: bool = False
 ):
     """
@@ -21,4 +40,4 @@ def warning(
     :param message: 消息内容
     :param once: 每次运行是否只显示一次。
     """
-    pass
+    logger.warning('user.warning: %s', message)

@@ -19,7 +19,7 @@ def money_items():
     """
     logger.info(f'Purchasing マニー items.')
     # [screenshots\shop\money1.png]
-    results = image.find_many(R.Daily.TextShopRecommended)
+    results = image.find_all(R.Daily.TextShopRecommended)
     # device.click(results[0])
     index = 1
     for index, result in enumerate(results, 1):
@@ -54,7 +54,7 @@ def ap_items(item_indices: list[int]):
     """
     # [screenshots\shop\ap1.png]
     logger.info(f'Purchasing AP items.')
-    results = image.find_many(R.Daily.IconShopAp, threshold=0.7)
+    results = image.find_all(R.Daily.IconShopAp, threshold=0.7)
     sleep(1)
     # 按 X, Y 坐标排序从小到大
     results = sorted(results, key=lambda x: (x.position[0], x.position[1]))

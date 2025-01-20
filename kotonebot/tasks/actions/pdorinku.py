@@ -25,7 +25,7 @@ def list_pdorinku() -> list[tuple[str, Rect]]:
     """
     # 截图所有饮料
     # TODO: 自动记录未知饮料
-    dorinkus = image.find_crop_many(
+    dorinkus = image.find_all_crop(
         R.InPurodyuusu.Action.PDorinkuBg,
         mask=R.InPurodyuusu.Action.PDorinkuBgMask,
     )

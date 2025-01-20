@@ -7,6 +7,7 @@ from . import R
 from .common import Priority
 from .actions.loading import loading
 from .actions.scenes import at_home, goto_home
+from .actions.commu import is_at_commu, check_and_skip_commu
 logger = logging.getLogger(__name__)
 
 @task('启动游戏', priority=Priority.START_GAME)
@@ -41,6 +42,9 @@ def start_game():
             # [screenshots/startup/announcement1.png]
             elif image.find(R.Common.ButtonIconClose):
                 device.click()
+            # [screenshots/startup/birthday.png]
+            elif check_and_skip_commu():
+                pass
             else:
                 device.click_center()
             wait()

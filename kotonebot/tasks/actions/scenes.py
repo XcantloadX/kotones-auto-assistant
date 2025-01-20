@@ -5,32 +5,10 @@ from typing import Callable
 
 from .. import R
 from .loading import loading
-from kotonebot import device, image, action, cropped, UnrecoverableError
+from kotonebot import device, image, action, cropped, UnrecoverableError, until
 
 logger = logging.getLogger(__name__)
 
-def until(
-    condition: Callable[[], bool],
-    timeout: float=10,
-    interval: float=0.5,
-    critical: bool=False
-) -> bool:
-    """
-    等待条件成立，如果条件不成立，则返回 False 或抛出异常。
-
-    :param condition: 条件函数。
-    :param timeout: 等待时间，单位为秒。
-    :param interval: 检查条件的时间间隔，单位为秒。
-    :param critical: 如果条件不成立，是否抛出异常。
-    """
-    start = time.time()
-    while not condition():
-        if time.time() - start > timeout:
-            if critical:
-                raise TimeoutError(f"Timeout while waiting for condition {condition.__name__}.")
-            return False
-        time.sleep(interval)
-    return True
 
 @action('检测是否位于首页')
 def at_home() -> bool:
