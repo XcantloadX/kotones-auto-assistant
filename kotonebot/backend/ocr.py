@@ -49,6 +49,22 @@ def _is_match(text: str, pattern: re.Pattern | str | StringMatchFunction) -> boo
     else:
         return text == pattern
 
+# https://stackoverflow.com/questions/46335488/how-to-efficiently-find-the-bounding-box-of-a-collection-of-points
+def _bounding_box(points):
+    x_coordinates, y_coordinates = zip(*points)
+
+    return [(min(x_coordinates), min(y_coordinates)), (max(x_coordinates), max(y_coordinates))]
+
+def bounding_box(points: list[tuple[int, int]]) -> tuple[int, int, int, int]:
+    """
+    计算点集的外接矩形
+
+    :param points: 点集
+    :return: 外接矩形的左上角坐标和宽高
+    """
+    topleft, bottomright = _bounding_box(points)
+    return (topleft[0], topleft[1], bottomright[0] - topleft[0], bottomright[1] - topleft[1])
+
 def _draw_result(image: 'MatLike', result: list[OcrResult]) -> 'MatLike':
     import numpy as np
     from PIL import Image, ImageDraw, ImageFont
@@ -127,12 +143,10 @@ class Ocr:
             return []
         ret = [OcrResult(
             text=unicodedata.normalize('NFKC', r[1]).replace('ą', 'a'), # HACK: 识别结果中包含奇怪的符号，暂时替换掉
-            rect=(
-                int(r[0][0][0]),  # 左上x
-                int(r[0][0][1]),  # 左上y
-                int(r[0][2][0] - r[0][0][0]),  # 宽度 = 右下x - 左上x # type: ignore
-                int(r[0][2][1] - r[0][0][1]),  # 高度 = 右下y - 左上y # type: ignore
-            ),
+            # r[0] = [左上, 右上, 右下, 左下]
+            # 这里有个坑，返回的点不一定是矩形，只能保证是四边形
+            # 所以这里需要计算出四个点的外接矩形
+            rect=tuple(int(x) for x in bounding_box(r[0])), # type: ignore
             confidence=r[2] # type: ignore
         ) for r in result] # type: ignore
         if debug.enabled:
