@@ -12,7 +12,7 @@ from .scenes import at_home
 from . import loading
 from .common import acquisitions
 from kotonebot.backend.util import AdaptiveWait, crop_y, cropper_y
-from .non_lesson_actions import enter_allowance, allowance_available
+from .non_lesson_actions import enter_allowance, allowance_available, study_available, enter_study
 from kotonebot import ocr, device, contains, image, regex, action, debug
 
 logger = logging.getLogger(__name__)
@@ -81,7 +81,7 @@ def enter_recommended_action(final_week: bool = False) -> ActionType:
             R.InPurodyuusu.TextSenseiTipVisual,
             R.InPurodyuusu.TextSenseiTipRest,
         ])
-    logger.debug("ocr.wait_for: %s", result)
+    logger.debug("image.find_multi: %s", result)
     if result is None:
         logger.debug("No recommended lesson found")
         return None
@@ -402,16 +402,11 @@ def practice():
     """执行练习"""
     logger.info("Practice started")
     # 循环打出推荐卡
-    no_card_count = 0
-    MAX_NO_CARD_COUNT = 3
     while True:
         with device.pinned():
             count = skill_card_count()
             if count == 0:
                 logger.info("No skill card found. Wait and retry...")
-                # no_card_count += 1
-                # if no_card_count >= MAX_NO_CARD_COUNT:
-                #     break
                 if not image.find_multi([
                     R.InPurodyuusu.TextPerfectUntil,
                     R.InPurodyuusu.TextClearUntil
@@ -424,7 +419,7 @@ def practice():
             logger.info("Click recommended card failed. Retry...")
             continue
         logger.info("Wait for next turn...")
-        sleep(9) # TODO: 采用更好的方式检测练习结束
+        sleep(9)
     # 跳过动画
     logger.info("Recommend card not found. Practice finished.")
     ocr.expect_wait(contains("上昇"))
@@ -436,20 +431,20 @@ def exam():
     """执行考试"""
     logger.info("Exam started")
     # 循环打出推荐卡
-    no_card_count = 0
-    MAX_NO_CARD_COUNT = 3
     while True:
         count = skill_card_count()
         if count == 0:
             logger.info("No skill card found. Wait and retry...")
-            no_card_count += 1
-            if no_card_count >= MAX_NO_CARD_COUNT:
+            if not image.wait_for(R.InPurodyuusu.TextButtonExamSkipTurn, timeout=20):
+                logger.info("Exam skip turn button not found. Exam finished.")
                 break
             sleep(3)
             continue
         if click_recommended_card(card_count=count) == -1:
-            break
-        sleep(9) # TODO: 采用更好的方式检测练习结束
+            logger.info("Click recommended card failed. Retry...")
+            continue
+        logger.info("Wait for next turn...")
+        sleep(9)
     
     # 点击“次へ”
     device.click(image.expect_wait(R.Common.ButtonNext))
@@ -460,38 +455,21 @@ def exam():
 def produce_end():
     """执行考试结束流程"""
     bottom = (int(device.screen_size[0] / 2), int(device.screen_size[1] * 0.9))
-    # 考试结束交流 [screenshots/produce/in_produce/final_exam_end_commu.png]
-    # 然后是，考试结束对话 [screenshots\produce_end\step2.jpg]
-    # while not image.find(R.InPurodyuusu.TextAsariProduceEnd):
-    #     check_and_skip_commu()
-    #     device.click(*bottom)
-    #     sleep(1)
-    # # image.expect_wait(R.InPurodyuusu.TextAsariProduceEnd, timeout=30)
-    # sleep(0.5)
-    # device.click(*bottom)
-    # # 对话第二句 [screenshots\produce_end\step3.jpg]
-    # sleep(3)
-    # device.click_center()
-    # sleep(6)
-    # device.click(*bottom)
-    # sleep(3)
-    # device.click(*bottom)
-    # sleep(3)
+    # 1. 考试结束交流 [screenshots/produce/in_produce/final_exam_end_commu.png]
+    # 2. 然后是，考试结束对话 [screenshots\produce_end\step2.jpg]
+    # 3. MV
+    # 4. 培育结束交流
+    # 上面这些全部一直点就可以
 
-    # MV
-    # 等就可以了，反正又不要自己操作（
 
-    # 培育结束交流
-
-    # 结算
-    # 最終プロデュース評価 R.InPurodyuusu.TextFinalProduceRating
     # 等待选择封面画面 [screenshots/produce_end/select_cover.jpg]
     # 次へ
     logger.info("Waiting for select cover screen...")
-    wait = AdaptiveWait(timeout=60 * 5)
+    wait = AdaptiveWait(timeout=60 * 5, max_interval=20)
     while not image.find(R.InPurodyuusu.ButtonNextNoIcon):
         wait()
         device.click(0, 0)
+    # 选择封面
     logger.info("Use default cover.")
     sleep(3)
     logger.debug("Click next")
@@ -555,9 +533,11 @@ def produce_end():
     logger.debug("Click complete")
     device.click(image.expect_wait(R.InPurodyuusu.ButtonComplete))
     sleep(1.3)
-    # 活动进度
+    # 点击结束后可能还会弹出来：
+    # 活动进度、关注提示
     # [screenshots/produce_end/end_activity.png]
     # [screenshots/produce_end/end_activity1.png]
+    # [screenshots/produce_end/end_follow.png]
     while not at_home():
         if image.find(R.Common.ButtonClose):
             logger.info("Activity award claim dialog found. Click to close.")
@@ -565,6 +545,11 @@ def produce_end():
         elif image.find(R.Common.ButtonNextNoIcon):
             logger.debug("Click next")
             device.click(image.expect_wait(R.Common.ButtonNextNoIcon))
+        elif image.find(R.InPurodyuusu.ButtonCancel):
+            # CONFIG: 可选是否关注
+            logger.info("Follow producer dialog found. Click to close.")
+            device.click()
+            # R.InPurodyuusu.ButtonFollowNoIcon
         else:
             device.click_center()
         sleep(1)
@@ -602,8 +587,10 @@ def hajime_regular(week: int = -1, start_from: int = 1):
             logger.info("Recommended action is rest.")
         elif allowance_available():
             enter_allowance()
-        # elif study_available():
-        #     enter_study()
+        elif study_available():
+            enter_study()
+        else:
+            raise ValueError("No action available.")
         until_action_scene()
 
     def week_final_lesson():
@@ -638,6 +625,7 @@ def hajime_regular(week: int = -1, start_from: int = 1):
         produce_end()
     
     weeks = [
+        # TODO: 似乎一部分选项是随机出现的
         week_lesson, # 1: Vo.レッスン、Da.レッスン、Vi.レッスン
         week_lesson, # 2: 授業
         week_lesson, # 3: Vo.レッスン、Da.レッスン、Vi.レッスン、授業
@@ -685,11 +673,15 @@ if __name__ == '__main__':
     getLogger(__name__).setLevel(logging.DEBUG)
     init_context()
 
-    exam()
-    produce_end()
+    # exam()
+    # until_action_scene()
+
+    # exam()
+    # produce_end()
 
     # import cProfile
-    # p = cProfile.Profile()
+    # p = cProfile.Prof
+    # ile()
     # p.enable()
     # acquisitions()
     # p.disable()
@@ -740,7 +732,7 @@ if __name__ == '__main__':
     # acquisitions()
     # acquire_pdorinku(0)
     # image.wait_for(R.InPurodyuusu.InPractice.PDorinkuIcon)
-    # hajime_regular(start_from=12)
+    hajime_regular(start_from=8)
     # until_practice_scene()
     # device.click(image.expect_wait_any([
     #     R.InPurodyuusu.PSkillCardIconBlue,

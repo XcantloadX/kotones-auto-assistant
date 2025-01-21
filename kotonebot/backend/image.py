@@ -131,7 +131,7 @@ def template_match(
         _template_name = os.path.relpath(template)
     else:
         _template_name = '<opencv Mat>'
-    logger.debug(f'match template: {_template_name} threshold: {threshold} max_results: {max_results}')
+    # logger.debug(f'match template: {_template_name} threshold: {threshold} max_results: {max_results}')
     # 统一参数
     template = _unify_image(template, transparent)
     image = _unify_image(image)
