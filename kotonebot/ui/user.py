@@ -30,7 +30,7 @@ def info(
 
 def warning(
     message: str,
-    images: list[MatLike],
+    images: list[MatLike] | None = None,
     *,
     once: bool = False
 ):

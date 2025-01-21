@@ -1,13 +1,13 @@
 import os
-import sys
 import runpy
-import argparse
 import shutil
-from threading import Thread
-from typing import Callable
+import argparse
+import importlib
 from pathlib import Path
+from threading import Thread
 
 from . import debug
+from kotonebot.backend.context import init_context
 
 def _task_thread(task_module: str):
     """任务线程。"""
@@ -26,6 +26,13 @@ def _parse_args():
         '-c', '--clear',
         help='Clear the dump folder before running',
         action='store_true'
+    )
+    parser.add_argument(
+        '-t', '--config-type',
+        help='The full path of the config data type. e.g. `kotonebot.tasks.common.BaseConfig`',
+        type=str,
+        metavar='TYPE',
+        required=True
     )
     parser.add_argument(
         'input_module',
@@ -51,6 +58,11 @@ if __name__ == "__main__":
     if args.clear:
         if debug.save_to_folder:
             shutil.rmtree(debug.save_to_folder)
+
+    # 初始化上下文
+    module_name, class_name = args.config_type.rsplit('.', 1)
+    class_ = importlib.import_module(module_name).__getattribute__(class_name)
+    init_context(config_type=class_)
     
     # 启动服务器
     from .server import app

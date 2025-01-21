@@ -9,6 +9,7 @@ from .backend.context import (
     image,
     debug,
     color,
+    config,
     rect_expand
 )
 from .backend.util import (

@@ -4,6 +4,7 @@ from time import sleep
 from gettext import gettext as _
 
 from . import R
+from .common import conf
 from .actions.scenes import at_home, goto_home
 from .actions.loading import wait_loading_end
 from kotonebot import device, image, ocr, color, action, task, user, rect_expand
@@ -106,6 +107,9 @@ def pick_and_contest(has_ongoing_contest: bool = False) -> bool:
 @task('竞赛')
 def contest():
     """"""
+    if not conf().contest.enabled:
+        logger.info('Contest is disabled.')
+        return
     logger.info('Contest started.')
     if not at_home():
         goto_home()
@@ -124,11 +128,9 @@ def contest():
     
 
 if __name__ == '__main__':
-    from kotonebot.backend.context import init_context
     import logging
     logging.basicConfig(level=logging.INFO, format='[%(asctime)s] [%(levelname)s] [%(name)s] [%(funcName)s] [%(lineno)d] %(message)s')
     logging.getLogger('kotonebot').setLevel(logging.DEBUG)
     logger.setLevel(logging.DEBUG)
-    init_context()
     
     contest()

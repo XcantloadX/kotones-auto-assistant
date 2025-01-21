@@ -94,11 +94,12 @@ class BaseTestCase(unittest.TestCase):
         cls.device = MockDevice()
         from kotonebot.backend.debug.server import start_server
         from kotonebot.backend.debug import debug
+        from kotonebot.tasks.common import BaseConfig
         debug.enabled = True
         debug.wait_for_message_sent = True
         start_server()
         from kotonebot.backend.context import init_context
-        init_context()
+        init_context(config_type=BaseConfig)
         from kotonebot.backend.context import _c
         assert _c is not None, 'context is not initialized'
         _c.inject_device(cls.device)

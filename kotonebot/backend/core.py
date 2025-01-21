@@ -1,6 +1,8 @@
 import logging
-from typing import Callable, ParamSpec, TypeVar, overload, Any, NamedTuple
 from dataclasses import dataclass
+from typing import Callable, ParamSpec, TypeVar, overload
+
+from kotonebot.backend.context import UserConfig
 
 logger = logging.getLogger(__name__)
 

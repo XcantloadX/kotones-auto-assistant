@@ -157,8 +157,6 @@ def acquisitions() -> AcquisitionType | None:
 if __name__ == '__main__':
     from logging import getLogger
     import logging
-    from kotonebot.backend.context import init_context
     logging.basicConfig(level=logging.INFO, format='[%(asctime)s] [%(levelname)s] [%(name)s] %(message)s')
     getLogger('kotonebot').setLevel(logging.DEBUG)
     getLogger(__name__).setLevel(logging.DEBUG)
-    init_context()

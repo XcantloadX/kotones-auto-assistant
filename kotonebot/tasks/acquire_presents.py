@@ -1,7 +1,9 @@
 """领取礼物（邮箱）"""
 import logging
 from time import sleep
+
 from . import R
+from .common import conf
 from .actions.scenes import at_home, goto_home
 from kotonebot import device, image, task, color, rect_expand
 
@@ -9,6 +11,10 @@ logger = logging.getLogger(__name__)
 
 @task('领取礼物')
 def acquire_presents():
+    if not conf().presents.enabled:
+        logger.info('Presents acquisition is disabled.')
+        return
+
     if not at_home():
         goto_home()
     present = image.expect_wait(R.Daily.ButtonPresentsPartial, timeout=1)
@@ -30,11 +36,9 @@ def acquire_presents():
     goto_home()
 
 if __name__ == '__main__':
-    from kotonebot.backend.context import init_context
     import logging
     logging.basicConfig(level=logging.INFO, format='[%(asctime)s] [%(levelname)s] [%(name)s] [%(funcName)s] [%(lineno)d] %(message)s')
     logger.setLevel(logging.DEBUG)
-    init_context()
     # acquire_presents()
     print(image.find(R.Common.ButtonIconArrowShort, colored=True))
     print(image.find(R.Common.ButtonIconArrowShortDisabled, colored=True))

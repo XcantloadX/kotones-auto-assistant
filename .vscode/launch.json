@@ -30,7 +30,9 @@
                 "-s",
                 "${workspaceFolder}/dumps",
                 "-c",
-                "${command:extension.commandvariable.file.relativeDirDots}.${fileBasenameNoExtension}"
+                "${command:extension.commandvariable.file.relativeDirDots}.${fileBasenameNoExtension}",
+                "-t",
+                "kotonebot.tasks.common.BaseConfig"
             ]
         },
         {

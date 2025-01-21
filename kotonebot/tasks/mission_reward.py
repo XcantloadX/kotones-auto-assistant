@@ -1,12 +1,13 @@
 """领取任务奖励"""
-from time import sleep
 import logging
+from time import sleep
 
-from kotonebot import device, image, color, task, action, rect_expand
-from .actions.scenes import at_home, goto_home
-from .common import Priority
 from . import R
+from .common import conf, Priority
 from .actions.loading import wait_loading_end
+from .actions.scenes import at_home, goto_home
+from kotonebot import device, image, color, task, action, rect_expand
+
 logger = logging.getLogger(__name__)
 
 @action('检查任务')
@@ -117,6 +118,9 @@ def mission_reward():
     """
     领取任务奖励
     """
+    if not conf().mission_reward.enabled:
+        logger.info('Mission reward is disabled.')
+        return
     logger.info('Claiming mission rewards.')
     if not at_home():
         goto_home()
@@ -130,12 +134,10 @@ def mission_reward():
 
 
 if __name__ == '__main__':
-    from kotonebot.backend.context import init_context
     import logging
     logging.basicConfig(level=logging.INFO, format='[%(asctime)s] [%(levelname)s] [%(name)s] [%(funcName)s] [%(lineno)d] %(message)s')
     logging.getLogger('kotonebot').setLevel(logging.DEBUG)
     logger.setLevel(logging.DEBUG)
-    init_context()
     
     # if image.find(R.Common.CheckboxUnchecked):
     #     logger.debug('Checking skip all.')

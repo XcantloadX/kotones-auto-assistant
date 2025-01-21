@@ -5,6 +5,7 @@ R.py
 kotonebot-ui/node_modules
 kotonebot-ui/.vite
 dumps*/
+config.json
 ##########################
 
 # Byte-compiled / optimized / DLL files

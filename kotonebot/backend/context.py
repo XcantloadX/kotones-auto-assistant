@@ -1,6 +1,7 @@
 import os
 import re
 import time
+import logging
 from datetime import datetime
 from typing import (
     Callable,
@@ -11,6 +12,8 @@ from typing import (
     Literal,
     ParamSpec,
     Concatenate,
+    Generic,
+    Type,
 )
 
 import cv2
@@ -21,7 +24,6 @@ from kotonebot.backend.util import Rect
 import kotonebot.backend.image as raw_image
 from kotonebot.client.device.adb import AdbDevice
 from kotonebot.backend.image import (
-    CropResult,
     TemplateMatchResult,
     MultipleTemplateMatchResult,
     find_all_crop,
@@ -34,10 +36,13 @@ from kotonebot.backend.image import (
 import kotonebot.backend.color as raw_color
 from kotonebot.backend.color import find_rgb
 from kotonebot.backend.ocr import Ocr, OcrResult, jp, en, StringMatchFunction
+from kotonebot.config.manager import load_config, save_config
+from kotonebot.config.base_config import UserConfig
 
 OcrLanguage = Literal['jp', 'en']
 DEFAULT_TIMEOUT = 120
 DEFAULT_INTERVAL = 0.4
+logger = logging.getLogger(__name__)
 
 # https://stackoverflow.com/questions/74714300/paramspec-for-a-pre-defined-function-without-using-generic-callablep
 T = TypeVar('T')
@@ -386,6 +391,76 @@ class ContextColor:
         return find_rgb(self.context.device.screenshot(), *args, **kwargs)
 
 
+V = TypeVar('V')
+class ContextConfig(Generic[T]):
+    def __init__(self, context: 'Context', config_type: Type[T] = dict[str, Any]):
+        self.context = context
+        self.config_path: str = 'config.json'
+        self.current_key: int | str = 0
+        self.config_type: Type = config_type
+        self.root = load_config(self.config_path, type=config_type)
+
+    def to(self, conf_type: Type[V]) -> 'ContextConfig[V]':
+        self.config_type = conf_type
+        return cast(ContextConfig[V], self)
+
+    def create(self, config: UserConfig[T]):
+        """创建新用户配置"""
+        self.root.user_configs.append(config)
+        self.save()
+
+    def get(self, key: str | int | None = None) -> UserConfig[T] | None:
+        """
+        获取指定或当前用户配置数据。
+
+        :param key: 用户配置 ID 或索引（从 0 开始），为 None 时获取当前用户配置
+        :return: 用户配置数据
+        """
+        if isinstance(key, int):
+            if key < 0 or key >= len(self.root.user_configs):
+                return None
+            return self.root.user_configs[key]
+        elif isinstance(key, str):
+            for user in self.root.user_configs:
+                if user.id == key:
+                    return user
+            else:
+                return None
+        else:
+            return self.get(self.current_key)
+
+    def save(self):
+        """保存所有配置数据到本地"""
+        save_config(self.root, self.config_path)
+
+    def load(self):
+        """从本地加载所有配置数据"""
+        self.root = load_config(self.config_path, type=self.config_type)
+
+    def switch(self, key: str | int):
+        """切换到指定用户配置"""
+        self.current_key = key
+
+    @property
+    def current(self) -> UserConfig[T]:
+        """
+        当前配置数据。
+        
+        如果当前配置不存在，则使用默认值自动创建一个新配置。
+        （不推荐，建议在 UI 中启动前要求用户手动创建，或自行创建一个默认配置。）
+        """
+        c = self.get(self.current_key)
+        if c is None:
+            if not self.config_type:
+                raise ValueError("No config type specified.")
+            logger.warning("No config found, creating a new one using default values. (NOT RECOMMENDED)")
+            c = self.config_type()
+            u = UserConfig(options=c)
+            self.create(u)
+            c = u
+        return c
+
+
 class Forwarded:
     def __init__(self, getter: Callable[[], T] | None = None, name: str | None = None):
         self._FORWARD_getter = getter
@@ -406,7 +481,7 @@ class Forwarded:
         setattr(self._FORWARD_getter(), name, value)
 
 class Context:
-    def __init__(self):
+    def __init__(self, config_type: Type[T]):
         # HACK: 暂时写死
         from adbutils import adb
         adb.connect('127.0.0.1:5555')
@@ -419,6 +494,7 @@ class Context:
         self.__color = ContextColor(self)
         self.__vars = ContextGlobalVars()
         self.__debug = ContextDebug(self)
+        self.__config = ContextConfig[T](self, config_type)
         self.actions = []
 
     def inject_device(self, device: DeviceABC):
@@ -448,13 +524,19 @@ class Context:
     def debug(self) -> 'ContextDebug':
         return self.__debug
 
+    @property
+    def config(self) -> 'ContextConfig':
+        return self.__config
+
 def rect_expand(rect: Rect, left: int = 0, top: int = 0, right: int = 0, bottom: int = 0) -> Rect:
     """
     向四个方向扩展矩形区域。
     """
     return (rect[0] - left, rect[1] - top, rect[2] + right + left, rect[3] + bottom + top)
 
-# 暴露 Context 的属性到模块级别
+# 这里 Context 类还没有初始化，但是 tasks 中的脚本可能已经引用了这里的变量
+# 为了能够动态更新这里变量的值，这里使用 Forwarded 类再封装一层，
+# 将调用转发到实际的稍后初始化的 Context 类上
 _c: Context | None = None
 device: DeviceABC = cast(DeviceABC, Forwarded(name="device"))
 """当前正在执行任务的设备。"""
@@ -468,14 +550,25 @@ vars: ContextGlobalVars = cast(ContextGlobalVars, Forwarded(name="vars"))
 """全局变量。"""
 debug: ContextDebug = cast(ContextDebug, Forwarded(name="debug"))
 """调试工具。"""
+config: ContextConfig = cast(ContextConfig, Forwarded(name="config"))
+"""配置数据。"""
 
-def init_context():
-    global _c, device, ocr, image, color, vars, debug
-    _c = Context()
+def init_context(
+    config_type: Type[T] = dict[str, Any]
+):
+    """
+    初始化 Context 模块。
+
+    :param config_type: 
+        配置数据类类型。配置数据类必须继承自 pydantic 的 `BaseModel`。
+        默认为 `dict[str, Any]`，即普通的 JSON 数据，不包含任何类型信息。
+    """
+    global _c, device, ocr, image, color, vars, debug, config
+    _c = Context(config_type=config_type)
     device._FORWARD_getter = lambda: _c.device # type: ignore
     ocr._FORWARD_getter = lambda: _c.ocr # type: ignore
     image._FORWARD_getter = lambda: _c.image # type: ignore
     color._FORWARD_getter = lambda: _c.color # type: ignore
     vars._FORWARD_getter = lambda: _c.vars # type: ignore
     debug._FORWARD_getter = lambda: _c.debug # type: ignore
-
+    config._FORWARD_getter = lambda: _c.config # type: ignore

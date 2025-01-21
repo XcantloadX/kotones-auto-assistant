@@ -2,10 +2,12 @@
 import logging
 from time import sleep
 from typing import Literal
-from kotonebot import task, device, image, action, ocr, contains, cropped, rect_expand, color
-from kotonebot.tasks.actions.loading import wait_loading_end
-from .actions.scenes import at_home, goto_home
+
 from . import R
+from .common import conf
+from .actions.loading import wait_loading_end
+from .actions.scenes import at_home, goto_home
+from kotonebot import task, device, image, action, ocr, contains, cropped, rect_expand, color
 
 logger = logging.getLogger(__name__)
 
@@ -33,14 +35,17 @@ def assign(type: Literal['mini', 'online']) -> bool:
     :param type: 工作类型。mini=ミニライブ 或 online=ライブ配信。
     """
     # [kotonebot/tasks/assignment.py]
+    target_duration = 12
     image.expect_wait(R.Daily.IconTitleAssign, timeout=10)
     if type == 'mini':
+        target_duration = conf().assignment.mini_live_duration
         if image.find(R.Daily.IconAssignMiniLive):
             device.click()
         else:
             logger.warning('MiniLive already assigned. Skipping...')
             return False
     elif type == 'online':
+        target_duration = conf().assignment.online_live_duration
         if image.find(R.Daily.IconAssignOnlineLive):
             device.click()
         else:
@@ -88,12 +93,11 @@ def assign(type: Literal['mini', 'online']) -> bool:
     # 等待页面加载
     confirm = image.expect_wait(R.Common.ButtonConfirmNoIcon)
     # 选择时间 [screenshots/assignment/assign_mini_live2.png]
-    # CONFIG: 工作时长
-    if ocr.find(contains('12時間')):
-        logger.info('12時間 selected.')
+    if ocr.find(contains(f'{target_duration}時間')):
+        logger.info(f'{target_duration}時間 selected.')
         device.click()
     else:
-        logger.warning('12時間 not found. Using default duration.')
+        logger.warning(f'{target_duration}時間 not found. Using default duration.')
     sleep(0.5)
     # 点击 决定する
     device.click(confirm)
@@ -104,6 +108,9 @@ def assign(type: Literal['mini', 'online']) -> bool:
 @task('工作')
 def assignment():
     """领取工作奖励并重新分配工作"""
+    if not conf().assignment.enabled:
+        logger.info('Assignment is disabled.')
+        return
     if not at_home():
         goto_home()
     btn_assignment = image.expect_wait(R.Daily.ButtonAssignmentPartial)
@@ -128,18 +135,22 @@ def assignment():
         logger.info('Assignment acquired.')
     # 领取完后会自动进入分配页面
     image.expect_wait(R.Daily.IconTitleAssign)
-    if image.find(R.Daily.IconAssignMiniLive):
-        assign('mini')
-        sleep(6) # 等待动画结束
-        # TODO: 更好的方法来等待动画结束。
-    if image.find(R.Daily.IconAssignOnlineLive):
-        assign('online')
-        sleep(6) # 等待动画结束
+    if conf().assignment.mini_live_reassign_enabled:
+        if image.find(R.Daily.IconAssignMiniLive):
+            assign('mini')
+            sleep(6) # 等待动画结束
+            # TODO: 更好的方法来等待动画结束。
+    else:
+        logger.info('MiniLive reassign is disabled.')
+    if conf().assignment.online_live_reassign_enabled:
+        if image.find(R.Daily.IconAssignOnlineLive):
+            assign('online')
+            sleep(6) # 等待动画结束
+    else:
+        logger.info('OnlineLive reassign is disabled.')
 
 if __name__ == '__main__':
-    from kotonebot.backend.context import init_context
     import logging
     logging.basicConfig(level=logging.INFO, format='[%(asctime)s] [%(levelname)s] [%(name)s] [%(funcName)s] [%(lineno)d] %(message)s')
     logger.setLevel(logging.DEBUG)
-    init_context()
     assignment()

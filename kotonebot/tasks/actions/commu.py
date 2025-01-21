@@ -57,11 +57,9 @@ def check_and_skip_commu(img: MatLike | None = None) -> bool:
 
 
 if __name__ == '__main__':
-    from kotonebot.backend.context import init_context
     import logging
     logging.basicConfig(level=logging.INFO, format='[%(asctime)s] [%(levelname)s] [%(name)s] [%(funcName)s] [%(lineno)d] %(message)s')
     logger.setLevel(logging.DEBUG)
-    init_context()
     print(is_at_commu())
     # rect = image.expect(R.Common.ButtonCommuFastforward).rect
     # print(rect)

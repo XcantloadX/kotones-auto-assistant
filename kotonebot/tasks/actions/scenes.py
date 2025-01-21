@@ -71,8 +71,6 @@ def goto_shop():
 
 
 if __name__ == "__main__":
-    from kotonebot.backend.context import init_context
-    init_context()
     print(at_home())
     print(at_daily_shop())
     goto_shop()

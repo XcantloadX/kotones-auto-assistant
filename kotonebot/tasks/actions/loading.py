@@ -51,7 +51,5 @@ def wait_loading_end(timeout: float = 60):
         sleep(1)
 
 if __name__ == '__main__':
-    from kotonebot.backend.context import init_context
-    init_context()
     print(loading())
     input()

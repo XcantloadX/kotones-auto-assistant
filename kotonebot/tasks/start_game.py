@@ -50,10 +50,8 @@ def start_game():
             wait()
 
 if __name__ == '__main__':
-    from kotonebot.backend.context import init_context
     import logging
     logging.basicConfig(level=logging.INFO, format='[%(asctime)s] [%(levelname)s] [%(name)s] [%(funcName)s] [%(lineno)d] %(message)s')
     logger.setLevel(logging.DEBUG)
-    init_context()
     start_game()
 

@@ -32,6 +32,7 @@ def initialize(module: str):
     logger.info(f'{len(task_registry)} task(s) and {len(action_registry)} action(s) loaded.')
 
 def run(
+    *,
     no_try: bool = False,
 ):
     """
@@ -42,6 +43,7 @@ def run(
     tasks = sorted(task_registry.values(), key=lambda x: x.priority, reverse=True)
     for task in tasks:
         logger.info(f'Task started: {task.name}')
+
         if no_try:
             task.func()
         else:
@@ -54,10 +56,11 @@ def run(
     logger.info('All tasks finished.')
 
 if __name__ == '__main__':
+    from kotonebot.tasks.common import BaseConfig
     logging.basicConfig(level=logging.INFO, format='[%(asctime)s] [%(levelname)s] [%(name)s] [%(filename)s:%(lineno)d] - %(message)s')
     logger.setLevel(logging.DEBUG)
     logging.getLogger('kotonebot').setLevel(logging.DEBUG)
-    init_context()
+    init_context(config_type=BaseConfig)
     initialize('kotonebot.tasks')
     run(no_try=True)
 

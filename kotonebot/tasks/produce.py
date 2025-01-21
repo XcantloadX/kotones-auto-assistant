@@ -1,17 +1,21 @@
 from time import sleep
 import logging
 
-from kotonebot import device, image, ocr, task, action
 from . import R
-from .actions.scenes import loading, at_home, goto_home
+from .common import conf
 from .actions.loading import wait_loading_end
 from .actions.in_purodyuusu import hajime_regular
+from kotonebot import device, image, ocr, task, action
+from .actions.scenes import loading, at_home, goto_home
 
 logger = logging.getLogger(__name__)
 
 @task('培育')
 def produce():
     """进行培育流程"""
+    if not conf().produce.enabled:
+        logger.info('Produce is disabled.')
+        return
     if not at_home():
         goto_home()
     # [screenshots/produce/home.png]
@@ -44,11 +48,12 @@ def produce():
             device.click(image.expect(R.Common.ButtonNextNoIcon))
     sleep(0.3)
     # 选择道具 [screenshots/produce/select_end.png]
-    # CONFIG:
-    device.click(image.expect_wait(R.Produce.CheckboxIconNoteBoost))
-    sleep(0.1)
-    device.click(image.expect_wait(R.Produce.CheckboxIconSupportPtBoost))
-    sleep(0.1)
+    if conf().produce.use_note_boost:
+        device.click(image.expect_wait(R.Produce.CheckboxIconNoteBoost))
+        sleep(0.2)
+    if conf().produce.use_pt_boost:
+        device.click(image.expect_wait(R.Produce.CheckboxIconSupportPtBoost))
+        sleep(0.2)
     device.click(image.expect_wait(R.Produce.ButtonProduceStart))
     sleep(0.5)
     while not loading():
@@ -64,12 +69,10 @@ def produce():
 
 
 if __name__ == '__main__':
-    from kotonebot.backend.context import init_context
     import logging
     logging.basicConfig(level=logging.INFO, format='[%(asctime)s] [%(levelname)s] [%(name)s] [%(funcName)s] [%(lineno)d] %(message)s')
     logging.getLogger('kotonebot').setLevel(logging.DEBUG)
     logger.setLevel(logging.DEBUG)
-    init_context()
     produce()
 
 

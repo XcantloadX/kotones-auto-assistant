@@ -39,16 +39,16 @@ def fuzz(text: str) -> Callable[[str], bool]:
 def regex(regex: str) -> Callable[[str], bool]:
     """返回正则表达式字符串匹配函数。"""
     f = lambda s: re.match(regex, s) is not None
-    f.__repr__ = lambda: f"regex({regex})"
-    f.__name__ = f"regex({regex})"
+    f.__repr__ = lambda: f"regex('{regex}')"
+    f.__name__ = f"regex('{regex}')"
     return f
 
 @lru_cache(maxsize=1000)
 def contains(text: str) -> Callable[[str], bool]:
     """返回包含指定文本的函数。"""
     f = lambda s: text in s
-    f.__repr__ = lambda: f"contains({text})"
-    f.__name__ = f"contains({text})"
+    f.__repr__ = lambda: f"contains('{text}')"
+    f.__name__ = f"contains('{text}')"
     return f
 
 

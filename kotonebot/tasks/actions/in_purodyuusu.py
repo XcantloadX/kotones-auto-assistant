@@ -1,19 +1,21 @@
-import random
 import time
-import cv2
+import random
 import logging
 import unicodedata
 from time import sleep
 from typing import Literal
 from typing_extensions import deprecated
 
+import cv2
+
 from .. import R
-from .scenes import at_home
 from . import loading
+from .scenes import at_home
 from .common import acquisitions
+from ..common import conf
 from kotonebot.backend.util import AdaptiveWait, crop_y, cropper_y
+from kotonebot import ocr, device, contains, image, regex, action, debug, config
 from .non_lesson_actions import enter_allowance, allowance_available, study_available, enter_study
-from kotonebot import ocr, device, contains, image, regex, action, debug
 
 logger = logging.getLogger(__name__)
 
@@ -546,17 +548,17 @@ def produce_end():
             logger.debug("Click next")
             device.click(image.expect_wait(R.Common.ButtonNextNoIcon))
         elif image.find(R.InPurodyuusu.ButtonCancel):
-            # CONFIG: 可选是否关注
             logger.info("Follow producer dialog found. Click to close.")
-            device.click()
-            # R.InPurodyuusu.ButtonFollowNoIcon
+            if conf().produce.follow_producer:
+                logger.info("Follow producer")
+                device.click(image.expect_wait(R.InPurodyuusu.ButtonFollowNoIcon))
+            else:
+                logger.info("Skip follow producer")
+                device.click()
         else:
             device.click_center()
         sleep(1)
     logger.info("Produce completed.")
-    # 关注提示
-    # if image.wait_for(R.InPurodyuusu.ButtonFollowProducer, timeout=2):
-    #     device.click(image.expect_wait(R.InPurodyuusu.ButtonCancel))
 
 @action('执行 Regular 培育')
 def hajime_regular(week: int = -1, start_from: int = 1):
@@ -666,12 +668,10 @@ def purodyuusu(
 __actions__ = [enter_recommended_action]
 
 if __name__ == '__main__':
-    from kotonebot.backend.context import init_context
     from logging import getLogger
     logging.basicConfig(level=logging.INFO, format='[%(asctime)s] [%(levelname)s] [%(name)s] %(message)s')
     getLogger('kotonebot').setLevel(logging.DEBUG)
     getLogger(__name__).setLevel(logging.DEBUG)
-    init_context()
 
     # exam()
     # until_action_scene()

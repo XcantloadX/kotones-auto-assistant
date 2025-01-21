@@ -13,5 +13,7 @@ python-multipart==0.0.20
 websockets==14.1
 numpy==2.2.1
 psutil==6.1.1
+# 配置读写
+pydantic==2.10.4
 # 其他
 typing-extensions==4.12.2
