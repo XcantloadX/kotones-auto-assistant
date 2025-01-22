@@ -6,6 +6,7 @@ kotonebot-ui/node_modules
 kotonebot-ui/.vite
 dumps*/
 config.json
+reports/
 ##########################
 
 # Byte-compiled / optimized / DLL files

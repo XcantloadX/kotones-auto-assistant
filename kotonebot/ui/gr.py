@@ -73,7 +73,8 @@ class KotoneBotUI:
                 'pending': '等待中',
                 'running': '运行中',
                 'finished': '已完成',
-                'error': '出错'
+                'error': '出错',
+                'cancelled': '已取消'
             }.get(task_status.status, '未知')
             status_list.append([task_status.task.name, status_text])
         return status_list
