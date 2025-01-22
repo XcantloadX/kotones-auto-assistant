@@ -45,7 +45,9 @@
                 "-s",
                 "${workspaceFolder}/dumps",
                 "-c",
-                "kotonebot.run.run"
+                "kotonebot.run.run",
+                "-t",
+                "kotonebot.tasks.common.BaseConfig"
             ]
         }
     ]

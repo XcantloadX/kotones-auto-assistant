@@ -553,7 +553,9 @@ config: ContextConfig = cast(ContextConfig, Forwarded(name="config"))
 """配置数据。"""
 
 def init_context(
-    config_type: Type[T] = dict[str, Any]
+    *,
+    config_type: Type[T] = dict[str, Any],
+    force: bool = False
 ):
     """
     初始化 Context 模块。
@@ -561,8 +563,13 @@ def init_context(
     :param config_type: 
         配置数据类类型。配置数据类必须继承自 pydantic 的 `BaseModel`。
         默认为 `dict[str, Any]`，即普通的 JSON 数据，不包含任何类型信息。
+    :param force: 
+        是否强制重新初始化。
+        若为 `True`，则忽略已存在的 Context 实例，并重新创建一个新的实例。
     """
     global _c, device, ocr, image, color, vars, debug, config
+    if _c is not None and not force:
+        return
     _c = Context(config_type=config_type)
     device._FORWARD_getter = lambda: _c.device # type: ignore
     ocr._FORWARD_getter = lambda: _c.ocr # type: ignore

@@ -52,12 +52,12 @@ if __name__ == "__main__":
     # 设置保存路径
     if args.save:
         save_path = Path(args.save)
-        debug.save_to_folder = str(save_path)
+        debug.auto_save_to_folder = str(save_path)
         if not os.path.exists(save_path):
             os.makedirs(save_path)
     if args.clear:
-        if debug.save_to_folder:
-            shutil.rmtree(debug.save_to_folder)
+        if debug.auto_save_to_folder:
+            shutil.rmtree(debug.auto_save_to_folder)
 
     # 初始化上下文
     module_name, class_name = args.config_type.rsplit('.', 1)

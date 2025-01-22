@@ -4,6 +4,7 @@ import json
 import time
 import uuid
 import psutil
+import hashlib
 import traceback
 from pathlib import Path
 from datetime import datetime
@@ -23,21 +24,34 @@ class _Vars:
     """调试变量类"""
     enabled: bool = False
     """是否启用调试结果显示。"""
+
     max_results: int = -1
     """最多保存的结果数量。-1 表示不限制。"""
+
     wait_for_message_sent: bool = False
     """
     是否等待消息发送完成才继续后续代码。
 
-    启用此选项可能会降低运行速度。
+    默认禁用。启用此选项会显著降低运行速度。
     """
+    
     hide_server_log: bool = True
     """是否隐藏服务器日志。"""
-    save_to_folder: str | None = None
+
+    auto_save_to_folder: str | None = None
     """
-    是否将结果保存到指定文件夹。
+    是否将结果自动保存到指定文件夹。
     
     如果为 None，则不保存。
+    """
+
+    hash_image: bool = True
+    """
+    是否使用图片的 MD5 值作为图片的唯一标识。
+    若禁用，则使用随机 UUID 作为图片的唯一标识
+    （可能会导致保存大量重复图片）。
+    
+    此选项默认启用。启用此选项会轻微降低调试时运行速度。
     """
 
 debug = _Vars()
@@ -50,13 +64,19 @@ _result_file: TextIO | None = None
 
 def _save_image(image: MatLike) -> str:
     """缓存图片数据到 _images 字典中。返回 key。"""
-    key = str(uuid.uuid4())
-    _images[key] = image
-    if debug.save_to_folder:
-        if not os.path.exists(debug.save_to_folder):
-            os.makedirs(debug.save_to_folder)
-        file_name = f"{key}.png"
-        cv2.imwrite(os.path.join(debug.save_to_folder, file_name), image)
+    # 计算 key
+    if debug.hash_image:
+        key = hashlib.md5(image.tobytes()).hexdigest()
+    else:
+        key = str(uuid.uuid4())
+    # 保存图片
+    if key not in _images:
+        _images[key] = image
+        if debug.auto_save_to_folder:
+            if not os.path.exists(debug.auto_save_to_folder):
+                os.makedirs(debug.auto_save_to_folder)
+            file_name = f"{key}.png"
+            cv2.imwrite(os.path.join(debug.auto_save_to_folder, file_name), image)
     return key
 
 def _save_images(images: list[MatLike]) -> list[str]:
@@ -72,7 +92,7 @@ def img(image: str | MatLike | None) -> str:
     """
     if image is None:
         return 'None'
-    if debug.save_to_folder:
+    if debug.auto_save_to_folder:
         if isinstance(image, str):
             image = cv2.imread(image)
         key = _save_image(image)
@@ -219,12 +239,12 @@ def result(
 
     # 保存到文件
     # TODO: 把这个类型转换为 dataclass/namedtuple
-    if debug.save_to_folder:
+    if debug.auto_save_to_folder:
         if _result_file is None:
-            if not os.path.exists(debug.save_to_folder):
-                os.makedirs(debug.save_to_folder)
+            if not os.path.exists(debug.auto_save_to_folder):
+                os.makedirs(debug.auto_save_to_folder)
             log_file_name = f"dump_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.json"
-            _result_file = open(os.path.join(debug.save_to_folder, log_file_name), "w")
+            _result_file = open(os.path.join(debug.auto_save_to_folder, log_file_name), "w")
         _result_file.write(json.dumps({
             "image": {
                 "type": "memory",
