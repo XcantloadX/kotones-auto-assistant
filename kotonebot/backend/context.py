@@ -480,22 +480,21 @@ class Forwarded:
             raise ValueError(f"Forwarded object {self._FORWARD_name} called before initialization.")
         setattr(self._FORWARD_getter(), name, value)
 
-class Context:
+class Context(Generic[T]):
     def __init__(self, config_type: Type[T]):
-        # HACK: 暂时写死
-        from adbutils import adb
-        adb.connect('127.0.0.1:5555')
-        adb.connect('127.0.0.1:16384')
-        d = [d for d in adb.device_list() if d.serial == '127.0.0.1:5555']
-        self.__device = AdbDevice(d[0])
-        # self.__device = None
         self.__ocr = ContextOcr(self)
         self.__image = ContextImage(self)
         self.__color = ContextColor(self)
         self.__vars = ContextGlobalVars()
         self.__debug = ContextDebug(self)
         self.__config = ContextConfig[T](self, config_type)
-        self.actions = []
+        from adbutils import adb
+        ip = self.config.current.backend.adb_ip
+        port = self.config.current.backend.adb_port
+        adb.connect(f'{ip}:{port}')
+        # TODO: 处理链接失败情况
+        d = [d for d in adb.device_list() if d.serial == f'{ip}:{port}']
+        self.__device = AdbDevice(d[0])
 
     def inject_device(self, device: DeviceABC):
         self.__device = device
@@ -525,7 +524,7 @@ class Context:
         return self.__debug
 
     @property
-    def config(self) -> 'ContextConfig':
+    def config(self) -> 'ContextConfig[T]':
         return self.__config
 
 def rect_expand(rect: Rect, left: int = 0, top: int = 0, right: int = 0, bottom: int = 0) -> Rect:
