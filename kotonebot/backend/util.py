@@ -1,7 +1,10 @@
 import re
+import os
 import time
 import typing
+import logging
 from time import sleep
+from importlib import resources
 from functools import lru_cache
 from typing import Literal, NamedTuple, Callable, TYPE_CHECKING
 
@@ -12,6 +15,8 @@ from thefuzz import fuzz as _fuzz
 if TYPE_CHECKING:
     from kotonebot.client.protocol import DeviceABC
     from kotonebot.backend.color import HsvColor
+
+logger = logging.getLogger(__name__)
 
 class TaskInfo(NamedTuple):
     name: str
@@ -236,3 +241,28 @@ class AdaptiveWait:
     def reset(self):
         self.interval = self.base_interval
         self.start_time = None
+
+package_mode: Literal['wheel', 'standalone'] | None = None
+def res_path(path: str) -> str:
+    """
+    返回资源文件的绝对路径。
+
+    :param path: 资源文件路径。必须以 `res/` 开头。
+    """
+    global package_mode
+    if package_mode is None:
+        if os.path.exists('res'):
+            package_mode = 'standalone'
+        else:
+            package_mode = 'wheel'
+    ret = path
+    if package_mode == 'standalone':
+        ret = os.path.abspath(ret)
+    else:
+        # resources.files('kotonebot.res') 返回的就是 res 文件夹的路径
+        # 但是 path 已经有了 res，所以这里需要去掉 res
+        real_path = resources.files('kotonebot.res') / '..' / path
+        ret = str(real_path)
+    logger.debug(f'res_path: {ret}')
+    return ret
+

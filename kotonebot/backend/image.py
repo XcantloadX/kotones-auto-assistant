@@ -104,7 +104,12 @@ def _img2str(image: MatLike | str | None) -> str:
     if image is None:
         return 'None'
     if isinstance(image, str):
-        return os.path.relpath(image)
+        try:
+            return os.path.relpath(image)
+        except ValueError:
+            # ValueError: path is on mount 'C:', start on mount 'E:'
+            # 程序路径与资源路径不在同一个地方的情况
+            return image
     else:
         return '<opencv Mat>'
 

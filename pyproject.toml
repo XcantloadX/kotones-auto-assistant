@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "kaa"
+version = "0.1.0.250123"
+description = "Kotones Auto Assistant"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    # 图像处理 & OCR
+    "opencv-python==4.10.0.84",
+    "rapidocr_onnxruntime==1.4.3",
+    "av==14.0.1",
+    "scikit-image==0.25.0",
+    "thefuzz==0.22.1",
+    # Adb 控制
+    "adbutils==2.8.0",
+    # 可视化调试页面
+    "fastapi==0.115.6",
+    "uvicorn==0.34.0",
+    "python-multipart==0.0.20",
+    "websockets==14.1",
+    "numpy==2.2.1",
+    "psutil==6.1.1",
+    # GUI
+    "gradio==5.12.0",
+    # 配置读写
+    "pydantic==2.10.4",
+    # 其他
+    "typing-extensions==4.12.2"
+]
+
+[tool.setuptools]
+package-dir = { "kotonebot" = "kotonebot", "kotonebot.res" = "res" }
+include-package-data = true
+
+[project.scripts]
+kaa = "kotonebot.ui.gr:main"

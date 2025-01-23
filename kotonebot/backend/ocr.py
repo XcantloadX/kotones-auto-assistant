@@ -4,7 +4,7 @@ import unicodedata
 from os import PathLike
 from typing import TYPE_CHECKING, Callable, NamedTuple, overload
 
-from .util import Rect, grayscaled
+from .util import Rect, grayscaled, res_path
 from .debug import result as debug_result, debug
 
 import cv2
@@ -12,13 +12,13 @@ from cv2.typing import MatLike
 from rapidocr_onnxruntime import RapidOCR
 
 _engine_jp = RapidOCR(
-    rec_model_path=r'res\models\japan_PP-OCRv3_rec_infer.onnx',
+    rec_model_path=res_path('res/models/japan_PP-OCRv3_rec_infer.onnx'),
     use_det=True,
     use_cls=False,
     use_rec=True,
 )
 _engine_en = RapidOCR(
-    rec_model_path=r'res\models\en_PP-OCRv3_rec_infer.onnx',
+    rec_model_path=res_path('res/models/en_PP-OCRv3_rec_infer.onnx'),
     use_det=True,
     use_cls=False,
     use_rec=True,
@@ -76,7 +76,7 @@ def _draw_result(image: 'MatLike', result: list[OcrResult]) -> 'MatLike':
     
     # 加载字体
     try:
-        font = ImageFont.truetype(r'res\fonts\SourceHanSansHW-Regular.otf', 16)
+        font = ImageFont.truetype(res_path('res/fonts/SourceHanSansHW-Regular.otf'), 16)
     except:
         font = ImageFont.load_default()
     

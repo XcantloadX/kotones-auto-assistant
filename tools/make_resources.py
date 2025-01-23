@@ -36,7 +36,7 @@ def main():
                     print(current, attr_name)
                     parent_class[attr_name] = {
                         'type': 'image',
-                        'value': 'os.path.abspath("' + rel_path.replace('\\', '/') + '")',
+                        'value': 'res_path("' + rel_path.replace('\\', '/') + '")',
                         'name': attr_name,
                         'abspath': abs_path.replace('\\', '/'),
                         'class_path': class_path,
