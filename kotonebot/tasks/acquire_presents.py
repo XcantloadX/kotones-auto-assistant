@@ -1,11 +1,10 @@
 """领取礼物（邮箱）"""
 import logging
-from time import sleep
 
 from . import R
 from .common import conf
 from .actions.scenes import at_home, goto_home
-from kotonebot import device, image, task, color, rect_expand
+from kotonebot import device, image, task, color, rect_expand, sleep
 
 logger = logging.getLogger(__name__)
 

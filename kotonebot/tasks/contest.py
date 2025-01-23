@@ -1,13 +1,12 @@
 """竞赛"""
 import logging
-from time import sleep
 from gettext import gettext as _
 
 from . import R
 from .common import conf
 from .actions.scenes import at_home, goto_home
 from .actions.loading import wait_loading_end
-from kotonebot import device, image, ocr, color, action, task, user, rect_expand
+from kotonebot import device, image, ocr, color, action, task, user, rect_expand, sleep
 
 logger = logging.getLogger(__name__)
 

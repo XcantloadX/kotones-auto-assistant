@@ -1,11 +1,10 @@
 """检测与跳过交流"""
 import logging
-from time import sleep
 
 from cv2.typing import MatLike
 
 from .. import R
-from kotonebot import device, image, color, user, rect_expand, until, action
+from kotonebot import device, image, color, user, rect_expand, until, action, sleep
 
 logger = logging.getLogger(__name__)
 

@@ -12,7 +12,7 @@ from dataclasses import dataclass, field
 
 import cv2
 
-from kotonebot.backend.context import init_context
+from kotonebot.backend.context import init_context, vars
 from kotonebot.backend.core import task_registry, action_registry, current_callstack, Task, Action
 
 log_stream = io.StringIO()
@@ -32,6 +32,9 @@ class RunStatus:
     tasks: list[TaskStatus] = field(default_factory=list)
     current_task: Task | None = None
     callstack: list[Task | Action] = field(default_factory=list)
+
+    def interrupt(self):
+        vars.interrupted.set()
 
 def initialize(module: str):
     """
@@ -124,6 +127,15 @@ def run(
                 task.func()
                 if on_task_status_changed:
                     on_task_status_changed(task, 'finished')
+            # 用户中止
+            except KeyboardInterrupt as e:
+                logger.exception('Keyboard interrupt detected.')
+                for task1 in tasks[tasks.index(task):]:
+                    if on_task_status_changed:
+                        on_task_status_changed(task1, 'cancelled')
+                vars.interrupted.clear()
+                break
+            # 其他错误
             except Exception as e:
                 logger.error(f'Task failed: {task.name}')
                 logger.exception(f'Error: ')

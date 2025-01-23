@@ -1,11 +1,10 @@
 """收取活动费"""
 import logging
-from time import sleep
 
 from . import R
 from .common import conf, BaseConfig
 from .actions.scenes import at_home, goto_home
-from kotonebot import task, device, image, cropped
+from kotonebot import task, device, image, cropped, sleep
 
 logger = logging.getLogger(__name__)
 

@@ -1,8 +1,7 @@
 """启动游戏，领取登录奖励，直到首页为止"""
 import logging
-from time import sleep
 
-from kotonebot import task, device, image, cropped, AdaptiveWait
+from kotonebot import task, device, image, cropped, AdaptiveWait, sleep
 from . import R
 from .common import Priority
 from .actions.loading import loading

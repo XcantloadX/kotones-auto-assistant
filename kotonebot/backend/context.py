@@ -3,6 +3,7 @@ import re
 import time
 import logging
 from datetime import datetime
+from threading import Event
 from typing import (
     Callable,
     cast,
@@ -48,6 +49,7 @@ logger = logging.getLogger(__name__)
 T = TypeVar('T')
 P = ParamSpec('P')
 ContextClass = TypeVar("ContextClass")
+
 def context(
     _: Callable[Concatenate[MatLike, P], T] # 输入函数
 ) -> Callable[
@@ -101,6 +103,53 @@ def context(
         return func
     return _decorator
 
+def interruptible(func: Callable[P, T]) -> Callable[P, T]:
+    """
+    将函数包装为可中断函数。
+
+    在调用函数前，自动检查用户是否请求中断。
+    如果用户请求中断，则抛出 `KeyboardInterrupt` 异常。
+    """
+    def _decorator(*args: P.args, **kwargs: P.kwargs) -> T:
+        global vars
+        if vars.interrupted.is_set():
+            raise KeyboardInterrupt("User requested interrupt.")
+        return func(*args, **kwargs)
+    return _decorator
+
+def interruptible_class(cls: Type[T]) -> Type[T]:
+    """
+    将类中的所有方法包装为可中断方法。
+
+    在调用方法前，自动检查用户是否请求中断。
+    如果用户请求中断，则抛出 `KeyboardInterrupt` 异常。
+    """
+    for name, func in cls.__dict__.items():
+        if callable(func) and not name.startswith('__'):
+            setattr(cls, name, interruptible(func))
+    return cls
+
+def sleep(seconds: float, /):
+    """
+    可中断的 sleep 函数。
+
+    建议使用 `context.sleep()` 代替 `time.sleep()`，
+    这样能以最快速度响应用户请求中断。
+    """
+    global vars
+    vars.interrupted.wait(timeout=seconds)
+    if vars.interrupted.is_set():
+        raise KeyboardInterrupt("User requested interrupt.")
+
+class ContextGlobalVars:
+    def __init__(self):
+        self.auto_collect: bool = False
+        """遇到未知P饮料/卡片时，是否自动截图并收集"""
+        self.interrupted: Event = Event()
+        """用户请求中断事件"""
+
+
+@interruptible_class
 class ContextOcr:
     def __init__(self, context: 'Context'):
         self.context = context
@@ -210,6 +259,7 @@ class ContextOcr:
             time.sleep(interval)
 
 
+@interruptible_class
 class ContextImage:
     def __init__(self, context: 'Context', crop_rect: Rect | None = None):
         self.context = context
@@ -351,34 +401,9 @@ class ContextImage:
     @context(find_all_crop)
     def find_all_crop(self, *args, **kwargs):
         return find_all_crop(self.context.device.screenshot(), *args, **kwargs)
-    
-
-class ContextGlobalVars:
-    def __init__(self):
-        self.auto_collect: bool = False
-        """遇到未知P饮料/卡片时，是否自动截图并收集"""
-        self.debug: bool = True
 
 
-class ContextDebug:
-    def __init__(self, context: 'Context'):
-        self.__context = context
-        self.save_images: bool = False
-        self.save_images_dir: str = "debug_images"
-    
-    def show(self, img: 'MatLike', title: str = "Debug"):
-        if not self.__context.vars.debug:
-            return
-        if self.save_images:
-            if not os.path.exists(self.save_images_dir):
-                os.makedirs(self.save_images_dir)
-            now = datetime.now()
-            time_str = now.strftime("%Y-%m-%d %H-%M-%S") + f".{now.microsecond // 1000:03d}"
-            cv2.imwrite(f"{self.save_images_dir}/{title}_{time_str}.png", img)
-        cv2.imshow(title, img)
-        cv2.waitKey(1)
-
-
+@interruptible_class
 class ContextColor:
     def __init__(self, context: 'Context'):
         self.context = context
@@ -389,6 +414,13 @@ class ContextColor:
     @context(find_rgb)
     def find_rgb(self, *args, **kwargs):
         return find_rgb(self.context.device.screenshot(), *args, **kwargs)
+
+
+class ContextDebug:
+    def __init__(self, context: 'Context'):
+        self.__context = context
+        self.save_images: bool = False
+        self.save_images_dir: str = "debug_images"
 
 
 V = TypeVar('V')

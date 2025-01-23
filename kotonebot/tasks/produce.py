@@ -1,11 +1,10 @@
-from time import sleep
 import logging
 
 from . import R
 from .common import conf
 from .actions.loading import wait_loading_end
 from .actions.in_purodyuusu import hajime_regular
-from kotonebot import device, image, ocr, task, action
+from kotonebot import device, image, ocr, task, action, sleep
 from .actions.scenes import loading, at_home, goto_home
 
 logger = logging.getLogger(__name__)

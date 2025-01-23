@@ -1,11 +1,9 @@
 import logging
-import time
-from time import sleep
 from typing import Callable
 
 from .. import R
 from .loading import loading
-from kotonebot import device, image, action, cropped, UnrecoverableError, until
+from kotonebot import device, image, action, cropped, UnrecoverableError, until, sleep
 
 logger = logging.getLogger(__name__)
 

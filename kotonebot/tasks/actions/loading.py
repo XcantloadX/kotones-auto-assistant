@@ -1,11 +1,10 @@
 import time
-from time import sleep
 from logging import getLogger
 
 import cv2
 import numpy as np
 
-from kotonebot import image, device, debug, action
+from kotonebot import image, device, debug, action, sleep
 from kotonebot.backend.debug import result
 from .. import R
 

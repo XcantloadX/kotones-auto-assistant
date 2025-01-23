@@ -96,7 +96,7 @@ class BaseTestCase(unittest.TestCase):
         from kotonebot.backend.debug import debug
         from kotonebot.tasks.common import BaseConfig
         debug.enabled = True
-        debug.wait_for_message_sent = True
+        # debug.wait_for_message_sent = True
         start_server()
         from kotonebot.backend.context import init_context
         init_context(config_type=BaseConfig)

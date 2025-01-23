@@ -10,7 +10,8 @@ from .backend.context import (
     debug,
     color,
     config,
-    rect_expand
+    rect_expand,
+    sleep
 )
 from .backend.util import (
     Rect,

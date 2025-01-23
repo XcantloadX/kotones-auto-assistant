@@ -93,6 +93,7 @@ class KotoneBotUI:
 
     def stop_run(self) -> Tuple[str, List[List[str]]]:
         self.is_running = False
+        self.run_status.interrupt()
         return "启动", self.update_task_status()
 
     def save_settings(

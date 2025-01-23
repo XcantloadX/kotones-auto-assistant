@@ -1,13 +1,12 @@
 """工作。お仕事"""
 import logging
-from time import sleep
 from typing import Literal
 
 from . import R
 from .common import conf
 from .actions.loading import wait_loading_end
 from .actions.scenes import at_home, goto_home
-from kotonebot import task, device, image, action, ocr, contains, cropped, rect_expand, color
+from kotonebot import task, device, image, action, ocr, contains, cropped, rect_expand, color, sleep
 
 logger = logging.getLogger(__name__)
 

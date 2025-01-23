@@ -1,7 +1,6 @@
-from time import sleep
 from logging import getLogger
 
-from kotonebot import device, ocr, image, Rect, action
+from kotonebot import device, ocr, image, Rect, action, sleep
 from kotonebot.backend.util import contains
 from .. import R
 

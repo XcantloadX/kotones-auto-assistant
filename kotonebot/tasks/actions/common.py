@@ -1,6 +1,5 @@
 from typing import Literal
 from logging import getLogger
-from time import sleep
 
 from kotonebot import (
     ocr,
@@ -9,7 +8,8 @@ from kotonebot import (
     image,
     grayscaled,
     grayscale_cached,
-    action
+    action,
+    sleep
 )
 from kotonebot.tasks.actions.commu import check_and_skip_commu
 from .loading import loading, wait_loading_end

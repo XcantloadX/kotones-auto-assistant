@@ -3,10 +3,9 @@
 
 具体包括：おでかけ、相談、活動支給、授業
 """
-from time import sleep
 from logging import getLogger
 
-from kotonebot import device, image, ocr, debug, action
+from kotonebot import device, image, ocr, debug, action, sleep
 from kotonebot.tasks import R
 from ..actions.loading import wait_loading_end, wait_loading_start
 from .common import acquisitions, AcquisitionType

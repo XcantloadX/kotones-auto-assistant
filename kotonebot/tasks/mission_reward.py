@@ -1,12 +1,11 @@
 """领取任务奖励"""
 import logging
-from time import sleep
 
 from . import R
 from .common import conf, Priority
 from .actions.loading import wait_loading_end
 from .actions.scenes import at_home, goto_home
-from kotonebot import device, image, color, task, action, rect_expand
+from kotonebot import device, image, color, task, action, rect_expand, sleep
 
 logger = logging.getLogger(__name__)
 

@@ -2,7 +2,6 @@ import time
 import random
 import logging
 import unicodedata
-from time import sleep
 from typing import Literal
 from typing_extensions import deprecated
 
@@ -14,7 +13,7 @@ from .scenes import at_home
 from .common import acquisitions
 from ..common import conf
 from kotonebot.backend.util import AdaptiveWait, crop_y, cropper_y
-from kotonebot import ocr, device, contains, image, regex, action, debug, config
+from kotonebot import ocr, device, contains, image, regex, action, debug, config, sleep
 from .non_lesson_actions import enter_allowance, allowance_available, study_available, enter_study
 
 logger = logging.getLogger(__name__)
@@ -307,7 +306,7 @@ def skill_card_count1():
     img[img == 255] = 0
     # 二值化
     _, img = cv2.threshold(img, 240, 255, cv2.THRESH_BINARY)
-    debug.show(img)
+    
     ret = ocr.raw('en').ocr(img)
     # 统计字母 A、M 数量
     count = 0

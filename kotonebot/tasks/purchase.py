@@ -1,11 +1,10 @@
 """从商店购买物品"""
 import logging
-from time import sleep
 
 from . import R
 from .common import conf
 from kotonebot.backend.util import cropped
-from kotonebot import task, device, image, ocr, action
+from kotonebot import task, device, image, ocr, action, sleep
 from .actions.scenes import goto_home, goto_shop, at_daily_shop
 
 logger = logging.getLogger(__name__)
