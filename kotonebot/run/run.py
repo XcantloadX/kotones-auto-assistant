@@ -1,4 +1,5 @@
 import os
+import io
 import zipfile
 import pkgutil
 import logging
@@ -14,6 +15,10 @@ import cv2
 from kotonebot.backend.context import init_context
 from kotonebot.backend.core import task_registry, action_registry, current_callstack, Task, Action
 
+log_stream = io.StringIO()
+stream_handler = logging.StreamHandler(log_stream)
+stream_handler.setFormatter(logging.Formatter('[%(asctime)s] [%(levelname)s] [%(name)s] [%(filename)s:%(lineno)d] - %(message)s'))
+logging.getLogger('kotonebot').addHandler(stream_handler)
 logger = logging.getLogger(__name__)
 
 @dataclass
@@ -69,6 +74,7 @@ def _save_error_report(
     exception_msg = '\n'.join(traceback.format_exception(exception))
     task_callstack = '\n'.join([f'{i+1}. name={task.name} priority={task.priority}' for i, task in enumerate(current_callstack)])
     screenshot = device.screenshot()
+    logs = log_stream.getvalue()
     with open('config.json', 'r') as f:
         config_content = f.read()
 
@@ -79,6 +85,7 @@ def _save_error_report(
         zipf.writestr('task_callstack.txt', task_callstack)
         zipf.writestr('screenshot.png', cv2.imencode('.png', screenshot)[1].tobytes())
         zipf.writestr('config.json', config_content)
+        zipf.writestr('logs.txt', logs)
     return path
 
 def run(
