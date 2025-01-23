@@ -72,24 +72,29 @@ def _save_error_report(
     :return: 保存的路径
     """
     from kotonebot import device
-    if path is None:
-        path = f'./reports/{datetime.now().strftime("%Y-%m-%d %H-%M-%S")}.zip'
-    exception_msg = '\n'.join(traceback.format_exception(exception))
-    task_callstack = '\n'.join([f'{i+1}. name={task.name} priority={task.priority}' for i, task in enumerate(current_callstack)])
-    screenshot = device.screenshot()
-    logs = log_stream.getvalue()
-    with open('config.json', 'r') as f:
-        config_content = f.read()
+    try:
+        if path is None:
+            path = f'./reports/{datetime.now().strftime("%Y-%m-%d %H-%M-%S")}.zip'
+        exception_msg = '\n'.join(traceback.format_exception(exception))
+        task_callstack = '\n'.join([f'{i+1}. name={task.name} priority={task.priority}' for i, task in enumerate(current_callstack)])
+        screenshot = device.screenshot()
+        logs = log_stream.getvalue()
+        with open('config.json', 'r', encoding='utf-8') as f:
+            config_content = f.read()
 
-    if not os.path.exists(os.path.dirname(path)):
-        os.makedirs(os.path.dirname(path))
-    with zipfile.ZipFile(path, 'w') as zipf:
-        zipf.writestr('exception.txt', exception_msg)
-        zipf.writestr('task_callstack.txt', task_callstack)
-        zipf.writestr('screenshot.png', cv2.imencode('.png', screenshot)[1].tobytes())
-        zipf.writestr('config.json', config_content)
-        zipf.writestr('logs.txt', logs)
-    return path
+        if not os.path.exists(os.path.dirname(path)):
+            os.makedirs(os.path.dirname(path))
+        with zipfile.ZipFile(path, 'w') as zipf:
+            zipf.writestr('exception.txt', exception_msg)
+            zipf.writestr('task_callstack.txt', task_callstack)
+            zipf.writestr('screenshot.png', cv2.imencode('.png', screenshot)[1].tobytes())
+            zipf.writestr('config.json', config_content)
+            zipf.writestr('logs.txt', logs)
+        return path
+    except Exception as e:
+        logger.exception(f'Failed to save error report:')
+        return ''
+
 
 def run(
     *,
