@@ -5,6 +5,8 @@ import os
 import sys
 import tqdm
 import sqlite3
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from typing import Callable, List, Tuple
 
 import cv2
 import requests
@@ -16,11 +18,18 @@ sys.path.append(os.path.abspath('./submodules/GkmasObjectManager'))
 
 import GkmasObjectManager as gom # type: ignore
 
-print('拉取资源...')
+print('拉取清单文件...')
 manifest = gom.fetch()
 
+# 定义下载任务类型：(资源ID, 下载路径, 下载完成后调用的函数)
+DownloadTask = Tuple[str, str, Callable[[str], None] | None]
+download_tasks: List[DownloadTask] = []
+
 MAX_RETRY_COUNT = 5
+MAX_WORKERS = 4  # 最大并发下载数
+
 def download_to(asset_id: str, path: str, overwrite: bool = False):
+    """单个文件下载函数"""
     retry_count = 1
     while True:
         try:
@@ -36,11 +45,46 @@ def download_to(asset_id: str, path: str, overwrite: bool = False):
             print(f'Network error: {e}')
             print('Retrying...')
 
-print("提取 P 偶像卡资源...")
-base_path = './kotonebot/kaa/resources/idol_cards'
-os.makedirs(base_path, exist_ok=True)
+def run(tasks: List[DownloadTask], description: str = "下载中") -> None:
+    """并行执行下载任务列表"""
+    def _download(task: DownloadTask) -> None:
+        asset_id, path, post_process_func = task
+        try:
+            download_to(asset_id, path)
+            if post_process_func is not None:
+                post_process_func(path)
+        except Exception as e:
+            print(f'Failed to download {asset_id}: {e}')
+            raise
+    with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+        future_to_task = {executor.submit(_download, task): task for task in tasks}
+
+        with tqdm.tqdm(total=len(tasks), desc=description) as pbar:
+            for future in as_completed(future_to_task):
+                future.result()
+                pbar.update(1)
+
+# 创建目录
+print("创建资源目录...")
+IDOL_CARD_PATH = './kotonebot/kaa/resources/idol_cards'
+SKILL_CARD_PATH = './kotonebot/kaa/resources/skill_cards'
+os.makedirs(IDOL_CARD_PATH, exist_ok=True)
+os.makedirs(SKILL_CARD_PATH, exist_ok=True)
 
 db = sqlite3.connect("./kotonebot/kaa/resources/game.db")
+
+def resize_idol_card_image(path: str) -> None:
+    """偶像卡图片后处理：调整分辨率为 140x188"""
+    if os.path.exists(path):
+        img = cv2.imread(path)
+        if img is not None:
+            img = cv2.resize(img, (140, 188), interpolation=cv2.INTER_AREA)
+            cv2.imwrite(path, img)
+
+################################################
+
+# 1. 构建 P 偶像卡下载任务
+print("添加 P 偶像卡任务...")
 cursor = db.execute("""
 SELECT
     IC.id AS cardId,
@@ -55,38 +99,24 @@ JOIN Character Char ON characterId = Char.id
 JOIN IdolCardSkin ICS ON IC.id = ICS.idolCardId;
 """)
 
-print("下载 P 偶像卡资源...")
-for row in tqdm.tqdm(cursor.fetchall()):
+for row in tqdm.tqdm(cursor.fetchall(), desc="构建偶像卡任务"):
     _, skin_id, name, asset_id, _, _ = row
 
-    # 下载资源
-    # 低特训等级
-    asset_id0 = f'img_general_{asset_id}_0-thumb-portrait'
-    path0 = base_path + f'/{skin_id}_0.png'
-    # 高特训等级
-    asset_id1 = f'img_general_{asset_id}_1-thumb-portrait'
-    path1 = base_path + f'/{skin_id}_1.png'
     if asset_id is None:
         raise ValueError(f"未找到P偶像卡资源：{skin_id} {name}")
 
-    download_to(asset_id0, path0)
-    # 转换分辨率 140x188
-    img0 = cv2.imread(path0)
-    assert img0 is not None
-    img0 = cv2.resize(img0, (140, 188), interpolation=cv2.INTER_AREA)
-    cv2.imwrite(path0, img0)
+    # 低特训等级
+    asset_id0 = f'img_general_{asset_id}_0-thumb-portrait'
+    path0 = IDOL_CARD_PATH + f'/{skin_id}_0.png'
+    download_tasks.append((asset_id0, path0, resize_idol_card_image))
 
-    download_to(asset_id1, path1)
-    # 转换分辨率 140x188
-    img1 = cv2.imread(path1)
-    assert img1 is not None
-    img1 = cv2.resize(img1, (140, 188), interpolation=cv2.INTER_AREA)
-    cv2.imwrite(path1, img1)
+    # 高特训等级
+    asset_id1 = f'img_general_{asset_id}_1-thumb-portrait'
+    path1 = IDOL_CARD_PATH + f'/{skin_id}_1.png'
+    download_tasks.append((asset_id1, path1, resize_idol_card_image))
 
-print('下载技能卡资源...')
-SKILL_CARD_PATH = './kotonebot/kaa/resources/skill_cards'
-os.makedirs(SKILL_CARD_PATH, exist_ok=True)
-
+# 2. 构建技能卡下载任务
+print("添加技能卡任务...")
 cursor = db.execute("""
 SELECT
     DISTINCT assetId,
@@ -94,14 +124,97 @@ SELECT
 FROM ProduceCard;
 """)
 
-for row in tqdm.tqdm(cursor.fetchall()):
+for row in tqdm.tqdm(cursor.fetchall(), desc="构建技能卡任务"):
     asset_id, is_character_asset = row
     assert asset_id is not None
     if not is_character_asset:
         path = SKILL_CARD_PATH + f'/{asset_id}.png'
-        download_to(asset_id, path)
+        download_tasks.append((asset_id, path, None))
     else:
         for ii in CharacterId:
             actual_asset_id = f'{asset_id}-{ii.value}'
             path = SKILL_CARD_PATH + f'/{actual_asset_id}.png'
-            download_to(actual_asset_id, path)
+            download_tasks.append((actual_asset_id, path, None))
+
+print(f'开始下载 {len(download_tasks)} 个资源，并发数 {MAX_WORKERS}...')
+run(download_tasks)
+
+################################################
+# 检查下载结果并重试失败的文件
+################################################
+
+def check_downloaded_files(tasks: List[DownloadTask]) -> List[DownloadTask]:
+    """检查所有下载的文件，返回需要重试的任务列表"""
+    failed_tasks = []
+
+    print("检查下载的文件...")
+    for task in tqdm.tqdm(tasks, desc="检查文件"):
+        _, path, _ = task
+
+        # 检查文件是否存在
+        if not os.path.exists(path):
+            print(f"文件不存在: {path}")
+            failed_tasks.append(task)
+            continue
+
+        # 使用 OpenCV 读取图片检查是否为空
+        try:
+            img = cv2.imread(path)
+            if img is None:
+                print(f"OpenCV 无法读取文件: {path}")
+                failed_tasks.append(task)
+                continue
+
+            # 检查图片尺寸是否合理
+            if img.shape[0] == 0 or img.shape[1] == 0:
+                print(f"图片尺寸异常: {path}, 尺寸: {img.shape}")
+                failed_tasks.append(task)
+                continue
+
+        except Exception as e:
+            print(f"检查文件时出错: {path}, 错误: {e}")
+            failed_tasks.append(task)
+            continue
+
+    return failed_tasks
+
+# 执行检查和重试
+max_retry_rounds = 3
+retry_round = 0
+failed_tasks = []
+
+while retry_round < max_retry_rounds:
+    failed_tasks = check_downloaded_files(download_tasks)
+
+    if not failed_tasks:
+        print("所有文件验证成功！")
+        break
+
+    print(f"发现 {len(failed_tasks)} 个失败的文件，开始第 {retry_round + 1} 轮重试...")
+
+    # 删除失败的文件，准备重新下载
+    for task in failed_tasks:
+        _, path, _ = task
+        if os.path.exists(path):
+            try:
+                os.remove(path)
+                print(f"删除损坏文件: {path}")
+            except Exception as e:
+                print(f"删除文件失败: {path}, 错误: {e}")
+
+    # 重新下载失败的文件
+    try:
+        run(failed_tasks, f"重试下载 (第 {retry_round + 1} 轮)")
+        retry_round += 1
+    except Exception as e:
+        print(f"重试下载时出错: {e}")
+        break
+
+if failed_tasks:
+    print(f"警告：仍有 {len(failed_tasks)} 个文件下载失败：")
+    for task in failed_tasks:
+        asset_id, path, _ = task
+        print(f"  - {asset_id} -> {path}")
+
+
+db.close()
