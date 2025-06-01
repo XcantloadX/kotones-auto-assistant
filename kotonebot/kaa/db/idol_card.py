@@ -31,8 +31,13 @@ class IdolCard:
         """, sid)
         if row is None:
             return None
-        card_id, skin_id, name, is_another, another_name = row
-        return cls(card_id, skin_id, is_another, another_name, name)
+        return cls(
+            id=row["cardId"],
+            skin_id=row["skinId"],
+            is_another=bool(row["isAnotherVer"]),
+            another_name=row["anotherVerName"],
+            name=row["name"]
+        )
     
     @classmethod
     def all(cls) -> list['IdolCard']:
@@ -50,8 +55,13 @@ class IdolCard:
         """)
         results = []
         for row in rows:
-            card_id, skin_id, name, is_another, another_name = row
-            results.append(cls(card_id, skin_id, is_another, another_name, name))
+            results.append(cls(
+                id=row["cardId"],
+                skin_id=row["skinId"],
+                is_another=bool(row["isAnotherVer"]),
+                another_name=row["anotherVerName"],
+                name=row["name"]
+            ))
         return results
 
 if __name__ == '__main__':

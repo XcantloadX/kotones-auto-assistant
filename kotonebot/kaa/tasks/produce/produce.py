@@ -3,6 +3,7 @@ from itertools import cycle
 from typing import Optional, Literal
 from typing_extensions import assert_never
 
+from kotonebot.kaa.skill_card_action.global_idol_setting_action import idol_setting
 from kotonebot.ui import user
 from kotonebot.util import Countdown, Interval
 from kotonebot.backend.context.context import wait
@@ -200,6 +201,7 @@ def do_produce(
     if not at_home():
         goto_home()
 
+    idol_setting.new_play()
     device.screenshot()
     # 有进行中培育的情况
     if ocr.find(contains('中'), rect=R.Produce.BoxProduceOngoing):
