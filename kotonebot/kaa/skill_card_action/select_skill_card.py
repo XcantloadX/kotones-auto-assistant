@@ -3,8 +3,9 @@ from logging import getLogger
 from kotonebot import device, image, Interval, ocr, contains, Countdown, action
 from kotonebot.backend.core import HintBox
 from kotonebot.kaa.game_ui import dialog, badge
-from kotonebot.kaa.skill_card_action.card_reader import CardReader
+from kotonebot.kaa.game_ui.skill_card_select import extract_cards
 from kotonebot.kaa.skill_card.enum_constant import CardPriority
+from kotonebot.kaa.skill_card_action.card_reader import ActualCard
 from kotonebot.kaa.skill_card_action.global_idol_setting_action import idol_setting
 from kotonebot.kaa.tasks import R
 from kotonebot.primitives import Rect
@@ -37,15 +38,14 @@ def select_skill_card():
             dialog.yes()
             continue
 
-        device.screenshot()
-        match_results = image.find_all_multi([
+        img = device.screenshot()
+        match_results = image.find_multi([
             R.InPurodyuusu.A,
             R.InPurodyuusu.M
         ])
         if match_results:
-            match_results = sorted(match_results, key=lambda x: (x.position[0], x.position[1]))
-            reader = CardReader()
-            cards = reader.click_and_read_cards([temp.rect for temp in match_results])
+            cards = extract_cards(img)
+            cards = [ActualCard.create_by(card.rect, card.skill_card) for card in cards]
 
             target_card = sorted(cards, key=lambda x: x.priority)[0]
             select_other = target_card.priority == CardPriority.other
