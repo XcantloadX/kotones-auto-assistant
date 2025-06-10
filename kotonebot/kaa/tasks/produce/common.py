@@ -9,6 +9,7 @@ from kotonebot import (
     sleep,
     Interval,
 )
+from kotonebot.kaa.skill_card_action.select_skill_card import select_skill_card
 from kotonebot.primitives import Rect
 from kotonebot.kaa.tasks import R
 from .p_drink import acquire_p_drink
@@ -23,62 +24,63 @@ logger = getLogger(__name__)
 @action('领取技能卡', screenshot_mode='manual-inherit')
 def acquire_skill_card():
     """获取技能卡（スキルカード）"""
+    select_skill_card()
     # TODO: 识别卡片内容，而不是固定选卡
     # TODO: 不硬编码坐标
-    logger.debug("Locating all skill cards...")
-    
-    it = Interval()
-    cards = None
-    card_clicked = False
-    target_card = None
-    
-    while True:
-        device.screenshot()
-        it.wait()
-        
-        # 是否显示技能卡选择指导的对话框
-        # [kotonebot-resource/sprites/jp/in_purodyuusu/screenshot_show_skill_card_select_guide_dialog.png]
-        if image.find(R.InPurodyuusu.TextSkillCardSelectGuideDialogTitle):
-            # 默认就是显示，直接确认
-            dialog.yes()
-            continue
-        if not cards:
-            cards = image.find_all_multi([
-                R.InPurodyuusu.A,
-                R.InPurodyuusu.M
-            ])
-            if not cards:
-                logger.warning("No skill cards found. Skip acquire.")
-                return
-            cards = sorted(cards, key=lambda x: (x.position[0], x.position[1]))
-            logger.info(f"Found {len(cards)} skill cards")
-            # 判断是否有推荐卡
-            rec_badges = image.find_all(R.InPurodyuusu.TextRecommend)
-            rec_badges = [card.rect for card in rec_badges]
-            if rec_badges:
-                cards = [card.rect for card in cards]
-                matches = badge.match(cards, rec_badges, 'mb')
-                logger.debug("Recommend card badge matches: %s", matches)
-                # 选第一个推荐卡
-                target_match = next(filter(lambda m: m.badge is not None, matches), None)
-                if target_match:
-                    target_card = target_match.object
-                else:
-                    target_card = cards[0]
-            else:
-                logger.debug("No recommend badge found. Pick first card.")
-                target_card = cards[0].rect
-            continue
-        if not card_clicked and target_card is not None:
-            logger.debug("Click target skill card")
-            device.click(target_card)
-            card_clicked = True
-            sleep(0.2)
-            continue
-        if acquire_btn := image.find(R.InPurodyuusu.AcquireBtnDisabled):
-            logger.debug("Click acquire button")
-            device.click(acquire_btn)
-            break
+    # logger.debug("Locating all skill cards...")
+    # 
+    # it = Interval()
+    # cards = None
+    # card_clicked = False
+    # target_card = None
+    # 
+    # while True:
+    #     device.screenshot()
+    #     it.wait()
+    #     
+    #     # 是否显示技能卡选择指导的对话框
+    #     # [kotonebot-resource/sprites/jp/in_purodyuusu/screenshot_show_skill_card_select_guide_dialog.png]
+    #     if image.find(R.InPurodyuusu.TextSkillCardSelectGuideDialogTitle):
+    #         # 默认就是显示，直接确认
+    #         dialog.yes()
+    #         continue
+    #     if not cards:
+    #         cards = image.find_all_multi([
+    #             R.InPurodyuusu.A,
+    #             R.InPurodyuusu.M
+    #         ])
+    #         if not cards:
+    #             logger.warning("No skill cards found. Skip acquire.")
+    #             return
+    #         cards = sorted(cards, key=lambda x: (x.position[0], x.position[1]))
+    #         logger.info(f"Found {len(cards)} skill cards")
+    #         # 判断是否有推荐卡
+    #         rec_badges = image.find_all(R.InPurodyuusu.TextRecommend)
+    #         rec_badges = [card.rect for card in rec_badges]
+    #         if rec_badges:
+    #             cards = [card.rect for card in cards]
+    #             matches = badge.match(cards, rec_badges, 'mb')
+    #             logger.debug("Recommend card badge matches: %s", matches)
+    #             # 选第一个推荐卡
+    #             target_match = next(filter(lambda m: m.badge is not None, matches), None)
+    #             if target_match:
+    #                 target_card = target_match.object
+    #             else:
+    #                 target_card = cards[0]
+    #         else:
+    #             logger.debug("No recommend badge found. Pick first card.")
+    #             target_card = cards[0].rect
+    #         continue
+    #     if not card_clicked and target_card is not None:
+    #         logger.debug("Click target skill card")
+    #         device.click(target_card)
+    #         card_clicked = True
+    #         sleep(0.2)
+    #         continue
+    #     if acquire_btn := image.find(R.InPurodyuusu.AcquireBtnDisabled):
+    #         logger.debug("Click acquire button")
+    #         device.click(acquire_btn)
+    #         break
 
 @action('选择P物品', screenshot_mode='auto')
 def select_p_item():
