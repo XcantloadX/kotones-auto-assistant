@@ -1,8 +1,10 @@
+from functools import partial
 import logging
 from typing_extensions import assert_never
 from typing import Literal
 
 from kotonebot.kaa.game_ui.schedule import Schedule
+from kotonebot.kaa.kaa_context import ProduceSession, produce, set_produce
 from kotonebot.kaa.tasks import R
 from ..actions import loading
 from kotonebot.kaa.game_ui import WhiteFilter, dialog
@@ -21,6 +23,11 @@ from ..produce.non_lesson_actions import (
     is_rest_available, rest,
     outing_available, enter_outing,
     consult_available, enter_consult
+)
+from kotonebot.kaa.tasks.produce.nia_actions import (
+    promotion_available, handle_promotion,
+    care_package_available, handle_care_package,
+    special_training_available, handle_special_training,
 )
 
 logger = logging.getLogger(__name__)
@@ -145,10 +152,27 @@ def handle_recommended_action(final_week: bool = False) -> ProduceAction | None:
 def until_action_scene(week_first: bool = False):
     """等待进入行动场景"""
     # 检测是否到行动页面
-    while not image.find_multi([
+    templates = [
         R.InPurodyuusu.TextPDiary, # 普通周
         R.InPurodyuusu.ButtonFinalPracticeDance # 离考试剩余一周
-    ]):
+    ]
+    if produce().is_nia:
+        templates.extend([
+            # 一次
+            R.InPurodyuusu.TextAuditionMusicOrder,
+            R.InPurodyuusu.TextAuditionHarmonyToNight,
+            R.InPurodyuusu.TextAuditionMeroBang,
+            # 二次
+            R.InPurodyuusu.TextAuditionGalaxyMusic,
+            R.InPurodyuusu.TextAuditionPopFair,
+            R.InPurodyuusu.TextAuditionMelodyJourney,
+            # 最终
+            R.InPurodyuusu.TextAuditionFinale,
+            R.InPurodyuusu.TextAuditionQuartet,
+            R.InPurodyuusu.TextAuditionIdolBigup,
+            R.InPurodyuusu.TextAuditionSingleCut,
+        ])
+    while not image.find_multi(templates):
         logger.info("Action scene not detected. Retry...")
         # commu_event 和 acquisitions 顺序不能颠倒。
         # 在 PRO 培育初始饮料、技能卡二选一事件时，右下方的
@@ -480,32 +504,59 @@ def handle_action(action: ProduceAction, final_week: bool = False) -> ProduceAct
             if is_rest_available():
                 rest()
                 return ProduceAction.REST
+            return None
         case ProduceAction.OUTING:
             if outing_available():
                 enter_outing()
                 return ProduceAction.OUTING
+            return None
         case ProduceAction.STUDY:
             if study_available():
                 enter_study()
                 return ProduceAction.STUDY
+            return None
         case ProduceAction.ALLOWANCE:
             if allowance_available():
                 enter_allowance()
                 return ProduceAction.ALLOWANCE
+            return None
         case ProduceAction.CONSULT:
             if consult_available():
                 enter_consult()
                 return ProduceAction.CONSULT
-        case _:
-            logger.warning("Unknown action: %s", action)
             return None
+        case ProduceAction.PROMOTION:
+            if promotion_available():
+                handle_promotion()
+                return ProduceAction.PROMOTION
+            return None
+        case ProduceAction.CARE_PACKAGE:
+            if care_package_available():
+                handle_care_package()
+                return ProduceAction.CARE_PACKAGE
+            return None
+        case ProduceAction.SPECIAL_TRAINING:
+            if special_training_available():
+                handle_special_training()
+                return ProduceAction.SPECIAL_TRAINING
+            return None
+        case _:
+            assert_never(action)
 
-def week_normal(week_first: bool = False):
+def week_normal(week_first: bool = False, week_number: int | None = None):
     until_action_scene(week_first)
     logger.info("Handling actions...")
     action: ProduceAction | None = None
-    # SP 课程
+    # 强制休息
     if (
+        week_number is not None
+        and week_number in conf().produce.nia_rest_weeks
+    ):
+        logger.info(f"Week {week_number} resting because of NIA rest weeks.")
+        action = ProduceAction.REST
+        handle_action(action)
+    # SP 课程
+    elif (
         conf().produce.prefer_lesson_ap
         and handle_sp_lesson()
     ):
@@ -520,13 +571,21 @@ def week_normal(week_first: bool = False):
     match action:
         case (
             ProduceAction.REST |
-            ProduceAction.OUTING | ProduceAction.STUDY | ProduceAction.ALLOWANCE | ProduceAction.CONSULT
+            ProduceAction.OUTING | ProduceAction.STUDY | ProduceAction.ALLOWANCE |
+            ProduceAction.CONSULT | ProduceAction.PROMOTION | ProduceAction.CARE_PACKAGE |
+            ProduceAction.SPECIAL_TRAINING
         ):
             # 什么都不需要做
             pass
         case ProduceAction.DANCE | ProduceAction.VOCAL | ProduceAction.VISUAL:
-            until_practice_scene()
-            practice()
+            # TODO: 应当分离到单独的文件或函数，而不是 hajime 与 nia 混合
+            if produce().mode.startswith('nia'):
+                logger.info('No need to do actual practice in NIA mode.')
+                sleep(5) # 等待游戏从行动场景切走 
+                until_action_scene()
+            else:
+                until_practice_scene()
+                practice()
         case ProduceAction.RECOMMENDED:
             # RECOMMENDED 应当被 handle_recommended_action 转换为具体的行动
             raise ValueError("Recommended action should not be handled here.")
@@ -561,6 +620,8 @@ def week_final_lesson():
             raise ValueError("Recommended action should not be handled here.")
         case None:
             raise ValueError("Action is None.")
+        case ProduceAction.PROMOTION | ProduceAction.CARE_PACKAGE | ProduceAction.SPECIAL_TRAINING:
+            raise ValueError("ProduceAction.PROMOTION or CARE_PACKAGE or SPECIAL_TRAINING should not appear in Hajime final lesson.")
         case _:
             assert_never(action)
 
@@ -586,6 +647,27 @@ def week_final_exam():
     loading.wait_loading_end()
     exam('final')
     produce_end()
+
+NiaAuditionType = Literal['first', 'second', 'final']
+@action('执行 NIA 试镜', screenshot_mode='auto')
+def week_nia_audition(audition_type: NiaAuditionType, week_number: int | None = None):
+    match audition_type:
+        case 'first':
+            logger.info("Week NIA first audition started.")
+            target_templ = conf().produce.nia_first_audition_type.template
+        case 'second':
+            logger.info("Week NIA second audition started.")
+            target_templ = conf().produce.nia_second_audition_type.template
+        case 'final':
+            logger.info("Week NIA final audition started.")
+            target_templ = conf().produce.nia_final_audition_type.template
+        case _:
+            assert_never(audition_type)
+    device.double_click(image.expect_wait(target_templ))
+    until_exam_scene()
+    exam('mid')
+    if audition_type == 'final':
+        produce_end()
 
 @action('执行 Regular 培育', screenshot_mode='manual-inherit')
 def hajime_regular(week: int = -1, start_from: int = 1):
@@ -689,6 +771,51 @@ def hajime_master(week: int = -1, start_from: int = 1):
         for i, w in enumerate(weeks[start_from-1:]):
             logger.info("Week %d started.", i + start_from)
             w()
+
+@action("执行 NIA PRO 培育", screenshot_mode='manual-inherit')
+def nia_pro(week: int = -1, start_from: int = 1):
+    """
+    执行 NIA PRO 培育。
+
+    :param week: 第几周，从1开始，-1表示全部
+    :param start_from: 从第几周开始，从1开始。
+    """
+    weeks = [
+        week_normal, # 1
+        week_normal, # 2
+        week_normal, # 3
+        week_normal, # 4
+        week_normal, # 5
+        week_normal, # 6
+        week_normal, # 7
+        week_normal, # 8
+        partial(week_nia_audition, 'first'), # 9
+        week_normal, # 10
+        week_normal, # 11
+        week_normal, # 12
+        week_normal, # 13
+        week_normal, # 14
+        week_normal, # 15
+        week_normal, # 16
+        week_normal, # 17
+        partial(week_nia_audition, 'second'), # 18
+        week_normal, # 19
+        week_normal, # 20
+        week_normal, # 21
+        week_normal, # 22
+        week_normal, # 23
+        week_normal, # 24
+        week_normal, # 25
+        week_normal, # 26
+        partial(week_nia_audition, 'final'), # 27
+    ]
+    if week != -1:
+        logger.info("Week %d started.", week)
+        weeks[week - 1]()
+    else:
+        for i, w in enumerate(weeks[start_from-1:]):
+            logger.info("Week %d started.", i + start_from)
+            w(week_number=i + start_from)
 
 @action('是否在考试场景')
 def is_exam_scene():
@@ -853,3 +980,6 @@ if __name__ == '__main__':
     from kotonebot.backend.debug import debug
     debug.auto_save_to_folder = 'dumps'
     debug.enabled = True
+    
+    set_produce(ProduceSession(mode='nia-pro'))
+    nia_pro(start_from=2)

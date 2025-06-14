@@ -284,6 +284,10 @@ class ProduceAction(Enum):
     ALLOWANCE = 'allowance'
     REST = 'rest'
     CONSULT = 'consult'
+    # TODO: NIA 要和 HAJIME 分开
+    PROMOTION = 'promotion'
+    CARE_PACKAGE = 'care_package'
+    SPECIAL_TRAINING = 'special_training'
 
     @property
     def display_name(self):
@@ -297,6 +301,9 @@ class ProduceAction(Enum):
             ProduceAction.ALLOWANCE: '活动支给（活動支給）',
             ProduceAction.REST: '休息',
             ProduceAction.CONSULT: '咨询（相談）',
+            ProduceAction.PROMOTION: '营业（営業）',
+            ProduceAction.CARE_PACKAGE: '粉丝礼物（差し入れ）',
+            ProduceAction.SPECIAL_TRAINING: '特别指导（特別指導）',
         }
         return MAP[self]
 
@@ -312,10 +319,206 @@ class RecommendCardDetectionMode(Enum):
         }
         return MAP[self]
 
+class NiaPromotionType(Enum):
+    HEAL = 'heal'
+    POINT = 'point'
+    DRINK = 'drink'
+    SKILL_CARD = 'p_skill_card'
+
+    @property
+    def display_name(self):
+        match self:
+            case NiaPromotionType.HEAL:
+                return '体力恢复'
+            case NiaPromotionType.POINT:
+                return 'P 点数'
+            case NiaPromotionType.DRINK:
+                return 'P 饮料'
+            case NiaPromotionType.SKILL_CARD:
+                return 'P 技能卡'
+            case _:
+                assert_never(self)
+
+class NiaPromotionSkillCardOption(Enum):
+    GOOD_CONDITION = "good_condition"
+    """好调"""
+    FOCUS = "focus"
+    """集中"""
+    GOOD_IMPRESSION = "good_impression"
+    """好印象"""
+    MOTIVATION = "motivation"
+    """干劲"""
+    CONFIDENCE_CONSERVATION = "confidence_conservation"
+    """强气 温存"""
+    FULL_POWER_CONSERVATION = "full_power_conservation"
+    """全力 温存"""
+    ACTIVE = "active"
+    """主动技能卡"""
+    MENTAL = "mental"
+    """精神技能卡"""
+
+    @property
+    def search_text(self):
+        match self:
+            case NiaPromotionSkillCardOption.GOOD_CONDITION:
+                return '好調'
+            case NiaPromotionSkillCardOption.FOCUS:
+                return '集中'
+            case NiaPromotionSkillCardOption.GOOD_IMPRESSION:
+                return '好印象'
+            case NiaPromotionSkillCardOption.MOTIVATION:
+                return 'やる気'
+            case NiaPromotionSkillCardOption.CONFIDENCE_CONSERVATION:
+                return '強気'
+            case NiaPromotionSkillCardOption.FULL_POWER_CONSERVATION:
+                return '全力'
+            case NiaPromotionSkillCardOption.ACTIVE:
+                return 'アクティブ'
+            case NiaPromotionSkillCardOption.MENTAL:
+                return 'メンタル'
+            case _:
+                assert_never(self)
+
+    @property
+    def display_name(self) -> str:
+        match self:
+            case NiaPromotionSkillCardOption.GOOD_CONDITION:
+                return "好调"
+            case NiaPromotionSkillCardOption.FOCUS:
+                return "集中"
+            case NiaPromotionSkillCardOption.GOOD_IMPRESSION:
+                return "好印象"
+            case NiaPromotionSkillCardOption.MOTIVATION:
+                return "干劲"
+            case NiaPromotionSkillCardOption.CONFIDENCE_CONSERVATION:
+                return "强气 温存"
+            case NiaPromotionSkillCardOption.FULL_POWER_CONSERVATION:
+                return "全力 温存"
+            case NiaPromotionSkillCardOption.ACTIVE:
+                return "主动"
+            case NiaPromotionSkillCardOption.MENTAL:
+                return "精神"
+            case _:
+                assert_never(self)
+
+class NiaFirstAuditionType(IntEnum):
+    """NIA 第一次试镜 试镜类型"""
+    LEVEL_2 = 2
+    """MusicOrder"""
+    LEVEL_1 = 1
+    """HarmonyToNight"""
+    LEVEL_0 = 0
+    """MeroBang!"""
+    
+    @property
+    def display_name(self):
+        match self:
+            case NiaFirstAuditionType.LEVEL_2:
+                return 'MusicOrder（无条件）'
+            case NiaFirstAuditionType.LEVEL_1:
+                return 'HarmonyToNight（4,000 以上）'
+            case NiaFirstAuditionType.LEVEL_0:
+                return 'MeroBang!（9,000 以上）'
+            case _:
+                assert_never(self)
+                
+    @property
+    def template(self):
+        from kotonebot.kaa.tasks import R
+        match self:
+            case NiaFirstAuditionType.LEVEL_2:
+                return R.InPurodyuusu.TextAuditionMusicOrder
+            case NiaFirstAuditionType.LEVEL_1:
+                return R.InPurodyuusu.TextAuditionHarmonyToNight
+            case NiaFirstAuditionType.LEVEL_0:
+                return R.InPurodyuusu.TextAuditionMeroBang
+            case _:
+                assert_never(self)
+
+class NiaSecondAuditionType(IntEnum):
+    """NIA 第二次试镜 试镜类型"""
+    LEVEL_0 = 0
+    """GALAXY ミュージック"""
+    LEVEL_1 = 1
+    """POPFair"""
+    LEVEL_2 = 2
+    """MelodyJourney"""
+    
+    @property
+    def display_name(self):
+        match self:
+            case NiaSecondAuditionType.LEVEL_0:
+                return 'GALAXY ミュージック（25,000 以上）'
+            case NiaSecondAuditionType.LEVEL_1:
+                return 'POPFair（14,000 以上）'
+            case NiaSecondAuditionType.LEVEL_2:
+                return 'MelodyJourney（无条件）'
+            case _:
+                assert_never(self)
+                
+    @property
+    def template(self):
+        from kotonebot.kaa.tasks import R
+        match self:
+            case NiaSecondAuditionType.LEVEL_0:
+                return R.InPurodyuusu.TextAuditionGalaxyMusic
+            case NiaSecondAuditionType.LEVEL_1:
+                return R.InPurodyuusu.TextAuditionPopFair
+            case NiaSecondAuditionType.LEVEL_2:
+                return R.InPurodyuusu.TextAuditionMelodyJourney
+            case _:
+                assert_never(self)
+
+class NiaFinalAuditionType(IntEnum):
+    """NIA 最终试镜 试镜类型"""
+    LEVEL_0 = 0
+    """FINALE"""
+    LEVEL_1 = 1
+    """QUARTET"""
+    LEVEL_2 = 2
+    """IDOLBigup!"""
+    LEVEL_3 = 3
+    """SingleCut"""
+    
+    @property
+    def display_name(self):
+        match self:
+            case NiaFinalAuditionType.LEVEL_0:
+                return 'FINALE（57,000 以上）'
+            case NiaFinalAuditionType.LEVEL_1:
+                return 'QUARTET（40,000 以上）'
+            case NiaFinalAuditionType.LEVEL_2:
+                return 'IDOLBigup!（28,000 以上）'
+            case NiaFinalAuditionType.LEVEL_3:
+                return 'SingleCut（无条件）'
+            case _:
+                assert_never(self)
+                
+    @property
+    def template(self):
+        from kotonebot.kaa.tasks import R
+        match self:
+            case NiaFinalAuditionType.LEVEL_0:
+                return R.InPurodyuusu.TextAuditionFinale
+            case NiaFinalAuditionType.LEVEL_1:
+                return R.InPurodyuusu.TextAuditionQuartet
+            case NiaFinalAuditionType.LEVEL_2:
+                return R.InPurodyuusu.TextAuditionIdolBigup
+            case NiaFinalAuditionType.LEVEL_3:
+                return R.InPurodyuusu.TextAuditionSingleCut
+            case _:
+                assert_never(self)
+
+ProduceMode = Literal['regular', 'pro', 'master', 'nia-pro']
+ProduceWeek = Literal[
+    1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
+    11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+    21, 22, 23, 24, 25, 26, 27, 28,
+]
 class ProduceConfig(ConfigBaseModel):
     enabled: bool = False
     """是否启用培育"""
-    mode: Literal['regular', 'pro', 'master'] = 'regular'
+    mode: ProduceMode = 'regular'
     """
     培育模式。
     进行一次 REGULAR 培育需要 ~30min，进行一次 PRO 培育需要 ~1h（具体视设备性能而定）。
@@ -354,6 +557,9 @@ class ProduceConfig(ConfigBaseModel):
         ProduceAction.VISUAL,
         ProduceAction.VOCAL,
         ProduceAction.DANCE,
+        ProduceAction.PROMOTION,
+        ProduceAction.CARE_PACKAGE,
+        ProduceAction.SPECIAL_TRAINING,
         ProduceAction.ALLOWANCE,
         ProduceAction.OUTING,
         ProduceAction.STUDY,
@@ -377,6 +583,23 @@ class ProduceConfig(ConfigBaseModel):
     """
     skip_commu: bool = True
     """检测并跳过交流"""
+    nia_promotion_type_order: list[NiaPromotionType] = [
+        NiaPromotionType.SKILL_CARD,
+        NiaPromotionType.POINT,
+        NiaPromotionType.DRINK,
+        NiaPromotionType.HEAL,
+    ]
+    """
+    NIA 培育时的营业类型优先级顺序
+    """
+    nia_promotion_skill_card_option: NiaPromotionSkillCardOption = NiaPromotionSkillCardOption.GOOD_IMPRESSION
+    """
+    NIA 培育时的技能卡选项
+    """
+    nia_first_audition_type: NiaFirstAuditionType = NiaFirstAuditionType.LEVEL_2
+    nia_second_audition_type: NiaSecondAuditionType = NiaSecondAuditionType.LEVEL_2
+    nia_final_audition_type: NiaFinalAuditionType = NiaFinalAuditionType.LEVEL_3
+    nia_rest_weeks: list[ProduceWeek] = []
 
 class MissionRewardConfig(ConfigBaseModel):
     enabled: bool = False

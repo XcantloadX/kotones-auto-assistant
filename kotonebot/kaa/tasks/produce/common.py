@@ -301,7 +301,18 @@ def commu_event():
         sleep(2.5) # HACK: 为了防止点击后按钮还没消失就进行第二次检测
         return True
     return False
-    
+
+@action('是否位于 NIA 一次试镜')
+def is_at_first_audition():
+    return image.find(R.InPurodyuusu.IconTitleAuditionFirst) is not None
+
+@action('是否位于 NIA 二次试镜')
+def is_at_second_audition():
+    return image.find(R.InPurodyuusu.IconTitleAuditionSecond) is not None
+
+@action('是否位于 NIA 最终试镜')
+def is_at_final_audition():
+    return image.find(R.InPurodyuusu.IconTitleAuditionFinal) is not None
 
 if __name__ == '__main__':
     from logging import getLogger

@@ -5,7 +5,7 @@ from typing_extensions import assert_never
 
 from kotonebot.ui import user
 from kotonebot.kaa.tasks import R
-from kotonebot.kaa.common import conf
+from kotonebot.kaa.common import conf, ProduceMode
 from kotonebot.kaa.game_ui import dialog
 from ..actions.scenes import at_home, goto_home
 from kotonebot.backend.loop import Loop, StatedLoop
@@ -13,8 +13,9 @@ from kotonebot.util import Countdown, Interval, Throttler
 from kotonebot.kaa.game_ui.primary_button import find_button
 from kotonebot.kaa.game_ui.idols_overview import locate_idol, match_idol
 from ..produce.in_purodyuusu import hajime_pro, hajime_regular, hajime_master, resume_pro_produce, resume_regular_produce, \
-    resume_master_produce
+    resume_master_produce, nia_pro
 from kotonebot import device, image, ocr, task, action, sleep, contains, regex
+from kotonebot.kaa.kaa_context import ProduceSession, produce as produce_ctx, set_produce as set_produce_ctx
 
 logger = logging.getLogger(__name__)
 
@@ -183,7 +184,7 @@ def resume_produce():
 @action('执行培育', screenshot_mode='manual-inherit')
 def do_produce(
     idol_skin_id: str,
-    mode: Literal['regular', 'pro', 'master'],
+    mode: ProduceMode,
     memory_set_index: Optional[int] = None
 ) -> bool:
     """
@@ -201,6 +202,7 @@ def do_produce(
     if memory_set_index is not None and not 1 <= memory_set_index <= 10:
         raise ValueError('`memory_set_index` must be in range [1, 10].')
 
+    set_produce_ctx(ProduceSession(mode=mode))
     if not at_home():
         goto_home()
 
@@ -223,17 +225,33 @@ def do_produce(
     match mode:
         case 'regular':
             target_buttons = [R.Produce.ButtonHajime0Regular, R.Produce.ButtonHajime1Regular]
-        case 'pro':
+        case 'pro' | 'nia-pro':
             target_buttons = [R.Produce.ButtonHajime0Pro, R.Produce.ButtonHajime1Pro]
         case 'master':
             target_buttons = [R.Produce.ButtonHajime1Master]
         case _:
             assert_never(mode)
     result = None
+    at_level_select = False # 是否位于难度选择页面
     for _ in Loop():
+        if not at_level_select:
+            at_nia = image.find(R.Produce.LogoNia) is not None
+            at_hajime = image.find(R.Produce.LogoHajime) is not None
+            if produce_ctx().is_hajime:
+                if at_nia:
+                    device.click(R.Produce.PointHajimeToNia)
+                elif at_hajime:
+                    at_level_select = True
+            elif produce_ctx().is_nia:
+                if at_hajime:
+                    device.click(R.Produce.PointNiaToHajime)
+                elif at_nia:
+                    at_level_select = True
+            else:
+                raise ValueError('Corrupted produce session data. (is_hajime || is_nia) should be True.')
         if image.find(R.Produce.ButtonProduce):
             device.click()
-        elif image.find_multi(target_buttons):
+        elif at_level_select and image.find_multi(target_buttons):
             device.click()
         elif image.find(R.Produce.ButtonPIdolOverview):
             result = True
@@ -375,6 +393,8 @@ def do_produce(
             hajime_pro()
         case 'master':
             hajime_master()
+        case 'nia-pro':
+            nia_pro()
         case _:
             assert_never(mode)
     return True
@@ -427,11 +447,11 @@ if __name__ == '__main__':
     from kotonebot.kaa.main import Kaa
 
     conf().produce.enabled = True
-    conf().produce.mode = 'pro'
-    conf().produce.produce_count = 1
+    conf().produce.mode = 'nia-pro'
+    # conf().produce.produce_count = 1
     # conf().produce.idols = ['i_card-skin-hski-3-002']
-    conf().produce.memory_sets = [1]
-    conf().produce.auto_set_memory = False
+    # conf().produce.memory_sets = [6]
+    # conf().produce.auto_set_memory = False
     # do_produce(PIdol.月村手毬_初声, 'pro', 5)
     produce()
     # a()

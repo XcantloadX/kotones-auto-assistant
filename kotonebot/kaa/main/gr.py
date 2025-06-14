@@ -26,6 +26,7 @@ from kotonebot.kaa.common import (
     PresentsConfig, AssignmentConfig, ContestConfig, ProduceConfig,
     MissionRewardConfig, DailyMoneyShopItems, ProduceAction,
     RecommendCardDetectionMode, TraceConfig, StartGameConfig, EndGameConfig, UpgradeSupportCardConfig, MiscConfig,
+    NiaPromotionType, NiaPromotionSkillCardOption, NiaFirstAuditionType, NiaSecondAuditionType, NiaFinalAuditionType,
 )
 
 logger = logging.getLogger(__name__)
@@ -60,6 +61,9 @@ ConfigKey = Literal[
     'self_study_lesson', 'prefer_lesson_ap',
     'actions_order', 'recommend_card_detection_mode',
     'use_ap_drink', 'skip_commu',
+    'nia_promotion_type_order', 'nia_promotion_skill_card_option',
+    'nia_first_audition_type', 'nia_second_audition_type', 'nia_final_audition_type',
+    'nia_rest_weeks',
     'mission_reward_enabled',
     
     # club reward
@@ -1012,7 +1016,7 @@ class KotoneBotUI:
             )
             with gr.Group(visible=self.current_config.options.produce.enabled) as produce_group:
                 produce_mode = gr.Dropdown(
-                    choices=["regular", "pro", "master"],
+                    choices=["regular", "pro", "master", "nia-pro"],
                     value=self.current_config.options.produce.mode,
                     label="培育模式",
                     info=ProduceConfig.model_fields['mode'].description
@@ -1124,6 +1128,47 @@ class KotoneBotUI:
                     value=self.current_config.options.produce.skip_commu,
                     info=ProduceConfig.model_fields['skip_commu'].description
                 )
+
+                # NIA 培育相关配置
+                gr.Markdown("#### NIA 培育设置")
+                nia_promotion_type_order = gr.Dropdown(
+                    choices=[(ptype.display_name, ptype.value) for ptype in NiaPromotionType],
+                    value=[ptype.value for ptype in self.current_config.options.produce.nia_promotion_type_order],
+                    label="营业类型优先级顺序",
+                    info=ProduceConfig.model_fields['nia_promotion_type_order'].description,
+                    multiselect=True
+                )
+                nia_promotion_skill_card_option = gr.Dropdown(
+                    choices=[(option.display_name, option.value) for option in NiaPromotionSkillCardOption],
+                    value=self.current_config.options.produce.nia_promotion_skill_card_option.value,
+                    label="技能卡选项",
+                    info=ProduceConfig.model_fields['nia_promotion_skill_card_option'].description
+                )
+                nia_first_audition_type = gr.Dropdown(
+                    choices=[(atype.display_name, atype.value) for atype in NiaFirstAuditionType],
+                    value=self.current_config.options.produce.nia_first_audition_type.value,
+                    label="第一次试镜类型",
+                    info="选择第一次试镜的类型"
+                )
+                nia_second_audition_type = gr.Dropdown(
+                    choices=[(atype.display_name, atype.value) for atype in NiaSecondAuditionType],
+                    value=self.current_config.options.produce.nia_second_audition_type.value,
+                    label="第二次试镜类型",
+                    info="选择第二次试镜的类型"
+                )
+                nia_final_audition_type = gr.Dropdown(
+                    choices=[(atype.display_name, atype.value) for atype in NiaFinalAuditionType],
+                    value=self.current_config.options.produce.nia_final_audition_type.value,
+                    label="最终试镜类型",
+                    info="选择最终试镜的类型"
+                )
+                nia_rest_weeks = gr.Dropdown(
+                    choices=[(f"第 {week} 周", week) for week in range(1, 29)],
+                    value=self.current_config.options.produce.nia_rest_weeks,
+                    label="休息周数",
+                    info=ProduceConfig.model_fields['nia_rest_weeks'].description,
+                    multiselect=True
+                )
                 recommend_card_detection_mode.change(
                     fn=update_kotone_warning,
                     inputs=[produce_idols, recommend_card_detection_mode],
@@ -1164,6 +1209,12 @@ class KotoneBotUI:
             config.produce.recommend_card_detection_mode = RecommendCardDetectionMode(data['recommend_card_detection_mode'])
             config.produce.use_ap_drink = data['use_ap_drink']
             config.produce.skip_commu = data['skip_commu']
+            config.produce.nia_promotion_type_order = [NiaPromotionType(ptype) for ptype in data['nia_promotion_type_order']]
+            config.produce.nia_promotion_skill_card_option = NiaPromotionSkillCardOption(data['nia_promotion_skill_card_option'])
+            config.produce.nia_first_audition_type = NiaFirstAuditionType(data['nia_first_audition_type'])
+            config.produce.nia_second_audition_type = NiaSecondAuditionType(data['nia_second_audition_type'])
+            config.produce.nia_final_audition_type = NiaFinalAuditionType(data['nia_final_audition_type'])
+            config.produce.nia_rest_weeks = data['nia_rest_weeks']
         
         return set_config, {
             'produce_enabled': produce_enabled,
@@ -1181,7 +1232,13 @@ class KotoneBotUI:
             'actions_order': actions_order,
             'recommend_card_detection_mode': recommend_card_detection_mode,
             'use_ap_drink': use_ap_drink,
-            'skip_commu': skip_commu
+            'skip_commu': skip_commu,
+            'nia_promotion_type_order': nia_promotion_type_order,
+            'nia_promotion_skill_card_option': nia_promotion_skill_card_option,
+            'nia_first_audition_type': nia_first_audition_type,
+            'nia_second_audition_type': nia_second_audition_type,
+            'nia_final_audition_type': nia_final_audition_type,
+            'nia_rest_weeks': nia_rest_weeks
         }
 
     def _create_club_reward_settings(self) -> ConfigBuilderReturnValue:

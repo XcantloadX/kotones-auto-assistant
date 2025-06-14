@@ -19,6 +19,7 @@ def run_script(script_path: str) -> None:
     module_name = script_path.strip('.py').lstrip('projects/').replace('\\', '/').strip('/').replace('/', '.')
 
     print(f"正在运行脚本: {script_path}")
+    logging.basicConfig(level=logging.INFO, format='[%(asctime)s] [%(levelname)s] [%(name)s] [%(funcName)s] [%(lineno)d] %(message)s')
     # 运行脚本
     from kotonebot.backend.context import init_context, manual_context
     from kotonebot.kaa.main.kaa import Kaa
