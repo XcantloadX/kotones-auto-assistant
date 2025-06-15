@@ -1,3 +1,4 @@
+import logging
 from dataclasses import dataclass
 from typing import Sequence
 
@@ -8,12 +9,17 @@ from kotonebot.backend.color import HsvColor
 from kotonebot import action, device, ocr, sleep
 from .common import filter_rectangles, WHITE_LOW, WHITE_HIGH
 
+logger = logging.getLogger(__name__)
+
 @dataclass
 class EventButton:
     rect: Rect
     selected: bool
     description: str
     title: str
+    
+    def __repr__(self):
+        return f'<{self.__class__.__name__} title="{self.title}" description="{self.description}" rect="{self.rect}" selected={self.selected}>'
 
 def web2cv(hsv: HsvColor):
     return (int(hsv[0]/360*180), int(hsv[1]/100*255), int(hsv[2]/100*255))
@@ -105,6 +111,9 @@ class CommuEventButtonUI:
             result.append(selected)
             selected.selected = False
         result.sort(key=lambda x: x.rect.y1)
+        # 输出日志
+        for button in result:
+            logger.info('CommuEventButton: %s', button)
         return result
 
     @action('交流事件按钮.识别描述', screenshot_mode='manual-inherit')
