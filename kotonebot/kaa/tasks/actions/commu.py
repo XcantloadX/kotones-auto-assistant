@@ -14,14 +14,21 @@ logger = logging.getLogger(__name__)
 @action('获取 SKIP 按钮', screenshot_mode='manual-inherit')
 def skip_button():
     device.screenshot()
-    return image.find(
+    result = image.find(
         R.Common.ButtonCommuSkip,
         threshold=0.6,
     ) or image.find(
         R.Common.ButtonCommuSkip,
         threshold=0.6,
-        preprocessors=[WhiteFilter()]
+        preprocessors=[WhiteFilter()],
     )
+    # TODO: image.find 函数需要 rect 参数
+    if result:
+        offset = result.rect.center - R.Common.BoxCommuControls.center
+        if offset.x < 20 and offset.y < 20:
+            return result
+    else:
+        return None
 
 @action('获取 FASTFORWARD 按钮', screenshot_mode='manual-inherit')
 def fastforward_button():
