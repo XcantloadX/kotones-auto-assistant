@@ -89,12 +89,13 @@ def handle_promotion(should_enter: bool = True):
             if continue_outer:
                 continue
             # Dance、Visual、Vocal 选择页面
-            if image.find(R.Common.ButtonCommuFastforward, preprocessors=[WhiteFilter()]):
+            if image.find(R.Common.ButtonCommuFastforward, preprocessors=[WhiteFilter()], threshold=0.7):
                 ui = CommuEventButtonUI()
                 buttons = ui.all()
                 if len(buttons) == 3:
                     # 数量为 3，说明是选择技能卡类型的对话
                     for i, b in enumerate(buttons):
+                        b.description = b.description.replace('カ', '力')
                         if conf().produce.nia_promotion_skill_card_option.search_text in b.description:
                             logger.info('Selecting 営業 skill card option: index=%d', i)
                             device.double_click(b)
@@ -134,6 +135,8 @@ def handle_special_training(should_enter: bool = True):
             device.click()
         elif dialog.yes():
             break
+        else:
+            fast_acquisitions()
 
 if __name__ == '__main__':
     handle_promotion()
