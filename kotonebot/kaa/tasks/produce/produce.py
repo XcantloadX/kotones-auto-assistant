@@ -3,7 +3,7 @@ from itertools import cycle
 from typing import Optional, Literal
 from typing_extensions import assert_never
 
-from kotonebot.kaa.skill_card_action.global_idol_setting_action import idol_setting
+from kotonebot.kaa.skill_card_action.global_idol_setting_action import update_archetype_by_idol_skin_id
 from kotonebot.ui import user
 from kotonebot.util import Countdown, Interval
 from kotonebot.backend.context.context import wait
@@ -13,7 +13,7 @@ from kotonebot.kaa.tasks import R
 from kotonebot.kaa.common import conf
 from kotonebot.kaa.game_ui import dialog
 from ..actions.scenes import at_home, goto_home
-from kotonebot.kaa.game_ui.idols_overview import locate_idol
+from kotonebot.kaa.game_ui.idols_overview import locate_idol, find_idol_skin_id_on_resume_produce
 from ..produce.in_purodyuusu import hajime_pro, hajime_regular, hajime_master, resume_pro_produce, resume_regular_produce, \
     resume_master_produce
 from kotonebot import device, image, ocr, task, action, sleep, contains, regex
@@ -168,6 +168,12 @@ def resume_produce():
         raise ValueError('Failed to detect weeks after multiple retries.')
     if current_week is None:
         raise ValueError('Failed to detect current_week.')
+
+    # 更新全局偶像信息
+    img = device.screenshot()
+    skin_id = find_idol_skin_id_on_resume_produce(img)
+    update_archetype_by_idol_skin_id(skin_id)
+
     # 点击 再開する
     # [kotonebot-resource/sprites/jp/produce/produce_resume.png]
     logger.info('Click resume button.')
@@ -201,7 +207,6 @@ def do_produce(
     if not at_home():
         goto_home()
 
-    idol_setting.new_play()
     device.screenshot()
     # 有进行中培育的情况
     if ocr.find(contains('中'), rect=R.Produce.BoxProduceOngoing):
@@ -209,6 +214,8 @@ def do_produce(
         resume_produce()
         return True
 
+    # 新培育时更新偶像信息
+    update_archetype_by_idol_skin_id(idol_skin_id)
     # 0. 进入培育页面
     mode_text = mode.upper()
     if mode_text == 'MASTER':

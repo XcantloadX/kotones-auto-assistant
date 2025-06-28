@@ -4,9 +4,7 @@ from kotonebot import device, image, Interval, ocr, contains, Countdown, action
 from kotonebot.backend.core import HintBox
 from kotonebot.kaa.game_ui import dialog, badge
 from kotonebot.kaa.game_ui.skill_card_select import extract_cards
-from kotonebot.kaa.skill_card.enum_constant import CardPriority
 from kotonebot.kaa.skill_card_action.card_reader import ActualCard
-from kotonebot.kaa.skill_card_action.global_idol_setting_action import idol_setting
 from kotonebot.kaa.tasks import R
 from kotonebot.primitives import Rect
 
@@ -39,33 +37,31 @@ def select_skill_card():
             continue
 
         img = device.screenshot()
-        match_results = image.find_multi([
-            R.InPurodyuusu.A,
-            R.InPurodyuusu.M
-        ])
-        if match_results:
-            cards = extract_cards(img)
-            cards = [ActualCard.create_by(card.rect, card.skill_card) for card in cards]
+        skill_card_elements = extract_cards(img)
+        if skill_card_elements:
+            cards = [ActualCard.create_by(skill_card_element) for skill_card_element in skill_card_elements]
+            cards = sorted(cards, reverse=True)
+            target_card = cards[0]
+            select_suggest = False
 
-            target_card = sorted(cards, key=lambda x: x.priority)[0]
-            select_other = target_card.priority == CardPriority.other
-
-            # 非卡组配置的卡时，判断是否需要刷新
-            if select_other:
-                # 若考虑先刷新，则尝试刷新，刷新成功则重新识别卡
-                if not idol_setting.select_once_card_before_refresh:
-                    if try_refresh_skill_card(target_card.rect):
-                        it.wait()
-                        continue
-                # 选择一回一次的卡，如果没有，尝试刷新，刷新成功则重新识别卡
-                if once_cards := [card for card in cards if card.skill_card.once]:
-                    target_card = once_cards[0]
-                elif try_refresh_skill_card(target_card.rect):
+            # 非卡组配置的卡时，尝试刷新
+            if not target_card.select():
+                if try_refresh_skill_card(target_card.skill_card_element.rect):
                     it.wait()
                     continue
-
-            logger.info(f"select {target_card.name}")
-            device.click(target_card.rect)
+                # 如果没刷新次数，尝试选取除外卡
+                if once_cards := [card for card in cards if card.lost()]:
+                    target_card = once_cards[0]
+                else:
+                    select_suggest = True
+            if select_suggest:
+                # 既没有刷新，也没有除外卡，选择推荐卡
+                card_rect = find_recommended_card_rect([card.skill_card_element.rect for card in cards])
+                logger.info(f"select recommended card")
+                device.click(card_rect)
+            else:
+                logger.info(f"select {target_card.skill_card_element.skill_card.name}")
+                device.click(target_card.skill_card_element.rect)
             it.wait()
 
         else:
@@ -79,6 +75,26 @@ def select_skill_card():
             device.click(acquire_btn)
             return
     logger.warning("Skill card select failed")
+
+
+@action('寻找推荐卡', screenshot_mode='manual-inherit')
+def find_recommended_card_rect(cards: list[Rect]) -> Rect:
+    # 判断是否有推荐卡
+    rec_badges = image.find_all(R.InPurodyuusu.TextRecommend)
+    rec_badges = [card.rect for card in rec_badges]
+    if rec_badges:
+        matches = badge.match(cards, rec_badges, 'mb')
+        logger.debug("Recommend card badge matches: %s", matches)
+        # 选第一个推荐卡
+        target_match = next(filter(lambda m: m.badge is not None, matches), None)
+        if target_match:
+            target_card = target_match.object
+        else:
+            target_card = cards[0]
+    else:
+        logger.debug("No recommend badge found. Pick first card.")
+        target_card = cards[0]
+    return target_card
 
 
 @action('刷新技能卡', screenshot_mode='manual-inherit')

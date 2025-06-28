@@ -1,297 +1,252 @@
 {
   "pre_built_deck": [
     {
-      "archetype": "好調",
+      "archetype": "ProduceExamEffectType_ExamParameterBuff",
       "select_once_card_before_refresh": false,
       "core_cards": [
-        "至高のエンタメ",
-        "国民的アイドル",
-        "魅惑の視線"
+        "p_card-01-act-3_049",
+        "p_card-01-men-3_006",
+        "p_card-01-men-3_036"
       ],
       "high_priority_cards": [
-        "アイドル宣言",
-        "アイドル魂",
-        "仕切り直し",
-        "ひと呼吸",
-        "願いの力",
-        "静かな意志",
-        "始まりの合図",
-        "存在感",
-        "シュプレヒコール",
-        "コール&レスポンス",
-        "成就",
-        "鳴り止まない拍手",
-        "天真爛漫",
-        "魅惑のパフォーマンス"
+        "p_card-00-men-2_012",
+        "p_card-00-men-3_003",
+        "p_card-00-men-3_005",
+        "p_card-01-men-1_034",
+        "p_card-01-men-2_038",
+        "p_card-01-men-2_035",
+        "p_card-01-men-2_036",
+        "p_card-01-men-2_037",
+        "p_card-01-act-2_001",
+        "p_card-01-act-3_030",
+        "p_card-01-act-3_029",
+        "p_card-01-men-3_033",
+        "p_card-01-men-3_035",
+        "p_card-01-act-3_010"
       ],
       "medium_priority_cards": [
-        "眼力",
-        "大声援",
-        "演出計画",
-        "意地",
-        "ハイタッチ",
-        "トークタイム",
-        "エキサイト",
-        "祝福"
+        "p_card-01-men-2_039",
+        "p_card-01-men-2_043",
+        "p_card-01-men-2_034",
+        "p_card-01-men-2_040",
+        "p_card-01-act-1_020",
+        "p_card-01-act-1_021",
+        "p_card-01-act-1_036",
+        "p_card-01-act-2_042"
       ],
       "low_priority_cards": [
-        "決めポーズ",
-        "飛躍",
-        "立ち位置チェック",
-        "成功への道筋",
-        "ファーストステップ",
-        "テレビ出演",
-        "叶えたい夢"
+        "p_card-01-act-2_003",
+        "p_card-01-act-2_033",
+        "p_card-01-act-2_059",
+        "p_card-01-men-2_041",
+        "p_card-00-men-1_007",
+        "p_card-00-men-3_012",
+        "p_card-00-men-3_011"
       ]
     },
     {
-      "archetype": "集中",
+      "archetype": "ProduceExamEffectType_ExamLessonBuff",
       "select_once_card_before_refresh": false,
       "core_cards": [
-        "至高のエンタメ",
-        "国民的アイドル",
-        "魅惑の視線"
+        "p_card-01-act-3_049",
+        "p_card-01-men-3_006",
+        "p_card-01-men-3_036"
       ],
       "high_priority_cards": [
-        "アイドル宣言",
-        "アイドル魂",
-        "仕切り直し",
-        "ひと呼吸",
-        "願いの力",
-        "静かな意志",
-        "始まりの合図",
-        "存在感",
-        "シュプレヒコール",
-        "コール&レスポンス",
-        "成就",
-        "鳴り止まない拍手",
-        "天真爛漫",
-        "魅惑のパフォーマンス"
+        "p_card-00-men-2_012",
+        "p_card-00-men-3_003",
+        "p_card-00-men-3_005",
+        "p_card-01-men-1_034",
+        "p_card-01-men-2_038",
+        "p_card-01-men-2_035",
+        "p_card-01-men-2_036",
+        "p_card-01-men-2_037",
+        "p_card-01-act-2_001",
+        "p_card-01-act-3_030",
+        "p_card-01-act-3_029",
+        "p_card-01-men-3_033",
+        "p_card-01-men-3_035",
+        "p_card-01-act-3_010"
       ],
       "medium_priority_cards": [
-        "眼力",
-        "大声援",
-        "演出計画",
-        "意地",
-        "ハイタッチ",
-        "トークタイム",
-        "エキサイト",
-        "祝福"
+        "p_card-01-men-2_039",
+        "p_card-01-men-2_043",
+        "p_card-01-men-2_034",
+        "p_card-01-men-2_040",
+        "p_card-01-act-1_020",
+        "p_card-01-act-1_021",
+        "p_card-01-act-1_036",
+        "p_card-01-act-2_042"
       ],
       "low_priority_cards": [
-        "決めポーズ",
-        "飛躍",
-        "立ち位置チェック",
-        "成功への道筋",
-        "ファーストステップ",
-        "テレビ出演",
-        "叶えたい夢"
+        "p_card-01-act-2_003",
+        "p_card-01-act-2_033",
+        "p_card-01-act-2_059",
+        "p_card-01-men-2_041",
+        "p_card-00-men-1_007",
+        "p_card-00-men-3_012",
+        "p_card-00-men-3_011"
       ]
     },
     {
-      "archetype": "好印象",
+      "archetype": "ProduceExamEffectType_ExamReview",
       "select_once_card_before_refresh": false,
       "core_cards": [
-        "輝くキミへ",
-        "私がスター",
-        "星屑センセーション",
-        "夢色リップ"
+        "p_card-02-act-3_050",
+        "p_card-02-men-3_002",
+        "p_card-02-men-3_004",
+        "p_card-02-men-3_040"
       ],
       "high_priority_cards": [
-        "アイドル宣言",
-        "アイドル魂",
-        "仕切り直し",
-        "止められない想い",
-        "キラメキ",
-        "ファンシーチャーム",
-        "ワクワクが止まらない",
-        "ノートの端の決意",
-        "トキメキ",
-        "虹色ドリーマー",
-        "みんな大好き",
-        "ゆめみごこち",
-        "オトメゴコロ"
+        "p_card-00-men-2_012",
+        "p_card-00-men-3_003",
+        "p_card-00-men-3_005",
+        "p_card-02-men-2_056",
+        "p_card-02-act-2_048",
+        "p_card-02-men-2_058",
+        "p_card-02-men-2_004",
+        "p_card-02-men-3_041",
+        "p_card-02-men-3_043",
+        "p_card-02-men-3_042",
+        "p_card-02-act-2_049",
+        "p_card-02-men-2_057",
+        "p_card-02-men-2_060"
       ],
       "medium_priority_cards": [
-        "手拍子",
-        "幸せのおまじない",
-        "やる気は満点",
-        "本番前夜",
-        "200%スマイル",
-        "キセキの魔法"
+        "p_card-02-act-1_003",
+        "p_card-02-men-1_035",
+        "p_card-02-men-2_051",
+        "p_card-02-men-2_054",
+        "p_card-02-act-3_001",
+        "p_card-02-act-3_052"
       ],
       "low_priority_cards": [
-        "ラブリーウインク",
-        "幸せな時間",
-        "ひなたぼっこ",
-        "イメトレ",
-        "ファーストステップ",
-        "テレビ出演",
-        "叶えたい夢"
+        "p_card-02-act-2_046",
+        "p_card-02-men-2_050",
+        "p_card-02-men-2_052",
+        "p_card-02-men-2_008",
+        "p_card-00-men-1_007",
+        "p_card-00-men-3_012",
+        "p_card-00-men-3_011"
       ]
     },
     {
-      "archetype": "やる気",
+      "archetype": "ProduceExamEffectType_ExamCardPlayAggressive",
       "select_once_card_before_refresh": false,
       "core_cards": [
-        "私がスター",
-        "夢色リップ",
-        "デイドリーミング",
-        "きらきら紙吹雪"
+        "p_card-02-men-3_002",
+        "p_card-02-men-3_040",
+        "p_card-02-act-1_037",
+        "p_card-02-act-2_062"
       ],
       "high_priority_cards": [
-        "アイドル宣言",
-        "アイドル魂",
-        "仕切り直し",
-        "止められない想い",
-        "ワクワクが止まらない",
-        "ひなたぼっこ",
-        "イメトレ",
-        "届いて!",
-        "ノートの端の決意",
-        "トキメキ"
+        "p_card-00-men-2_012",
+        "p_card-00-men-3_003",
+        "p_card-00-men-3_005",
+        "p_card-02-men-2_056",
+        "p_card-02-men-2_004",
+        "p_card-02-men-2_052",
+        "p_card-02-men-2_008",
+        "p_card-02-act-3_039",
+        "p_card-02-men-3_041",
+        "p_card-02-men-3_043"
       ],
       "medium_priority_cards": [
-        "開花",
-        "手書きのメッセージ",
-        "あのときの約束",
-        "ありがとうの言葉",
-        "本番前夜"
+        "p_card-02-act-3_038",
+        "p_card-02-men-3_044",
+        "p_card-02-act-3_045",
+        "p_card-02-act-2_047",
+        "p_card-02-men-2_054"
       ],
       "low_priority_cards": [
-        "元気な挨拶",
-        "リズミカル",
-        "やる気は満点",
-        "ファーストステップ",
-        "テレビ出演",
-        "叶えたい夢"
+        "p_card-02-act-1_004",
+        "p_card-02-men-1_006",
+        "p_card-02-men-2_051",
+        "p_card-00-men-1_007",
+        "p_card-00-men-3_012",
+        "p_card-00-men-3_011"
       ]
     },
     {
-      "archetype": "強気",
+      "archetype": "ProduceExamEffectType_ExamConcentration",
       "select_once_card_before_refresh": false,
       "core_cards": [
-        "アイドルになります",
-        "一心不乱"
+        "p_card-03-men-3_058",
+        "p_card-03-men-3_061"
       ],
       "high_priority_cards": [
-        "アイドル宣言",
-        "アイドル魂",
-        "仕切り直し",
-        "第一印象",
-        "プライド",
-        "盛り上げ上手",
-        "インフルエンサー",
-        "タフネス",
-        "総合芸術",
-        "心・技・体",
-        "クライマックス",
-        "全身全霊",
-        "頂点へ"
+        "p_card-00-men-2_012",
+        "p_card-00-men-3_003",
+        "p_card-00-men-3_005",
+        "p_card-03-act-2_081",
+        "p_card-03-men-2_066",
+        "p_card-03-men-2_076",
+        "p_card-03-men-2_080",
+        "p_card-03-men-2_074",
+        "p_card-03-act-3_054",
+        "p_card-03-act-3_056",
+        "p_card-03-act-3_055",
+        "p_card-03-act-3_065",
+        "p_card-03-men-3_062"
       ],
       "medium_priority_cards": [
-        "精一杯",
-        "ハッピー♪",
-        "嬉しい誤算",
-        "オープニングアクト",
-        "カウントダウン",
-        "忍耐力"
+        "p_card-03-act-1_044",
+        "p_card-03-men-1_039",
+        "p_card-03-men-1_049",
+        "p_card-03-act-2_063",
+        "p_card-03-act-2_073",
+        "p_card-03-men-2_077"
       ],
       "low_priority_cards": [
-        "涙の思い出",
-        "はじけるパッション",
-        "理想のテンポ",
-        "ファーストステップ",
-        "テレビ出演",
-        "叶えたい夢"
+        "p_card-03-men-1_048",
+        "p_card-03-act-2_068",
+        "p_card-03-act-2_067",
+        "p_card-00-men-1_007",
+        "p_card-00-men-3_012",
+        "p_card-00-men-3_011"
       ]
     },
     {
-      "archetype": "温存",
+      "archetype": "ProduceExamEffectType_ExamFullPower",
       "select_once_card_before_refresh": false,
       "core_cards": [
-        "モチベ",
-        "アイドルになります"
+        "p_card-03-men-2_075",
+        "p_card-03-men-3_058"
       ],
       "high_priority_cards": [
-        "アイドル宣言",
-        "アイドル魂",
-        "仕切り直し",
-        "プライド",
-        "盛り上げ上手",
-        "インフルエンサー",
-        "タフネス",
-        "翔び立て!",
-        "心・技・体",
-        "輝け!",
-        "全身全霊",
-        "頂点へ",
-        "覚悟"
+        "p_card-00-men-2_012",
+        "p_card-00-men-3_003",
+        "p_card-00-men-3_005",
+        "p_card-03-men-2_066",
+        "p_card-03-men-2_076",
+        "p_card-03-men-2_080",
+        "p_card-03-men-2_074",
+        "p_card-03-act-3_057",
+        "p_card-03-act-3_056",
+        "p_card-03-act-3_053",
+        "p_card-03-act-3_065",
+        "p_card-03-men-3_062",
+        "p_card-03-men-3_063"
       ],
       "medium_priority_cards": [
-        "ハッピー♪",
-        "嬉しい誤算",
-        "涙の思い出",
-        "セッティング",
-        "オープニングアクト",
-        "トレーニングの成果",
-        "潜在能力",
-        "カウントダウン",
-        "忍耐力",
-        "クライマックス"
+        "p_card-03-men-1_049",
+        "p_card-03-men-1_048",
+        "p_card-03-men-1_051",
+        "p_card-03-act-2_063",
+        "p_card-03-act-2_071",
+        "p_card-03-men-2_064",
+        "p_card-03-men-2_077",
+        "p_card-03-act-3_055"
       ],
       "low_priority_cards": [
-        "ジャストアピール",
-        "積み重ね",
-        "アッチェレランド",
-        "はじけるパッション",
-        "トレンドリーダー",
-        "ファーストステップ",
-        "テレビ出演",
-        "叶えたい夢"
-      ]
-    },
-    {
-      "archetype": "全力",
-      "select_once_card_before_refresh": false,
-      "core_cards": [
-        "モチベ",
-        "アイドルになります"
-      ],
-      "high_priority_cards": [
-        "アイドル宣言",
-        "アイドル魂",
-        "仕切り直し",
-        "プライド",
-        "盛り上げ上手",
-        "インフルエンサー",
-        "タフネス",
-        "翔び立て!",
-        "心・技・体",
-        "輝け!",
-        "全身全霊",
-        "頂点へ",
-        "覚悟"
-      ],
-      "medium_priority_cards": [
-        "嬉しい誤算",
-        "涙の思い出",
-        "セッティング",
-        "オープニングアクト",
-        "トレーニングの成果",
-        "潜在能力",
-        "忍耐力",
-        "クライマックス"
-      ],
-      "low_priority_cards": [
-        "ジャストアピール",
-        "積み重ね",
-        "アッチェレランド",
-        "はじけるパッション",
-        "トレンドリーダー",
-        "ファーストステップ",
-        "テレビ出演",
-        "叶えたい夢"
+        "p_card-03-act-1_038",
+        "p_card-03-act-1_042",
+        "p_card-03-act-2_072",
+        "p_card-03-act-2_068",
+        "p_card-03-act-2_082",
+        "p_card-00-men-1_007",
+        "p_card-00-men-3_012",
+        "p_card-00-men-3_011"
       ]
     }
   ],

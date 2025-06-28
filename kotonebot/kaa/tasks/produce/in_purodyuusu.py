@@ -3,7 +3,6 @@ from typing_extensions import assert_never
 from typing import Literal
 
 from kotonebot.kaa.game_ui.schedule import Schedule
-from kotonebot.kaa.skill_card_action.global_idol_setting_action import update_archetype_by_schedule
 from kotonebot.kaa.tasks import R
 from ..actions import loading
 from kotonebot.kaa.game_ui import WhiteFilter, dialog
@@ -736,7 +735,6 @@ def hajime_from_stage(stage: ProduceStage, type: Literal['regular', 'pro', 'mast
         remaining_week = texts.squash().replace('ó', '6').numbers()
         if not remaining_week:
             raise UnrecoverableError("Failed to detect week. text=" + repr(texts.squash()))
-        update_archetype_by_schedule()
         # 判断阶段
         match type:
             case 'regular':

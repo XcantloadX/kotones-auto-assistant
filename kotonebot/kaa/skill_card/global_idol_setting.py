@@ -1,8 +1,9 @@
 from dataclasses import dataclass
 from logging import getLogger
 
+from kotonebot.kaa.db.constants import ExamEffectType
 from kotonebot.kaa.skill_card.card_deck_config import DeckConfig, SingleDeckConfig
-from kotonebot.kaa.skill_card.enum_constant import Archetype, CardName, CardPriority
+from kotonebot.kaa.skill_card.enum_constant import CardPriority
 
 logger = getLogger(__name__)
 
@@ -12,17 +13,17 @@ class GlobalIdolSetting:
     def __init__(self):
         # 是否需要刷新全局配置，理论上新开培育、重新培育都需要更新
         self.need_update: bool = True
-        self.idol_archetype: Archetype = Archetype.good_impression
+        self.idol_archetype: ExamEffectType = ExamEffectType.good_impression
         self.card_deck: dict = {}
         self.select_once_card_before_refresh = True
 
     def new_play(self):
         self.need_update = True
         self.select_once_card_before_refresh = True
-        self.card_deck = {}
+        self.card_deck.clear()
         logger.info("New game, wait for update")
 
-    def update_deck(self, idol_archetype: Archetype, config: DeckConfig):
+    def update_deck(self, idol_archetype: ExamEffectType, config: DeckConfig):
         """
         根据流派选择初始化对应的卡组配置，如果自定义有就使用自定义，没有就使用预设
         :param idol_archetype: 偶像流派
@@ -54,10 +55,10 @@ class GlobalIdolSetting:
         self.card_deck.update({card: CardPriority.core for card in card_deck_config.core_cards})
         self.select_once_card_before_refresh = card_deck_config.select_once_card_before_refresh
 
-    def get_card_priority(self, card_name: CardName) -> CardPriority:
+    def get_card_priority(self, card_id: str) -> CardPriority:
         """
         根据卡名来查看此卡的选卡优先级
-        :param card_name: 卡名
+        :param card_id: 卡id
         :return: 优先级，越小越高，不在配置卡组则返回other(99)
         """
-        return self.card_deck.get(card_name, CardPriority.other)
+        return self.card_deck.get(card_id, CardPriority.other)

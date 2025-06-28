@@ -29,25 +29,12 @@ class PlanType(Enum):
     ANOMALY = "ProducePlanType_Plan3"
     """非凡"""
 
-
-class Archetype(Enum):
-    """偶像流派"""
-    UNIDENTIFIED = "unidentified"
-    """未识别"""
-    GOOD_CONDITION = "好調"
-    """好调"""
-    FOCUS = "集中"
-    """集中"""
-    GOOD_IMPRESSION = "好印象"
-    """好印象"""
-    MOTIVATION = "やる気"
-    """干劲"""
-    CONFIDENCE = "強気"
-    """强气"""
-    CONSERVATION = "温存"
-    """温存"""
-    FULL_POWER = "全力"
-    """全力"""
+class PlayMovePositionType(Enum):
+    """卡牌打出后 除外 还是 进入弃牌堆"""
+    LOST = "ProduceCardMovePositionType_Lost"
+    """除外，洗牌后无法抽到"""
+    GRAVE = "ProduceCardMovePositionType_Grave"
+    """进入弃牌堆，洗牌后仍能抽到"""
 
 
 @dataclass
@@ -64,6 +51,8 @@ class SkillCard:
     """卡牌名称。"""
     once: bool
     """此卡牌在考试或课程中是否只会出现一次。"""
+    play_move_position_type: PlayMovePositionType
+    """此卡牌在考试或课程中使用后除外还是进入弃牌堆。"""
     origin_idol_card: str | None
     """此卡牌所属的偶像卡。"""
     origin_support_card: str | None
@@ -80,12 +69,12 @@ class SkillCard:
     def is_from_idol_card(self) -> bool:
         """此卡牌是否来自偶像卡。"""
         return self.origin_idol_card is not None
-    
+
     @property
     def is_from_support_card(self) -> bool:
         """此卡牌是否来自支援卡。"""
         return self.origin_support_card is not None
-    
+
     @property
     def asset_ids(self) -> list[str]:
         """
@@ -94,7 +83,7 @@ class SkillCard:
         if not self.is_character_asset:
             return [self.asset_id]
         return [f'{self.asset_id}-{ii.value}' for ii in CharacterId]
-    
+
     @classmethod
     def all(cls) -> list['SkillCard']:
         """获取所有技能卡"""
@@ -106,6 +95,7 @@ class SkillCard:
             category AS cardType,
             name,
             noDeckDuplication AS once,
+            playMovePositionType,
             originIdolCardId AS idolCardId,
             originSupportCardId AS supportCardId,
             isCharacterAsset
@@ -120,12 +110,13 @@ class SkillCard:
                 card_type=CardType(row["cardType"]),
                 name=row["name"],
                 once=bool(row["once"]),
+                play_move_position_type=PlayMovePositionType(row["playMovePositionType"]),
                 origin_idol_card=row["idolCardId"],
                 origin_support_card=row["supportCardId"],
                 is_character_asset=bool(row["isCharacterAsset"])
             ))
         return results
-    
+
     @classmethod
     def from_asset_id(cls, asset_id: str) -> 'SkillCard | None':
         """根据资源 ID 查询 SkillCard。"""
@@ -141,6 +132,7 @@ class SkillCard:
             category AS cardType,
             name,
             noDeckDuplication AS once,
+            playMovePositionType,
             originIdolCardId AS idolCardId,
             originSupportCardId AS supportCardId,
             isCharacterAsset
@@ -156,6 +148,7 @@ class SkillCard:
             card_type=CardType(row["cardType"]),
             name=row["name"],
             once=bool(row["once"]),
+            play_move_position_type=PlayMovePositionType(row["playMovePositionType"]),
             origin_idol_card=row["idolCardId"],
             origin_support_card=row["supportCardId"],
             is_character_asset=bool(row["isCharacterAsset"])
