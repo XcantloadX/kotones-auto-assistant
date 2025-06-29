@@ -15,6 +15,7 @@ from kotonebot.kaa.db import IdolCard
 from kotonebot.config.manager import load_config, save_config
 from kotonebot.config.base_config import UserConfig, BackendConfig
 from kotonebot.backend.context import task_registry, ContextStackVars
+from kotonebot.backend.context.context import vars
 from kotonebot.client.host import Mumu12Host, LeidianHost
 from kotonebot.kaa.common import (
     BaseConfig, APShopItems, CapsuleToysConfig, ClubRewardConfig, PurchaseConfig, ActivityFundsConfig,
@@ -69,12 +70,14 @@ ConfigKey = Literal[
     'anomaly_capsule_toys_count',
     
     # start game
-    'start_game_enabled', 'start_through_kuyo', 
+    'start_game_enabled', 'start_through_kuyo',
     'game_package_name', 'kuyo_package_name',
-    
+    'disable_gakumas_localify', 'dmm_game_path',
+
     # end game
-    'exit_kaa', 'kill_game', 'kill_dmm', 
+    'exit_kaa', 'kill_game', 'kill_dmm',
     'kill_emulator', 'shutdown', 'hibernate',
+    'restore_gakumas_localify',
     
     'activity_funds',
     'presents',
@@ -180,6 +183,8 @@ class KotoneBotUI:
     def __init__(self, kaa: Kaa) -> None:
         self.is_running: bool = False
         self.single_task_running: bool = False
+        self.is_stopping: bool = False  # 新增：标记是否正在停止过程中
+        self.is_single_task_stopping: bool = False  # 新增：标记单个任务是否正在停止
         self._kaa = kaa
         self._load_config()
         self._setup_kaa()
@@ -230,14 +235,20 @@ class KotoneBotUI:
 
         return f"已导出到 {zip_filename}"
 
-    def get_button_status(self) -> str:
+    def get_button_status(self) -> Tuple[str, bool]:
+        """获取按钮状态和交互性"""
         if not hasattr(self, 'run_status'):
-            return "启动"
+            return "启动", True
 
         if not self.run_status.running:
             self.is_running = False
-            return "启动"
-        return "停止"
+            self.is_stopping = False  # 重置停止状态
+            return "启动", True
+
+        if self.is_stopping:
+            return "停止中...", False  # 停止中时禁用按钮
+
+        return "停止", True
 
     def update_task_status(self) -> List[List[str]]:
         status_list: List[List[str]] = []
@@ -260,6 +271,11 @@ class KotoneBotUI:
     def toggle_run(self) -> Tuple[str, List[List[str]]]:
         if not self.is_running:
             return self.start_run()
+
+        # 如果正在停止过程中，忽略重复点击
+        if self.is_stopping:
+            return "停止中...", self.update_task_status()
+
         return self.stop_run()
 
     def start_run(self) -> Tuple[str, List[List[str]]]:
@@ -268,10 +284,19 @@ class KotoneBotUI:
         return "停止", self.update_task_status()
 
     def stop_run(self) -> Tuple[str, List[List[str]]]:
+        self.is_stopping = True  # 设置停止状态
+
+        # 如果当前处于暂停状态，先恢复再停止
+        if vars.flow.is_paused:
+            gr.Info("检测到任务暂停，正在恢复后停止...")
+            vars.flow.request_resume()
+
         self.is_running = False
         if self._kaa:
             self.run_status.interrupt()
-        return "启动", self.update_task_status()
+            gr.Info("正在停止任务...")
+
+        return "停止中...", self.update_task_status()
 
     def start_single_task(self, task_name: str) -> Tuple[str, str]:
         if not task_name:
@@ -292,11 +317,48 @@ class KotoneBotUI:
         return "停止任务", f"正在执行任务: {task_name}"
 
     def stop_single_task(self) -> Tuple[str, str]:
+        self.is_single_task_stopping = True  # 设置单个任务停止状态
+
+        # 如果当前处于暂停状态，先恢复再停止
+        if vars.flow.is_paused:
+            gr.Info("检测到任务暂停，正在恢复后停止...")
+            vars.flow.request_resume()
+
         self.single_task_running = False
         if hasattr(self, 'run_status') and self._kaa:
             self.run_status.interrupt()
-            gr.Info("任务已停止")
-        return "执行任务", "任务已停止"
+            gr.Info("正在停止任务...")
+        return "停止中...", "正在停止任务..."
+
+    def toggle_pause(self) -> str:
+        """切换暂停/恢复状态"""
+        if vars.flow.is_paused:
+            vars.flow.request_resume()
+            gr.Info("任务已恢复")
+            return "暂停"
+        else:
+            vars.flow.request_pause()
+            gr.Info("任务已暂停")
+            return "恢复"
+
+    def get_pause_button_status(self) -> str:
+        """获取暂停按钮的状态"""
+        if vars.flow.is_paused:
+            return "恢复"
+        else:
+            return "暂停"
+
+    def get_pause_button_with_interactive(self) -> gr.Button:
+        """获取暂停按钮的状态和交互性"""
+        try:
+            text = "恢复" if vars.flow.is_paused else "暂停"
+        except ValueError:
+            # ValueError: Forwarded object vars called before initialization.
+            # TODO: vars.flow.is_paused 应该要可以在脚本正式启动前就能访问
+            text = '未启动'
+        # 如果正在停止过程中，禁用暂停按钮
+        interactive = not (self.is_stopping or self.is_single_task_stopping)
+        return gr.Button(value=text, interactive=interactive)
         
     def save_settings2(self, return_values: list[ConfigBuilderReturnValue], *args) -> str:
         options = BaseConfig()
@@ -326,7 +388,8 @@ class KotoneBotUI:
             gr.Markdown("## 状态")
 
             with gr.Row():
-                run_btn = gr.Button("启动", scale=1)
+                run_btn = gr.Button("启动", scale=2)
+                pause_btn = gr.Button("暂停", scale=1)
             if self._kaa.upgrade_msg:
                 gr.Markdown('### 配置升级报告')
                 gr.Markdown(self._kaa.upgrade_msg)
@@ -338,18 +401,38 @@ class KotoneBotUI:
                 label="任务状态"
             )
 
-            def on_run_click(evt: gr.EventData) -> Tuple[str, List[List[str]]]:
-                return self.toggle_run()
+            def on_run_click(evt: gr.EventData) -> Tuple[gr.Button, List[List[str]]]:
+                result = self.toggle_run()
+                # 如果正在停止，禁用按钮
+                interactive = not self.is_stopping
+                button = gr.Button(value=result[0], interactive=interactive)
+                return button, result[1]
+
+            def on_pause_click(evt: gr.EventData) -> str:
+                return self.toggle_pause()
 
             run_btn.click(
                 fn=on_run_click,
                 outputs=[run_btn, task_status]
             )
 
+            pause_btn.click(
+                fn=on_pause_click,
+                outputs=[pause_btn]
+            )
+
             # 添加定时器，分别更新按钮状态和任务状态
+            def update_run_button_status():
+                text, interactive = self.get_button_status()
+                return gr.Button(value=text, interactive=interactive)
+
             gr.Timer(1.0).tick(
-                fn=self.get_button_status,
+                fn=update_run_button_status,
                 outputs=[run_btn]
+            )
+            gr.Timer(1.0).tick(
+                fn=self.get_pause_button_with_interactive,
+                outputs=[pause_btn]
             )
             gr.Timer(1.0).tick(
                 fn=self.update_task_status,
@@ -370,21 +453,34 @@ class KotoneBotUI:
                 value=None
             )
 
-            # 创建执行按钮
-            execute_btn = gr.Button("执行任务")
+            # 创建执行按钮和暂停按钮
+            with gr.Row():
+                execute_btn = gr.Button("执行任务", scale=2)
+                pause_btn = gr.Button("暂停", scale=1)
             task_result = gr.Markdown("")
 
-            def toggle_single_task(task_name: str) -> Tuple[str, str]:
+            def toggle_single_task(task_name: str) -> Tuple[gr.Button, str]:
                 if self.single_task_running:
-                    return self.stop_single_task()
-                else:
-                    return self.start_single_task(task_name)
+                    # 如果正在停止过程中，忽略重复点击
+                    if self.is_single_task_stopping:
+                        return gr.Button(value="停止中...", interactive=False), "正在停止任务..."
 
-            def get_task_button_status() -> str:
+                    result = self.stop_single_task()
+                    return gr.Button(value=result[0], interactive=False), result[1]
+                else:
+                    result = self.start_single_task(task_name)
+                    return gr.Button(value=result[0], interactive=True), result[1]
+
+            def get_task_button_status() -> gr.Button:
                 if not hasattr(self, 'run_status') or not self.run_status.running:
                     self.single_task_running = False
-                    return "执行任务"
-                return "停止任务"
+                    self.is_single_task_stopping = False  # 重置停止状态
+                    return gr.Button(value="执行任务", interactive=True)
+
+                if self.is_single_task_stopping:
+                    return gr.Button(value="停止中...", interactive=False)  # 停止中时禁用按钮
+
+                return gr.Button(value="停止任务", interactive=True)
 
             def get_single_task_status() -> str:
                 if not hasattr(self, 'run_status'):
@@ -417,16 +513,28 @@ class KotoneBotUI:
 
                 return ""
 
+            def on_pause_click(evt: gr.EventData) -> str:
+                return self.toggle_pause()
+
             execute_btn.click(
                 fn=toggle_single_task,
                 inputs=[task_dropdown],
                 outputs=[execute_btn, task_result]
             )
 
+            pause_btn.click(
+                fn=on_pause_click,
+                outputs=[pause_btn]
+            )
+
             # 添加定时器更新按钮状态和任务状态
             gr.Timer(1.0).tick(
                 fn=get_task_button_status,
                 outputs=[execute_btn]
+            )
+            gr.Timer(1.0).tick(
+                fn=self.get_pause_button_with_interactive,
+                outputs=[pause_btn]
             )
             gr.Timer(1.0).tick(
                 fn=get_single_task_status,
@@ -461,9 +569,10 @@ class KotoneBotUI:
                 if has_mumu12:
                     try:
                         instances = Mumu12Host.list()
+                        is_mumu12 = self.current_config.backend.type == 'mumu12'
                         mumu_instance = gr.Dropdown(
                             label="选择多开实例",
-                            value=self.current_config.backend.instance_id,
+                            value=self.current_config.backend.instance_id if is_mumu12 else None,
                             choices=[(i.name, i.id) for i in instances],
                             interactive=True
                         )
@@ -480,9 +589,10 @@ class KotoneBotUI:
                 if has_leidian:
                     try:
                         instances = LeidianHost.list()
+                        is_leidian = self.current_config.backend.type == 'leidian'
                         leidian_instance = gr.Dropdown(
                             label="选择多开实例",
-                            value=self.current_config.backend.instance_id,
+                            value=self.current_config.backend.instance_id if is_leidian else None,
                             choices=[(i.name, i.id) for i in instances],
                             interactive=True
                         )
@@ -571,6 +681,30 @@ class KotoneBotUI:
         tab_leidian.select(fn=partial(_update_emulator_tab_options, selected_index=1), inputs=[screenshot_impl], outputs=[screenshot_impl])
         tab_custom.select(fn=partial(_update_emulator_tab_options, selected_index=2), inputs=[screenshot_impl], outputs=[screenshot_impl])
         tab_dmm.select(fn=partial(_update_emulator_tab_options, selected_index=3), inputs=[screenshot_impl], outputs=[screenshot_impl])
+
+        # 初值
+        if self.current_config.backend.type == 'mumu12':
+            _update_emulator_tab_options(
+                impl_value=self.current_config.backend.screenshot_impl,
+                selected_index=0
+            )
+        elif self.current_config.backend.type == 'leidian':
+            _update_emulator_tab_options(
+                impl_value=self.current_config.backend.screenshot_impl,
+                selected_index=1
+            )
+        elif self.current_config.backend.type == 'custom':
+            _update_emulator_tab_options(
+                impl_value=self.current_config.backend.screenshot_impl,
+                selected_index=2
+            )
+        elif self.current_config.backend.type == 'dmm':
+            _update_emulator_tab_options(
+                impl_value=self.current_config.backend.screenshot_impl,
+                selected_index=3
+            )
+        else:
+            gr.Warning(f"未知的模拟器类型：{self.current_config.backend.type}")
 
         def set_config(_: BaseConfig, data: dict[ConfigKey, Any]) -> None:
             # current_tab is updated by _update_emulator_tab_options
@@ -1080,6 +1214,17 @@ class KotoneBotUI:
                     label="Kuyo包名",
                     info=StartGameConfig.model_fields['kuyo_package_name'].description
                 )
+                disable_gakumas_localify = gr.Checkbox(
+                    label="禁用 Gakumas Localify 汉化插件",
+                    value=self.current_config.options.start_game.disable_gakumas_localify,
+                    info=StartGameConfig.model_fields['disable_gakumas_localify'].description
+                )
+                dmm_game_path = gr.Textbox(
+                    value=self.current_config.options.start_game.dmm_game_path or "",
+                    label="DMM 版游戏路径",
+                    info=StartGameConfig.model_fields['dmm_game_path'].description,
+                    placeholder="例：F:\\Games\\gakumas\\gakumas.exe"
+                )
             start_game_enabled.change(
                 fn=lambda x: gr.Group(visible=x),
                 inputs=[start_game_enabled],
@@ -1091,12 +1236,16 @@ class KotoneBotUI:
             config.start_game.start_through_kuyo = data['start_through_kuyo']
             config.start_game.game_package_name = data['game_package_name']
             config.start_game.kuyo_package_name = data['kuyo_package_name']
-        
+            config.start_game.disable_gakumas_localify = data['disable_gakumas_localify']
+            config.start_game.dmm_game_path = data['dmm_game_path'] if data['dmm_game_path'] else None
+
         return set_config, {
             'start_game_enabled': start_game_enabled,
             'start_through_kuyo': start_through_kuyo,
             'game_package_name': game_package_name,
-            'kuyo_package_name': kuyo_package_name
+            'kuyo_package_name': kuyo_package_name,
+            'disable_gakumas_localify': disable_gakumas_localify,
+            'dmm_game_path': dmm_game_path
         }
 
 
@@ -1134,6 +1283,11 @@ class KotoneBotUI:
                 value=self.current_config.options.end_game.hibernate,
                 info=EndGameConfig.model_fields['hibernate'].description
             )
+            restore_gakumas_localify = gr.Checkbox(
+                label="恢复 Gakumas Localify 汉化插件状态",
+                value=self.current_config.options.end_game.restore_gakumas_localify,
+                info=EndGameConfig.model_fields['restore_gakumas_localify'].description
+            )
         
         def set_config(config: BaseConfig, data: dict[ConfigKey, Any]) -> None:
             config.end_game.exit_kaa = data['exit_kaa']
@@ -1142,14 +1296,16 @@ class KotoneBotUI:
             config.end_game.kill_emulator = data['kill_emulator']
             config.end_game.shutdown = data['shutdown']
             config.end_game.hibernate = data['hibernate']
-        
+            config.end_game.restore_gakumas_localify = data['restore_gakumas_localify']
+
         return set_config, {
             'exit_kaa': exit_kaa,
             'kill_game': kill_game,
             'kill_dmm': kill_dmm,
             'kill_emulator': kill_emulator,
             'shutdown': shutdown,
-            'hibernate': hibernate
+            'hibernate': hibernate,
+            'restore_gakumas_localify': restore_gakumas_localify
         }
 
     def _create_activity_funds_settings(self) -> ConfigBuilderReturnValue:

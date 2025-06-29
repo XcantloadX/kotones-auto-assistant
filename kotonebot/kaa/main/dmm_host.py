@@ -1,11 +1,18 @@
+from importlib import resources
 from typing_extensions import override
 
-from kotonebot.client import Device, create_device
-from kotonebot.client import DeviceImpl, Device
+from kotonebot.client import Device, DeviceImpl
+from kotonebot.client.registration import create_device
+from kotonebot.client.implements.windows import WindowsImplConfig
+from kotonebot.client.implements.remote_windows import RemoteWindowsImplConfig
 from kotonebot.client.host import HostProtocol, Instance
+from kotonebot.client.host.protocol import WindowsHostConfig, RemoteWindowsHostConfig
+
+
+DmmHostConfigs = WindowsHostConfig | RemoteWindowsHostConfig
 
 # TODO: 可能应该把 start_game 和 end_game 里对启停的操作移动到这里来
-class DmmInstance(Instance):
+class DmmInstance(Instance[DmmHostConfigs]):
     def __init__(self):
         super().__init__('dmm', 'gakumas')
 
@@ -30,10 +37,29 @@ class DmmInstance(Instance):
         raise NotImplementedError()
 
     @override
-    def create_device(self, impl: DeviceImpl, *, timeout: float = 180) -> Device:
-        if impl not in ['windows', 'remote_windows']:
-            raise ValueError(f'Unsupported device implementation: {impl}')
-        return create_device('', impl, timeout=timeout)
+    def create_device(self, impl: DeviceImpl, host_config: DmmHostConfigs) -> Device:
+        if impl == 'windows':
+            assert isinstance(host_config, WindowsHostConfig)
+            win_config = WindowsImplConfig(
+                window_title=host_config.window_title,
+                ahk_exe_path=host_config.ahk_exe_path
+            )
+            return create_device(impl, win_config)
+
+        elif impl == 'remote_windows':
+            assert isinstance(host_config, RemoteWindowsHostConfig)
+            config = RemoteWindowsImplConfig(
+                windows_impl_config=WindowsImplConfig(
+                    window_title=host_config.windows_host_config.window_title,
+                    ahk_exe_path=host_config.windows_host_config.ahk_exe_path
+                ),
+                host=host_config.host,
+                port=host_config.port
+            )
+            return create_device(impl, config)
+
+        else:
+            raise ValueError(f'Unsupported impl for DMM: {impl}')
 
 class DmmHost(HostProtocol):
     instance = DmmInstance()

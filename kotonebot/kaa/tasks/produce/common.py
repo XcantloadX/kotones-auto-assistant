@@ -299,6 +299,7 @@ def commu_event():
             device.click(buttons[0])
         else:
             device.double_click(buttons[0])
+        sleep(2.5) # HACK: 为了防止点击后按钮还没消失就进行第二次检测
         return True
     return False
     

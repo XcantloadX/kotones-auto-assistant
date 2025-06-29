@@ -3,6 +3,7 @@ import re
 import time
 import logging
 import warnings
+import threading
 from datetime import datetime
 from threading import Event
 from typing import (
@@ -24,7 +25,8 @@ from typing_extensions import deprecated
 import cv2
 from cv2.typing import MatLike
 
-from kotonebot.client.device import Device
+from kotonebot.client.device import Device, AndroidDevice, WindowsDevice
+from kotonebot.backend.flow_controller import FlowController
 import kotonebot.backend.image as raw_image
 from kotonebot.backend.image import (
     TemplateMatchResult,
@@ -44,12 +46,12 @@ from kotonebot.backend.color import (
 from kotonebot.backend.ocr import (
     Ocr, OcrResult, OcrResultList, jp, en, StringMatchFunction
 )
-from kotonebot.client.factory import create_device
+from kotonebot.client.registration import AdbBasedImpl, create_device
 from kotonebot.config.manager import load_config, save_config
 from kotonebot.config.base_config import UserConfig
 from kotonebot.backend.core import Image, HintBox
 from kotonebot.errors import KotonebotWarning
-from kotonebot.client.factory import DeviceImpl
+from kotonebot.client import DeviceImpl
 from kotonebot.backend.preprocessor import PreprocessorProtocol
 from kotonebot.primitives import Rect
 
@@ -126,8 +128,7 @@ def interruptible(func: Callable[P, T]) -> Callable[P, T]:
     """
     def _decorator(*args: P.args, **kwargs: P.kwargs) -> T:
         global vars
-        if vars.interrupted.is_set():
-            raise KeyboardInterrupt("User requested interrupt.")
+        vars.flow.check()
         return func(*args, **kwargs)
     return _decorator
 
@@ -145,15 +146,13 @@ def interruptible_class(cls: Type[T]) -> Type[T]:
 
 def sleep(seconds: float, /):
     """
-    可中断的 sleep 函数。
+    可中断和可暂停的 sleep 函数。
 
     建议使用本函数代替 `time.sleep()`，
-    这样能以最快速度响应用户请求中断。
+    这样能以最快速度响应用户请求中断和暂停。
     """
     global vars
-    vars.interrupted.wait(timeout=seconds)
-    if vars.interrupted.is_set():
-        raise KeyboardInterrupt("User requested interrupt.")
+    vars.flow.sleep(seconds)
 
 def warn_manual_screenshot_mode(name: str, alternative: str):
     """
@@ -175,8 +174,8 @@ def is_manual_screenshot_mode() -> bool:
 class ContextGlobalVars:
     def __init__(self):
         self.__vars = dict[str, Any]()
-        self.interrupted: Event = Event()
-        """用户请求中断事件"""
+        self.flow: FlowController = FlowController()
+        """流程控制器，负责停止、暂停、恢复等操作"""
 
     def __getitem__(self, key: str) -> Any:
         return self.__vars[key]
@@ -198,6 +197,17 @@ class ContextGlobalVars:
 
     def clear(self):
         self.__vars.clear()
+        self.flow.reset()  # 重置流程控制器
+
+def check_flow_control():
+    """
+    统一的流程控制检查函数。
+
+    检查用户是否请求中断或暂停，如果是则相应处理：
+    - 如果请求中断，抛出 KeyboardInterrupt 异常
+    - 如果请求暂停，等待直到恢复
+    """
+    vars.flow.check()
 
 class ContextStackVars:
     stack: list['ContextStackVars'] = []
@@ -707,15 +717,17 @@ class Forwarded:
             raise ValueError(f"Forwarded object {self._FORWARD_name} called before initialization.")
         setattr(self._FORWARD_getter(), name, value)
 
-# HACK: 这应该要有个更好的实现方式
-class ContextDevice(Device):
-    def __init__(self, device: Device):
+
+T_Device = TypeVar('T_Device', bound=Device)
+class ContextDevice(Generic[T_Device], Device):
+    def __init__(self, device: T_Device):
         self._device = device
 
     def screenshot(self, *, force: bool = False):
         """
         截图。返回截图数据，同时更新当前上下文的截图数据。
         """
+        check_flow_control()
         global next_wait, last_screenshot_time, next_wait_time
         current = ContextStackVars.ensure_current()
         if force:
@@ -735,26 +747,42 @@ class ContextDevice(Device):
         current._screenshot = img
         return img
 
-    def __getattribute__(self, name: str) -> Any:
-        if name in ['_device', 'screenshot']:
+    def __getattribute__(self, name: str):
+        if name in ['_device', 'screenshot', 'of_android', 'of_windows']:
             return object.__getattribute__(self, name)
         else:
             return getattr(self._device, name)
         
     def __setattr__(self, name: str, value: Any):
-        if name in ['_device', 'screenshot']:
+        if name in ['_device', 'screenshot', 'of_android', 'of_windows']:
             return object.__setattr__(self, name, value)
         else:
             return setattr(self._device, name, value)
 
+    def of_android(self) -> 'ContextDevice | AndroidDevice':
+        """
+        确保此 ContextDevice 底层为 Android 平台。
+        同时通过返回的对象可以调用 Android 平台特有的方法。
+        """
+        if not isinstance(self._device, AndroidDevice):
+            raise ValueError("Device is not AndroidDevice")
+        return self
+
+    def of_windows(self) -> 'ContextDevice | WindowsDevice':
+        """
+        确保此 ContextDevice 底层为 Windows 平台。
+        同时通过返回的对象可以调用 Windows 平台特有的方法。
+        """
+        if not isinstance(self._device, WindowsDevice):
+            raise ValueError("Device is not WindowsDevice")
+        return self
 
 class Context(Generic[T]):
     def __init__(
         self,
         config_path: str,
         config_type: Type[T],
-        screenshot_impl: Optional[DeviceImpl] = None,
-        device: Optional[Device] = None
+        device: Device
     ):
         self.__ocr = ContextOcr(self)
         self.__image = ContextImage(self)
@@ -762,14 +790,7 @@ class Context(Generic[T]):
         self.__vars = ContextGlobalVars()
         self.__debug = ContextDebug(self)
         self.__config = ContextConfig[T](self, config_path, config_type)
-        
-        ip = self.config.current.backend.adb_ip
-        port = self.config.current.backend.adb_port
-        # TODO: 处理链接失败情况
-        if screenshot_impl is None:
-            screenshot_impl = self.config.current.backend.screenshot_impl
-        logger.info(f'Using "{screenshot_impl}" as screenshot implementation')
-        self.__device = ContextDevice(device or create_device(f'{ip}:{port}', screenshot_impl))
+        self.__device = ContextDevice(device)
 
     def inject(
         self,
@@ -880,8 +901,7 @@ def init_context(
     config_path: str = 'config.json',
     config_type: Type[T] = dict[str, Any],
     force: bool = False,
-    screenshot_impl: Optional[DeviceImpl] = None,
-    target_device: Device | None = None,
+    target_device: Device,
 ):
     """
     初始化 Context 模块。
@@ -892,8 +912,6 @@ def init_context(
         默认为 `dict[str, Any]`，即普通的 JSON 数据，不包含任何类型信息。
     :param force:  是否强制重新初始化。
         若为 `True`，则忽略已存在的 Context 实例，并重新创建一个新的实例。
-    :param screenshot_impl: 截图实现。
-        若为 `None`，则使用默认配置文件中指定的截图实现。
     :param target_device: 目标设备
     """
     global _c, device, ocr, image, color, vars, debug, config
@@ -902,8 +920,7 @@ def init_context(
     _c = Context(
         config_path=config_path,
         config_type=config_type,
-        screenshot_impl=screenshot_impl,
-        device=target_device
+        device=target_device,
     )
     device._FORWARD_getter = lambda: _c.device # type: ignore
     ocr._FORWARD_getter = lambda: _c.ocr # type: ignore
@@ -951,4 +968,3 @@ def manual_context(screenshot_mode: ScreenshotMode = 'auto') -> ManualContextMan
     如果想要在其他地方使用，使用此函数手动创建一个上下文。
     """
     return ManualContextManager(screenshot_mode)
-

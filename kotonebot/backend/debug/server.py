@@ -115,7 +115,7 @@ async def run_code(request: RunCodeRequest):
         except KeyboardInterrupt as e:
             result = {"status": "error", "result": stdout.getvalue(), "message": str(e), "traceback": traceback.format_exc()}
         finally:
-            context_vars.interrupted.clear()
+            context_vars.flow.clear_interrupt()
         event.set()
     threading.Thread(target=_runner, daemon=True).start()
     await event.wait()
@@ -124,8 +124,8 @@ async def run_code(request: RunCodeRequest):
 @app.get("/api/code/stop")
 async def stop_code():
     from kotonebot.backend.context import vars
-    vars.interrupted.set()
-    while vars.interrupted.is_set():
+    vars.flow.request_interrupt()
+    while vars.flow.is_interrupted:
         await asyncio.sleep(0.1)
     return {"status": "ok"}
 
@@ -216,8 +216,6 @@ def wait_message_all_done():
         threading.Thread(target=_wait, daemon=True).start()
 
 if __name__ == "__main__":
-    from kotonebot.backend.context import init_context
-    init_context()
     debug_vars.debug.hide_server_log = False
     process = subprocess.Popen(["pylsp", "--port", "5479", "--ws"])
     print("LSP started. PID=", process.pid)

@@ -1,4 +1,5 @@
 """启动游戏，领取登录奖励，直到首页为止"""
+import json
 import os
 import ctypes
 import logging
@@ -13,6 +14,37 @@ from kotonebot.errors import GameUpdateNeededError
 from kotonebot import task, action, sleep, device, image, ocr, config
 
 logger = logging.getLogger(__name__)
+
+def locate_game_path() -> str | None:
+    """自动获取 DMM 版游戏路径。"""
+    logger.info('Locating DMM game path...')
+    app_data = os.getenv('APPDATA')
+    if not app_data:
+        logger.info('APPDATA not found. Location failed.')
+        return None
+    dmm_config_path = os.path.join(app_data, 'dmmgameplayer5', 'dmmgame.cnf')
+    if not os.path.exists(dmm_config_path):
+        logger.warning('DMM config does not exist. Location failed.')
+        return None
+    with open(dmm_config_path, 'r', encoding='utf-8') as f:
+        dmm_config = json.load(f)
+    for content in dmm_config.get('contents', []):
+        if content.get('productId') == 'gakumas':
+            game_path = content.get('detail', {}).get('path')
+            if game_path:
+                break
+    else:
+        logger.warning('Game "gakumas" not found in DMM config.')
+        return None
+    logger.info(f'Game path: {game_path}')
+    if game_path:
+        game_path = os.path.join(game_path, 'gakumas.exe')
+    if game_path and not conf().start_game.dmm_game_path:
+        logger.info('Saving game path to config...')
+        conf().start_game.dmm_game_path = game_path
+        config.save()
+    return game_path
+
 
 @action('启动游戏.进入首页', screenshot_mode='manual-inherit')
 def wait_for_home():
@@ -63,8 +95,9 @@ def android_launch():
     前置条件：-
     结束状态：-
     """
+    _device = device.of_android()
     # 如果已经在游戏中，直接返回home
-    if device.current_package() == conf().start_game.game_package_name:
+    if _device.current_package() == conf().start_game.game_package_name:
         logger.info("Game already started")
         if not at_home():
             logger.info("Not at home, going to home")
@@ -74,15 +107,15 @@ def android_launch():
     # 如果不在游戏中，启动游戏
     if not conf().start_game.start_through_kuyo:
         # 直接启动
-        device.launch_app(conf().start_game.game_package_name)
+        _device.launch_app(conf().start_game.game_package_name)
     else:
         # 通过Kuyo启动
-        if device.current_package() == conf().start_game.kuyo_package_name:
+        if _device.current_package() == conf().start_game.kuyo_package_name:
             logger.warning("Kuyo already started. Auto start game failed.")
             # TODO: Kuyo支持改进
             return
         # 启动kuyo
-        device.launch_app('org.kuyo.game')
+        _device.launch_app('org.kuyo.game')
         # 点击"加速"
         device.click(image.expect_wait(R.Kuyo.ButtonTab3Speedup, timeout=10))
         # Kuyo会延迟加入广告，导致识别后，原位置突然弹出广告，导致进入广告页面
@@ -106,10 +139,26 @@ def windows_launch():
         is_admin = ctypes.windll.shell32.IsUserAnAdmin() != 0
     if not is_admin:
         raise PermissionError("Please run as administrator.")
-
+    
+    # 处理汉化插件
+    if conf().start_game.disable_gakumas_localify:
+        logger.info('Disabling Gakumas Localify...')
+        game_path = conf().start_game.dmm_game_path or locate_game_path()
+        logger.debug('Game path: %s', game_path)
+        if not game_path:
+            raise ValueError('dmm_game_path unset and auto-locate failed.')
+        
+        plugin_path = os.path.join(os.path.dirname(game_path), 'version.dll')
+        logger.debug('Plugin path: %s', plugin_path)
+        if not os.path.exists(plugin_path):
+            logger.warning('Gakumas Localify not found. Skipped disable.')
+        else:
+            os.rename(plugin_path, plugin_path + '.disabled')
+            logger.info('Gakumas Localify disabled.')
+    
     from ahk import AHK
-    from importlib import resources
-    ahk_path = str(resources.files('kaa.res.bin') / 'AutoHotkey.exe')
+    from kotonebot.kaa.util.paths import get_ahk_path
+    ahk_path = get_ahk_path()
     ahk = AHK(executable_path=ahk_path)
 
     if ahk.find_window(title='gakumas', title_match_mode=3): # 3=精确匹配

@@ -14,6 +14,7 @@ import xmlrpc.server
 from typing import Literal, cast, Any, Tuple
 from functools import cached_property
 from threading import Thread
+from dataclasses import dataclass
 
 import cv2
 import numpy as np
@@ -22,9 +23,17 @@ from cv2.typing import MatLike
 from kotonebot import logging
 from ..device import Device, WindowsDevice
 from ..protocol import Touchable, Screenshotable
-from .windows import WindowsImpl
+from ..registration import register_impl, ImplConfig
+from .windows import WindowsImpl, WindowsImplConfig, create_windows_device
 
 logger = logging.getLogger(__name__)
+
+# 定义配置模型
+@dataclass
+class RemoteWindowsImplConfig(ImplConfig):
+    windows_impl_config: WindowsImplConfig
+    host: str = "localhost"
+    port: int = 8000
 
 def _encode_image(image: MatLike) -> str:
     """Encode an image as a base64 string."""
@@ -48,13 +57,13 @@ class RemoteWindowsServer:
     This class wraps a WindowsImpl instance and exposes its methods via XML-RPC.
     """
 
-    def __init__(self, host="localhost", port=8000):
+    def __init__(self, windows_impl_config: WindowsImplConfig, host="localhost", port=8000):
         """Initialize the server with the given host and port."""
         self.host = host
         self.port = port
         self.server = None
         self.device = WindowsDevice()
-        self.impl = WindowsImpl(self.device)
+        self.impl = create_windows_device(windows_impl_config)
         self.device._screenshot = self.impl
         self.device._touch = self.impl
 
@@ -180,18 +189,11 @@ class RemoteWindowsImpl(Touchable, Screenshotable):
             raise RuntimeError(f"Failed to swipe from ({x1}, {y1}) to ({x2}, {y2})")
 
 
-if __name__ == "__main__":
-    import argparse
-
-    parser = argparse.ArgumentParser(description="Remote Windows XML-RPC Server")
-    parser.add_argument("--host", default="0.0.0.0", help="Host to bind to")
-    parser.add_argument("--port", type=int, default=8000, help="Port to bind to")
-    args = parser.parse_args()
-
-    logging.basicConfig(level=logging.INFO)
-
-    server = RemoteWindowsServer(args.host, args.port)
-    try:
-        server.start()
-    except KeyboardInterrupt:
-        logger.info("Server stopped by user")
+# 编写并注册创建函数
+@register_impl('remote_windows', config_model=RemoteWindowsImplConfig)
+def create_remote_windows_device(config: RemoteWindowsImplConfig) -> Device:
+    device = WindowsDevice()
+    remote_impl = RemoteWindowsImpl(device, config.host, config.port)
+    device._touch = remote_impl
+    device._screenshot = remote_impl
+    return device

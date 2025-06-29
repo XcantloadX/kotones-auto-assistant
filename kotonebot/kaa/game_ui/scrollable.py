@@ -327,12 +327,7 @@ class Scrollable:
         return ScrollableIterator(self, int(self.track_height * step), start, end, skip_first)
 
 if __name__ == '__main__':
-    from kotonebot.backend.context import init_context, manual_context, device
-    init_context()
-    manual_context().begin()
-    from kotonebot import device
     import cv2
-    from kotonebot.util import cv2_imread
     import time
     logger.setLevel(logging.DEBUG)
 

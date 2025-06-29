@@ -5,15 +5,14 @@ from typing_extensions import assert_never
 
 from kotonebot.kaa.skill_card_action.global_idol_setting_action import update_archetype_by_idol_skin_id
 from kotonebot.ui import user
-from kotonebot.util import Countdown, Interval
-from kotonebot.backend.context.context import wait
-from kotonebot.backend.dispatch import SimpleDispatcher
-
 from kotonebot.kaa.tasks import R
 from kotonebot.kaa.common import conf
 from kotonebot.kaa.game_ui import dialog
 from ..actions.scenes import at_home, goto_home
-from kotonebot.kaa.game_ui.idols_overview import locate_idol, find_idol_skin_id_on_resume_produce
+from kotonebot.backend.loop import Loop, StatedLoop
+from kotonebot.util import Countdown, Interval, Throttler
+from kotonebot.kaa.game_ui.primary_button import find_button
+from kotonebot.kaa.game_ui.idols_overview import locate_idol, match_idol, find_idol_skin_id_on_resume_produce
 from ..produce.in_purodyuusu import hajime_pro, hajime_regular, hajime_master, resume_pro_produce, resume_regular_produce, \
     resume_master_produce
 from kotonebot import device, image, ocr, task, action, sleep, contains, regex
@@ -200,10 +199,15 @@ def do_produce(
     前置条件：可导航至首页的任意页面\n
     结束状态：游戏首页\n
     
-    :param idol: 要培育的偶像。如果为 None，则使用配置文件中的偶像。
+    :param memory_set_index: 回忆编成编号。
+    :param idol_skin_id: 要培育的偶像。如果为 None，则使用配置文件中的偶像。
     :param mode: 培育模式。
     :return: 是否因为 AP 不足而跳过本次培育。
+    :raises ValueError: 如果 `memory_set_index` 不在 [1, 10] 的范围内。
     """
+    if memory_set_index is not None and not 1 <= memory_set_index <= 10:
+        raise ValueError('`memory_set_index` must be in range [1, 10].')
+
     if not at_home():
         goto_home()
 
@@ -217,16 +221,28 @@ def do_produce(
     # 新培育时更新偶像信息
     update_archetype_by_idol_skin_id(idol_skin_id)
     # 0. 进入培育页面
-    mode_text = mode.upper()
-    if mode_text == 'MASTER':
-        mode_text = 'MASTER|MIASTER'
-    logger.info(f'Enter produce page. Mode: {mode_text}')
-    result = (SimpleDispatcher('enter_produce')
-        .click(R.Produce.ButtonProduce)
-        .click(regex(mode_text))
-        .until(R.Produce.ButtonPIdolOverview, result=True)
-        .until(R.Produce.TextAPInsufficient, result=False)
-    ).run()
+    logger.info(f'Enter produce page. Mode: {mode}')
+    match mode:
+        case 'regular':
+            target_buttons = [R.Produce.ButtonHajime0Regular, R.Produce.ButtonHajime1Regular]
+        case 'pro':
+            target_buttons = [R.Produce.ButtonHajime0Pro, R.Produce.ButtonHajime1Pro]
+        case 'master':
+            target_buttons = [R.Produce.ButtonHajime1Master]
+        case _:
+            assert_never(mode)
+    result = None
+    for _ in Loop():
+        if image.find(R.Produce.ButtonProduce):
+            device.click()
+        elif image.find_multi(target_buttons):
+            device.click()
+        elif image.find(R.Produce.ButtonPIdolOverview):
+            result = True
+            break
+        elif image.find(R.Produce.TextAPInsufficient):
+            result = False
+            break
     if not result:
         if conf().produce.use_ap_drink:
             # [kotonebot-resource\sprites\jp\produce\screenshot_no_enough_ap_1.png]
@@ -239,7 +255,7 @@ def do_produce(
                     device.click()
                 elif image.find(R.Produce.ButtonRefillAP):
                     device.click()
-                elif ocr.find(contains(mode_text)):
+                elif image.find_multi(target_buttons):
                     device.click()
                 elif image.find(R.Produce.ButtonPIdolOverview):
                     break
@@ -249,49 +265,91 @@ def do_produce(
             logger.info('AP insufficient. Exiting produce.')
             device.click(image.expect_wait(R.InPurodyuusu.ButtonCancel))
             return False
-    # 1. 选择 PIdol [screenshots/produce/screenshot_produce_start_1_p_idol.png]
-    select_idol(idol_skin_id)
-    it = Interval()
-    while True:
-        it.wait()
-        device.screenshot()
-        if image.find(R.Produce.TextAnotherIdolAvailableDialog):
-            dialog.no()
-        elif image.find(R.Common.ButtonNextNoIcon):
-            device.click()
-        if image.find(R.Produce.TextStepIndicator2):
-            break
-    # 2. 选择支援卡 自动编成 [screenshots/produce/screenshot_produce_start_2_support_card.png]
-    image.expect_wait(R.Produce.TextStepIndicator2)
-    it = Interval()
-    while True:
-        if image.find(R.Common.ButtonNextNoIcon, colored=True):
-            device.click()
-            break
-        elif image.find(R.Produce.ButtonAutoSet):
-            device.click()
-            sleep(1)
-        elif image.find(R.Common.ButtonConfirm, colored=True):
-            device.click()
-        device.screenshot()
-        it.wait()
-    # 3. 选择回忆 自动编成 [screenshots/produce/screenshot_produce_start_3_memory.png]
-    image.expect_wait(R.Produce.TextStepIndicator3)
-    # 自动编成
-    if memory_set_index is not None and not 1 <= memory_set_index <= 10:
-        raise ValueError('`memory_set_index` must be in range [1, 10].')
-    if memory_set_index is None:
-        device.click(image.expect_wait(R.Produce.ButtonAutoSet))
-        wait(0.5, before='screenshot')
-        device.screenshot()
-    # 指定编号
-    else:
-        select_set(memory_set_index)
-    (SimpleDispatcher('do_produce.step_3')
-        .until(R.Produce.TextStepIndicator4)
-        .click(R.Common.ButtonNextNoIcon)
-        .click(R.Common.IconButtonCheck)
-    ).run()
+
+    idol_located = False
+    memory_set_selected = False
+    support_auto_set_done = False
+    next_throttler = Throttler(interval=4)
+    for lp in StatedLoop[Literal[0, 1, 2, 3]]():
+        if image.find(R.Produce.TextStepIndicator1):
+            lp.state = 1
+
+        if lp.state == 0:
+            pass
+        # 1. 选择 PIdol [screenshots/produce/screenshot_produce_start_1_p_idol.png]
+        if lp.state == 1:
+            if image.find(R.Produce.TextStepIndicator2):
+                lp.state = 2
+                continue
+            if lp.when(R.Produce.TextAnotherIdolAvailableDialog):
+                dialog.no(msg='Closed another idol available dialog.')
+            # 首先判断是否已选中目标偶像
+            img = lp.screenshot
+            x, y, w, h = R.Produce.BoxSelectedIdol.xywh
+            if img is not None and match_idol(idol_skin_id, img[y:y+h, x:x+w]):
+                logger.info('Idol %s selected.', idol_skin_id)
+                idol_located = True
+            # 如果没有，才选择
+            if not idol_located:
+                select_idol(idol_skin_id)
+                idol_located = True
+
+            # 下一步「次へ」
+            if idol_located and find_button(R.Common.ButtonNextNoIcon, True) and next_throttler.request():
+                device.click()
+        # 2. 选择支援卡 自动编成 [screenshots/produce/screenshot_produce_start_2_support_card.png]
+        elif lp.state == 2:
+            if image.find(R.Produce.TextStepIndicator3):
+                lp.state = 3
+                continue
+
+            # 下一步「次へ」
+            if find_button(R.Common.ButtonNextNoIcon, True) and next_throttler.request():
+                device.click()
+            # 今天仍然有租用回忆次数提示（第三步的提示）
+            # （第二步选完之后点「次へ」大概率会卡几秒钟，这个时候脚本很可能会重复点击，
+            # 卡住时候的点击就会在第三步生效，出现这个提示。而此时脚本仍然处于第二步，
+            # 这样就会报错，或者出现误自动编成。因此需要在第二步里处理掉这个对话框。
+            # 理论上应该避免这种情况，但是没找到办法，只能这样 workaround 了。）
+            elif image.find(R.Produce.TextRentAvailable):
+                dialog.no(msg='Closed rent available dialog. (Step 2)')
+            # 确认自动编成提示
+            elif image.find(R.Produce.TextAutoSet):
+                dialog.yes(msg='Confirmed auto set.')
+                sleep(1) # 等对话框消失
+            elif not support_auto_set_done and image.find(R.Produce.ButtonAutoSet):
+                device.click()
+                support_auto_set_done = True
+                sleep(1)
+        # 3. 选择回忆 自动编成 [screenshots/produce/screenshot_produce_start_3_memory.png]
+        elif lp.state == 3:
+            if image.find(R.Produce.TextStepIndicator4):
+                break
+
+            # 确认自动编成提示
+            if image.find(R.Produce.TextAutoSet):
+                dialog.yes(msg='Confirmed auto set.')
+                continue
+            # 今天仍然有租用回忆次数提示
+            elif image.find(R.Produce.TextRentAvailable):
+                dialog.yes(msg='Confirmed rent available. (Step 3)')
+                continue
+
+            if not memory_set_selected:
+                # 自动编成
+                if memory_set_index is None:
+                    lp.click_if(R.Produce.ButtonAutoSet)
+                # 指定编号
+                else:
+                    # dialog.no() # TODO: 这是什么？
+                    select_set(memory_set_index)
+                memory_set_selected = True
+            # 下一步「次へ」
+            if find_button(R.Common.ButtonNextNoIcon, True) and next_throttler.request():
+                device.click()
+                continue
+        else:
+            assert False, f'Invalid state of {lp.state}.'
 
     # 4. 选择道具 [screenshots/produce/screenshot_produce_start_4_end.png]
     # TODO: 如果道具不足，这里加入推送提醒
@@ -366,19 +424,10 @@ if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO, format='[%(asctime)s] [%(levelname)s] [%(name)s] [%(funcName)s] [%(lineno)d] %(message)s')
     logging.getLogger('kotonebot').setLevel(logging.DEBUG)
     logger.setLevel(logging.DEBUG)
-    import os
-    from datetime import datetime
-    os.makedirs('logs', exist_ok=True)
-    log_filename = datetime.now().strftime('logs/task-%y-%m-%d-%H-%M-%S.log')
-    file_handler = logging.FileHandler(log_filename, encoding='utf-8')
-    file_handler.setFormatter(logging.Formatter('[%(asctime)s] [%(levelname)s] [%(name)s] %(message)s'))
-    logging.getLogger().addHandler(file_handler)
-    
-    import time
     from kotonebot.backend.context import init_context
     from kotonebot.kaa.common import BaseConfig
+    from kotonebot.kaa.main import Kaa
 
-    init_context(config_type=BaseConfig)
     conf().produce.enabled = True
     conf().produce.mode = 'pro'
     conf().produce.produce_count = 1

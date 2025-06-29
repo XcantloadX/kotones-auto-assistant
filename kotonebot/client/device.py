@@ -11,7 +11,7 @@ from adbutils._device import AdbDevice as AdbUtilsDevice
 from ..backend.debug import result
 from kotonebot.backend.core import HintBox
 from kotonebot.primitives import Rect, Point, is_point
-from .protocol import ClickableObjectProtocol, Commandable, Touchable, Screenshotable
+from .protocol import ClickableObjectProtocol, Commandable, Touchable, Screenshotable, AndroidCommandable, WindowsCommandable
 
 logger = logging.getLogger(__name__)
 
@@ -71,7 +71,6 @@ class Device:
         横屏时为 'landscape'，竖屏时为 'portrait'。
         """
 
-        self._command: Commandable
         self._touch: Touchable
         self._screenshot: Screenshotable
 
@@ -90,12 +89,6 @@ class Device:
     def adb(self, value: AdbUtilsDevice) -> None:
         self._adb = value
 
-    def launch_app(self, package_name: str) -> None:
-        """
-        根据包名启动 app
-        """
-        self._command.launch_app(package_name)
-    
     @overload
     def click(self) -> None:
         """
@@ -306,17 +299,6 @@ class Device:
         """
         return self._screenshot.screen_size
 
-    def current_package(self) -> str | None:
-        """
-        获取前台 APP 的包名。
-
-        :return: 前台 APP 的包名。如果获取失败，则返回 None。
-        :exception: 如果设备不支持此功能，则抛出 NotImplementedError。
-        """
-        ret = self._command.current_package()
-        logger.debug("current_package: %s", ret)
-        return ret
-
     def detect_orientation(self) -> Literal['portrait', 'landscape'] | None:
         """
         检测当前设备方向并设置 `self.orientation` 属性。
@@ -330,10 +312,30 @@ class AndroidDevice(Device):
     def __init__(self, adb_connection: AdbUtilsDevice | None = None) -> None:
         super().__init__('android')
         self._adb: AdbUtilsDevice | None = adb_connection
+        self.commands: AndroidCommandable
+        
+    def current_package(self) -> str | None:
+        """
+        获取前台 APP 的包名。
+
+        :return: 前台 APP 的包名。如果获取失败，则返回 None。
+        :exception: 如果设备不支持此功能，则抛出 NotImplementedError。
+        """
+        ret = self.commands.current_package()
+        logger.debug("current_package: %s", ret)
+        return ret
+
+    def launch_app(self, package_name: str) -> None:
+        """
+        根据包名启动 app
+        """
+        self.commands.launch_app(package_name)
+    
 
 class WindowsDevice(Device):
     def __init__(self) -> None:
         super().__init__('windows')
+        self.commands: WindowsCommandable
 
         
 if __name__ == "__main__":
@@ -346,10 +348,10 @@ if __name__ == "__main__":
     d = adb.device_list()[-1]
     d.shell("dumpsys activity top | grep ACTIVITY | tail -n 1")
     dd = AndroidDevice(d)
-    adb_imp = AdbRawImpl(dd)
-    dd._command = adb_imp
+    adb_imp = AdbRawImpl(d)
     dd._touch = adb_imp
     dd._screenshot = adb_imp
+    dd.commands = adb_imp
     # dd._screenshot = MinicapScreenshotImpl(dd)
     # dd._screenshot = UiAutomator2Impl(dd)
 

@@ -26,6 +26,19 @@ from ..produce.non_lesson_actions import (
 logger = logging.getLogger(__name__)
 ActionType = None | Literal['lesson', 'rest']
 
+def triple_click(x: int, y: int):
+    """
+    三连击，点击指定坐标。
+
+    :param x: x 坐标
+    :param y: y 坐标
+    """
+    device.click(x, y)
+    sleep(0.3)
+    device.click(x, y)
+    sleep(0.3)
+    device.click(x, y)
+
 @action('执行 SP 课程')
 def handle_sp_lesson():
     """
@@ -37,7 +50,7 @@ def handle_sp_lesson():
     schedule = Schedule()
     if schedule.have_lesson():
         lesson = schedule.select_lesson()
-        device.double_click(lesson.rect)
+        triple_click(lesson.rect.x1, lesson.rect.y1)
         return True
     else:
         return False
@@ -106,7 +119,8 @@ def handle_recommended_action(final_week: bool = False) -> ProduceAction | None:
             return None
         # 点击课程
         logger.debug("Try clicking lesson...")
-        device.double_click(image.expect_wait(template))
+        x, y = image.expect_wait(template).rect.center
+        triple_click(x, y)
         return recommended
     # 冲刺周
     else:
@@ -122,7 +136,8 @@ def handle_recommended_action(final_week: bool = False) -> ProduceAction | None:
         else:
             return None
         logger.debug("Try clicking lesson...")
-        device.double_click(image.expect(template))
+        x, y = image.expect(template).rect.center
+        triple_click(x, y)
         return recommended
 
 
@@ -443,21 +458,21 @@ def handle_action(action: ProduceAction, final_week: bool = False) -> ProduceAct
             # TODO: 这两个模板的名称要统一一下
             templ = R.InPurodyuusu.TextActionVisual if not final_week else R.InPurodyuusu.ButtonFinalPracticeVisual
             if button := image.find(templ):
-                device.double_click(button)
+                triple_click(*button.rect.center)
                 return ProduceAction.DANCE
             else:
                 return None
         case ProduceAction.VOCAL:
             templ = R.InPurodyuusu.TextActionVocal if not final_week else R.InPurodyuusu.ButtonFinalPracticeVocal
             if button := image.find(templ):
-                device.double_click(button)
+                triple_click(*button.rect.center)
                 return ProduceAction.VOCAL
             else:
                 return None
         case ProduceAction.VISUAL:
             templ = R.InPurodyuusu.TextActionDance if not final_week else R.InPurodyuusu.ButtonFinalPracticeDance
             if button := image.find(templ):
-                device.double_click(button)
+                triple_click(*button.rect.center)
                 return ProduceAction.VISUAL
             else:
                 return None
@@ -835,10 +850,6 @@ if __name__ == '__main__':
     file_handler.setFormatter(logging.Formatter('[%(asctime)s] [%(levelname)s] [%(name)s] %(message)s'))
     logging.getLogger().addHandler(file_handler)
 
-    from kotonebot.backend.context import init_context, manual_context
-    from kotonebot.kaa.common import BaseConfig
     from kotonebot.backend.debug import debug
-    init_context(config_type=BaseConfig)
-    manual_context().begin()
     debug.auto_save_to_folder = 'dumps'
     debug.enabled = True

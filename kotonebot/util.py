@@ -263,6 +263,38 @@ class Interval:
     def reset(self):
         self.start_time = time.time()
 
+class Throttler:
+    """
+    限流器，在循环中用于限制某操作的频率。
+
+    示例代码：
+    ```python
+    while True:
+        device.screenshot()
+        if throttler.request() and image.find(...):
+            do_something()
+    ```
+    """
+    def __init__(self, interval: float, max_requests: int | None = None):
+        self.max_requests = max_requests
+        self.interval = interval
+        self.last_request_time: float | None = None
+        self.request_count = 0
+
+    def request(self) -> bool:
+        """
+        检查是否允许请求。此函数立即返回，不会阻塞。
+
+        :return: 如果允许，返回 True，否则返回 False
+        """
+        current_time = time.time()
+        if self.last_request_time is None or current_time - self.last_request_time >= self.interval:
+            self.last_request_time = current_time
+            self.request_count = 0
+            return True
+        else:
+            return False
+
 def lf_path(path: str) -> str:
     standalone = os.path.join('kotonebot-resource', path)
     if os.path.exists(standalone):

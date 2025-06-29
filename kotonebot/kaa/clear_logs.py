@@ -28,7 +28,4 @@ def clear_logs():
     logger.info('Clearing logs done.')
 
 if __name__ == '__main__':
-    from kotonebot.backend.context import init_context, manual_context
-    init_context()
-    manual_context().begin()
     clear_logs()

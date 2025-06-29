@@ -2,10 +2,10 @@ import cv2
 import numpy as np
 from cv2.typing import MatLike
 
-from kotonebot import action, color, image
-from kotonebot.backend.color import HsvColor
-from kotonebot.primitives import RectTuple, Rect
+from kotonebot.primitives import Rect
 from kotonebot.backend.core import Image
+from kotonebot.backend.color import HsvColor
+from kotonebot import action, color, image, device
 from kotonebot.backend.preprocessor import HsvColorFilter
 
 
@@ -88,7 +88,4 @@ class WhiteFilter(HsvColorFilter):
 
 
 if __name__ == '__main__':
-    from kotonebot.backend.context import init_context, manual_context, device
-
-    init_context()
-    manual_context().begin()
+    pass

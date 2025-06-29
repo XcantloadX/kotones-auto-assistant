@@ -3,7 +3,7 @@ from typing import Generic, TypeVar, Literal
 
 from pydantic import BaseModel, ConfigDict
 
-from kotonebot.client.factory import DeviceImpl
+from kotonebot.client import DeviceImpl
 
 T = TypeVar('T')
 BackendType = Literal['custom', 'mumu12', 'leidian', 'dmm']
@@ -44,6 +44,10 @@ class BackendConfig(ConfigBaseModel):
     """模拟器 exe 文件路径"""
     emulator_args: str = ""
     """模拟器启动时的命令行参数"""
+    windows_window_title: str = 'gakumas'
+    """Windows 截图方式的窗口标题"""
+    windows_ahk_path: str | None = None
+    """Windows 截图方式的 AutoHotkey 可执行文件路径，为 None 时使用默认路径"""
 
 class PushConfig(ConfigBaseModel):
     """推送配置。"""

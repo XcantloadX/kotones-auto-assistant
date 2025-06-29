@@ -329,19 +329,3 @@ class SimpleDispatcher:
                     break
             device.screenshot()
         return self.result
-
-if __name__ == '__main__':
-    from .context.task_action import action
-    from .context import init_context
-    init_context()
-    @action('inner', dispatcher=True)
-    def inner(ctx: DispatcherContext):
-        print('inner')
-        ctx.finish()
-
-    @action('test', dispatcher=True)
-    def test(ctx: DispatcherContext):
-        print('test')
-        inner()
-        ctx.finish()
-    test()

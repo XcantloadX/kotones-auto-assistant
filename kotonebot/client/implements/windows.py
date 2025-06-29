@@ -2,31 +2,51 @@ from ctypes import windll
 from typing import Literal
 from importlib import resources
 from functools import cached_property
+from dataclasses import dataclass
 
 import cv2
 import win32ui
 import win32gui
 import numpy as np
-from ahk import AHK
+from ahk import AHK, MsgBoxIcon
 from cv2.typing import MatLike
 
-from ..device import Device
+from ..device import Device, WindowsDevice
 from ..protocol import Commandable, Touchable, Screenshotable
+from ..registration import register_impl, ImplConfig
+
+# 1. 定义配置模型
+@dataclass
+class WindowsImplConfig(ImplConfig):
+    window_title: str
+    ahk_exe_path: str
 
 class WindowsImpl(Touchable, Screenshotable):
-    def __init__(self, device: Device):
+    def __init__(self, device: Device, window_title: str, ahk_exe_path: str):
         self.__hwnd: int | None = None
-        # TODO: 硬编码路径
-        self.ahk = AHK(executable_path=str(resources.files('kaa.res.bin') / 'AutoHotkey.exe'))
+        self.window_title = window_title
+        self.ahk = AHK(executable_path=ahk_exe_path)
         self.device = device
-        self.emergency = False
 
         # 设置 DPI aware，否则高缩放显示器上返回的坐标会错误
         windll.user32.SetProcessDPIAware()
-        def toggle_emergency():
-            self.emergency = True
-            self.ahk.msg_box('已启用紧急暂停模式')
-        self.ahk.add_hotkey('^F4', toggle_emergency)
+        # TODO: 这个应该移动到其他地方去
+        def _stop():
+            from kotonebot.backend.context.context import vars
+            vars.flow.request_interrupt()
+            self.ahk.msg_box('任务已停止。', title='琴音小助手', icon=MsgBoxIcon.EXCLAMATION)
+
+        def _toggle_pause():
+            from kotonebot.backend.context.context import vars
+            if vars.flow.is_paused:
+                self.ahk.msg_box('任务即将恢复。\n关闭此消息框后将会继续执行', title='琴音小助手', icon=MsgBoxIcon.EXCLAMATION)
+                vars.flow.request_resume()
+            else:
+                vars.flow.request_pause()
+                self.ahk.msg_box('任务已暂停。\n关闭此消息框后再按一次快捷键恢复执行。', title='琴音小助手', icon=MsgBoxIcon.EXCLAMATION)
+
+        self.ahk.add_hotkey('^F4', _toggle_pause) # Ctrl+F4 暂停/恢复
+        self.ahk.add_hotkey('^F3', _stop)  # Ctrl+F3 停止
         self.ahk.start_hotkeys()
         # 将点击坐标设置为相对 Client
         self.ahk.set_coord_mode('Mouse', 'Client')
@@ -43,9 +63,9 @@ class WindowsImpl(Touchable, Screenshotable):
     @property
     def hwnd(self) -> int:
         if self.__hwnd is None:
-            self.__hwnd = win32gui.FindWindow(None, 'gakumas')
+            self.__hwnd = win32gui.FindWindow(None, self.window_title)
             if self.__hwnd is None or self.__hwnd == 0:
-                raise RuntimeError('Failed to find window')
+                raise RuntimeError(f'Failed to find window: {self.window_title}')
         return self.__hwnd
 
     def __client_rect(self) -> tuple[int, int, int, int]:
@@ -60,14 +80,9 @@ class WindowsImpl(Touchable, Screenshotable):
         """将 Client 区域坐标转换为屏幕坐标"""
         return win32gui.ClientToScreen(hwnd, (x, y))
 
-    def __wait_not_emergency(self):
-        from time import sleep # TODO: 改为 kotonebot.backend.context.sleep
-        while self.emergency:
-            sleep(0.2)
-
     def screenshot(self) -> MatLike:
-        if not self.ahk.win_is_active('gakumas'):
-            self.ahk.win_activate('gakumas')
+        if not self.ahk.win_is_active(self.window_title):
+            self.ahk.win_activate(self.window_title)
         hwnd = self.hwnd
 
         # TODO: 需要检查下面这些 WinAPI 的返回结果
@@ -123,7 +138,7 @@ class WindowsImpl(Touchable, Screenshotable):
             return 720, 1280
 
     def detect_orientation(self) -> None | Literal['portrait'] | Literal['landscape']:
-        pos = self.ahk.win_get_position('gakumas')
+        pos = self.ahk.win_get_position(self.window_title)
         if pos is None:
             return None
         w, h = pos.width, pos.height
@@ -133,7 +148,6 @@ class WindowsImpl(Touchable, Screenshotable):
             return 'portrait'
 
     def click(self, x: int, y: int) -> None:
-        self.__wait_not_emergency()
         # x, y = self.__client_to_screen(self.hwnd, x, y)
         # (0, 0) 很可能会点到窗口边框上
         if x == 0:
@@ -141,25 +155,39 @@ class WindowsImpl(Touchable, Screenshotable):
         if y == 0:
             y = 2
         x, y = int(x / self.scale_ratio), int(y / self.scale_ratio)
-        if not self.ahk.win_is_active('gakumas'):
-            self.ahk.win_activate('gakumas')
+        if not self.ahk.win_is_active(self.window_title):
+            self.ahk.win_activate(self.window_title)
         self.ahk.click(x, y)
 
     def swipe(self, x1: int, y1: int, x2: int, y2: int, duration: float | None = None) -> None:
-        self.__wait_not_emergency()
-        if not self.ahk.win_is_active('gakumas'):
-            self.ahk.win_activate('gakumas')
+        if not self.ahk.win_is_active(self.window_title):
+            self.ahk.win_activate(self.window_title)
         x1, y1 = int(x1 / self.scale_ratio), int(y1 / self.scale_ratio)
         x2, y2 = int(x2 / self.scale_ratio), int(y2 / self.scale_ratio)
         # TODO: 这个 speed 的单位是什么？
         self.ahk.mouse_drag(x2, y2, from_position=(x1, y1), coord_mode='Client', speed=10)
 
 
+# 3. 编写并注册创建函数
+@register_impl('windows', config_model=WindowsImplConfig)
+def create_windows_device(config: WindowsImplConfig) -> Device:
+    device = WindowsDevice()
+    impl = WindowsImpl(
+        device,
+        window_title=config.window_title,
+        ahk_exe_path=config.ahk_exe_path
+    )
+    device._touch = impl
+    device._screenshot = impl
+    return device
+
+
 if __name__ == '__main__':
     from ..device import Device
-    from time import sleep
     device = Device()
-    impl = WindowsImpl(device)
+    # 在测试环境中直接使用默认路径
+    ahk_path = str(resources.files('kaa.res.bin') / 'AutoHotkey.exe')
+    impl = WindowsImpl(device, window_title='gakumas', ahk_exe_path=ahk_path)
     device._screenshot = impl
     device._touch = impl
     device.swipe_scaled(0.5, 0.8, 0.5, 0.2)

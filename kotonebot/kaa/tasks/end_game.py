@@ -62,6 +62,20 @@ def end_game():
         else:
             instance().stop()
 
+    # 恢复汉化插件
+    if conf().end_game.restore_gakumas_localify:
+        logger.info('Restoring Gakumas Localify...')
+        game_path = conf().start_game.dmm_game_path
+        if not game_path:
+            # user.info
+            raise ValueError('dmm_game_path unset.')
+        plugin_path = os.path.join(os.path.dirname(game_path), 'version.dll')
+        if not os.path.exists(plugin_path + '.disabled'):
+            logger.warning('Disabled Gakumas Localify not found. Skipped restore.')
+        else:
+            os.rename(plugin_path + '.disabled', plugin_path)
+            logger.info('Gakumas Localify restored.')
+
     # 关机
     if conf().end_game.shutdown:
         logger.info("Shutting down system")

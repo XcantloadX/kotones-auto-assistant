@@ -297,19 +297,27 @@ class DeviceMirrorFrame(wx.Frame):
             self.log("请输入包名")
             return
         try:
-            self.device.launch_app(package_name)
-            self.log(f"启动APP: {package_name}")
+            # 使用新的 API 通过 commands 属性访问平台特定方法
+            if hasattr(self.device, 'commands') and hasattr(self.device.commands, 'launch_app'):
+                self.device.commands.launch_app(package_name)
+                self.log(f"启动APP: {package_name}")
+            else:
+                self.log("当前设备不支持启动APP功能")
         except Exception as e:
             self.log(f"启动APP失败: {e}")
             
     def on_get_current_app(self, event):
         """获取前台APP"""
         try:
-            package = self.device.current_package()
-            if package:
-                self.log(f"前台APP: {package}")
+            # 使用新的 API 通过 commands 属性访问平台特定方法
+            if hasattr(self.device, 'commands') and hasattr(self.device.commands, 'current_package'):
+                package = self.device.commands.current_package()
+                if package:
+                    self.log(f"前台APP: {package}")
+                else:
+                    self.log("未获取到前台APP")
             else:
-                self.log("获取前台APP失败")
+                self.log("当前设备不支持获取前台APP功能")
         except Exception as e:
             self.log(f"获取前台APP失败: {e}")
             
@@ -326,19 +334,21 @@ def show_device_mirror(device: Device):
 
 if __name__ == "__main__":
     # 测试代码
+    from kotonebot.client.device import AndroidDevice
     from kotonebot.client.implements.adb import AdbImpl
     from kotonebot.client.implements.uiautomator2 import UiAutomator2Impl
     from adbutils import adb
-    
+
     print("server version:", adb.server_version())
     adb.connect("127.0.0.1:5555")
     print("devices:", adb.device_list())
     d = adb.device_list()[-1]
-    
-    dd = Device(d)
-    adb_imp = AdbImpl(dd)
-    dd._command = adb_imp
+
+    # 使用新的 API
+    dd = AndroidDevice(d)
+    adb_imp = AdbImpl(d)  # 直接传入 adb 连接
     dd._touch = adb_imp
-    dd._screenshot = UiAutomator2Impl(dd)
-    
+    dd._screenshot = UiAutomator2Impl(dd)  # UiAutomator2Impl 可能还需要 device 对象
+    dd.commands = adb_imp  # 设置 Android 特定命令
+
     show_device_mirror(dd)

@@ -277,7 +277,7 @@ def enter_outing():
     buttons = ui.all()
     if not buttons:
         raise UnrecoverableError("Failed to find any buttons.")
-    target_btn = buttons[1]
+    target_btn = buttons[min(1, len(buttons) - 1)]
     logger.debug('Clicking "%s".', target_btn.description)
     if target_btn.selected:
         device.click(target_btn)
@@ -300,7 +300,4 @@ def enter_outing():
     logger.info("おでかけ completed.")
 
 if __name__ == '__main__':
-    from kotonebot.backend.context import manual_context, init_context
-    init_context()
-    manual_context().begin()
     enter_consult()

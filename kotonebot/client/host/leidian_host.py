@@ -1,13 +1,16 @@
 import os
 import subprocess
+from typing import cast
 from functools import lru_cache
 from typing_extensions import override
 
 from kotonebot import logging
-from kotonebot.client import DeviceImpl, create_device
+from kotonebot.client import DeviceImpl
 from kotonebot.client.device import Device
+from kotonebot.client.registration import AdbBasedImpl, create_device
+from kotonebot.client.implements.adb import AdbImplConfig
 from kotonebot.util import Countdown, Interval
-from .protocol import HostProtocol, Instance, copy_type
+from .protocol import HostProtocol, Instance, copy_type, AdbHostConfig
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +21,7 @@ else:
         """Stub for read_reg on non-Windows platforms."""
         return default
 
-class LeidianInstance(Instance):
+class LeidianInstance(Instance[AdbHostConfig]):
     @copy_type(Instance.__init__)
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -70,16 +73,24 @@ class LeidianInstance(Instance):
         return result.strip() == 'running'
 
     @override
-    def create_device(self, impl: DeviceImpl, *, timeout: float = 180) -> Device:
+    def create_device(self, impl: DeviceImpl, host_config: AdbHostConfig) -> Device:
+        """为雷电模拟器实例创建 Device。"""
         if self.adb_port is None:
             raise ValueError("ADB port is not set and is required.")
-        return create_device(
-            addr=f'{self.adb_ip}:{self.adb_port}',
-            impl=impl,
-            device_serial=self.adb_name,
-            connect=False,
-            timeout=timeout
-        )
+
+        # 为 ADB 相关的实现创建配置
+        if impl in ['adb', 'adb_raw', 'uiautomator2']:
+            config = AdbImplConfig(
+                addr=f'{self.adb_ip}:{self.adb_port}',
+                connect=False,  # 雷电模拟器不需要 adb connect
+                disconnect=False,
+                device_serial=self.adb_name,
+                timeout=host_config.timeout
+            )
+            impl = cast(AdbBasedImpl, impl) # make pylance happy
+            return create_device(impl, config)
+        else:
+            raise ValueError(f'Unsupported device implementation for Leidian: {impl}')
 
 class LeidianHost(HostProtocol):
     @staticmethod

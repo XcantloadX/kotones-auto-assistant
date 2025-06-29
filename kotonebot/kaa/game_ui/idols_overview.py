@@ -10,7 +10,8 @@ from kotonebot.kaa.util import paths
 from kotonebot.primitives import RectTuple, Rect
 from kotonebot.kaa.game_ui import Scrollable
 from kotonebot import device, action
-from kotonebot.kaa.image_db import ImageDatabase, HistDescriptor, FileDataSource
+from kotonebot.util import cv2_imread
+from kotonebot.kaa.image_db import ImageDatabase, HistDescriptor, FileDataSource, DatabaseQueryResult
 from kotonebot.backend.preprocessor import HsvColorsRemover
 
 logger = logging.getLogger(__name__)
@@ -110,9 +111,33 @@ def idols_db() -> ImageDatabase:
         _db = ImageDatabase(FileDataSource(str(path)), db_path, HistDescriptor(8), name='idols')
     return _db
 
+def match_idol(skin_id: str, idol_img: MatLike) -> DatabaseQueryResult | None:
+    """
+    将给定图像与指定偶像 ID 进行匹配。
+
+    :param skin_id: 偶像 ID。
+    :param idol_img: 待匹配偶像图像。
+    :return: 若匹配成功，则返回匹配结果，否则返回 None。
+    """
+    db = idols_db()
+    match = db.match(idol_img, 20)
+    if match and match.key.startswith(skin_id):
+        return match
+    else:
+        return None
+
 
 @action('定位偶像', screenshot_mode='manual-inherit')
-def locate_idol(skin_id: str):
+def locate_idol(skin_id: str) -> Rect | None:
+    """
+    定位并选中指定偶像。
+
+    前置条件：位于偶像总览界面。\n
+    结束状态：位于偶像总览界面。
+
+    :param skin_id: 目标偶像的 Skin ID
+    :return: 若成功，返回目标偶像的范围 (x, y, w, h)，否则返回 None。
+    """
     device.screenshot()
     logger.info('Locating idol %s', skin_id)
     x, y, w, h = R.Produce.BoxIdolOverviewIdols.xywh
@@ -170,14 +195,5 @@ def find_idol_skin_id_on_resume_produce(img: MatLike) -> str | None:
         return None
 
 
-def test():
-    from kotonebot.backend.context import init_context, manual_context
-    init_context()
-    manual_context().begin()
-    locate_idol('i_card-skin-fktn-3-006')
-
-
 if __name__ == '__main__':
-    from kotonebot.util import cv2_imread
-
-    test()
+    locate_idol('i_card-skin-fktn-3-006')

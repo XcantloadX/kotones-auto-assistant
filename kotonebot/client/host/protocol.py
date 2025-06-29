@@ -1,14 +1,15 @@
 import time
 import socket
 from abc import ABC, abstractmethod
-from typing_extensions import ParamSpec, Concatenate
-from typing import Callable, TypeVar, Generic, Protocol, runtime_checkable, Type, Any
+from typing import Callable, TypeVar, Protocol, Any, Generic
+from dataclasses import dataclass
 
 from adbutils import adb, AdbTimeout, AdbError
 from adbutils._device import AdbDevice
 
 from kotonebot import logging
-from kotonebot.client import Device, create_device, DeviceImpl
+from kotonebot.client import Device, DeviceImpl
+
 from kotonebot.util import Countdown, Interval
 
 logger = logging.getLogger(__name__)
@@ -16,6 +17,28 @@ logger = logging.getLogger(__name__)
 _T = TypeVar("_T")
 def copy_type(_: _T) -> Callable[[Any], _T]:
     return lambda x: x
+
+# --- 定义专用的 HostConfig 数据类 ---
+@dataclass
+class AdbHostConfig:
+    """由外部为基于 ADB 的主机提供的配置。"""
+    timeout: float = 180
+
+@dataclass
+class WindowsHostConfig:
+    """由外部为 Windows 实现提供配置。"""
+    window_title: str
+    ahk_exe_path: str
+
+@dataclass
+class RemoteWindowsHostConfig:
+    """由外部为远程 Windows 实现提供配置。"""
+    windows_host_config: WindowsHostConfig
+    host: str
+    port: int
+
+# --- 使用泛型改造 Instance 协议 ---
+T_HostConfig = TypeVar("T_HostConfig")
 
 def tcp_ping(host: str, port: int, timeout: float = 1.0) -> bool:
     """
@@ -36,7 +59,11 @@ def tcp_ping(host: str, port: int, timeout: float = 1.0) -> bool:
         return False
 
 
-class Instance(ABC):
+class Instance(Generic[T_HostConfig], ABC):
+    """
+    代表一个可运行环境的实例（如一个模拟器）。
+    使用泛型来约束 create_device 方法的配置参数类型。
+    """
     def __init__(self,
         id: str,
         name: str,
@@ -68,7 +95,7 @@ class Instance(ABC):
         启动模拟器实例。
         """
         raise NotImplementedError()
-    
+
     @abstractmethod
     def stop(self):
         """
@@ -80,21 +107,16 @@ class Instance(ABC):
     def running(self) -> bool:
         raise NotImplementedError()
 
-    def create_device(self, impl: DeviceImpl, *, timeout: float = 180) -> Device:
+    @abstractmethod
+    def create_device(self, impl: DeviceImpl, host_config: T_HostConfig) -> Device:
         """
-        创建 Device 实例，可用于控制模拟器系统。
-        
-        :return: Device 实例
+        根据实现名称和类型化的主机配置创建设备。
+
+        :param impl: 设备实现的名称。
+        :param host_config: 一个类型化的数据对象，包含创建所需的所有外部配置。
+        :return: 配置好的 Device 实例。
         """
-        if self.adb_port is None:
-            raise ValueError("ADB port is not set and is required.")
-        return create_device(
-            addr=f'{self.adb_ip}:{self.adb_port}',
-            impl=impl,
-            device_serial=self.adb_name,
-            connect=True,
-            timeout=timeout
-        )
+        raise NotImplementedError()
 
     def wait_available(self, timeout: float = 180):
         logger.info('Starting to wait for emulator %s(127.0.0.1:%d) to be available...', self.name, self.adb_port)

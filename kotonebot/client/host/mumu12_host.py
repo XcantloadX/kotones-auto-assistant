@@ -2,13 +2,15 @@ import os
 import json
 import subprocess
 from functools import lru_cache
-from typing import Any
+from typing import Any, cast
 from typing_extensions import override
 
 from kotonebot import logging
 from kotonebot.client import DeviceImpl, Device
+from kotonebot.client.registration import AdbBasedImpl, create_device
+from kotonebot.client.implements.adb import AdbImplConfig
 from kotonebot.util import Countdown, Interval
-from .protocol import HostProtocol, Instance, copy_type
+from .protocol import HostProtocol, Instance, copy_type, AdbHostConfig
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +21,7 @@ else:
         """Stub for read_reg on non-Windows platforms."""
         return default
 
-class Mumu12Instance(Instance):
+class Mumu12Instance(Instance[AdbHostConfig]):
     @copy_type(Instance.__init__)
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -69,6 +71,26 @@ class Mumu12Instance(Instance):
     @override
     def running(self) -> bool:
         return self.is_android_started
+
+    @override
+    def create_device(self, impl: DeviceImpl, host_config: AdbHostConfig) -> Device:
+        """为MuMu12模拟器实例创建 Device。"""
+        if self.adb_port is None:
+            raise ValueError("ADB port is not set and is required.")
+
+        # 为 ADB 相关的实现创建配置
+        if impl in ['adb', 'adb_raw', 'uiautomator2']:
+            config = AdbImplConfig(
+                addr=f'{self.adb_ip}:{self.adb_port}',
+                connect=True,
+                disconnect=True,
+                device_serial=self.adb_name,
+                timeout=host_config.timeout
+            )
+            impl = cast(AdbBasedImpl, impl) # make pylance happy
+            return create_device(impl, config)
+        else:
+            raise ValueError(f'Unsupported device implementation for MuMu12: {impl}')
 
 class Mumu12Host(HostProtocol):
     @staticmethod

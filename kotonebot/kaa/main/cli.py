@@ -1,13 +1,15 @@
 import os
 import sys
-import runpy
 import logging
 import argparse
 import importlib.metadata
 from datetime import datetime
 
 from .kaa import Kaa
+from ..util.paths import get_ahk_path
+from kotonebot.client.implements.windows import WindowsImplConfig
 from kotonebot.backend.context import tasks_from_id, task_registry
+from kotonebot.client.implements.remote_windows import RemoteWindowsServer
 
 version = importlib.metadata.version('ksaa')
 
@@ -90,9 +92,12 @@ def task_list() -> int:
 def remote_server() -> int:
     args = psr.parse_args()
     try:
-        # 使用runpy运行remote_windows.py模块
-        sys.argv = ['remote_windows.py', f'--host={args.host}', f'--port={args.port}']
-        runpy.run_module('kotonebot.client.implements.remote_windows', run_name='__main__')
+        ahk_path = get_ahk_path()
+        server = RemoteWindowsServer(WindowsImplConfig(window_title='gakumas', ahk_exe_path=ahk_path), args.host, args.port)
+        server.start()
+        return 0
+    except KeyboardInterrupt:
+        print("Server stopped by user")
         return 0
     except Exception as e:
         print(f'Error starting remote server: {e}')

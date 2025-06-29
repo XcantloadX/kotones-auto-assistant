@@ -17,10 +17,15 @@ def run_script(script_path: str) -> None:
 
     print(f"正在运行脚本: {script_path}")
     # 运行脚本
-    from kotonebot.backend.context import init_context
+    from kotonebot.backend.context import init_context, manual_context
+    from kotonebot.kaa.main.kaa import Kaa
     logging.basicConfig(level=logging.INFO, format='[%(asctime)s] [%(levelname)s] [%(name)s] [%(funcName)s] [%(lineno)d] %(message)s')
     logging.getLogger('kotonebot').setLevel(logging.DEBUG)
-    init_context(config_type=BaseConfig)
+    config_path = './config.json'
+    kaa_instance = Kaa(config_path)
+    init_context(config_type=BaseConfig, target_device=kaa_instance._on_create_device())
+    kaa_instance._on_after_init_context()
+    manual_context().begin()
     runpy.run_module(module_name, run_name="__main__")
 
 def main():

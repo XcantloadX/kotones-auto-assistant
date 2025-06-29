@@ -32,7 +32,7 @@ class RunStatus:
     callstack: list[Task | Action] = field(default_factory=list)
 
     def interrupt(self):
-        vars.interrupted.set()
+        vars.flow.request_interrupt()
 
 # Modified from https://stackoverflow.com/questions/70982565/how-do-i-make-an-event-listener-with-decorators-in-python
 Params = ParamSpec('Params')
@@ -158,7 +158,7 @@ class KotoneBot:
         d = self._on_create_device()
         init_context(config_path=self.config_path, config_type=self.config_type, target_device=d)
         self._on_after_init_context()
-        vars.interrupted.clear()
+        vars.flow.clear_interrupt()
 
         if by_priority:
             tasks = sorted(tasks, key=lambda x: x.priority, reverse=True)
@@ -180,7 +180,7 @@ class KotoneBot:
                     logger.exception('Keyboard interrupt detected.')
                     for task1 in tasks[tasks.index(task):]:
                         self.events.task_status_changed.trigger(task1, 'cancelled')
-                    vars.interrupted.clear()
+                    vars.flow.clear_interrupt()
                     break
                 # 其他错误
                 except Exception as e:

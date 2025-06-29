@@ -1,19 +1,22 @@
 import os
 import subprocess
 from psutil import process_iter
-from .protocol import HostProtocol, Instance
-from typing import Optional, ParamSpec, TypeVar, TypeGuard
+from .protocol import Instance, AdbHostConfig
+from typing import ParamSpec, TypeVar, cast
 from typing_extensions import override
 
 from kotonebot import logging
+from kotonebot.client import DeviceImpl
 from kotonebot.client.device import Device
+from kotonebot.client.registration import AdbBasedImpl, create_device
+from kotonebot.client.implements.adb import AdbImplConfig
 
 logger = logging.getLogger(__name__)
 
 P = ParamSpec('P')
 T = TypeVar('T')
 
-class CustomInstance(Instance):
+class CustomInstance(Instance[AdbHostConfig]):
     def __init__(self, exe_path: str | None, emulator_args: str = "", *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.exe_path: str | None = exe_path
@@ -64,6 +67,26 @@ class CustomInstance(Instance):
     @override
     def refresh(self):
         pass
+
+    @override
+    def create_device(self, impl: DeviceImpl, host_config: AdbHostConfig) -> Device:
+        """为自定义实例创建 Device。"""
+        if self.adb_port is None:
+            raise ValueError("ADB port is not set and is required.")
+
+        # 为 ADB 相关的实现创建配置
+        if impl in ['adb', 'adb_raw', 'uiautomator2']:
+            config = AdbImplConfig(
+                addr=f'{self.adb_ip}:{self.adb_port}',
+                connect=True,
+                disconnect=True,
+                device_serial=self.adb_name,
+                timeout=host_config.timeout
+            )
+            impl = cast(AdbBasedImpl, impl) # make pylance happy
+            return create_device(impl, config)
+        else:
+            raise ValueError(f'Unsupported device implementation for Custom: {impl}')
 
     def __repr__(self) -> str:
         return f'CustomInstance(#{self.id}# at "{self.exe_path}" with {self.adb_ip}:{self.adb_port})'
