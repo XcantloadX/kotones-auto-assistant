@@ -9,6 +9,7 @@ from kotonebot import (
     sleep,
     Interval,
 )
+from kotonebot.kaa.skill_card_action.select_skill_card import select_skill_card
 from kotonebot.primitives import Rect
 from kotonebot.kaa.tasks import R
 from .p_drink import acquire_p_drink
@@ -26,16 +27,16 @@ def acquire_skill_card():
     # TODO: 识别卡片内容，而不是固定选卡
     # TODO: 不硬编码坐标
     logger.debug("Locating all skill cards...")
-    
+
     it = Interval()
     cards = None
     card_clicked = False
     target_card = None
-    
+
     while True:
         device.screenshot()
         it.wait()
-        
+
         # 是否显示技能卡选择指导的对话框
         # [kotonebot-resource/sprites/jp/in_purodyuusu/screenshot_show_skill_card_select_guide_dialog.png]
         if image.find(R.InPurodyuusu.TextSkillCardSelectGuideDialogTitle):
@@ -259,7 +260,7 @@ def fast_acquisitions() -> AcquisitionType | None:
         logger.debug("Check skill card select...")
         if image.find(R.InPurodyuusu.TextSkillCard):
             logger.info("Acquire skill card found")
-            acquire_skill_card()
+            select_skill_card()
             return "PSkillCardSelect"
         # P物品选择
         logger.debug("Check PItem select...")

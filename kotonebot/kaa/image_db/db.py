@@ -97,6 +97,7 @@ class ImageDatabase:
         for key, value in self.source:
             self.insert(key, value)
         self.save()
+        logger.debug('Data source loaded.')
         
     @property
     def db(self) -> Db:
@@ -117,11 +118,12 @@ class ImageDatabase:
             若为 MatLike，必须为 BGR 格式。
         :param overwrite: 是否覆盖已存在的记录。
         """
+        if not overwrite and key in self.db.data:
+            return
         if isinstance(image, str):
             image = cv2_imread(image)
-        if overwrite or key not in self.db.data:
-            self.db.insert(key, self.descriptor(image))
-            logger.debug('Inserted image: %s', key)
+        self.db.insert(key, self.descriptor(image))
+        logger.debug('Inserted image: %s', key)
 
     def insert_many(self, images: dict[str, str | MatLike], *, overwrite: bool = False):
         """
