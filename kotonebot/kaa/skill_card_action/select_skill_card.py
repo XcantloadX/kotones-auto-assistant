@@ -40,7 +40,7 @@ def select_skill_card():
         skill_card_elements = extract_cards(img)
         if skill_card_elements:
             cards = [ActualCard.create_by(skill_card_element) for skill_card_element in skill_card_elements]
-            cards = sorted(cards, reverse=True)
+            cards = sorted(cards)
             target_card = cards[0]
             select_suggest = False
 
@@ -49,7 +49,7 @@ def select_skill_card():
                 if try_refresh_skill_card(target_card.skill_card_element.rect):
                     it.wait()
                     continue
-                # 如果没刷新次数，尝试选取除外卡
+                # 如果没刷新次数，尝试选取除外卡,没有除外卡才选择推荐卡
                 if once_cards := [card for card in cards if card.lost()]:
                     target_card = once_cards[0]
                 else:
@@ -57,10 +57,10 @@ def select_skill_card():
             if select_suggest:
                 # 既没有刷新，也没有除外卡，选择推荐卡
                 card_rect = find_recommended_card_rect([card.skill_card_element.rect for card in cards])
-                logger.info(f"select recommended card")
+                logger.info(f"Select recommended card")
                 device.click(card_rect)
             else:
-                logger.info(f"select {target_card.skill_card_element.skill_card.name}")
+                logger.info(f"Select {target_card.skill_card_element.skill_card.name}")
                 device.click(target_card.skill_card_element.rect)
             it.wait()
 

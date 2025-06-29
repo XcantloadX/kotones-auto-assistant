@@ -2,7 +2,6 @@
   "pre_built_deck": [
     {
       "archetype": "ProduceExamEffectType_ExamParameterBuff",
-      "select_once_card_before_refresh": false,
       "core_cards": [
         "p_card-01-act-3_049",
         "p_card-01-men-3_006",
@@ -46,7 +45,6 @@
     },
     {
       "archetype": "ProduceExamEffectType_ExamLessonBuff",
-      "select_once_card_before_refresh": false,
       "core_cards": [
         "p_card-01-act-3_049",
         "p_card-01-men-3_006",
@@ -90,7 +88,6 @@
     },
     {
       "archetype": "ProduceExamEffectType_ExamReview",
-      "select_once_card_before_refresh": false,
       "core_cards": [
         "p_card-02-act-3_050",
         "p_card-02-men-3_002",
@@ -132,7 +129,6 @@
     },
     {
       "archetype": "ProduceExamEffectType_ExamCardPlayAggressive",
-      "select_once_card_before_refresh": false,
       "core_cards": [
         "p_card-02-men-3_002",
         "p_card-02-men-3_040",
@@ -169,7 +165,6 @@
     },
     {
       "archetype": "ProduceExamEffectType_ExamConcentration",
-      "select_once_card_before_refresh": false,
       "core_cards": [
         "p_card-03-men-3_058",
         "p_card-03-men-3_061"
@@ -208,7 +203,6 @@
     },
     {
       "archetype": "ProduceExamEffectType_ExamFullPower",
-      "select_once_card_before_refresh": false,
       "core_cards": [
         "p_card-03-men-2_075",
         "p_card-03-men-3_058"

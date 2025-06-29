@@ -15,11 +15,9 @@ class GlobalIdolSetting:
         self.need_update: bool = True
         self.idol_archetype: ExamEffectType = ExamEffectType.good_impression
         self.card_deck: dict = {}
-        self.select_once_card_before_refresh = True
 
     def new_play(self):
         self.need_update = True
-        self.select_once_card_before_refresh = True
         self.card_deck.clear()
         logger.info("New game, wait for update")
 
@@ -53,7 +51,6 @@ class GlobalIdolSetting:
         self.card_deck.update({card: CardPriority.medium for card in card_deck_config.medium_priority_cards})
         self.card_deck.update({card: CardPriority.high for card in card_deck_config.high_priority_cards})
         self.card_deck.update({card: CardPriority.core for card in card_deck_config.core_cards})
-        self.select_once_card_before_refresh = card_deck_config.select_once_card_before_refresh
 
     def get_card_priority(self, card_id: str) -> CardPriority:
         """
