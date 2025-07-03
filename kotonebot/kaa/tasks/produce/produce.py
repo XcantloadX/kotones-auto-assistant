@@ -239,12 +239,12 @@ def do_produce(
             at_hajime = image.find(R.Produce.LogoHajime) is not None
             if produce_ctx().is_hajime:
                 if at_nia:
-                    device.click(R.Produce.PointHajimeToNia)
+                    device.click(R.Produce.PointNiaToHajime)
                 elif at_hajime:
                     at_level_select = True
             elif produce_ctx().is_nia:
                 if at_hajime:
-                    device.click(R.Produce.PointNiaToHajime)
+                    device.click(R.Produce.PointHajimeToNia)
                 elif at_nia:
                     at_level_select = True
             else:
