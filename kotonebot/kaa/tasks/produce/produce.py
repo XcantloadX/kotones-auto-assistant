@@ -13,7 +13,7 @@ from kotonebot.util import Countdown, Interval, Throttler
 from kotonebot.kaa.game_ui.primary_button import find_button
 from kotonebot.kaa.game_ui.idols_overview import locate_idol, match_idol
 from ..produce.in_purodyuusu import hajime_pro, hajime_regular, hajime_master, resume_pro_produce, resume_regular_produce, \
-    resume_master_produce, nia_pro
+    resume_master_produce, nia_pro, resume_nia_pro_produce
 from kotonebot import device, image, ocr, task, action, sleep, contains, regex
 from kotonebot.kaa.kaa_context import ProduceSession, produce as produce_ctx, set_produce as set_produce_ctx
 
@@ -133,19 +133,35 @@ def resume_produce():
     device.click(R.Produce.BoxProduceOngoing)
     btn_resume = image.expect_wait(R.Produce.ButtonResume)
     # 判断信息
-    mode_result = image.find_multi([
+    type_result = image.find_multi([
+        R.Produce.ResumeDialogNiaLogo,
+        R.Produce.ResumeDialogHajimeLogo,
+    ])
+    if not type_result:
+        raise ValueError('Failed to detect produce type.')
+    if type_result.index == 1:
+        is_hajime = True
+        is_nia = False
+    elif type_result.index == 0:
+        is_hajime = False
+        is_nia = True
+    else:
+        raise ValueError('Failed to detect produce type.')
+    difficulty_result = image.find_multi([
         R.Produce.ResumeDialogRegular,
         R.Produce.ResumeDialogPro,
-        R.Produce.ResumeDialogMaster
+        R.Produce.ResumeDialogMaster,
     ])
-    if not mode_result:
+    if not difficulty_result:
         raise ValueError('Failed to detect produce mode.')
-    if mode_result.index == 0:
+    if difficulty_result.index == 0:
         mode = 'regular'
-    elif mode_result.index == 1:
+    elif difficulty_result.index == 1:
         mode = 'pro'
-    else:
+    elif difficulty_result.index == 2:
         mode = 'master'
+    else:
+        raise ValueError('Failed to detect produce mode.')
     logger.info(f'Produce mode: {mode}')
     retry_count = 0
     max_retries = 5
@@ -171,15 +187,28 @@ def resume_produce():
     # [kotonebot-resource/sprites/jp/produce/produce_resume.png]
     logger.info('Click resume button.')
     device.click(btn_resume)
-    match mode:
-        case 'regular':
-            resume_regular_produce(current_week)
-        case 'pro':
-            resume_pro_produce(current_week)
-        case 'master':
-            resume_master_produce(current_week)
-        case _:
-            assert_never(mode)
+    if is_hajime:
+        match mode:
+            case 'regular':
+                resume_regular_produce(current_week)
+            case 'pro':
+                resume_pro_produce(current_week)
+            case 'master':
+                resume_master_produce(current_week)
+            case _:
+                assert_never(mode)
+    elif is_nia:
+        match mode:
+            case 'regular':
+                raise ValueError('NIA does not have regular mode.')
+            case 'pro':
+                resume_nia_pro_produce(current_week)
+            case 'master':
+                raise NotImplementedError('NIA does not have master mode.')
+            case _:
+                assert_never(mode)
+    else:
+        raise ValueError('Invaild produce state. Neither Hajime nor NIA.')
 
 @action('执行培育', screenshot_mode='manual-inherit')
 def do_produce(
@@ -453,7 +482,8 @@ if __name__ == '__main__':
     # conf().produce.memory_sets = [6]
     # conf().produce.auto_set_memory = False
     # do_produce(PIdol.月村手毬_初声, 'pro', 5)
-    produce()
+    # produce()
+    resume_produce()
     # a()
     # select_idol()
     # select_set(10)

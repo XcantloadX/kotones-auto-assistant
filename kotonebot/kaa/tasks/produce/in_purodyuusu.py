@@ -833,7 +833,7 @@ ProduceStage = Literal[
 @action('检测当前培育场景', dispatcher=True)
 def detect_produce_scene(ctx: DispatcherContext) -> ProduceStage:
     """
-    判断当前是培育的什么阶段，并开始 Regular 培育。
+    判断当前是培育的什么阶段。
 
     前置条件：培育中的任意场景\n
     结束状态：游戏主页面\n
@@ -958,10 +958,56 @@ def resume_pro_produce(week: int):
 def resume_master_produce(week: int):
     """
     继续 MASTER 培育。
-    
+
     :param week: 当前周数。
     """
     hajime_from_stage(detect_produce_scene(), 'master', week)
+
+@action('开始 NIA PRO 培育')
+def nia_from_stage(stage: ProduceStage, week: int):
+    """
+    从指定阶段开始 NIA PRO 培育。
+
+    :param stage: 当前培育阶段
+    :param week: 当前周数
+    """
+    if stage == 'action':
+        # NIA PRO 培育没有期中考试和最终考试的概念，直接从当前周继续
+        logger.info(f"Resume NIA PRO produce from week {week}")
+        nia_pro(start_from=week)
+    elif stage == 'exam-ongoing':
+        # NIA PRO 培育中的考试实际上是试镜
+        logger.info("Audition ongoing. Start audition.")
+        if week == 9:
+            # 第一次试镜
+            exam('mid')  # 使用mid模式处理试镜
+            return nia_from_stage(detect_produce_scene(), week)
+        elif week == 18:
+            # 第二次试镜
+            exam('mid')
+            return nia_from_stage(detect_produce_scene(), week)
+        elif week == 27:
+            # 最终试镜
+            exam('final')
+            return produce_end()
+        else:
+            # 其他周数不应该有考试
+            raise UnrecoverableError(f"Unexpected exam at week {week} in NIA PRO produce.")
+    elif stage == 'practice-ongoing':
+        logger.info("Practice ongoing. Start practice.")
+        practice()
+        return nia_from_stage(detect_produce_scene(), week)
+    else:
+        raise UnrecoverableError(f'Cannot resume NIA PRO produce from stage "{stage}".')
+
+@action('继续 NIA PRO 培育')
+def resume_nia_pro_produce(week: int):
+    """
+    继续 NIA PRO 培育。
+
+    :param week: 当前周数。
+    """
+    nia_from_stage(detect_produce_scene(), week)
 
 if __name__ == '__main__':
     from logging import getLogger
