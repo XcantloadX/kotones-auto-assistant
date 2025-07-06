@@ -827,6 +827,9 @@ ProduceStage = Literal[
     'practice-ongoing', # 练习场景
     'exam-ongoing', # 考试进行中
     'exam-end', # 考试结束
+    'nia-audition-1-select', # NIA 一次 audition 选择场景
+    'nia-audition-2-select', # NIA 二次 audition 选择场景
+    'nia-audition-final-select', # NIA 最终 audition 选择场景
     'unknown', # 未知场景
 ]
 
@@ -851,6 +854,18 @@ def detect_produce_scene(ctx: DispatcherContext) -> ProduceStage:
         logger.info("Detection result: At action scene.")
         ctx.finish()
         return 'action'
+    elif image.find(R.InPurodyuusu.IconTitleAuditionFirst):
+        logger.info("Detection result: At NIA audition 1 select scene.")
+        ctx.finish()
+        return 'nia-audition-1-select'
+    elif image.find(R.InPurodyuusu.IconTitleAuditionSecond):
+        logger.info("Detection result: At NIA audition 2 select scene.")
+        ctx.finish()
+        return 'nia-audition-2-select'
+    elif image.find(R.InPurodyuusu.IconTitleAuditionFinal):
+        logger.info("Detection result: At NIA audition final select scene.")
+        ctx.finish()
+        return 'nia-audition-final-select'
     elif texts.where(regex('CLEARまで|PERFECTまで')):
         logger.info("Detection result: At practice ongoing.")
         ctx.finish()
@@ -997,6 +1012,15 @@ def nia_from_stage(stage: ProduceStage, week: int):
         logger.info("Practice ongoing. Start practice.")
         practice()
         return nia_from_stage(detect_produce_scene(), week)
+    elif stage == 'nia-audition-1-select':
+        logger.info("At NIA audition 1 select scene. Start audition.")
+        return nia_pro(start_from=9)
+    elif stage == 'nia-audition-2-select':
+        logger.info("At NIA audition 2 select scene. Start audition.")
+        return nia_pro(start_from=18)
+    elif stage == 'nia-audition-final-select':
+        logger.info("At NIA audition final select scene. Start audition.")
+        return nia_pro(start_from=27)
     else:
         raise UnrecoverableError(f'Cannot resume NIA PRO produce from stage "{stage}".')
 
