@@ -155,6 +155,30 @@ def handle_skill_card_removal():
         it.wait()
     logger.debug("Handle skill card removal finished.")
 
+@action('技能卡自选变更', screenshot_mode='manual-inherit')
+def handle_skill_card_change():
+    """
+    前置条件：技能卡变更对话框\n
+    结束状态：技能卡变更动画结束后瞬间
+    """
+    card = image.find_multi([
+        R.InPurodyuusu.A,
+        R.InPurodyuusu.M
+    ])
+    if card is None:
+        logger.info("No skill cards found")
+        return False
+    device.click(card)
+    it = Interval()
+    while True:
+        device.screenshot()
+        if image.find(R.InPurodyuusu.ButtonChange):
+            device.click()
+            logger.debug("Change button clicked.")
+            break
+        it.wait()
+    logger.debug("Handle skill card change finished.")
+
 AcquisitionType = Literal[
     "PDrinkAcquire", # P饮料被动领取
     "PDrinkSelect", # P饮料主动领取
@@ -164,6 +188,7 @@ AcquisitionType = Literal[
     "PSkillCardEnhanced", # 技能卡强化
     "PSkillCardEnhanceSelect", # 技能卡自选强化
     "PSkillCardRemoveSelect", # 技能卡自选删除
+    "PSkillCardChangeEvent", # 技能卡变更事件
     "PSkillCardEvent", # 技能卡事件（随机强化、删除、更换）
     "PItemClaim", # P物品领取
     "PItemSelect", # P物品选择
@@ -232,6 +257,12 @@ def fast_acquisitions() -> AcquisitionType | None:
     if image.find(R.InPurodyuusu.IconTitleSkillCardRemoval):
         if handle_skill_card_removal():
             return "PSkillCardRemoveSelect"
+    device.click(10, 10)
+
+    # 技能卡自选变更
+    if image.find(R.InPurodyuusu.IconTitleSkillCardChange):
+        if handle_skill_card_change():
+            return "PSkillCardChangeEvent"
     device.click(10, 10)
 
     # 网络中断弹窗
