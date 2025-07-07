@@ -1,0 +1,249 @@
+{
+  "pre_built_deck": [
+    {
+      "archetype": "ProduceExamEffectType_ExamParameterBuff",
+      "core_cards": [
+        "p_card-01-act-3_049",
+        "p_card-01-men-3_006",
+        "p_card-01-men-3_036"
+      ],
+      "high_priority_cards": [
+        "p_card-00-men-2_012",
+        "p_card-00-men-3_003",
+        "p_card-00-men-3_005",
+        "p_card-01-men-1_034",
+        "p_card-01-men-2_038",
+        "p_card-01-men-2_035",
+        "p_card-01-men-2_036",
+        "p_card-01-men-2_037",
+        "p_card-01-act-2_001",
+        "p_card-01-act-3_030",
+        "p_card-01-act-3_029",
+        "p_card-01-men-3_033",
+        "p_card-01-men-3_035",
+        "p_card-01-act-3_010"
+      ],
+      "medium_priority_cards": [
+        "p_card-01-men-2_039",
+        "p_card-01-men-2_043",
+        "p_card-01-men-2_034",
+        "p_card-01-men-2_040",
+        "p_card-01-act-1_020",
+        "p_card-01-act-1_021",
+        "p_card-01-act-1_036",
+        "p_card-01-act-2_042"
+      ],
+      "low_priority_cards": [
+        "p_card-01-act-2_003",
+        "p_card-01-act-2_033",
+        "p_card-01-act-2_059",
+        "p_card-01-men-2_041",
+        "p_card-00-men-1_007",
+        "p_card-00-men-3_012",
+        "p_card-00-men-3_011"
+      ]
+    },
+    {
+      "archetype": "ProduceExamEffectType_ExamLessonBuff",
+      "core_cards": [
+        "p_card-01-act-3_049",
+        "p_card-01-men-3_006",
+        "p_card-01-men-3_036"
+      ],
+      "high_priority_cards": [
+        "p_card-00-men-2_012",
+        "p_card-00-men-3_003",
+        "p_card-00-men-3_005",
+        "p_card-01-men-1_034",
+        "p_card-01-men-2_038",
+        "p_card-01-men-2_035",
+        "p_card-01-men-2_036",
+        "p_card-01-men-2_037",
+        "p_card-01-act-2_001",
+        "p_card-01-act-3_030",
+        "p_card-01-act-3_029",
+        "p_card-01-men-3_033",
+        "p_card-01-men-3_035",
+        "p_card-01-act-3_010"
+      ],
+      "medium_priority_cards": [
+        "p_card-01-men-2_039",
+        "p_card-01-men-2_043",
+        "p_card-01-men-2_034",
+        "p_card-01-men-2_040",
+        "p_card-01-act-1_020",
+        "p_card-01-act-1_021",
+        "p_card-01-act-1_036",
+        "p_card-01-act-2_042"
+      ],
+      "low_priority_cards": [
+        "p_card-01-act-2_003",
+        "p_card-01-act-2_033",
+        "p_card-01-act-2_059",
+        "p_card-01-men-2_041",
+        "p_card-00-men-1_007",
+        "p_card-00-men-3_012",
+        "p_card-00-men-3_011"
+      ]
+    },
+    {
+      "archetype": "ProduceExamEffectType_ExamReview",
+      "core_cards": [
+        "p_card-02-act-3_050",
+        "p_card-02-men-3_002",
+        "p_card-02-men-3_004",
+        "p_card-02-men-3_040"
+      ],
+      "high_priority_cards": [
+        "p_card-00-men-2_012",
+        "p_card-00-men-3_003",
+        "p_card-00-men-3_005",
+        "p_card-02-men-2_056",
+        "p_card-02-act-2_048",
+        "p_card-02-men-2_058",
+        "p_card-02-men-2_004",
+        "p_card-02-men-3_041",
+        "p_card-02-men-3_043",
+        "p_card-02-men-3_042",
+        "p_card-02-act-2_049",
+        "p_card-02-men-2_057",
+        "p_card-02-men-2_060"
+      ],
+      "medium_priority_cards": [
+        "p_card-02-act-1_003",
+        "p_card-02-men-1_035",
+        "p_card-02-men-2_051",
+        "p_card-02-men-2_054",
+        "p_card-02-act-3_001",
+        "p_card-02-act-3_052"
+      ],
+      "low_priority_cards": [
+        "p_card-02-act-2_046",
+        "p_card-02-men-2_050",
+        "p_card-02-men-2_052",
+        "p_card-02-men-2_008",
+        "p_card-00-men-1_007",
+        "p_card-00-men-3_012",
+        "p_card-00-men-3_011"
+      ]
+    },
+    {
+      "archetype": "ProduceExamEffectType_ExamCardPlayAggressive",
+      "core_cards": [
+        "p_card-02-men-3_002",
+        "p_card-02-men-3_040",
+        "p_card-02-act-1_037",
+        "p_card-02-act-2_062"
+      ],
+      "high_priority_cards": [
+        "p_card-00-men-2_012",
+        "p_card-00-men-3_003",
+        "p_card-00-men-3_005",
+        "p_card-02-men-2_056",
+        "p_card-02-men-2_004",
+        "p_card-02-men-2_052",
+        "p_card-02-men-2_008",
+        "p_card-02-act-3_039",
+        "p_card-02-men-3_041",
+        "p_card-02-men-3_043"
+      ],
+      "medium_priority_cards": [
+        "p_card-02-act-3_038",
+        "p_card-02-men-3_044",
+        "p_card-02-act-3_045",
+        "p_card-02-act-2_047",
+        "p_card-02-men-2_054"
+      ],
+      "low_priority_cards": [
+        "p_card-02-act-1_004",
+        "p_card-02-men-1_006",
+        "p_card-02-men-2_051",
+        "p_card-00-men-1_007",
+        "p_card-00-men-3_012",
+        "p_card-00-men-3_011"
+      ]
+    },
+    {
+      "archetype": "ProduceExamEffectType_ExamConcentration",
+      "core_cards": [
+        "p_card-03-men-3_058",
+        "p_card-03-men-3_061"
+      ],
+      "high_priority_cards": [
+        "p_card-00-men-2_012",
+        "p_card-00-men-3_003",
+        "p_card-00-men-3_005",
+        "p_card-03-act-2_081",
+        "p_card-03-men-2_066",
+        "p_card-03-men-2_076",
+        "p_card-03-men-2_080",
+        "p_card-03-men-2_074",
+        "p_card-03-act-3_054",
+        "p_card-03-act-3_056",
+        "p_card-03-act-3_055",
+        "p_card-03-act-3_065",
+        "p_card-03-men-3_062"
+      ],
+      "medium_priority_cards": [
+        "p_card-03-act-1_044",
+        "p_card-03-men-1_039",
+        "p_card-03-men-1_049",
+        "p_card-03-act-2_063",
+        "p_card-03-act-2_073",
+        "p_card-03-men-2_077"
+      ],
+      "low_priority_cards": [
+        "p_card-03-men-1_048",
+        "p_card-03-act-2_068",
+        "p_card-03-act-2_067",
+        "p_card-00-men-1_007",
+        "p_card-00-men-3_012",
+        "p_card-00-men-3_011"
+      ]
+    },
+    {
+      "archetype": "ProduceExamEffectType_ExamFullPower",
+      "core_cards": [
+        "p_card-03-men-2_075",
+        "p_card-03-men-3_058"
+      ],
+      "high_priority_cards": [
+        "p_card-00-men-2_012",
+        "p_card-00-men-3_003",
+        "p_card-00-men-3_005",
+        "p_card-03-men-2_066",
+        "p_card-03-men-2_076",
+        "p_card-03-men-2_080",
+        "p_card-03-men-2_074",
+        "p_card-03-act-3_057",
+        "p_card-03-act-3_056",
+        "p_card-03-act-3_053",
+        "p_card-03-act-3_065",
+        "p_card-03-men-3_062",
+        "p_card-03-men-3_063"
+      ],
+      "medium_priority_cards": [
+        "p_card-03-men-1_049",
+        "p_card-03-men-1_048",
+        "p_card-03-men-1_051",
+        "p_card-03-act-2_063",
+        "p_card-03-act-2_071",
+        "p_card-03-men-2_064",
+        "p_card-03-men-2_077",
+        "p_card-03-act-3_055"
+      ],
+      "low_priority_cards": [
+        "p_card-03-act-1_038",
+        "p_card-03-act-1_042",
+        "p_card-03-act-2_072",
+        "p_card-03-act-2_068",
+        "p_card-03-act-2_082",
+        "p_card-00-men-1_007",
+        "p_card-00-men-3_012",
+        "p_card-00-men-3_011"
+      ]
+    }
+  ],
+  "custom_deck": [
+  ]
+}
