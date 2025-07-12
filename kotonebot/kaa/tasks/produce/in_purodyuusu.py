@@ -480,21 +480,36 @@ def handle_action(action: ProduceAction, final_week: bool = False) -> ProduceAct
             return handle_recommended_action(final_week)
         case ProduceAction.DANCE:
             # TODO: 这两个模板的名称要统一一下
-            templ = R.InPurodyuusu.TextActionVisual if not final_week else R.InPurodyuusu.ButtonFinalPracticeVisual
+            if produce().is_nia:
+                templ = R.InPurodyuusu.ButtonPracticeDance
+            elif produce().is_hajime:
+                templ = R.InPurodyuusu.TextActionDance if not final_week else R.InPurodyuusu.ButtonFinalPracticeDance
+            else:
+                raise ValueError('Invalid produce mode.')
             if button := image.find(templ):
                 triple_click(*button.rect.center)
                 return ProduceAction.DANCE
             else:
                 return None
         case ProduceAction.VOCAL:
-            templ = R.InPurodyuusu.TextActionVocal if not final_week else R.InPurodyuusu.ButtonFinalPracticeVocal
+            if produce().is_nia:
+                templ = R.InPurodyuusu.ButtonPracticeVocal
+            elif produce().is_hajime:
+                templ = R.InPurodyuusu.TextActionVocal if not final_week else R.InPurodyuusu.ButtonFinalPracticeVocal
+            else:
+                raise ValueError('Invalid produce mode.')
             if button := image.find(templ):
                 triple_click(*button.rect.center)
                 return ProduceAction.VOCAL
             else:
                 return None
         case ProduceAction.VISUAL:
-            templ = R.InPurodyuusu.TextActionDance if not final_week else R.InPurodyuusu.ButtonFinalPracticeDance
+            if produce().is_nia:
+                templ = R.InPurodyuusu.ButtonPracticeVisual
+            elif produce().is_hajime:
+                templ = R.InPurodyuusu.TextActionVisual if not final_week else R.InPurodyuusu.ButtonFinalPracticeVisual
+            else:
+                raise ValueError('Invalid produce mode.')
             if button := image.find(templ):
                 triple_click(*button.rect.center)
                 return ProduceAction.VISUAL
