@@ -1,0 +1,42 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif,
+    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+}
+
+html,
+body {
+  @apply bg-white dark:bg-gray-950;
+
+  @media (prefers-color-scheme: dark) {
+    color-scheme: dark;
+  }
+}
+
+/* Layout variables */
+:root {
+  --sidebar-width-lg: 260px;
+  --sidebar-width-md: 220px;
+}
+
+.kaa-layout-wrapper {
+  display: grid;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 992px) {
+  .kaa-layout-wrapper {
+    grid-template-columns: var(--sidebar-width-lg) 1fr;
+  }
+  .kaa-layout-sidebar {
+    position: sticky;
+    top: 56px;
+    height: calc(100dvh - 56px);
+    overflow-y: auto;
+  }
+}
+
+@media (max-width: 991.98px) {
+  .kaa-layout-content { padding-top: .5rem; }
+}

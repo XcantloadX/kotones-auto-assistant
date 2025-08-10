@@ -1,0 +1,30 @@
+:root {
+  --kaa-primary: #f4b000;
+  --kaa-primary-contrast: #212529;
+}
+
+.btn-primary,
+.nav-pills .nav-link.active,
+.nav-tabs .nav-link.active {
+  background-color: var(--kaa-primary);
+  border-color: var(--kaa-primary);
+  color: var(--kaa-primary-contrast);
+}
+
+.btn-primary:hover {
+  filter: brightness(1.05);
+  color: var(--kaa-primary-contrast);
+}
+
+.btn-outline-primary {
+  color: var(--kaa-primary);
+  border-color: var(--kaa-primary);
+}
+
+.btn-outline-primary:hover {
+  background-color: var(--kaa-primary);
+  border-color: var(--kaa-primary);
+  color: var(--kaa-primary-contrast);
+}
+
+.link-primary { color: var(--kaa-primary) !important; } 
