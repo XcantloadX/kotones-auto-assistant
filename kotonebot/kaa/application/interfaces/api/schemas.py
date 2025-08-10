@@ -50,4 +50,10 @@ class VersionInfo(BaseModel):
 
 
 class ConfigDocument(BaseModel):
-    data: dict[str, Any] 
+    data: dict[str, Any]
+
+
+class RunState(BaseModel):
+    is_running: bool
+    is_stopping: bool
+    is_paused: bool 

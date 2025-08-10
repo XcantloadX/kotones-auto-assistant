@@ -4,13 +4,14 @@ import * as runApi from "../services/api/run";
 import * as cfgApi from "../services/api/config";
 
 export interface RunState {
-  runButton: runApi.RunButtonState;
-  pauseButton: runApi.RunButtonState;
   tasks: runApi.TaskRow[];
   quick: cfgApi.QuickSettings;
   endAction: cfgApi.EndAction;
   loading: boolean;
   error?: string;
+  isRunning: boolean;
+  isPaused: boolean;
+  isStopping: boolean;
   refresh: () => Promise<void>;
   toggleRun: () => Promise<void>;
   togglePause: () => Promise<void>;
@@ -54,23 +55,31 @@ function deriveQuickAndEndAction(confDoc: any): { quick: cfgApi.QuickSettings; e
 
 export const useRunStore = create<RunState>()(
   devtools((set, get) => ({
-    runButton: { text: "启动", interactive: true },
-    pauseButton: { text: "暂停", interactive: true },
     tasks: [],
     quick: defaultQuick,
     endAction: "DO_NOTHING",
     loading: false,
+    isRunning: false,
+    isPaused: false,
+    isStopping: false,
     async refresh() {
       set({ loading: true });
       try {
-        const [runButton, pauseButton, tasks, conf] = await Promise.all([
-          runApi.getRunButtonState(),
-          runApi.getPauseButtonState(),
+        const [state, tasks, conf] = await Promise.all([
+          runApi.getRunState(),
           runApi.getTasks(),
           cfgApi.getConfig(),
         ]);
         const { quick, endAction } = deriveQuickAndEndAction(conf);
-        set({ runButton, pauseButton, tasks, quick, endAction, loading: false });
+        set({
+          tasks,
+          quick,
+          endAction,
+          isRunning: state.is_running,
+          isPaused: state.is_paused,
+          isStopping: state.is_stopping,
+          loading: false,
+        });
       } catch (e: any) {
         set({ error: e?.message ?? String(e), loading: false });
       }
@@ -78,9 +87,15 @@ export const useRunStore = create<RunState>()(
     async toggleRun() {
       set({ loading: true });
       try {
-        const runButton = await runApi.postRunToggle();
+        const state = await runApi.postRunToggle();
         const tasks = await runApi.getTasks();
-        set({ runButton, tasks, loading: false });
+        set({
+          isRunning: state.is_running,
+          isPaused: state.is_paused,
+          isStopping: state.is_stopping,
+          tasks,
+          loading: false,
+        });
       } catch (e: any) {
         set({ error: e?.message ?? String(e), loading: false });
       }
@@ -88,8 +103,13 @@ export const useRunStore = create<RunState>()(
     async togglePause() {
       set({ loading: true });
       try {
-        const pauseButton = await runApi.postRunPauseToggle();
-        set({ pauseButton, loading: false });
+        const state = await runApi.postRunPauseToggle();
+        set({
+          isRunning: state.is_running,
+          isPaused: state.is_paused,
+          isStopping: state.is_stopping,
+          loading: false,
+        });
       } catch (e: any) {
         set({ error: e?.message ?? String(e), loading: false });
       }
