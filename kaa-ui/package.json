@@ -18,6 +18,7 @@
     "react-bootstrap": "^2.10.10",
     "react-dom": "^19.1.0",
     "react-router": "^7.7.1",
+    "use-immer": "^0.11.0",
     "zustand": "^5.0.7"
   },
   "devDependencies": {

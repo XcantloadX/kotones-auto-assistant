@@ -1,10 +1,14 @@
 import { useEffect, useState } from "react";
-import { Button, Form, Table } from "react-bootstrap";
+import { Button, Form, Table, Modal } from "react-bootstrap";
+import { useNavigate } from "react-router";
 import * as api from "../services/api/produce";
 
 export default function ProducePage() {
   const [items, setItems] = useState<api.ProduceSolution[]>([]);
-  const [name, setName] = useState("");
+  const [showModal, setShowModal] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [newDescription, setNewDescription] = useState("");
+  const navigate = useNavigate();
 
   const load = async () => {
     const list = await api.listSolutions();
@@ -16,15 +20,17 @@ export default function ProducePage() {
   }, []);
 
   const create = async () => {
-    if (!name) return;
-    await api.createSolution(name);
-    setName("");
-    load();
-  };
-
-  const save = async (item: api.ProduceSolution) => {
-    await api.updateSolution(item.id, item);
-    load();
+    if (!newName.trim()) return;
+    try {
+      const newSolution = await api.createSolution(newName, newDescription);
+      setNewName("");
+      setNewDescription("");
+      setShowModal(false);
+      // 跳转到编辑页面
+      navigate(`/produce/${newSolution.id}`);
+    } catch (error) {
+      console.error("创建培育方案失败:", error);
+    }
   };
 
   const remove = async (id: string) => {
@@ -32,53 +38,97 @@ export default function ProducePage() {
     load();
   };
 
+  const edit = (id: string) => {
+    navigate(`/produce/${id}`);
+  };
+
   return (
     <div className="vstack gap-2">
-      <div className="d-flex gap-2">
-        <Form.Control value={name} onChange={(e) => setName(e.target.value)} placeholder="新方案名称" />
-        <Button onClick={create}>新建</Button>
+      <div className="d-flex justify-content-start mb-3">
+        <Button variant="primary" onClick={() => setShowModal(true)}>新建培育方案</Button>
       </div>
-      <Table bordered size="sm">
-        <thead>
-          <tr>
-            <th>名称</th>
-            <th>模式</th>
-            <th>自习</th>
-            <th>操作</th>
-          </tr>
-        </thead>
-        <tbody>
-          {items.map((it) => (
-            <tr key={it.id}>
-              <td>
-                <Form.Control value={it.name} onChange={(e) => (it.name = e.target.value)} />
-              </td>
-              <td>
-                <Form.Select value={it.data.mode} onChange={(e) => (it.data.mode = e.target.value as api.ProduceData["mode"]) }>
-                  <option value="regular">regular</option>
-                  <option value="pro">pro</option>
-                  <option value="master">master</option>
-                </Form.Select>
-              </td>
-              <td>
-                <Form.Select value={it.data.self_study_lesson} onChange={(e) => (it.data.self_study_lesson = e.target.value as api.ProduceData["self_study_lesson"]) }>
-                  <option value="dance">dance</option>
-                  <option value="visual">visual</option>
-                  <option value="vocal">vocal</option>
-                </Form.Select>
-              </td>
-              <td className="d-flex gap-2">
-                <Button size="sm" variant="success" onClick={() => save(it)}>
-                  保存
-                </Button>
-                <Button size="sm" variant="outline-danger" onClick={() => remove(it.id)}>
-                  删除
-                </Button>
-              </td>
+      
+      <div className="card">
+        <Table hover responsive className="mb-0">
+          <thead className="table-light">
+            <tr>
+              <th style={{ width: '25%' }}>名称</th>
+              <th style={{ width: '50%' }}>描述</th>
+              <th style={{ width: '25%', textAlign: 'center' }}>操作</th>
             </tr>
-          ))}
-        </tbody>
-      </Table>
+          </thead>
+          <tbody>
+            {items.length === 0 ? (
+              <tr>
+                <td colSpan={3} className="text-center py-4 text-muted">
+                  暂无培育方案，点击上方按钮创建
+                </td>
+              </tr>
+            ) : (
+              items.map((it) => (
+                <tr key={it.id}>
+                  <td className="align-middle">
+                    <strong>{it.name}</strong>
+                  </td>
+                  <td className="align-middle">
+                    <span className="text-muted">
+                      {it.description || "无描述"}
+                    </span>
+                  </td>
+                  <td className="align-middle text-center">
+                    <div className="d-flex gap-2 justify-content-center">
+                      <Button size="sm" variant="outline-primary" onClick={() => edit(it.id)}>
+                        编辑
+                      </Button>
+                      <Button size="sm" variant="outline-danger" onClick={() => remove(it.id)}>
+                        删除
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </Table>
+      </div>
+
+      {/* 新建Modal */}
+      <Modal show={showModal} onHide={() => setShowModal(false)}>
+        <Modal.Header closeButton>
+          <Modal.Title>新建培育方案</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Form>
+            <Form.Group className="mb-3">
+              <Form.Label>名称</Form.Label>
+              <Form.Control
+                type="text"
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                placeholder="请输入方案名称"
+              />
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label>描述</Form.Label>
+              <Form.Control
+                as="textarea"
+                rows={3}
+                value={newDescription}
+                onChange={(e) => setNewDescription(e.target.value)}
+                placeholder="请输入方案描述（可选）"
+              />
+            </Form.Group>
+          </Form>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowModal(false)}>
+            取消
+          </Button>
+          <Button variant="primary" onClick={create}>
+            确定
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </div>
   );
 } 

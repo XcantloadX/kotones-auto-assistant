@@ -60,10 +60,14 @@ export default function ProDropdown<T = string | number>(props: ProDropdownProps
       if (!containerRef.current) return;
       if (containerRef.current.contains(e.target as Node)) return;
       setIsOpen(false);
+      // 关闭时清空搜索查询
+      if (!multiple) {
+        setQuery("");
+      }
     };
     document.addEventListener("click", handler, true);
     return () => document.removeEventListener("click", handler, true);
-  }, []);
+  }, [multiple]);
 
   const selectedValues: T[] = useMemo(() => {
     if (multiple) return Array.isArray(value) ? (value as T[]) : value != null ? [value as T] : [];
@@ -104,6 +108,7 @@ export default function ProDropdown<T = string | number>(props: ProDropdownProps
       const next = isSelected(v) ? [] : [v];
       emitChange(next);
       setIsOpen(false);
+      setQuery(""); // 选择后清空搜索
     }
   };
 
@@ -119,7 +124,12 @@ export default function ProDropdown<T = string | number>(props: ProDropdownProps
     setTimeout(() => inputRef.current?.focus(), 0);
   };
 
-  const displayText = !multiple && selectedOptions[0]?.label ? selectedOptions[0].label : "";
+  // 单选时的显示文本：如果有选中项且不在搜索状态，显示选中项的标签；否则显示搜索查询
+  const getDisplayText = () => {
+    if (multiple) return query;
+    if (isOpen || query) return query; // 打开下拉或有搜索查询时显示搜索文本
+    return selectedOptions[0]?.label || ""; // 否则显示选中项的标签
+  };
 
   // 多标签折叠；不设置 maxTagCount 时不折叠
   const limit = typeof maxTagCount === "number" ? maxTagCount : selectedOptions.length;
@@ -157,10 +167,9 @@ export default function ProDropdown<T = string | number>(props: ProDropdownProps
           type="text"
           className="border-0 flex-grow-1"
           style={{ outline: "none", minWidth: 60 }}
-          value={multiple ? query : displayText || query}
+          value={getDisplayText()}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder={selectedOptions.length ? "" : (placeholder ?? "请选择")}
-          readOnly={!multiple}
+          placeholder={selectedOptions.length && !isOpen ? "" : (placeholder ?? "请选择")}
           disabled={disabled}
         />
       </div>
