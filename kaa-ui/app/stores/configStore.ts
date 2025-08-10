@@ -7,6 +7,7 @@ export interface ConfigState {
   loading: boolean;
   message?: string;
   error?: string;
+  dirty: boolean;
   load: () => Promise<void>;
   save: () => Promise<void>;
   setAt: (path: string, value: unknown) => void;
@@ -18,20 +19,21 @@ function setByPath(obj: any, path: string, value: unknown) {
   let cur = obj;
   for (let i = 0; i < parts.length - 1; i++) {
     const key = parts[i]!;
-    if (cur[key] == null || typeof cur[key] !== "object") cur[key] = {};
+    if (typeof cur[key] !== "object" || cur[key] === null) cur[key] = {};
     cur = cur[key];
   }
   cur[parts[parts.length - 1]!] = value;
 }
 
 function getByPath<T = unknown>(obj: any, path: string, defaultValue?: T): T | undefined {
+  if (!obj) return defaultValue;
   const parts = path.split(".");
-  let cur = obj;
-  for (let i = 0; i < parts.length; i++) {
-    const key = parts[i]!;
+  let cur = obj as any;
+  for (const p of parts) {
     if (cur == null) return defaultValue;
-    cur = cur[key];
+    cur = cur[p];
   }
+
   return (cur as T) ?? defaultValue;
 }
 
@@ -39,11 +41,12 @@ export const useConfigStore = create<ConfigState>()(
   devtools((set, get) => ({
     doc: null,
     loading: false,
+    dirty: false,
     async load() {
       set({ loading: true });
       try {
         const doc = await api.getConfig();
-        set({ doc, loading: false, message: undefined, error: undefined });
+        set({ doc, loading: false, message: undefined, error: undefined, dirty: false });
       } catch (e: any) {
         set({ error: e?.message ?? String(e), loading: false });
       }
@@ -51,8 +54,9 @@ export const useConfigStore = create<ConfigState>()(
     async save() {
       set({ loading: true });
       try {
+        const wasDirty = get().dirty;
         const res = await api.putConfig(get().doc?.data ?? {});
-        set({ message: res.message, loading: false });
+        set({ message: wasDirty ? res.message : undefined, loading: false, dirty: false });
       } catch (e: any) {
         set({ error: e?.message ?? String(e), loading: false });
       }
@@ -60,7 +64,7 @@ export const useConfigStore = create<ConfigState>()(
     setAt(path, value) {
       const draft = JSON.parse(JSON.stringify(get().doc ?? { data: {} }));
       setByPath(draft, path, value);
-      set({ doc: draft });
+      set({ doc: draft, dirty: true });
     },
     getAt(path, defaultValue) {
       return getByPath(get().doc, path, defaultValue);

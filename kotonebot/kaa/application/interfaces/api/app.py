@@ -14,6 +14,7 @@ from .routers import emulator as emulator_router
 from .routers import update as update_router
 from .routers import reports as reports_router
 from .routers import produce as produce_router
+from .routers import options as options_router
 
 
 def create_app() -> FastAPI:
@@ -50,6 +51,7 @@ def create_app() -> FastAPI:
     app.include_router(emulator_router.router, prefix=api_prefix)
     app.include_router(update_router.router, prefix=api_prefix)
     app.include_router(reports_router.router, prefix=api_prefix)
+    app.include_router(options_router.router, prefix=api_prefix)
     app.include_router(produce_router.router, prefix=api_prefix)
 
     return app 

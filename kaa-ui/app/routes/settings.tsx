@@ -1,137 +1,195 @@
-import { useEffect } from "react";
-import { Button, Form, Nav, Tab } from "react-bootstrap";
+import { useEffect, useMemo, useState } from "react";
+import { Button, Modal, Nav, Spinner, Toast, ToastContainer } from "react-bootstrap";
+import { NavLink, useNavigate, useParams } from "react-router";
 import { useConfigStore } from "../stores/configStore";
+import * as produceApi from "../services/api/produce";
+import SimulatorForm from "../components/settings/SimulatorForm";
+import ShopForm from "../components/settings/ShopForm";
+import DailyForm from "../components/settings/DailyForm";
+import GameForm from "../components/settings/GameForm";
+import MiscForm from "../components/settings/MiscForm";
+import ProduceForm from "../components/settings/ProduceForm";
 
 export default function SettingsPage() {
-  const { doc, loading, message, error, load, save, setAt, getAt } = useConfigStore();
+  const { doc, loading, message, error, load, save, setAt, getAt, dirty } = useConfigStore();
+  const params = useParams<{ tab?: string }>();
+  const navigate = useNavigate();
+
+  const activeKey = useMemo(() => params.tab ?? "simulator", [params.tab]);
 
   useEffect(() => { load(); }, [load]);
 
-  const onReset = () => load();
-  const onSave = () => save();
+  const [solutions, setSolutions] = useState<produceApi.ProduceSolution[]>([]);
+  useEffect(() => {
+    produceApi.listSolutions().then(setSolutions).catch(() => {});
+  }, []);
+
+  // 离开提示（路由）
+  const [showLeave, setShowLeave] = useState(false);
+  const [pendingHref, setPendingHref] = useState<string | null>(null);
+
+  // Tab 链接不拦截；其它路由离开时拦截
+  const guardNavigate = (href: string) => (e: React.MouseEvent) => {
+    if (href.startsWith('/settings')) return; // Tab 内部切换不拦截
+    if (dirty) {
+      e.preventDefault();
+      setPendingHref(href);
+      setShowLeave(true);
+    }
+  };
+
+  const confirmLeave = () => {
+    const href = pendingHref;
+    setShowLeave(false);
+    setPendingHref(null);
+    if (href) navigate(href);
+  };
+
+  const saveAndLeave = async () => {
+    const href = pendingHref;
+    await save();
+    setShowLeave(false);
+    setPendingHref(null);
+    if (href) navigate(href);
+  };
+
+  // 捕获文档内所有 a 链接点击，拦截离开设置页的导航（放过 /settings 内部链接）
+  useEffect(() => {
+    const onDocClick = (e: MouseEvent) => {
+      if (!dirty) return;
+      if (e.defaultPrevented) return;
+      const isMainClick = e.button === 0 && !e.metaKey && !e.altKey && !e.ctrlKey && !e.shiftKey;
+      if (!isMainClick) return;
+      const target = e.target as Element | null;
+      if (!target) return;
+      const anchor = target.closest('a[href]') as HTMLAnchorElement | null;
+      if (!anchor) return;
+      if (anchor.target && anchor.target !== "") return;
+      const url = new URL(anchor.href, window.location.href);
+      const sameOrigin = url.origin === window.location.origin;
+      if (!sameOrigin) return; // 外链不拦
+      const href = url.pathname + url.search + url.hash;
+      if (href.startsWith('/settings')) return; // 设置内 Tab 切换不拦
+      e.preventDefault();
+      setPendingHref(href);
+      setShowLeave(true);
+    };
+    document.addEventListener('click', onDocClick, true);
+    return () => document.removeEventListener('click', onDocClick, true);
+  }, [dirty]);
+
+  // 浏览器刷新/关闭提示
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (!dirty) return;
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [dirty]);
 
   // 便捷读取路径
   const get = (path: string, def?: any) => getAt(path, def);
   const set = (path: string) => (e: any) => setAt(path, e?.target?.type === 'checkbox' ? e.target.checked : e.target.value);
 
+  const tabs = [
+    { key: "simulator", label: "模拟器" },
+    { key: "shop", label: "商店" },
+    { key: "daily", label: "日常" },
+    { key: "produce", label: "培育" },
+    { key: "game", label: "游戏启停" },
+    { key: "misc", label: "杂项/调试" },
+  ] as const;
+
+  // Toast：保存提示
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
+  const [showToast, setShowToast] = useState(false);
+  useEffect(() => {
+    if (message && !dirty) {
+      setToastMsg(message);
+      setShowToast(true);
+    }
+  }, [message, dirty]);
+
   return (
     <div className="vstack gap-3">
-      <div className="alert bg-body-tertiary border d-flex align-items-center justify-content-between mb-0">
-        <div className="text-secondary small"><i className="bi bi-info-circle me-1"></i>设置修改后需要保存才会生效</div>
-        <div className="d-flex gap-2">
-          <Button size="sm" variant="outline-secondary" onClick={onReset} disabled={loading}>
-            <i className="bi bi-arrow-counterclockwise me-1"></i>重置更改
-          </Button>
-          <Button size="sm" onClick={onSave} disabled={loading}>
-            <i className="bi bi-save me-1"></i>保存设置
-          </Button>
+      {dirty && (
+        <div className="alert bg-body-tertiary border d-flex align-items-center justify-content-between mb-0">
+          <div className="text-secondary small"><i className="bi bi-info-circle me-1"></i>设置修改后需要保存才会生效</div>
+          <div className="d-flex gap-2">
+            <Button size="sm" variant="outline-secondary" onClick={() => load()} disabled={loading}>
+              <i className="bi bi-arrow-counterclockwise me-1"></i>重置更改
+            </Button>
+            <Button size="sm" onClick={() => save()} disabled={loading}>
+              <i className="bi bi-save me-1"></i>保存设置
+            </Button>
+          </div>
         </div>
-      </div>
+      )}
 
-      <Tab.Container defaultActiveKey="simulator">
-        <Nav variant="tabs" className="mb-3">
-          <Nav.Item><Nav.Link eventKey="simulator">模拟器</Nav.Link></Nav.Item>
-          <Nav.Item><Nav.Link eventKey="shop">商店</Nav.Link></Nav.Item>
-          <Nav.Item><Nav.Link eventKey="daily">日常</Nav.Link></Nav.Item>
-          <Nav.Item><Nav.Link eventKey="game">游戏启停</Nav.Link></Nav.Item>
-          <Nav.Item><Nav.Link eventKey="misc">杂项/调试</Nav.Link></Nav.Item>
-        </Nav>
-        <Tab.Content>
-          <Tab.Pane eventKey="simulator">
-            <div className="vstack gap-3">
-              <div>
-                <div className="fw-bold mb-2">模拟器设置</div>
-                <Form.Group className="mb-2">
-                  <Form.Label>平台</Form.Label>
-                  <Form.Select value={get('data.user_configs.0.backend.type','custom')} onChange={set('data.user_configs.0.backend.type')}>
-                    <option value="mumu12">MuMu 12</option>
-                    <option value="leidian">雷电</option>
-                    <option value="custom">自定义</option>
-                    <option value="dmm">DMM</option>
-                  </Form.Select>
-                </Form.Group>
-                <Form.Group className="mb-2">
-                  <Form.Label>截图方法</Form.Label>
-                  <Form.Select value={get('data.user_configs.0.backend.screenshot_impl','adb')} onChange={set('data.user_configs.0.backend.screenshot_impl')}>
-                    <option value="adb">adb</option>
-                    <option value="adb_raw">adb_raw</option>
-                    <option value="uiautomator2">uiautomator2</option>
-                    <option value="windows">windows</option>
-                    <option value="remote_windows">remote_windows</option>
-                    <option value="nemu_ipc">nemu_ipc</option>
-                  </Form.Select>
-                </Form.Group>
-                <Form.Group className="mb-2">
-                  <Form.Label>最小截图间隔（秒）</Form.Label>
-                  <Form.Control type="number" step="0.1" value={get('data.user_configs.0.backend.target_screenshot_interval','') ?? ''} onChange={set('data.user_configs.0.backend.target_screenshot_interval')} />
-                </Form.Group>
-                <Form.Check className="mb-2" type="switch" label="检查并启动模拟器" checked={!!get('data.user_configs.0.backend.check_emulator', false)} onChange={set('data.user_configs.0.backend.check_emulator')} />
-                <Form.Group className="mb-2">
-                  <Form.Label>模拟器 exe 文件路径</Form.Label>
-                  <Form.Control value={get('data.user_configs.0.backend.emulator_path','') ?? ''} onChange={set('data.user_configs.0.backend.emulator_path')} />
-                </Form.Group>
-                <Form.Group className="mb-2">
-                  <Form.Label>ADB IP</Form.Label>
-                  <Form.Control value={get('data.user_configs.0.backend.adb_ip','') ?? ''} onChange={set('data.user_configs.0.backend.adb_ip')} />
-                </Form.Group>
-                <Form.Group className="mb-2">
-                  <Form.Label>ADB 端口</Form.Label>
-                  <Form.Control type="number" value={get('data.user_configs.0.backend.adb_port', 5555)} onChange={set('data.user_configs.0.backend.adb_port')} />
-                </Form.Group>
-                <Form.Check className="mb-2" type="switch" label="MuMu12 后台保活" checked={!!get('data.user_configs.0.backend.mumu_background_mode', false)} onChange={set('data.user_configs.0.backend.mumu_background_mode')} />
-              </div>
-            </div>
-          </Tab.Pane>
+      {/* 顶部 Tab，使用 URL 同步；不拦内部切换 */}
+      <Nav variant="tabs" className="mb-3">
+        {tabs.map((t) => (
+          <Nav.Item key={t.key}>
+            <Nav.Link
+              as={NavLink as any}
+              to={`/settings/${t.key}`}
+              active={activeKey === t.key}
+            >
+              {t.label}
+            </Nav.Link>
+          </Nav.Item>
+        ))}
+      </Nav>
 
-          <Tab.Pane eventKey="shop">
-            <div className="vstack gap-3">
-              <div className="fw-bold">商店</div>
-              <Form.Check type="switch" label="启用商店购买" checked={!!get('data.user_configs.0.options.purchase.enabled', false)} onChange={set('data.user_configs.0.options.purchase.enabled')} />
-            </div>
-          </Tab.Pane>
+      {/* 配置未加载时避免空回显 */}
+      {!doc ? (
+        <div className="text-center text-secondary py-5"><Spinner animation="border" size="sm" className="me-2" />正在载入配置…</div>
+      ) : (
+        <>
+          <div hidden={activeKey !== "simulator"}>
+            <SimulatorForm get={get} set={set} />
+          </div>
+          <div hidden={activeKey !== "shop"}>
+            <ShopForm get={get} set={set} />
+          </div>
+          <div hidden={activeKey !== "daily"}>
+            <DailyForm get={get} set={set} />
+          </div>
+          <div hidden={activeKey !== "produce"}>
+            <ProduceForm get={get} set={set} solutions={solutions} />
+          </div>
+          <div hidden={activeKey !== "game"}>
+            <GameForm get={get} set={set} />
+          </div>
+          <div hidden={activeKey !== "misc"}>
+            <MiscForm get={get} set={set} />
+          </div>
+        </>
+      )}
 
-          <Tab.Pane eventKey="daily">
-            <div className="vstack gap-3">
-              <div className="fw-bold">工作</div>
-              <Form.Check type="switch" label="启用工作" checked={!!get('data.user_configs.0.options.assignment.enabled', false)} onChange={set('data.user_configs.0.options.assignment.enabled')} />
-              <div className="fw-bold">竞赛</div>
-              <Form.Check type="switch" label="启用竞赛" checked={!!get('data.user_configs.0.options.contest.enabled', false)} onChange={set('data.user_configs.0.options.contest.enabled')} />
-              <div className="fw-bold">活动费/礼物/奖励</div>
-              <Form.Check type="switch" label="活动费" checked={!!get('data.user_configs.0.options.activity_funds.enabled', false)} onChange={set('data.user_configs.0.options.activity_funds.enabled')} />
-              <Form.Check type="switch" label="礼物" checked={!!get('data.user_configs.0.options.presents.enabled', false)} onChange={set('data.user_configs.0.options.presents.enabled')} />
-              <Form.Check type="switch" label="任务奖励" checked={!!get('data.user_configs.0.options.mission_reward.enabled', false)} onChange={set('data.user_configs.0.options.mission_reward.enabled')} />
-              <Form.Check type="switch" label="社团奖励" checked={!!get('data.user_configs.0.options.club_reward.enabled', false)} onChange={set('data.user_configs.0.options.club_reward.enabled')} />
-              <div className="fw-bold">扭蛋/支援卡</div>
-              <Form.Check type="switch" label="扭蛋" checked={!!get('data.user_configs.0.options.capsule_toys.enabled', false)} onChange={set('data.user_configs.0.options.capsule_toys.enabled')} />
-              <Form.Check type="switch" label="支援卡升级" checked={!!get('data.user_configs.0.options.upgrade_support_card.enabled', false)} onChange={set('data.user_configs.0.options.upgrade_support_card.enabled')} />
-            </div>
-          </Tab.Pane>
-
-          <Tab.Pane eventKey="game">
-            <div className="vstack gap-3">
-              <div className="fw-bold">关闭游戏设置</div>
-              <Form.Check type="switch" label="退出 kaa" checked={!!get('data.user_configs.0.options.end_game.exit_kaa', false)} onChange={set('data.user_configs.0.options.end_game.exit_kaa')} />
-              <Form.Check type="switch" label="关闭游戏" checked={!!get('data.user_configs.0.options.end_game.kill_game', false)} onChange={set('data.user_configs.0.options.end_game.kill_game')} />
-              <Form.Check type="switch" label="关闭 DMM" checked={!!get('data.user_configs.0.options.end_game.kill_dmm', false)} onChange={set('data.user_configs.0.options.end_game.kill_dmm')} />
-              <Form.Check type="switch" label="关闭模拟器" checked={!!get('data.user_configs.0.options.end_game.kill_emulator', false)} onChange={set('data.user_configs.0.options.end_game.kill_emulator')} />
-              <Form.Check type="switch" label="恢复 Gakumas Localify" checked={!!get('data.user_configs.0.options.end_game.restore_gakumas_localify', false)} onChange={set('data.user_configs.0.options.end_game.restore_gakumas_localify')} />
-            </div>
-          </Tab.Pane>
-
-          <Tab.Pane eventKey="misc">
-            <div className="vstack gap-3">
-              <div className="fw-bold">杂项</div>
-              <Form.Check type="switch" label="允许局域网访问" checked={!!get('data.user_configs.0.options.misc.expose_lan', false)} onChange={set('data.user_configs.0.options.misc.expose_lan')} />
-              <div className="fw-bold">调试</div>
-              <Form.Check type="switch" label="保留截图数据" checked={!!get('data.user_configs.0.keep_screenshots', false)} onChange={set('data.user_configs.0.keep_screenshots')} />
-              <Form.Check type="switch" label="跟踪推荐卡检测" checked={!!get('data.user_configs.0.options.trace.recommend_card_detection', false)} onChange={set('data.user_configs.0.options.trace.recommend_card_detection')} />
-            </div>
-          </Tab.Pane>
-        </Tab.Content>
-      </Tab.Container>
-
-      {message && <div className="text-muted small">{message}</div>}
       {error && <div className="text-danger small">{error}</div>}
+
+      {/* 离开确认 Modal：取消、放弃更改、保存更改 */}
+      <Modal show={showLeave} onHide={() => setShowLeave(false)} backdrop="static" centered>
+        <Modal.Header closeButton>
+          <Modal.Title>未保存的更改</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>你有未保存的更改，确定要离开吗？</Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowLeave(false)} disabled={loading}>取消</Button>
+          <Button variant="outline-danger" onClick={confirmLeave} disabled={loading}>放弃更改</Button>
+          <Button variant="primary" onClick={saveAndLeave} disabled={loading}>保存更改</Button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* 保存结果 Toast */}
+      <ToastContainer position="top-center" className="mb-3">
+        <Toast bg="success" onClose={() => setShowToast(false)} show={showToast} delay={2000} autohide>
+          <Toast.Body className="text-white">{toastMsg}</Toast.Body>
+        </Toast>
+      </ToastContainer>
     </div>
   );
 } 

@@ -56,4 +56,9 @@ class ConfigDocument(BaseModel):
 class RunState(BaseModel):
     is_running: bool
     is_stopping: bool
-    is_paused: bool 
+    is_paused: bool
+
+
+class OptionItem(BaseModel):
+    label: str
+    value: int | str 
