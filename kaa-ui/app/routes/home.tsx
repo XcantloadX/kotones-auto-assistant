@@ -33,15 +33,11 @@ export default function Home() {
         </div>
       </div>
       <div className="col-12">
-        <div className="card">
-          <div className="card-body">
-            <div className="d-flex align-items-center justify-content-between mb-2">
-              <h6 className="mb-0">任务状态</h6>
-            </div>
-            <TaskTable />
-            <div className="small text-secondary">调试提示：保留截图数据（建议调试结束后关闭）。</div>
-          </div>
+        <div className="d-flex align-items-center justify-content-between mb-2">
+          <h6 className="mb-0">任务状态</h6>
         </div>
+        <TaskTable />
+        <div className="small text-secondary mt-2">调试提示：保留截图数据（建议调试结束后关闭）。</div>
       </div>
     </div>
   );

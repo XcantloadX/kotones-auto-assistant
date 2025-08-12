@@ -32,9 +32,20 @@ export default function AppShell({ children }: { children?: React.ReactNode }) {
           <button className="btn d-lg-none me-2" onClick={() => setShowDrawer(true)}>
             <i className="bi bi-list fs-4" />
           </button>
-          <Navbar.Brand as={Link} to="/">
-            <i className="bi bi-music-note-beamed me-2" />
-            <span className="fw-bold text-warning">琴音小助手</span>
+          <Navbar.Brand as={Link} to="/" className="d-flex align-items-center">
+            <img 
+              src="/logo.png" 
+              alt="Logo" 
+              style={{
+                maxWidth: '32px',
+                maxHeight: '32px',
+                width: 'auto',
+                height: 'auto',
+                objectFit: 'contain'
+              }}
+              className="me-2" 
+            />
+            <span className="fw-bold">琴音小助手</span>
           </Navbar.Brand>
           <div className="ms-auto d-flex align-items-center gap-2">
             <div className="form-check form-switch m-0" title="深色模式">
@@ -80,7 +91,6 @@ export default function AppShell({ children }: { children?: React.ReactNode }) {
 function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <nav className="w-100">
-      <div className="text-uppercase small fw-bold text-secondary mb-2">主导航</div>
       <Nav className="flex-column gap-1" variant="pills">
         <Nav.Item>
           <Nav.Link as={NavLink} to="/" end onClick={onNavigate}>
@@ -118,15 +128,6 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
           </Nav.Link>
         </Nav.Item>
       </Nav>
-      <div className="text-uppercase small fw-bold text-secondary mt-3 mb-2">快速入口</div>
-      <div className="d-grid gap-2">
-        <NavLink to="/" className="btn btn-primary btn-sm" onClick={onNavigate}>
-          <i className="bi bi-play-fill me-1" />启动全部
-        </NavLink>
-        <NavLink to="/" className="btn btn-outline-primary btn-sm" onClick={onNavigate}>
-          <i className="bi bi-pause-fill me-1" />暂停
-        </NavLink>
-      </div>
     </nav>
   );
 } 

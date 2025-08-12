@@ -30,8 +30,8 @@ export default function RunControls() {
         <i className="bi bi-pause-fill me-1" />
         <span>{pauseText}</span>
       </Button>
-      <div className="ms-auto small text-secondary">完成后：</div>
-      <div style={{ minWidth: 220 }}>
+      <div className="small text-secondary me-2">完成后：</div>
+      <div style={{ minWidth: 160 }}>
         <Form.Select size="sm" value={endAction} onChange={(e) => saveEndAction(e.target.value as any)}>
           {options.map((op) => (
             <option key={op.value} value={op.value}>

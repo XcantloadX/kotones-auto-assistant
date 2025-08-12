@@ -1,4 +1,4 @@
-import { get, post, put as httpPut } from "../http";
+import { get, post, put as httpPut, del } from "../http";
 
 export type ProduceAction = 
   | "recommended" 
@@ -76,4 +76,4 @@ export const createSolution = (name: string, description?: string) => {
   return post<ProduceSolution>(`/api/v1/produce/solutions?${params}`);
 };
 export const updateSolution = (id: string, body: ProduceSolution) => httpPut<ProduceSolution>(`/api/v1/produce/solutions/${id}`, body);
-export const deleteSolution = (id: string) => fetch(`/api/v1/produce/solutions/${id}`, { method: "DELETE" }); 
+export const deleteSolution = (id: string) => del<void>(`/api/v1/produce/solutions/${id}`); 

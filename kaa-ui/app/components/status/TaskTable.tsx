@@ -4,9 +4,10 @@ import { useRunStore } from "../../stores/runStore";
 
 export default function TaskTable() {
   const { tasks } = useRunStore();
+  
   return (
-    <div className="table-responsive">
-      <Table bordered size="sm" className="align-middle">
+    <div className="card">
+      <Table hover responsive className="mb-0">
         <thead className="table-light">
           <tr>
             <th>任务</th>
@@ -16,8 +17,12 @@ export default function TaskTable() {
         <tbody>
           {tasks.map((t) => (
             <tr key={t.name}>
-              <td>{t.name}</td>
-              <td>{t.status_text}</td>
+              <td className="align-middle">
+                <strong>{t.name}</strong>
+              </td>
+              <td className="align-middle">
+                {t.status_text}
+              </td>
             </tr>
           ))}
         </tbody>
