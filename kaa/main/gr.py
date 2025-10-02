@@ -1217,9 +1217,9 @@ class KotoneBotUI:
 
         tab_mumu12.select(fn=partial(_update_emulator_tab_options, selected_index=0), inputs=[screenshot_impl], outputs=[screenshot_impl])
         tab_mumu12v5.select(fn=partial(_update_emulator_tab_options, selected_index=1), inputs=[screenshot_impl], outputs=[screenshot_impl])
-        tab_leidian.select(fn=partial(_update_emulator_tab_options, selected_index=1), inputs=[screenshot_impl], outputs=[screenshot_impl])
-        tab_custom.select(fn=partial(_update_emulator_tab_options, selected_index=2), inputs=[screenshot_impl], outputs=[screenshot_impl])
-        tab_dmm.select(fn=partial(_update_emulator_tab_options, selected_index=3), inputs=[screenshot_impl], outputs=[screenshot_impl])
+        tab_leidian.select(fn=partial(_update_emulator_tab_options, selected_index=2), inputs=[screenshot_impl], outputs=[screenshot_impl])
+        tab_custom.select(fn=partial(_update_emulator_tab_options, selected_index=3), inputs=[screenshot_impl], outputs=[screenshot_impl])
+        tab_dmm.select(fn=partial(_update_emulator_tab_options, selected_index=4), inputs=[screenshot_impl], outputs=[screenshot_impl])
 
         # 初值
         if self.current_config.backend.type == 'mumu12':
@@ -1257,7 +1257,6 @@ class KotoneBotUI:
                 self.current_config.backend.instance_id = data['_mumu_index']
                 self.current_config.backend.mumu_background_mode = data['mumu_background_mode']
             elif current_tab == 1:  # Mumu12v5
-                # TODO: 由于 backend 类型放在了 Kotonebot 里，现在无法扩展，后续需要移出来
                 self.current_config.backend.type = 'mumu12v5'
                 self.current_config.backend.instance_id = data['_mumu12v5_index']
                 self.current_config.backend.mumu_background_mode = data['mumu_background_mode']
