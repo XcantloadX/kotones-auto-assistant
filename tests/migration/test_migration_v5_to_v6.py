@@ -6,7 +6,7 @@ import json
 import shutil
 from typing import Any
 
-from kotonebot.kaa.config.migrations._v5_to_v6 import migrate
+from kaa.config.migrations._v5_to_v6 import migrate
 
 
 class TestMigrationV5ToV6(unittest.TestCase):

@@ -1,7 +1,7 @@
 from unittest import TestCase
 
 from kotonebot.primitives import Rect
-from kotonebot.kaa.game_ui.badge import match
+from kaa.game_ui.badge import match
 
 def rect_from_center(x: int, y: int) -> Rect:
     w, h = 20, 20

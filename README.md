@@ -78,12 +78,17 @@ kaa
 因此你最好每次都在同一个地方运行 kaa，否则可能会出现找不到配置文件的情况。
 
 ## 开发
-见 [DEVELOPMENT.md](./docs/DEVELOPMENT.md)
+环境配置见 [DEVELOPMENT.md](./docs/DEVELOPMENT.md)。
+
+开发指南见 [QUICK_START.md](./docs/GUIDE.md)。
 
 ## 贡献
-欢迎 PR。
+欢迎 PR。你可以从 Github Issue 中选择一个 Issue 解决，或者从下面的路线图里选一个任务讨论。
 
-你可以从 Github Issue 中选择一个 Issue 解决，或者从下面的路线图里选一个任务讨论。
+如果你打算开发或修复的问题没有在 Github Issue、QQ 群或其他地方提出，请先在这些地方提出，让我知道。
+
+main 分支为开发分支与测试版发布分支，release 分支为稳定版发布分支。所有 PR 都应提交到 main 分支。
+其他分支均为临时分支，请不要提交到这些分支。
 
 ## 路线图
 下面是待实现的功能：  
@@ -134,7 +139,7 @@ kaa
 * Linux 支持
 
 ### 开发工具与框架
-* 分离框架为一个单独的项目
+* ~~分离框架为一个单独的项目~~
 * 分离资源管理为一个单独的项目
   * 重构资源编辑器（ImageAnnotation 工具）
 * 重构 Devtool 工具

@@ -1,1 +1,40 @@
-{"definitions":{"ccbcb114-7f73-43d1-904a-3a7ae660c531":{"name":"Produce.ButtonResume","displayName":"再開する","type":"template","annotationId":"ccbcb114-7f73-43d1-904a-3a7ae660c531","useHintRect":false},"daf3d823-b7f1-4584-acf3-90b9d880332c":{"name":"Produce.ResumeDialogRegular","displayName":"培育再开对话框 REGULAR","type":"template","annotationId":"daf3d823-b7f1-4584-acf3-90b9d880332c","useHintRect":false}},"annotations":[{"id":"ccbcb114-7f73-43d1-904a-3a7ae660c531","type":"rect","data":{"x1":390,"y1":1141,"x2":580,"y2":1181}},{"id":"daf3d823-b7f1-4584-acf3-90b9d880332c","type":"rect","data":{"x1":399,"y1":510,"x2":501,"y2":532}}]}
+{
+    "definitions": {
+        "ccbcb114-7f73-43d1-904a-3a7ae660c531": {
+            "name": "Produce.ButtonResume",
+            "displayName": "再開する",
+            "type": "template",
+            "annotationId": "ccbcb114-7f73-43d1-904a-3a7ae660c531",
+            "useHintRect": false
+        },
+        "daf3d823-b7f1-4584-acf3-90b9d880332c": {
+            "name": "Produce.ResumeDialogRegular",
+            "displayName": "培育再开对话框 REGULAR",
+            "type": "template",
+            "annotationId": "daf3d823-b7f1-4584-acf3-90b9d880332c",
+            "useHintRect": false
+        }
+    },
+    "annotations": [
+        {
+            "id": "ccbcb114-7f73-43d1-904a-3a7ae660c531",
+            "type": "rect",
+            "data": {
+                "x1": 390,
+                "y1": 1141,
+                "x2": 580,
+                "y2": 1181
+            }
+        },
+        {
+            "id": "daf3d823-b7f1-4584-acf3-90b9d880332c",
+            "type": "rect",
+            "data": {
+                "x1": 399,
+                "y1": 510,
+                "x2": 501,
+                "y2": 532
+            }
+        }
+    ]
+}

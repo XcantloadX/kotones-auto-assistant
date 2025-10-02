@@ -1,5 +1,5 @@
-graft kotonebot/kaa/sprites
-graft kotonebot/kaa/resources
+graft kaa/sprites
+graft kaa/resources
 prune tests
 prune tools
 prune experiments

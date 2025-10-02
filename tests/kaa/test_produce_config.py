@@ -6,13 +6,13 @@ import uuid
 from unittest import TestCase
 
 
-from kotonebot.kaa.config.produce import (
+from kaa.config.produce import (
     ProduceData, 
     ProduceSolution, 
     ProduceSolutionManager
 )
-from kotonebot.kaa.config.const import ProduceAction, RecommendCardDetectionMode
-from kotonebot.kaa.errors import ProduceSolutionNotFoundError
+from kaa.config.const import ProduceAction, RecommendCardDetectionMode
+from kaa.errors import ProduceSolutionNotFoundError
 
 
 class TestProduceData(TestCase):

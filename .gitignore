@@ -2,9 +2,10 @@
 tests/output_images
 tests/output_images/*
 R.py
-kotonebot/kaa/sprites
-kotonebot/kaa/metadata.py
-kotonebot/kaa/resources
+kotonebot_bak
+kaa/sprites
+kaa/metadata.py
+kaa/resources
 kotonebot-ui/node_modules
 kotonebot-ui/.vite
 dumps*/

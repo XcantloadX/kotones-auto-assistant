@@ -43,10 +43,18 @@ VSCode：运行配置里选择 `Python: Current Module`。
 PyCharm：使用刚刚创建的 Run Configuration。
 
 ## 打包 & 安装
+本体：
 ```bash
 just package
 pip install --find-links=dist ksaa
 ```
+
+启动器：
+```bash
+# 需要提前安装 Visual Studio 2022+ 和 C++ 构建工具。
+just build-bootstrap
+```
+然后将 `dist/bootstrap.pyz` 与 `dist/kaa.exe` 复制到 kaa 根目录下。
 
 ## 截图
 建议使用 [XnView MP](https://www.xnview.com/en/xnviewmp/) 进行截图裁剪工作。

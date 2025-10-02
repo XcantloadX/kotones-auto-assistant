@@ -8,8 +8,14 @@ class Commit(NamedTuple):
     hash: str
 
 def get_commit_messages():
-    # 获取最新的 tag
-    latest_tag = subprocess.check_output(['git', 'describe', '--tags', '--abbrev=0']).decode().strip()
+    # 获取最新的以 kaa 开头的 tag
+    # 获取所有以 kaa 开头的 tags，按版本排序，取最新的
+    all_kaa_tags = subprocess.check_output(['git', 'tag', '--list', 'kaa*', '--sort=-committerdate']).decode().strip()
+    if not all_kaa_tags:
+        raise ValueError("没有找到以 'kaa' 开头的 git tags")
+    
+    latest_tag = all_kaa_tags.split('\n')[0]
+    
     # 获取自该 tag 以来的所有 commit message 和 hash
     log = subprocess.check_output(['git', 'log', f'{latest_tag}..HEAD', '--pretty=format:%h|%s']).decode().strip()
     commits = []
@@ -68,7 +74,8 @@ def print_changelog(categories, output_file=None):
         'ui': '界面',
         'core': '框架',
         'devtool': '开发工具',
-        'bootstrap': '启动器',
+        'bootstrap': '启动器', # 旧写法
+        'launcher': '启动器', # 新写法
         '*': '其他'
     }
     

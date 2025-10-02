@@ -42,15 +42,16 @@ dependencies = [
     "pywin32==310",
     "ahk==1.8.3",
     "win11toast==0.35",  # For Windows Toast Notification
-    "keyboard==0.13.5"
+    "keyboard==0.13.5",
+    "kotonebot[windows,android]==0.3.1"
 ]
 
 
 [tool.setuptools]
-package-dir = { "kotonebot" = "kotonebot" }
+package-dir = { "kaa" = "kaa" }
 
 [project.scripts]
-kaa = "kotonebot.kaa.main.cli:main"
+kaa = "kaa.main.cli:main"
 
 [tool.setuptools.dynamic]
 version = {file = "./version"}

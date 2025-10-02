@@ -47,7 +47,7 @@ generate-metadata: env
     from pathlib import Path
     with open("WHATS_NEW.md", "r", encoding="utf-8") as f:
         content = f.read()
-    metadata_path = Path("kotonebot/kaa/metadata.py")
+    metadata_path = Path("kaa/metadata.py")
     metadata_path.parent.mkdir(parents=True, exist_ok=True)
     with open(metadata_path, "w", encoding="utf-8") as f:
         f.write(f'WHATS_NEW = """\n{content}\n"""')
@@ -65,10 +65,10 @@ extract-game-data:
     #!{{shebang_pwsh}}
     Write-Host "Extracting game data..."
     
-    New-Item -ItemType File -Force -Path .\kotonebot\kaa\resources\__init__.py
+    New-Item -ItemType File -Force -Path .\kaa\resources\__init__.py
     
     $currentHash = git -C .\submodules\gakumasu-diff rev-parse HEAD
-    $hashFile = ".\kotonebot\kaa\resources\game_ver.txt"
+    $hashFile = ".\kaa\resources\game_ver.txt"
     $shouldUpdate = $true
     
     if (Test-Path $hashFile) {
@@ -84,8 +84,8 @@ extract-game-data:
         Write-Host "Game data needs update. Extracting..."
 
         $currentHash | Out-File -FilePath $hashFile
-        rm .\kotonebot\kaa\resources\game.db
-        python .\tools\db\extract_schema.py -i .\submodules\gakumasu-diff -d .\kotonebot\kaa\resources\game.db
+        rm .\kaa\resources\game.db
+        python .\tools\db\extract_schema.py -i .\submodules\gakumasu-diff -d .\kaa\resources\game.db
         python .\tools\db\extract_resources.py
     }
 
