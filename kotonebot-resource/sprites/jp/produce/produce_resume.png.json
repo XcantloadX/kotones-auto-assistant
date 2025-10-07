@@ -13,6 +13,20 @@
             "type": "template",
             "annotationId": "daf3d823-b7f1-4584-acf3-90b9d880332c",
             "useHintRect": false
+        },
+        "deb35d68-bbac-4636-a93a-1b039c5d4fb1": {
+            "name": "Produce.BoxResumeDialogWeeks",
+            "displayName": "再开培育对话框 当前周数区域",
+            "type": "hint-box",
+            "annotationId": "deb35d68-bbac-4636-a93a-1b039c5d4fb1",
+            "useHintRect": false
+        },
+        "d5335ad3-8859-4f4f-99b3-c88d2cd2b966": {
+            "name": "Produce.BoxResumeDialogIdolCard",
+            "displayName": "再开培育对话框 偶像卡区域",
+            "type": "hint-box",
+            "annotationId": "d5335ad3-8859-4f4f-99b3-c88d2cd2b966",
+            "useHintRect": false
         }
     },
     "annotations": [
@@ -34,6 +48,26 @@
                 "y1": 510,
                 "x2": 501,
                 "y2": 532
+            }
+        },
+        {
+            "id": "deb35d68-bbac-4636-a93a-1b039c5d4fb1",
+            "type": "rect",
+            "data": {
+                "x1": 504,
+                "y1": 559,
+                "x2": 643,
+                "y2": 595
+            }
+        },
+        {
+            "id": "d5335ad3-8859-4f4f-99b3-c88d2cd2b966",
+            "type": "rect",
+            "data": {
+                "x1": 53,
+                "y1": 857,
+                "x2": 197,
+                "y2": 1048
             }
         }
     ]

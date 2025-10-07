@@ -192,6 +192,13 @@ def resume_produce_pre() -> tuple[Literal['regular', 'pro', 'master'], int]:
             if len(weeks) >= 2:
                 current_week = int(weeks[0])
                 break
+        week_text2 = ocr.ocr(R.Produce.BoxResumeDialogWeeks_Saving, lang='en').squash().regex(r'\d+/\d+')
+        if week_text2:
+            weeks = week_text2[0].split('/')
+            logger.info(f'Current week: {weeks[0]}/{weeks[1]}')
+            if len(weeks) >= 2:
+                current_week = int(weeks[0])
+                break
         retry_count += 1
         logger.warning(f'Failed to detect weeks. week_text="{week_text}". Retrying... ({retry_count}/{max_retries})')
         sleep(0.5)
