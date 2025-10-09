@@ -1161,6 +1161,12 @@ class KotoneBotUI:
                     step=1,
                     interactive=True
                 )
+                adb_emulator_name = gr.Textbox(
+                    value=self.current_config.backend.adb_emulator_name,
+                    label="ADB 模拟器名称",
+                    info=BackendConfig.model_fields['adb_emulator_name'].description,
+                    interactive=True
+                )
                 check_emulator = gr.Checkbox(
                     label="检查并启动模拟器",
                     value=self.current_config.backend.check_emulator,
@@ -1172,12 +1178,6 @@ class KotoneBotUI:
                         value=self.current_config.backend.emulator_path,
                         label="模拟器 exe 文件路径",
                         info=BackendConfig.model_fields['emulator_path'].description,
-                        interactive=True
-                    )
-                    adb_emulator_name = gr.Textbox(
-                        value=self.current_config.backend.adb_emulator_name,
-                        label="ADB 模拟器名称",
-                        info=BackendConfig.model_fields['adb_emulator_name'].description,
                         interactive=True
                     )
                     emulator_args = gr.Textbox(
