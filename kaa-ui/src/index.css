@@ -1,6 +1,3 @@
-/* Bootstrap CSS */
-@import 'bootstrap/dist/css/bootstrap.min.css';
-
 /* Tailwind CSS */
 @tailwind base;
 @tailwind components;
@@ -83,4 +80,10 @@ code {
 * {
   scrollbar-width: thin;
   scrollbar-color: #9ca3af #e8e8e8;
+}
+
+/* 禁用按钮鼠标样式 */
+.btn.disabled, .btn:disabled, button:disabled {
+  cursor: not-allowed !important;
+  pointer-events: auto !important;
 }
