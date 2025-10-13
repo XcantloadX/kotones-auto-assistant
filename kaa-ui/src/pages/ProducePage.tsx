@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Card, Button, Table, Modal, Form, Alert } from 'react-bootstrap';
+import { Button, Modal, Form } from 'react-bootstrap';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faEdit, faTrash } from '@fortawesome/free-solid-svg-icons';
 import { useProduceStore } from '../stores/useProduceStore';
 import { useToast } from '../lib/toast';
 
@@ -12,6 +14,12 @@ export default function ProducePage() {
   useEffect(() => {
     fetchConfigs();
   }, [fetchConfigs]);
+
+  useEffect(() => {
+    if (error) {
+      toast.error(error);
+    }
+  }, [error, toast]);
 
   const handleCreate = async () => {
     try {
@@ -37,61 +45,46 @@ export default function ProducePage() {
 
   return (
     <div>
-      <h2 className="mb-4">方案管理</h2>
-
-      {error && toast.error(error)}
-
-      <Card>
-        <Card.Header className="d-flex justify-content-between align-items-center">
-          <strong>方案列表</strong>
-          <Button variant="primary" size="sm" onClick={() => setShowCreateModal(true)}>
+      <div className="mb-4">
+        <div className="d-flex align-items-center mb-3">
+          <h2 className="mb-0">方案管理</h2>
+        </div>
+        <div className="d-flex align-items-center">
+          <Button variant="primary" onClick={() => setShowCreateModal(true)}>
             新建方案
           </Button>
-        </Card.Header>
-        <Card.Body>
-          <Table striped bordered hover>
-            <thead>
-              <tr>
-                <th>方案名称</th>
-                <th>创建时间</th>
-                <th>更新时间</th>
-                <th>操作</th>
-              </tr>
-            </thead>
-            <tbody>
-              {configs.length === 0 && (
-                <tr>
-                  <td colSpan={4} className="text-center text-muted">
-                    {loading ? '加载中...' : '暂无方案'}
-                  </td>
-                </tr>
-              )}
-              {configs.map((config) => (
-                <tr key={config.id}>
-                  <td><strong>{config.name}</strong></td>
-                  <td>{config.created_at || '-'}</td>
-                  <td>{config.updated_at || '-'}</td>
-                  <td>
-                    <div className="d-flex gap-2">
-                      <Button variant="info" size="sm">
-                        编辑
-                      </Button>
-                      <Button
-                        variant="danger"
-                        size="sm"
-                        onClick={() => handleDelete(config.id)}
-                        disabled={loading}
-                      >
-                        删除
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </Table>
-        </Card.Body>
-      </Card>
+        </div>
+      </div>
+
+      <div className="mb-4">
+        {configs.length === 0 && (
+          <div className="text-center text-muted p-4">
+            {loading ? '加载中...' : '暂无方案'}
+          </div>
+        )}
+
+        {configs.map((config) => (
+          <div key={config.id} className="d-flex align-items-center p-3 border rounded mb-2 bg-light">
+            <div className="d-flex gap-2 me-3">
+              <Button variant="primary" size="sm" title="编辑">
+                <FontAwesomeIcon icon={faEdit} />
+              </Button>
+              <Button
+                variant="danger"
+                size="sm"
+                onClick={() => handleDelete(config.id)}
+                disabled={loading}
+                title="删除"
+              >
+                <FontAwesomeIcon icon={faTrash} />
+              </Button>
+            </div>
+            <div className="flex-grow-1">
+              <h6 className="mb-1"><strong>{config.name}</strong></h6>
+            </div>
+          </div>
+        ))}
+      </div>
 
       {/* 创建方案模态框 */}
       <Modal show={showCreateModal} onHide={() => setShowCreateModal(false)}>
