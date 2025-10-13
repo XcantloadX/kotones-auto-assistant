@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Card, Button, Form } from 'react-bootstrap';
 import { call } from '../lib/rpc';
 import { useToast } from '../lib/toast';
+import Breadcrumb from '../components/Breadcrumb';
 
 export default function FeedbackPage() {
   const [title, setTitle] = useState('');
@@ -46,7 +47,7 @@ export default function FeedbackPage() {
 
   return (
     <div>
-      <h2 className="mb-4">问题反馈</h2>
+      <Breadcrumb items={[{ text: '问题反馈' }]} />
 
       <Card className="mb-4">
         <Card.Header>

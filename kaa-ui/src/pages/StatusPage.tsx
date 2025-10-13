@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { Card, Button, Table } from 'react-bootstrap';
 import { useRunStore } from '../stores/useRunStore';
+import Breadcrumb from '../components/Breadcrumb';
 
 export default function StatusPage() {
   const { status, loading, startAll, stopAll, togglePause, fetchStatus } = useRunStore();
@@ -12,7 +13,7 @@ export default function StatusPage() {
 
   return (
     <div>
-      <h2 className="mb-4">运行状态</h2>
+      <Breadcrumb items={[{ text: '运行状态' }]} />
 
       {/* 引擎控制 */}
       <Card className="mb-4">

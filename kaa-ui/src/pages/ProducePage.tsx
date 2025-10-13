@@ -4,6 +4,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEdit, faTrash } from '@fortawesome/free-solid-svg-icons';
 import { useProduceStore } from '../stores/useProduceStore';
 import { useToast } from '../lib/toast';
+import Breadcrumb from '../components/Breadcrumb';
 
 export default function ProducePage() {
   const { configs, loading, error, fetchConfigs, createConfig, deleteConfig } = useProduceStore();
@@ -45,10 +46,9 @@ export default function ProducePage() {
 
   return (
     <div>
+      <Breadcrumb items={[{ text: '方案管理' }]} />
+      
       <div className="mb-4">
-        <div className="d-flex align-items-center mb-3">
-          <h2 className="mb-0">方案管理</h2>
-        </div>
         <div className="d-flex align-items-center">
           <Button variant="primary" onClick={() => setShowCreateModal(true)}>
             新建方案

@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { Button, Alert } from 'react-bootstrap';
 import { useTaskStore } from '../stores/useTaskStore';
 import { useToast } from '../lib/toast';
+import Breadcrumb from '../components/Breadcrumb';
 
 export default function TasksPage() {
   const { tasks, currentTask, loading, error, fetchTasks, startTask, stopTask } = useTaskStore();
@@ -19,8 +20,7 @@ export default function TasksPage() {
 
   return (
     <div>
-      <h2 className="mb-4">任务</h2>
-
+      <Breadcrumb items={[{ text: '任务' }]} />
 
       {currentTask && currentTask.running && (
         <Alert variant="info">

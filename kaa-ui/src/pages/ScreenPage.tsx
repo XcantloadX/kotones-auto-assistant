@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Card, Button, Form, Alert } from 'react-bootstrap';
 import { call, on } from '../lib/rpc';
 import { useToast } from '../lib/toast';
+import Breadcrumb from '../components/Breadcrumb';
 
 export default function ScreenPage() {
   const [subscribed, setSubscribed] = useState(false);
@@ -26,6 +27,12 @@ export default function ScreenPage() {
       }
     };
   }, []);
+
+  useEffect(() => {
+    if (error) {
+      toast.error(error);
+    }
+  }, [error, toast]);
 
   const handleGrab = async () => {
     try {
@@ -73,9 +80,7 @@ export default function ScreenPage() {
 
   return (
     <div>
-      <h2 className="mb-4">屏幕监控</h2>
-
-      {error && toast.error(error)}
+      <Breadcrumb items={[{ text: '屏幕监控' }]} />
 
       <Card className="mb-4">
         <Card.Header>

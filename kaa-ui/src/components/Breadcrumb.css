@@ -1,0 +1,39 @@
+.breadcrumb-container {
+  display: flex;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.breadcrumb-item-wrapper {
+  display: inline-flex;
+  align-items: center;
+}
+
+.breadcrumb-separator {
+  color: #6c757d;
+  margin: 0 0.5rem;
+  font-weight: 400;
+}
+
+.breadcrumb-current {
+  color: #000000;
+  font-weight: 500;
+}
+
+.breadcrumb-text {
+  color: #6c757d;
+  font-weight: 400;
+}
+
+.breadcrumb-link {
+  color: #6c757d;
+  font-weight: 400;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.breadcrumb-link:hover {
+  color: #495057;
+  text-decoration: underline;
+}
+

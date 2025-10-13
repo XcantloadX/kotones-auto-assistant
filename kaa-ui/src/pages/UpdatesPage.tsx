@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Card, Button, Table } from 'react-bootstrap';
 import { call } from '../lib/rpc';
 import { useToast } from '../lib/toast';
+import Breadcrumb from '../components/Breadcrumb';
 
 interface Version {
   version: string;
@@ -54,8 +55,7 @@ export default function UpdatesPage() {
 
   return (
     <div>
-      <h2 className="mb-4">版本更新</h2>
-
+      <Breadcrumb items={[{ text: '版本更新' }]} />
 
       <Card>
         <Card.Header className="d-flex justify-content-between align-items-center">

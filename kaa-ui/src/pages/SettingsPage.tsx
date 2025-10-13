@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
-import { Card, Button, Form, Alert } from 'react-bootstrap';
+import { Card, Button, Form } from 'react-bootstrap';
 import { useConfigStore } from '../stores/useConfigStore';
 import { useToast } from '../lib/toast';
+import Breadcrumb from '../components/Breadcrumb';
 
 export default function SettingsPage() {
   const { config, loading, error, fetchConfig, saveConfig, reloadConfig } = useConfigStore();
   const [formData, setFormData] = useState<any>({});
-  const [saveSuccess, setSaveSuccess] = useState(false);
   const toast = useToast();
 
   useEffect(() => {
@@ -19,12 +19,16 @@ export default function SettingsPage() {
     }
   }, [config]);
 
+  useEffect(() => {
+    if (error) {
+      toast.error(error);
+    }
+  }, [error, toast]);
+
   const handleSave = async () => {
     try {
       await saveConfig(formData);
-      setSaveSuccess(true);
       toast.success('配置保存成功！');
-      setTimeout(() => setSaveSuccess(false), 3000);
     } catch (err) {
       toast.error('保存配置失败');
     }
@@ -45,9 +49,7 @@ export default function SettingsPage() {
 
   return (
     <div>
-      <h2 className="mb-4">设置</h2>
-
-      {error && toast.error(error)}
+      <Breadcrumb items={[{ text: '设置' }]} />
 
       <Card className="mb-4">
         <Card.Header className="d-flex justify-content-between align-items-center">
