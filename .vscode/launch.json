@@ -32,5 +32,16 @@
             "console": "integratedTerminal",
             "module": "${command:extension.commandvariable.file.relativeDirDots}.${fileBasenameNoExtension}",
         },
+
+        {
+            "name": "Web UI (Development)",
+            "type": "python",
+            "request": "launch",
+            "console": "integratedTerminal",
+            "module": "kaa.main.web",
+            "args": [
+                "--dev"
+            ]
+        }
     ]
 }

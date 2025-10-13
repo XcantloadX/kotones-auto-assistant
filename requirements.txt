@@ -7,11 +7,12 @@ thefuzz==0.22.1
 # Adb Control
 adbutils==2.8.0
 uiautomator2==3.2.8
-# Visual Debugger
+# Visual Debugger & Web Server
 fastapi==0.115.6
 uvicorn==0.34.0
 python-multipart==0.0.20
 websockets==14.1
+python-socketio==5.11.4
 psutil==6.1.1
 # GUI
 gradio==5.21.0

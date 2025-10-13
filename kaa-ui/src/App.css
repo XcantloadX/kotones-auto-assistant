@@ -1,42 +1,65 @@
-#root {
-  max-width: 1280px;
+/* 应用容器 - 使用 flexbox 布局 */
+.app-container {
+  display: flex;
+  min-height: 100vh;
+  max-height: 100vh;
+  background-color: #f5f5f5;
+  overflow: hidden;
+}
+
+/* 主内容区 */
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background-color: #f5f5f5;
+  min-width: 0;
+}
+
+.content-wrapper {
+  flex: 1;
+  padding: 1.5rem;
+  max-width: 1600px;
+  width: 100%;
   margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+  overflow-y: auto;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
-}
-
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .content-wrapper {
+    padding: 16px;
   }
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
+/* 移动端适配 */
+@media (max-width: 576px) {
+  .app-container {
+    flex-direction: column;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100vh;
+    height: 100dvh; /* 动态视口高度，考虑移动端地址栏 */
+    max-height: 100dvh;
+    overflow: hidden;
   }
-}
 
-.card {
-  padding: 2em;
-}
+  /* 主内容区在上方，可滚动 */
+  .main-content {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch; /* iOS 平滑滚动 */
+    padding-bottom: 70px; /* 为底部导航栏留出空间 */
+  }
 
-.read-the-docs {
-  color: #888;
+  .content-wrapper {
+    padding: 12px;
+  }
 }

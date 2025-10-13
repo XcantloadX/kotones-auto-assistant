@@ -1,5 +1,6 @@
 import os
 import sys
+import json
 import logging
 import argparse
 import importlib.metadata
@@ -49,6 +50,22 @@ def kaa() -> Kaa:
         _kaa = Kaa(psr.parse_args().config)
         _kaa.initialize()
     return _kaa
+
+def should_use_ui_v2() -> bool:
+    """读取配置文件中的 use_ui_v2 设置"""
+    config_path = psr.parse_args().config
+    try:
+        with open(config_path, 'r', encoding='utf-8') as f:
+            config_data = json.load(f)
+
+        user_config = config_data.get('user_configs', [{}])[0]
+        options = user_config.get('options', {})
+        misc = options.get('misc', {})
+
+        return misc.get('use_ui_v2', False)
+    except (FileNotFoundError, json.JSONDecodeError, KeyError, IndexError):
+        # 如果配置文件不存在、格式错误或缺少字段，返回 False（使用旧UI）
+        return False
 
 def task_invoke() -> int:
     tasks_args = psr.parse_args().task_ids
@@ -119,8 +136,17 @@ def main():
         log_filename = datetime.now().strftime('logs/%y-%m-%d-%H-%M-%S.log')
         kaa().set_log_level(logging.DEBUG)
         kaa().add_file_logger(log_filename)
-        from .gr import main as gr_main
-        gr_main(kaa(), psr.parse_args().start_immidiately)
+
+        use_ui_v2 = should_use_ui_v2()
+
+        if use_ui_v2:
+            # 新版 Web UI
+            from .web import main as web_main
+            web_main()
+        else:
+            # 旧版 Gradio UI
+            from .gr import main as gr_main
+            gr_main(kaa(), psr.parse_args().start_immidiately)
 
 if __name__ == '__main__':
     main()
