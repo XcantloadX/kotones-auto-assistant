@@ -3,6 +3,8 @@ import { Card, Button, Form } from 'react-bootstrap';
 import { useConfigStore } from '../stores/useConfigStore';
 import { useToast } from '../lib/toast';
 import Breadcrumb from '../components/Breadcrumb';
+import LinkTile from '../components/LinkTile';
+import { faFileLines } from '@fortawesome/free-solid-svg-icons';
 
 export default function SettingsPage() {
   const { config, loading, error, fetchConfig, saveConfig, reloadConfig } = useConfigStore();
@@ -50,6 +52,15 @@ export default function SettingsPage() {
   return (
     <div>
       <Breadcrumb items={[{ text: '设置' }]} />
+
+      <div className="mb-4">
+        <LinkTile
+          to="/produce"
+          title="培育方案"
+          description="添加、修改或删除 kaa 的培育方案"
+          icon={faFileLines}
+        />
+      </div>
 
       <Card className="mb-4">
         <Card.Header className="d-flex justify-content-between align-items-center">

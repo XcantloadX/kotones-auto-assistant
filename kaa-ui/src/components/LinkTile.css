@@ -1,0 +1,129 @@
+/* LinkTile - Windows 11 风格的磁贴组件 */
+
+.link-tile-wrapper {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+  transition: background-color 0.2s ease;
+}
+
+.link-tile {
+  transition: all 0.2s ease;
+  background: #fff;
+  overflow: hidden;
+}
+
+.link-tile:hover {
+  background: #f8f9fa;
+}
+
+.link-tile-body {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.5rem;
+  min-height: 80px;
+}
+
+.link-tile-content {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: 1;
+}
+
+.link-tile-content:not(:has(.link-tile-icon)) {
+  gap: 0;
+}
+
+.link-tile-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 24px;
+  color: #4a5568;
+  font-size: 24px;
+  margin-right: 12px;
+  flex-shrink: 0;
+  transition: color 0.2s ease;
+}
+
+.link-tile-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.link-tile-title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #1a1a1a;
+  line-height: 1.4;
+}
+
+.link-tile-description {
+  margin: 0.25rem 0 0 0;
+  font-size: 0.875rem;
+  color: #666;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.link-tile-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #999;
+  font-size: 1.25rem;
+  margin-left: 1rem;
+  transition: color 0.2s ease;
+}
+
+.link-tile-wrapper:hover .link-tile-arrow {
+  color: #667eea;
+}
+
+.link-tile-wrapper:hover .link-tile-icon {
+  color: #2c3e50;
+}
+
+/* 深色模式支持 */
+@media (prefers-color-scheme: dark) {
+  .link-tile {
+    background: #2a2a2a;
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .link-tile:hover {
+    background: #333;
+    border-color: rgba(255, 255, 255, 0.2);
+  }
+
+  .link-tile-title {
+    color: #f0f0f0;
+  }
+
+  .link-tile-description {
+    color: #999;
+  }
+
+  .link-tile-arrow {
+    color: #666;
+  }
+
+  .link-tile-wrapper:hover .link-tile-arrow {
+    color: #667eea;
+  }
+
+  .link-tile-icon {
+    color: #9ca3af;
+  }
+
+  .link-tile-wrapper:hover .link-tile-icon {
+    color: #e5e7eb;
+  }
+}
+

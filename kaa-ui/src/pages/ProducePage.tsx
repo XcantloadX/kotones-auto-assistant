@@ -46,7 +46,10 @@ export default function ProducePage() {
 
   return (
     <div>
-      <Breadcrumb items={[{ text: '方案管理' }]} />
+      <Breadcrumb items={[
+        { text: '设置', link: '/settings' },
+        { text: '培育方案' }
+      ]} />
       
       <div className="mb-4">
         <div className="d-flex align-items-center">
