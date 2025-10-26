@@ -3,6 +3,7 @@ from pydantic import BaseModel, ConfigDict
 
 from kotonebot import config
 from kaa.config.produce import ProduceSolution, ProduceSolutionManager
+from kaa.errors import NoProduceSolutionSelectedError
 from .const import (
     ConfigEnum,
     Priority,
@@ -125,18 +126,18 @@ class StartGameConfig(ConfigBaseModel):
 
     kuyo_package_name: str = 'org.kuyo.game'
     """Kuyo包名"""
-    
+
     disable_gakumas_localify: bool = False
     """
     自动检测并禁用 Gakumas Localify 汉化插件。
-    
+
     （目前仅对 DMM 版有效。）
     """
-    
+
     dmm_game_path: str | None = None
     """
     DMM 版游戏路径。若不填写，会自动检测。
-    
+
     例：`F:\\Games\\gakumas\\gakumas.exe`
     """
 
@@ -157,7 +158,7 @@ class EndGameConfig(ConfigBaseModel):
     """
     恢复 Gakumas Localify 汉化插件状态至启动前。通常与
     `disable_gakumas_localify` 配对使用。
-    
+
     （目前仅对 DMM 版有效。）
     """
 
@@ -253,6 +254,6 @@ def produce_solution() -> ProduceSolution:
     """获取当前培育方案"""
     id = conf().produce.selected_solution_id
     if id is None:
-        raise ValueError("No produce solution selected")
+        raise NoProduceSolutionSelectedError()
     # TODO: 这里需要缓存，不能每次都从磁盘读取
     return ProduceSolutionManager().read(id)
