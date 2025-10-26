@@ -24,7 +24,6 @@
             ],
             // "module": "${command:extension.commandvariable.file.relativeDirDots}.${fileBasenameNoExtension}",
         },
-
         {
             "name": "Python: Current Module(Without context)",
             "type": "python",
@@ -32,5 +31,15 @@
             "console": "integratedTerminal",
             "module": "${command:extension.commandvariable.file.relativeDirDots}.${fileBasenameNoExtension}",
         },
+        {
+            "name": "Gradio UI",
+            "type": "python",
+            "request": "launch",
+            "console": "integratedTerminal",
+            "module": "kaa.main.gr",
+            "args": [
+                "${relativeFile}"
+            ]
+        }
     ]
 }
