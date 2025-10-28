@@ -189,7 +189,7 @@ def purchase():
         image.expect_wait(R.Daily.IconShopMoney)
         money_items2()
         sleep(0.5)
-        if image.find(R.Daily.ButtonRefreshMoneyShop):
+        if conf().purchase.money_refresh and image.find(R.Daily.ButtonRefreshMoneyShop):
             logger.info('Refreshing money shop.')
             device.click()
             # 等待刷新完成
