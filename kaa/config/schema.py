@@ -149,6 +149,9 @@ class StartGameConfig(ConfigBaseModel):
     例：`F:\\Games\\gakumas\\gakumas.exe`
     """
 
+    dmm_bypass: bool = False
+    """绕过 DMM 启动器直接启动游戏（实验性）"""
+
 class EndGameConfig(ConfigBaseModel):
     exit_kaa: bool = False
     """退出 kaa"""

@@ -77,7 +77,7 @@ ConfigKey = Literal[
     # start game
     'start_game_enabled', 'start_through_kuyo',
     'game_package_name', 'kuyo_package_name',
-    'disable_gakumas_localify', 'dmm_game_path',
+    'disable_gakumas_localify', 'dmm_game_path', 'dmm_bypass',
 
     # end game
     'exit_kaa', 'kill_game', 'kill_dmm',
@@ -2246,6 +2246,11 @@ class KotoneBotUI:
                     info=StartGameConfig.model_fields['dmm_game_path'].description,
                     placeholder="例：F:\\Games\\gakumas\\gakumas.exe"
                 )
+                dmm_bypass = gr.Checkbox(
+                    label="绕过 DMM 启动器直接启动游戏（实验性）",
+                    value=self.current_config.options.start_game.dmm_bypass,
+                    info=StartGameConfig.model_fields['dmm_bypass'].description
+                )
             start_game_enabled.change(
                 fn=lambda x: gr.Group(visible=x),
                 inputs=[start_game_enabled],
@@ -2259,6 +2264,7 @@ class KotoneBotUI:
             config.start_game.kuyo_package_name = data['kuyo_package_name']
             config.start_game.disable_gakumas_localify = data['disable_gakumas_localify']
             config.start_game.dmm_game_path = data['dmm_game_path'] if data['dmm_game_path'] else None
+            config.start_game.dmm_bypass = data['dmm_bypass']
 
         return set_config, {
             'start_game_enabled': start_game_enabled,
@@ -2266,7 +2272,8 @@ class KotoneBotUI:
             'game_package_name': game_package_name,
             'kuyo_package_name': kuyo_package_name,
             'disable_gakumas_localify': disable_gakumas_localify,
-            'dmm_game_path': dmm_game_path
+            'dmm_game_path': dmm_game_path,
+            'dmm_bypass': dmm_bypass
         }
 
 

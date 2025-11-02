@@ -1,8 +1,10 @@
 """启动游戏，领取登录奖励，直到首页为止"""
-import json
 import os
+import re
+import json
 import ctypes
 import logging
+import subprocess
 
 from kotonebot.util import Countdown
 from kotonebot.backend.loop import Loop
@@ -14,7 +16,7 @@ from .actions.loading import loading
 from kaa.config import Priority, conf
 from .actions.scenes import at_home, goto_home
 from .actions.commu import handle_unread_commu
-from kaa.errors import ElevationRequiredError, GameUpdateNeededError
+from kaa.errors import ElevationRequiredError, GameUpdateNeededError, DmmGameLaunchError
 
 logger = logging.getLogger(__name__)
 
@@ -47,6 +49,49 @@ def locate_game_path() -> str | None:
         conf().start_game.dmm_game_path = game_path
         config.save()
     return game_path
+
+def start_windows_bypass():
+    """
+    绕过 DMMPlayer 直接启动游戏。
+    """
+    appdata = os.getenv('APPDATA')
+    if not appdata:
+        raise DmmGameLaunchError('APPDATA not found.')
+    log_path = os.path.join(appdata, 'dmmgameplayer5', 'logs', 'dll.log')
+
+    if not os.path.exists(log_path):
+        raise DmmGameLaunchError(f'DMMGamePlayer log file not found at {log_path}')
+
+    last_launch_line = None
+    with open(log_path, 'r', encoding='utf-8', errors='ignore') as f:
+        for line in f:
+            if "Execute of:: gakumas exe" in line:
+                last_launch_line = line
+
+    if not last_launch_line:
+        raise DmmGameLaunchError('Could not find any run records for "Gakumas" in the DMM log. Please launch the game normally once through the DMM client.')
+
+    regex = r'exe:\s*(?P<exe_path>.*?gakumas\.exe).*?/viewer_id=(?P<viewer_id>[^\s]+).*?/open_id=(?P<open_id>[^\s]+).*?/pf_access_token=(?P<pf_token>[^\s]+)'
+    match = re.search(regex, last_launch_line)
+
+    if not match:
+        raise DmmGameLaunchError('Failed to extract complete launch information from the log. The log format may have changed.')
+
+    game_info = match.groupdict()
+    exe_path = game_info['exe_path']
+    working_dir = os.path.dirname(exe_path)
+    args = [
+        exe_path,
+        f"/viewer_id={game_info['viewer_id']}",
+        f"/open_id={game_info['open_id']}",
+        f"/pf_access_token={game_info['pf_token']}"
+    ]
+
+    try:
+        # CREATE_NO_WINDOW to avoid console popup
+        subprocess.Popen(args, cwd=working_dir, creationflags=0x08000000)
+    except Exception as e:
+        raise DmmGameLaunchError(f'Failed to start the game directly: {e}')
 
 # TODO: 这个函数功能和 kaa\tasks\actions\scenes.py 中的 goto_home 重复了，后续需要合并
 @action('启动游戏.进入首页', screenshot_mode='manual-inherit')
@@ -172,8 +217,18 @@ def windows_launch():
         logger.debug('Game already started.')
         return
     
-    logger.info('Starting game...')
-    os.startfile('dmmgameplayer://play/GCL/gakumas/cl/win')
+    for _ in [1]:
+        if conf().start_game.dmm_bypass:
+            logger.info('Bypassing DMM launcher to start game directly...')
+            try:
+                start_windows_bypass()
+                break
+            except DmmGameLaunchError:
+                logger.exception('Failed to bypass DMM launcher, fallback to DMM launcher...')
+        
+        logger.info('Starting game via DMM launcher...')
+        os.startfile('dmmgameplayer://play/GCL/gakumas/cl/win')
+    
     # 等待游戏窗口出现
     for _ in Loop(auto_screenshot=False):
         if ahk.find_window(title='gakumas', title_match_mode=3):

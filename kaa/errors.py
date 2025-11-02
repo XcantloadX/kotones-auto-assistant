@@ -71,3 +71,11 @@ class NoProduceSolutionSelectedError(KaaUserFriendlyError):
             '未选择培育方案。请前往「设置」，在「当前使用的培育方案」选择一个培育方案后再重新运行。',
             'https://www.kdocs.cn/l/cetCY8mGKHLj?linkname=LasxpznR6b'
         )
+
+class DmmGameLaunchError(KaaUserFriendlyError):
+    def __init__(self, reason: str):
+        self.reason = reason
+        super().__init__(
+            f'绕过 DMM 启动器失败，原因：{reason}',
+            'https://www.kdocs.cn/l/cetCY8mGKHLj?linkname=pSw7QcH1Kx'
+        )
