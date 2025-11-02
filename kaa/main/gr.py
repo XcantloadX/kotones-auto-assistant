@@ -59,7 +59,7 @@ ConfigKey = Literal[
     'select_which_contestant', 'when_no_set',
     
     # produce
-    'produce_enabled', 'selected_solution_id', 'produce_count', 'produce_timeout_cd',
+    'produce_enabled', 'selected_solution_id', 'produce_count', 'produce_timeout_cd', 'enable_fever_month',
     'mission_reward_enabled',
     
     # club reward
@@ -77,7 +77,7 @@ ConfigKey = Literal[
     # start game
     'start_game_enabled', 'start_through_kuyo',
     'game_package_name', 'kuyo_package_name',
-    'disable_gakumas_localify', 'dmm_game_path',
+    'disable_gakumas_localify', 'dmm_game_path', 'dmm_bypass',
 
     # end game
     'exit_kaa', 'kill_game', 'kill_dmm',
@@ -1530,6 +1530,14 @@ class KotoneBotUI:
                     info=ProduceConfig.model_fields['produce_timeout_cd'].description
                 )
 
+                enable_fever_month = gr.Radio(
+                    label="自动启用强化月间",
+                    choices=[("不操作", "ignore"), ("自动启用", "on"), ("自动禁用", "off")],
+                    value=self.current_config.options.produce.enable_fever_month,
+                    info=ProduceConfig.model_fields['enable_fever_month'].description,
+                    interactive=True
+                )
+
             # 绑定启用状态变化事件
             def on_produce_enabled_change(enabled):
                 return gr.Group(visible=enabled)
@@ -1548,12 +1556,14 @@ class KotoneBotUI:
             config.produce.selected_solution_id = data.get('selected_solution_id')
             config.produce.produce_count = data.get('produce_count', 1)
             config.produce.produce_timeout_cd = data.get('produce_timeout_cd', 60)
+            config.produce.enable_fever_month = data.get('enable_fever_month', 'ignore')
 
         return set_config, {
             'produce_enabled': produce_enabled,
             'selected_solution_id': solution_dropdown,
             'produce_count': produce_count,
-            'produce_timeout_cd': produce_timeout_cd
+            'produce_timeout_cd': produce_timeout_cd,
+            'enable_fever_month': enable_fever_month
         }
 
 
@@ -2236,6 +2246,11 @@ class KotoneBotUI:
                     info=StartGameConfig.model_fields['dmm_game_path'].description,
                     placeholder="例：F:\\Games\\gakumas\\gakumas.exe"
                 )
+                dmm_bypass = gr.Checkbox(
+                    label="绕过 DMM 启动器直接启动游戏（实验性）",
+                    value=self.current_config.options.start_game.dmm_bypass,
+                    info=StartGameConfig.model_fields['dmm_bypass'].description
+                )
             start_game_enabled.change(
                 fn=lambda x: gr.Group(visible=x),
                 inputs=[start_game_enabled],
@@ -2249,6 +2264,7 @@ class KotoneBotUI:
             config.start_game.kuyo_package_name = data['kuyo_package_name']
             config.start_game.disable_gakumas_localify = data['disable_gakumas_localify']
             config.start_game.dmm_game_path = data['dmm_game_path'] if data['dmm_game_path'] else None
+            config.start_game.dmm_bypass = data['dmm_bypass']
 
         return set_config, {
             'start_game_enabled': start_game_enabled,
@@ -2256,7 +2272,8 @@ class KotoneBotUI:
             'game_package_name': game_package_name,
             'kuyo_package_name': kuyo_package_name,
             'disable_gakumas_localify': disable_gakumas_localify,
-            'dmm_game_path': dmm_game_path
+            'dmm_game_path': dmm_game_path,
+            'dmm_bypass': dmm_bypass
         }
 
 

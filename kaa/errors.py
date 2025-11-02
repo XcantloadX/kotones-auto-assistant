@@ -64,3 +64,18 @@ class GameUpdateNeededError(KaaUserFriendlyError):
             '游戏本体需要更新。kaa 暂不支持自动更新，请前往 Play Store 手动更新游戏。',
             'https://www.baidu.com/s?wd=%E5%BF%AB%E5%8E%BB%E6%9B%B4%E6%96%B0%E6%B8%B8%E6%88%8F%E5%95%8A%EF%BC%8C%E8%BF%98%E7%82%B9%E4%BB%80%E4%B9%88%E6%89%93%E5%BC%80%E5%B8%AE%E5%8A%A9'
         )
+
+class NoProduceSolutionSelectedError(KaaUserFriendlyError):
+    def __init__(self):
+        super().__init__(
+            '未选择培育方案。请前往「设置」，在「当前使用的培育方案」选择一个培育方案后再重新运行。',
+            'https://www.kdocs.cn/l/cetCY8mGKHLj?linkname=LasxpznR6b'
+        )
+
+class DmmGameLaunchError(KaaUserFriendlyError):
+    def __init__(self, reason: str):
+        self.reason = reason
+        super().__init__(
+            f'绕过 DMM 启动器失败，原因：{reason}',
+            'https://www.kdocs.cn/l/cetCY8mGKHLj?linkname=pSw7QcH1Kx'
+        )

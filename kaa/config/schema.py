@@ -3,6 +3,7 @@ from pydantic import BaseModel, ConfigDict
 
 from kotonebot import config
 from kaa.config.produce import ProduceSolution, ProduceSolutionManager
+from kaa.errors import NoProduceSolutionSelectedError
 from .const import (
     ConfigEnum,
     Priority,
@@ -77,6 +78,14 @@ class ProduceConfig(ConfigBaseModel):
     """培育的次数。"""
     produce_timeout_cd: int = 60
     """推荐卡检测用时上限；若超时，则随机选择卡片打出。单位为秒，最少为20sec，DMM用户可以设置为30sec"""
+    enable_fever_month: Literal['on', 'off', 'ignore'] = 'ignore'
+    """
+    是否自动启用强化月间。
+
+    * on: 自动启用
+    * off: 自动禁用
+    * ignore: 不改变当前状态
+    """
 
 class MissionRewardConfig(ConfigBaseModel):
     enabled: bool = False
@@ -125,20 +134,23 @@ class StartGameConfig(ConfigBaseModel):
 
     kuyo_package_name: str = 'org.kuyo.game'
     """Kuyo包名"""
-    
+
     disable_gakumas_localify: bool = False
     """
     自动检测并禁用 Gakumas Localify 汉化插件。
-    
+
     （目前仅对 DMM 版有效。）
     """
-    
+
     dmm_game_path: str | None = None
     """
     DMM 版游戏路径。若不填写，会自动检测。
-    
+
     例：`F:\\Games\\gakumas\\gakumas.exe`
     """
+
+    dmm_bypass: bool = False
+    """绕过 DMM 启动器直接启动游戏（实验性）"""
 
 class EndGameConfig(ConfigBaseModel):
     exit_kaa: bool = False
@@ -157,7 +169,7 @@ class EndGameConfig(ConfigBaseModel):
     """
     恢复 Gakumas Localify 汉化插件状态至启动前。通常与
     `disable_gakumas_localify` 配对使用。
-    
+
     （目前仅对 DMM 版有效。）
     """
 
@@ -253,6 +265,6 @@ def produce_solution() -> ProduceSolution:
     """获取当前培育方案"""
     id = conf().produce.selected_solution_id
     if id is None:
-        raise ValueError("No produce solution selected")
+        raise NoProduceSolutionSelectedError()
     # TODO: 这里需要缓存，不能每次都从磁盘读取
     return ProduceSolutionManager().read(id)

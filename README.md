@@ -162,9 +162,10 @@ kaa 本体及框架（kotonebot 文件夹）、相关辅助脚本（tools 文件
 
 kaa 的开发主要用到了以下开源项目：
 * [GkmasObjectManager
-](https://github.com/AllenHeartcore/GkmasObjectManager)：用于提取游戏图像资源，以 GPLv3 协议开源。
+](https://github.com/AllenHeartcore/GkmasObjectManager)（GPLv3）：用于提取游戏图像资源。
 * [gakumasu-diff](https://github.com/vertesan/gakumasu-diff)：游戏数据。
 
 kaa 的开发还参考了以下开源项目：
-* [EmulatorExtras](https://github.com/MaaXYZ/EmulatorExtras)：MuMu 与雷电模拟器的截图与控制接口定义。
-* [blue_archive_auto_script](https://github.com/pur1fying/blue_archive_auto_script)：MuMu 与雷电模拟器的截图与控制接口的 Python 实现，以及各模拟器的控制实现。
+* [EmulatorExtras](https://github.com/MaaXYZ/EmulatorExtras)（No License）：MuMu 与雷电模拟器的截图与控制接口定义。
+* [blue_archive_auto_script](https://github.com/pur1fying/blue_archive_auto_script)（GPLv3）：MuMu 与雷电模拟器的截图与控制接口的 Python 实现，以及各模拟器的控制实现。
+* [Gakumas_Launcher](https://github.com/a4nqi3n/Gakumas_Launcher)（Unlicense license）：绕开 DMMPlayer 直接启动游戏本体的方式。

@@ -145,25 +145,25 @@ for row in tqdm.tqdm(cursor.fetchall(), desc="构建偶像卡任务"):
     download_tasks.append((asset_id1, path1, resize_idol_card_image))
 
 # 2. 构建技能卡下载任务
-print("添加技能卡任务...")
-cursor = db.execute("""
-SELECT
-    DISTINCT assetId,
-    isCharacterAsset
-FROM ProduceCard;
-""")
+# print("添加技能卡任务...")
+# cursor = db.execute("""
+# SELECT
+#     DISTINCT assetId,
+#     isCharacterAsset
+# FROM ProduceCard;
+# """)
 
-for row in tqdm.tqdm(cursor.fetchall(), desc="构建技能卡任务"):
-    asset_id, is_character_asset = row
-    assert asset_id is not None
-    if not is_character_asset:
-        path = SKILL_CARD_PATH + f'/{asset_id}.png'
-        download_tasks.append((asset_id, path, None))
-    else:
-        for ii in CharacterId:
-            actual_asset_id = f'{asset_id}-{ii.value}'
-            path = SKILL_CARD_PATH + f'/{actual_asset_id}.png'
-            download_tasks.append((actual_asset_id, path, None))
+# for row in tqdm.tqdm(cursor.fetchall(), desc="构建技能卡任务"):
+#     asset_id, is_character_asset = row
+#     assert asset_id is not None
+#     if not is_character_asset:
+#         path = SKILL_CARD_PATH + f'/{asset_id}.png'
+#         download_tasks.append((asset_id, path, None))
+#     else:
+#         for ii in CharacterId:
+#             actual_asset_id = f'{asset_id}-{ii.value}'
+#             path = SKILL_CARD_PATH + f'/{actual_asset_id}.png'
+#             download_tasks.append((actual_asset_id, path, None))
 
 # 3. 构建饮品下载任务
 print("添加饮品任务...")

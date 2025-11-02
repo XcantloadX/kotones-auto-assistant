@@ -55,3 +55,6 @@ kaa = "kaa.main.cli:main"
 
 [tool.setuptools.dynamic]
 version = {file = "./version"}
+
+[tool.basedpyright]
+typeCheckingMode = "basic"
