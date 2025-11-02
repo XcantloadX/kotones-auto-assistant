@@ -78,6 +78,14 @@ class ProduceConfig(ConfigBaseModel):
     """培育的次数。"""
     produce_timeout_cd: int = 60
     """推荐卡检测用时上限；若超时，则随机选择卡片打出。单位为秒，最少为20sec，DMM用户可以设置为30sec"""
+    enable_fever_month: Literal['on', 'off', 'ignore'] = 'ignore'
+    """
+    是否自动启用强化月间。
+
+    * on: 自动启用
+    * off: 自动禁用
+    * ignore: 不改变当前状态
+    """
 
 class MissionRewardConfig(ConfigBaseModel):
     enabled: bool = False

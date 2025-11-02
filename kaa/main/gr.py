@@ -59,7 +59,7 @@ ConfigKey = Literal[
     'select_which_contestant', 'when_no_set',
     
     # produce
-    'produce_enabled', 'selected_solution_id', 'produce_count', 'produce_timeout_cd',
+    'produce_enabled', 'selected_solution_id', 'produce_count', 'produce_timeout_cd', 'enable_fever_month',
     'mission_reward_enabled',
     
     # club reward
@@ -1530,6 +1530,14 @@ class KotoneBotUI:
                     info=ProduceConfig.model_fields['produce_timeout_cd'].description
                 )
 
+                enable_fever_month = gr.Radio(
+                    label="自动启用强化月间",
+                    choices=[("不操作", "ignore"), ("自动启用", "on"), ("自动禁用", "off")],
+                    value=self.current_config.options.produce.enable_fever_month,
+                    info=ProduceConfig.model_fields['enable_fever_month'].description,
+                    interactive=True
+                )
+
             # 绑定启用状态变化事件
             def on_produce_enabled_change(enabled):
                 return gr.Group(visible=enabled)
@@ -1548,12 +1556,14 @@ class KotoneBotUI:
             config.produce.selected_solution_id = data.get('selected_solution_id')
             config.produce.produce_count = data.get('produce_count', 1)
             config.produce.produce_timeout_cd = data.get('produce_timeout_cd', 60)
+            config.produce.enable_fever_month = data.get('enable_fever_month', 'ignore')
 
         return set_config, {
             'produce_enabled': produce_enabled,
             'selected_solution_id': solution_dropdown,
             'produce_count': produce_count,
-            'produce_timeout_cd': produce_timeout_cd
+            'produce_timeout_cd': produce_timeout_cd,
+            'enable_fever_month': enable_fever_month
         }
 
 

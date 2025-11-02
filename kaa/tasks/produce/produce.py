@@ -219,6 +219,15 @@ def do_produce(
     for _ in Loop():
         if image.find(R.Produce.ButtonProduce):
             device.click()
+        # 强化月间处理
+        elif conf().produce.enable_fever_month == 'on' and image.find(R.Produce.SwitchEventModeOff):
+            logger.info('Fever month checked on.')
+            device.click()
+            sleep(0.5)
+        elif conf().produce.enable_fever_month == 'off' and image.find(R.Produce.SwitchEventModeOn):
+            logger.info('Fever month checked off.')
+            device.click()
+            sleep(0.5)
         elif image.find_multi(target_buttons):
             device.click()
         elif image.find(R.Produce.ButtonPIdolOverview):
@@ -418,6 +427,7 @@ if __name__ == '__main__':
 
     conf().produce.enabled = True
     conf().produce.produce_count = 1
+    conf().produce.enable_fever_month = 'ignore'
     produce_solution().data.mode = 'pro'
     # produce_solution().data.idol = 'i_card-skin-hski-3-002'
     produce_solution().data.memory_set = 1
