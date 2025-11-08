@@ -50,12 +50,12 @@ generate-metadata: env
     metadata_path = Path("kaa/metadata.py")
     metadata_path.parent.mkdir(parents=True, exist_ok=True)
     with open(metadata_path, "w", encoding="utf-8") as f:
-        f.write(f'WHATS_NEW = """/n{content}/n"""')
+        f.write(f'WHATS_NEW = """\n{content}\n"""')
     
     # 版本号
     from subprocess import check_output
     # 获取当前分支上 kaa 开头的 tag，多重排序：commit 日期倒序 -> tag 日期倒序 -> tag 名称倒序
-    version = check_output(['git', 'for-each-ref', '--sort=-committerdate', '--sort=-creatordate', '--sort=-refname', '--format=%(refname:short)', 'refs/tags/kaa-*', '--merged', 'HEAD']).decode().strip().split('/n')[0]
+    version = check_output(['git', 'for-each-ref', '--sort=-committerdate', '--sort=-creatordate', '--sort=-refname', '--format=%(refname:short)', 'refs/tags/kaa-*', '--merged', 'HEAD']).decode().strip().split('\n')[0]
     if version.startswith('kaa-v'):
         version = version[5:]
     with open("version", "w", encoding="utf-8") as f:
