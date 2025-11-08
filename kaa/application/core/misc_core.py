@@ -1,11 +1,14 @@
 import os
 import sys
 
-from kotonebot.interop.win.shortcut import create_shortcut
+from kotonebot.util import is_windows, require_windows
+if is_windows():
+    from kotonebot.interop.win.shortcut import create_shortcut
 from kaa.errors import LauncherNotFoundError
 
 
 def create_desktop_shortcut(start_immediately: bool):
+    require_windows('create_desktop_shortcut')
     exe_path = os.path.abspath('./kaa.exe')
     if not os.path.exists(exe_path):
         raise LauncherNotFoundError()

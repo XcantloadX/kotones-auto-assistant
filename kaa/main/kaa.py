@@ -11,6 +11,8 @@ from typing_extensions import override
 
 import cv2
 
+from kaa.errors import WindowsOnlyError
+from kotonebot.util import is_windows
 from kotonebot.client.host.mumu12_host import MuMu12HostConfig
 
 from kotonebot.client.device import Device
@@ -18,7 +20,10 @@ from kotonebot.ui import user
 from kotonebot import KotoneBot
 from ..util.paths import get_ahk_path
 from ..kaa_context import _set_instance
-from .dmm_host import DmmHost, DmmInstance
+if is_windows():
+    from .dmm_host import DmmHost, DmmInstance
+else:
+    DmmHost = DmmInstance = None
 from ..config import BaseConfig, upgrade_config
 from kotonebot.config.base_config import UserConfig
 from kotonebot.client.host import (
@@ -206,6 +211,9 @@ class Kaa(KotoneBot):
             return instance
 
         elif config.backend.type == 'dmm':
+            if not is_windows():
+                raise WindowsOnlyError('DMM 版')
+            assert DmmHost is not None
             return DmmHost.instance
 
         else:
@@ -219,7 +227,7 @@ class Kaa(KotoneBot):
         :param config: 用户配置对象
         """
         # DMM 实例不需要启动，直接返回
-        if isinstance(instance, DmmInstance):
+        if DmmInstance and isinstance(instance, DmmInstance):
             logger.info('DMM backend does not require startup.')
             return
 
@@ -254,7 +262,7 @@ class Kaa(KotoneBot):
         # 步骤4：准备 HostConfig 并创建 Device
         impl_name = user_config.backend.screenshot_impl
 
-        if isinstance(self.backend_instance, DmmInstance):
+        if DmmInstance and isinstance(self.backend_instance, DmmInstance):
             if impl_name == 'windows':
                 ahk_path = get_ahk_path()
                 host_conf = WindowsHostConfig(

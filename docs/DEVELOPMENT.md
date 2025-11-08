@@ -1,8 +1,9 @@
 # 开发
 ## 共通
 1. 安装 [just](https://github.com/casey/just#packages) 构建工具。
-2. 创建 Python 3.10 虚拟环境，配置 node 环境。
-3. 执行：
+2. 对于非 Windows 系统，你还需要手动安装 [PowerShell](https://learn.microsoft.com/zh-cn/powershell/scripting/install/installing-powershell-on-linux?view=powershell-7.5)。
+3. 创建 Python 3.10 虚拟环境，配置 node 环境。
+4. 执行：
    ```bash
    git clone https://github.com/XcantloadX/kotones-auto-assistant.git
    cd kotones-auto-assistant

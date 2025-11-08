@@ -7,7 +7,7 @@ dynamic = ["version"]
 name = "ksaa"
 description = "Kotones Auto Assistant(kaa) is a script for game 'Gakuen Idol M@ster' that automates the dailies and produces."
 readme = "README.md"
-requires-python = "~=3.10"
+requires-python = "~=3.10.0"
 dependencies = [
     # Image Processing & OCR
     "opencv-python==4.10.0.84",
@@ -39,11 +39,12 @@ dependencies = [
     "numpy<2.0",
     # For DMM version
     # TODO: move these dependencies to optional-dependencies
-    "pywin32==310",
-    "ahk==1.8.3",
-    "win11toast==0.35",  # For Windows Toast Notification
+    "pywin32==310; sys_platform == 'win32'",
+    "ahk==1.8.3; sys_platform == 'win32'",
+    "win11toast==0.35; sys_platform == 'win32'",  # For Windows Toast Notification
     "keyboard==0.13.5",
-    "kotonebot[windows,android]==0.3.1"
+    "kotonebot[android]==0.4.0",
+    "kotonebot[windows]==0.4.0; sys_platform == 'win32'",
 ]
 
 
