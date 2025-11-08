@@ -17,7 +17,7 @@ default:
     @just --list
 
 fetch-submodule:
-    git submodule update --init --remote --recursive
+    git submodule update --init --remote --recursive --progress --depth 1
 
 resource:
     python tools/make_resources.py
