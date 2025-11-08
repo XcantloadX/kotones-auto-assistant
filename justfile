@@ -17,10 +17,10 @@ default:
     @just --list
 
 fetch-submodule:
-    git submodule update --init --remote --recursive
+    git submodule update --init --remote --recursive --progress --depth 1
 
 resource:
-    python tools\make_resources.py
+    python tools/make_resources.py
 
 devtool:
     cd kotonebot-devtool; npm run dev
@@ -32,9 +32,9 @@ env: fetch-submodule
     $IsWindows = $env:OS -match "Windows"
     
     if ($IsWindows) {
-        .\.venv\Scripts\pip install -r requirements.dev.txt
-        .\.venv\Scripts\pip install -r requirements.win.txt
-        .\.venv\Scripts\pip install -r .\submodules\GkmasObjectManager\requirements.txt
+        ./.venv/Scripts/pip install -r requirements.dev.txt
+        ./.venv/Scripts/pip install -r requirements.win.txt
+        ./.venv/Scripts/pip install -r ./submodules/GkmasObjectManager/requirements.txt
     } else {
         ./.venv/bin/pip install -r requirements.dev.txt
         ./.venv/bin/pip install -r ./submodules/GkmasObjectManager/requirements.txt
@@ -50,12 +50,12 @@ generate-metadata: env
     metadata_path = Path("kaa/metadata.py")
     metadata_path.parent.mkdir(parents=True, exist_ok=True)
     with open(metadata_path, "w", encoding="utf-8") as f:
-        f.write(f'WHATS_NEW = """\n{content}\n"""')
+        f.write(f'WHATS_NEW = """/n{content}/n"""')
     
     # 版本号
     from subprocess import check_output
     # 获取当前分支上 kaa 开头的 tag，多重排序：commit 日期倒序 -> tag 日期倒序 -> tag 名称倒序
-    version = check_output(['git', 'for-each-ref', '--sort=-committerdate', '--sort=-creatordate', '--sort=-refname', '--format=%(refname:short)', 'refs/tags/kaa-*', '--merged', 'HEAD']).decode().strip().split('\n')[0]
+    version = check_output(['git', 'for-each-ref', '--sort=-committerdate', '--sort=-creatordate', '--sort=-refname', '--format=%(refname:short)', 'refs/tags/kaa-*', '--merged', 'HEAD']).decode().strip().split('/n')[0]
     if version.startswith('kaa-v'):
         version = version[5:]
     with open("version", "w", encoding="utf-8") as f:
@@ -65,10 +65,10 @@ extract-game-data:
     #!{{shebang_pwsh}}
     Write-Host "Extracting game data..."
     
-    New-Item -ItemType File -Force -Path .\kaa\resources\__init__.py
+    New-Item -ItemType File -Force -Path ./kaa/resources/__init__.py
     
-    $currentHash = git -C .\submodules\gakumasu-diff rev-parse HEAD
-    $hashFile = ".\kaa\resources\game_ver.txt"
+    $currentHash = git -C ./submodules/gakumasu-diff rev-parse HEAD
+    $hashFile = "./kaa/resources/game_ver.txt"
     $shouldUpdate = $true
     
     if (Test-Path $hashFile) {
@@ -84,9 +84,9 @@ extract-game-data:
         Write-Host "Game data needs update. Extracting..."
 
         $currentHash | Out-File -FilePath $hashFile
-        rm .\kaa\resources\game.db
-        python .\tools\db\extract_schema.py -i .\submodules\gakumasu-diff -d .\kaa\resources\game.db
-        python .\tools\db\extract_resources.py
+        Remove-Item ./kaa/resources/game.db
+        python ./tools/db/extract_schema.py -i ./submodules/gakumasu-diff -d ./kaa/resources/game.db
+        python ./tools/db/extract_resources.py
     }
 
 @package-resource:
@@ -104,7 +104,7 @@ extract-game-data:
     @python -m build
     
     Write-Host "Copying kotonebot-resource to dist..."
-    Copy-Item .\kotonebot-resource\dist\* .\dist\
+    Copy-Item ./kotonebot-resource/dist/* ./dist/
 
     python tools/make_resources.py # Make R.py in development mode
 

@@ -44,7 +44,7 @@ def download_to(asset_id: str, path: str, overwrite: bool = False) -> bool:
                 return False
             manifest.download(asset_id, path=path, categorize=False)
             return True
-        except requests.exceptions.ReadTimeout | requests.exceptions.SSLError | requests.exceptions.ConnectionError | urllib3.exceptions.MaxRetryError as e:
+        except requests.exceptions.ReadTimeout | requests.exceptions.SSLError | requests.exceptions.ConnectionError as e:
             retry_count += 1
             if retry_count >= MAX_RETRY_COUNT:
                 raise e

@@ -1,4 +1,5 @@
 import os
+import platform
 from kotonebot.errors import UserFriendlyError
 
 
@@ -78,4 +79,11 @@ class DmmGameLaunchError(KaaUserFriendlyError):
         super().__init__(
             f'绕过 DMM 启动器失败，原因：{reason}',
             'https://www.kdocs.cn/l/cetCY8mGKHLj?linkname=pSw7QcH1Kx'
+        )
+
+class WindowsOnlyError(KaaUserFriendlyError):
+    def __init__(self, feature_name: str):
+        super().__init__(
+            f'此功能（{feature_name}）仅在 Windows 上可用。当前系统为 {platform.system()}。请不要使用此功能，或在 Windows 上运行 kaa。',
+            'https://www.kdocs.cn/l/cetCY8mGKHLj?linkname=LbvACPfiCw'
         )
