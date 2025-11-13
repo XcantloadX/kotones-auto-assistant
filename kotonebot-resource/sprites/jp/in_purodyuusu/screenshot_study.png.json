@@ -1,1 +1,23 @@
-{"definitions":{"f29b6663-1f88-477f-bb7a-8e0e77ad9138":{"name":"InPurodyuusu.BoxCommuEventButtonsArea","displayName":"交流事件按钮区域","type":"hint-box","annotationId":"f29b6663-1f88-477f-bb7a-8e0e77ad9138","useHintRect":false}},"annotations":[{"id":"f29b6663-1f88-477f-bb7a-8e0e77ad9138","type":"rect","data":{"x1":14,"y1":412,"x2":703,"y2":1089}}]}
+{
+  "definitions": {
+    "f29b6663-1f88-477f-bb7a-8e0e77ad9138": {
+      "name": "InPurodyuusu.BoxCommuEventButtonsArea",
+      "displayName": "交流事件按钮区域",
+      "type": "hint-box",
+      "annotationId": "f29b6663-1f88-477f-bb7a-8e0e77ad9138",
+      "useHintRect": false
+    }
+  },
+  "annotations": [
+    {
+      "id": "f29b6663-1f88-477f-bb7a-8e0e77ad9138",
+      "type": "rect",
+      "data": {
+        "x1": 14,
+        "y1": 412,
+        "x2": 703,
+        "y2": 1089
+      }
+    }
+  ]
+}

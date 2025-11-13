@@ -1,1 +1,40 @@
-{"definitions":{"4883c564-f950-4a29-9f5f-6f924123cd22":{"name":"Produce.TextAPInsufficient","displayName":"培育 AP 不足提示弹窗 标题","type":"template","annotationId":"4883c564-f950-4a29-9f5f-6f924123cd22","useHintRect":false},"eaba6ebe-f0df-4918-aee5-ef4e3ffedcf0":{"name":"Produce.ButtonRefillAP","displayName":"确认恢复AP按钮","type":"template","annotationId":"eaba6ebe-f0df-4918-aee5-ef4e3ffedcf0","useHintRect":false}},"annotations":[{"id":"4883c564-f950-4a29-9f5f-6f924123cd22","type":"rect","data":{"x1":50,"y1":952,"x2":179,"y2":996}},{"id":"eaba6ebe-f0df-4918-aee5-ef4e3ffedcf0","type":"rect","data":{"x1":389,"y1":1140,"x2":585,"y2":1185}}]}
+{
+  "definitions": {
+    "4883c564-f950-4a29-9f5f-6f924123cd22": {
+      "name": "Produce.TextAPInsufficient",
+      "displayName": "培育 AP 不足提示弹窗 标题",
+      "type": "template",
+      "annotationId": "4883c564-f950-4a29-9f5f-6f924123cd22",
+      "useHintRect": false
+    },
+    "eaba6ebe-f0df-4918-aee5-ef4e3ffedcf0": {
+      "name": "Produce.ButtonRefillAP",
+      "displayName": "确认恢复AP按钮",
+      "type": "template",
+      "annotationId": "eaba6ebe-f0df-4918-aee5-ef4e3ffedcf0",
+      "useHintRect": false
+    }
+  },
+  "annotations": [
+    {
+      "id": "4883c564-f950-4a29-9f5f-6f924123cd22",
+      "type": "rect",
+      "data": {
+        "x1": 50,
+        "y1": 952,
+        "x2": 179,
+        "y2": 996
+      }
+    },
+    {
+      "id": "eaba6ebe-f0df-4918-aee5-ef4e3ffedcf0",
+      "type": "rect",
+      "data": {
+        "x1": 389,
+        "y1": 1140,
+        "x2": 585,
+        "y2": 1185
+      }
+    }
+  ]
+}

@@ -1,1 +1,55 @@
-{"definitions":{"23d88465-65d9-4718-8725-8dbf0a98a5a4":{"name":"InPurodyuusu.IconTitleConsult","displayName":"「相談」页面左上角图标","type":"template","annotationId":"23d88465-65d9-4718-8725-8dbf0a98a5a4","useHintRect":false},"1fb9bd7a-52f6-43c6-9b13-a05b66ecae42":{"name":"InPurodyuusu.PointConsultFirstItem","displayName":"「相談」中第一个物品位置","type":"hint-point","annotationId":"1fb9bd7a-52f6-43c6-9b13-a05b66ecae42","useHintRect":false},"9fd0753f-c607-4d49-82d1-40bda27e014f":{"name":"InPurodyuusu.ButtonEndConsult","displayName":"相談 结束按钮","type":"template","annotationId":"9fd0753f-c607-4d49-82d1-40bda27e014f","useHintRect":false}},"annotations":[{"id":"23d88465-65d9-4718-8725-8dbf0a98a5a4","type":"rect","data":{"x1":74,"y1":79,"x2":150,"y2":145}},{"id":"1fb9bd7a-52f6-43c6-9b13-a05b66ecae42","type":"point","data":{"x":123,"y":550}},{"id":"9fd0753f-c607-4d49-82d1-40bda27e014f","type":"rect","data":{"x1":653,"y1":1062,"x2":703,"y2":1109}}]}
+{
+  "definitions": {
+    "23d88465-65d9-4718-8725-8dbf0a98a5a4": {
+      "name": "InPurodyuusu.IconTitleConsult",
+      "displayName": "「相談」页面左上角图标",
+      "type": "template",
+      "annotationId": "23d88465-65d9-4718-8725-8dbf0a98a5a4",
+      "useHintRect": false
+    },
+    "1fb9bd7a-52f6-43c6-9b13-a05b66ecae42": {
+      "name": "InPurodyuusu.PointConsultFirstItem",
+      "displayName": "「相談」中第一个物品位置",
+      "type": "hint-point",
+      "annotationId": "1fb9bd7a-52f6-43c6-9b13-a05b66ecae42",
+      "useHintRect": false
+    },
+    "9fd0753f-c607-4d49-82d1-40bda27e014f": {
+      "name": "InPurodyuusu.ButtonEndConsult",
+      "displayName": "相談 结束按钮",
+      "type": "template",
+      "annotationId": "9fd0753f-c607-4d49-82d1-40bda27e014f",
+      "useHintRect": false
+    }
+  },
+  "annotations": [
+    {
+      "id": "23d88465-65d9-4718-8725-8dbf0a98a5a4",
+      "type": "rect",
+      "data": {
+        "x1": 74,
+        "y1": 79,
+        "x2": 150,
+        "y2": 145
+      }
+    },
+    {
+      "id": "1fb9bd7a-52f6-43c6-9b13-a05b66ecae42",
+      "type": "point",
+      "data": {
+        "x": 123,
+        "y": 550
+      }
+    },
+    {
+      "id": "9fd0753f-c607-4d49-82d1-40bda27e014f",
+      "type": "rect",
+      "data": {
+        "x1": 653,
+        "y1": 1062,
+        "x2": 703,
+        "y2": 1109
+      }
+    }
+  ]
+}

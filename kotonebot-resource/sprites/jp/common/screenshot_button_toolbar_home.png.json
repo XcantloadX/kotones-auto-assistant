@@ -1,1 +1,23 @@
-{"definitions":{"7b5c8883-a1f9-4ce9-bd84-26668577dfc6":{"name":"Common.ButtonToolbarHome","displayName":"工具栏的主页按钮","type":"template","annotationId":"7b5c8883-a1f9-4ce9-bd84-26668577dfc6","useHintRect":false}},"annotations":[{"id":"7b5c8883-a1f9-4ce9-bd84-26668577dfc6","type":"rect","data":{"x1":60,"y1":1186,"x2":110,"y2":1237}}]}
+{
+  "definitions": {
+    "7b5c8883-a1f9-4ce9-bd84-26668577dfc6": {
+      "name": "Common.ButtonToolbarHome",
+      "displayName": "工具栏的主页按钮",
+      "type": "template",
+      "annotationId": "7b5c8883-a1f9-4ce9-bd84-26668577dfc6",
+      "useHintRect": false
+    }
+  },
+  "annotations": [
+    {
+      "id": "7b5c8883-a1f9-4ce9-bd84-26668577dfc6",
+      "type": "rect",
+      "data": {
+        "x1": 60,
+        "y1": 1186,
+        "x2": 110,
+        "y2": 1237
+      }
+    }
+  ]
+}

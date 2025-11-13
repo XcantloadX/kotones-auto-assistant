@@ -1,1 +1,23 @@
-{"definitions":{"439c91c9-9a8d-48ae-a7ba-1ecdae3a40ca":{"name":"InPurodyuusu.BoxLessonCards5_1","displayName":"课程中手牌 1/5","type":"hint-box","annotationId":"439c91c9-9a8d-48ae-a7ba-1ecdae3a40ca","useHintRect":false}},"annotations":[{"id":"439c91c9-9a8d-48ae-a7ba-1ecdae3a40ca","type":"rect","data":{"x1":16,"y1":882,"x2":208,"y2":1136}}]}
+{
+  "definitions": {
+    "439c91c9-9a8d-48ae-a7ba-1ecdae3a40ca": {
+      "name": "InPurodyuusu.BoxLessonCards5_1",
+      "displayName": "课程中手牌 1/5",
+      "type": "hint-box",
+      "annotationId": "439c91c9-9a8d-48ae-a7ba-1ecdae3a40ca",
+      "useHintRect": false
+    }
+  },
+  "annotations": [
+    {
+      "id": "439c91c9-9a8d-48ae-a7ba-1ecdae3a40ca",
+      "type": "rect",
+      "data": {
+        "x1": 16,
+        "y1": 882,
+        "x2": 208,
+        "y2": 1136
+      }
+    }
+  ]
+}

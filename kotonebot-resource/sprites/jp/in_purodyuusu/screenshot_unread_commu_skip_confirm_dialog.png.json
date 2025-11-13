@@ -1,1 +1,23 @@
-{"definitions":{"4d78add6-1027-4939-bb51-f99fca7db2ce":{"name":"Common.TextSkipCommuComfirmation","displayName":"跳过未读交流确认对话框标题","type":"template","annotationId":"4d78add6-1027-4939-bb51-f99fca7db2ce","useHintRect":false}},"annotations":[{"id":"4d78add6-1027-4939-bb51-f99fca7db2ce","type":"rect","data":{"x1":53,"y1":920,"x2":260,"y2":958}}]}
+{
+  "definitions": {
+    "4d78add6-1027-4939-bb51-f99fca7db2ce": {
+      "name": "Common.TextSkipCommuComfirmation",
+      "displayName": "跳过未读交流确认对话框标题",
+      "type": "template",
+      "annotationId": "4d78add6-1027-4939-bb51-f99fca7db2ce",
+      "useHintRect": false
+    }
+  },
+  "annotations": [
+    {
+      "id": "4d78add6-1027-4939-bb51-f99fca7db2ce",
+      "type": "rect",
+      "data": {
+        "x1": 53,
+        "y1": 920,
+        "x2": 260,
+        "y2": 958
+      }
+    }
+  ]
+}

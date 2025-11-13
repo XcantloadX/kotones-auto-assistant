@@ -1,1 +1,23 @@
-{"definitions":{"ee4e512b-4982-49b6-9c71-31984b58e1d0":{"name":"InPurodyuusu.TitleIconOuting","displayName":"外出（おでかけ）页面 标题图标","type":"template","annotationId":"ee4e512b-4982-49b6-9c71-31984b58e1d0","useHintRect":false}},"annotations":[{"id":"ee4e512b-4982-49b6-9c71-31984b58e1d0","type":"rect","data":{"x1":77,"y1":78,"x2":147,"y2":139}}]}
+{
+  "definitions": {
+    "ee4e512b-4982-49b6-9c71-31984b58e1d0": {
+      "name": "InPurodyuusu.TitleIconOuting",
+      "displayName": "外出（おでかけ）页面 标题图标",
+      "type": "template",
+      "annotationId": "ee4e512b-4982-49b6-9c71-31984b58e1d0",
+      "useHintRect": false
+    }
+  },
+  "annotations": [
+    {
+      "id": "ee4e512b-4982-49b6-9c71-31984b58e1d0",
+      "type": "rect",
+      "data": {
+        "x1": 77,
+        "y1": 78,
+        "x2": 147,
+        "y2": 139
+      }
+    }
+  ]
+}

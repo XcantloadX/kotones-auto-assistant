@@ -1,1 +1,74 @@
-{"definitions":{"9340b854-025c-40da-9387-385d38433bef":{"name":"Shop.ItemAnomalyNoteVisual","displayName":"アノマリーノート（ビジュアル）非凡笔记（形象）","type":"template","annotationId":"9340b854-025c-40da-9387-385d38433bef","useHintRect":false},"ea1ba124-9cb3-4427-969a-bacd47e7d920":{"name":"Shop.ItemRechallengeTicket","displayName":"再挑戦チケット 重新挑战券","type":"template","annotationId":"ea1ba124-9cb3-4427-969a-bacd47e7d920","useHintRect":false},"1926f2f9-4bd7-48eb-9eba-28ec4efb0606":{"name":"Shop.ItemRecordKey","displayName":"記録の鍵  解锁交流的物品","type":"template","annotationId":"1926f2f9-4bd7-48eb-9eba-28ec4efb0606","useHintRect":false},"e9ee330d-dfca-440e-8b8c-0a3b4e8c8730":{"name":"Daily.IconTitleDailyShop","displayName":"日常商店标题图标","type":"template","annotationId":"e9ee330d-dfca-440e-8b8c-0a3b4e8c8730","useHintRect":false}},"annotations":[{"id":"9340b854-025c-40da-9387-385d38433bef","type":"rect","data":{"x1":72,"y1":611,"x2":138,"y2":693}},{"id":"ea1ba124-9cb3-4427-969a-bacd47e7d920","type":"rect","data":{"x1":227,"y1":639,"x2":316,"y2":674}},{"id":"1926f2f9-4bd7-48eb-9eba-28ec4efb0606","type":"rect","data":{"x1":385,"y1":591,"x2":508,"y2":694}},{"id":"e9ee330d-dfca-440e-8b8c-0a3b4e8c8730","type":"rect","data":{"x1":17,"y1":35,"x2":59,"y2":76}}]}
+{
+  "definitions": {
+    "9340b854-025c-40da-9387-385d38433bef": {
+      "name": "Shop.ItemAnomalyNoteVisual",
+      "displayName": "アノマリーノート（ビジュアル）非凡笔记（形象）",
+      "type": "template",
+      "annotationId": "9340b854-025c-40da-9387-385d38433bef",
+      "useHintRect": false
+    },
+    "ea1ba124-9cb3-4427-969a-bacd47e7d920": {
+      "name": "Shop.ItemRechallengeTicket",
+      "displayName": "再挑戦チケット 重新挑战券",
+      "type": "template",
+      "annotationId": "ea1ba124-9cb3-4427-969a-bacd47e7d920",
+      "useHintRect": false
+    },
+    "1926f2f9-4bd7-48eb-9eba-28ec4efb0606": {
+      "name": "Shop.ItemRecordKey",
+      "displayName": "記録の鍵  解锁交流的物品",
+      "type": "template",
+      "annotationId": "1926f2f9-4bd7-48eb-9eba-28ec4efb0606",
+      "useHintRect": false
+    },
+    "e9ee330d-dfca-440e-8b8c-0a3b4e8c8730": {
+      "name": "Daily.IconTitleDailyShop",
+      "displayName": "日常商店标题图标",
+      "type": "template",
+      "annotationId": "e9ee330d-dfca-440e-8b8c-0a3b4e8c8730",
+      "useHintRect": false
+    }
+  },
+  "annotations": [
+    {
+      "id": "9340b854-025c-40da-9387-385d38433bef",
+      "type": "rect",
+      "data": {
+        "x1": 72,
+        "y1": 611,
+        "x2": 138,
+        "y2": 693
+      }
+    },
+    {
+      "id": "ea1ba124-9cb3-4427-969a-bacd47e7d920",
+      "type": "rect",
+      "data": {
+        "x1": 227,
+        "y1": 639,
+        "x2": 316,
+        "y2": 674
+      }
+    },
+    {
+      "id": "1926f2f9-4bd7-48eb-9eba-28ec4efb0606",
+      "type": "rect",
+      "data": {
+        "x1": 385,
+        "y1": 591,
+        "x2": 508,
+        "y2": 694
+      }
+    },
+    {
+      "id": "e9ee330d-dfca-440e-8b8c-0a3b4e8c8730",
+      "type": "rect",
+      "data": {
+        "x1": 17,
+        "y1": 35,
+        "x2": 59,
+        "y2": 76
+      }
+    }
+  ]
+}

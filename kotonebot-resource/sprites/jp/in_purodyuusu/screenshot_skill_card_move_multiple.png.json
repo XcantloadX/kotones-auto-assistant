@@ -1,1 +1,41 @@
-{"definitions":{"db7d3f03-1f7f-43bf-8125-f7c2d345fca2":{"name":"InPurodyuusu.IconTitleSkillCardMove","displayName":"培育中技能卡移动对话框","type":"template","annotationId":"db7d3f03-1f7f-43bf-8125-f7c2d345fca2","useHintRect":false},"a267e094-d8be-4add-9b00-1037d47763e0":{"name":"InPurodyuusu.BoxSkillCardMoveButtonCount","displayName":"技能卡移动数量文本区域","type":"hint-box","annotationId":"a267e094-d8be-4add-9b00-1037d47763e0","useHintRect":false,"description":"用于培育中技能卡移动对话框"}},"annotations":[{"id":"db7d3f03-1f7f-43bf-8125-f7c2d345fca2","type":"rect","data":{"x1":15,"y1":35,"x2":59,"y2":78}},{"id":"a267e094-d8be-4add-9b00-1037d47763e0","type":"rect","data":{"x1":339,"y1":1170,"x2":381,"y2":1195}}]}
+{
+  "definitions": {
+    "db7d3f03-1f7f-43bf-8125-f7c2d345fca2": {
+      "name": "InPurodyuusu.IconTitleSkillCardMove",
+      "displayName": "培育中技能卡移动对话框",
+      "type": "template",
+      "annotationId": "db7d3f03-1f7f-43bf-8125-f7c2d345fca2",
+      "useHintRect": false
+    },
+    "a267e094-d8be-4add-9b00-1037d47763e0": {
+      "name": "InPurodyuusu.BoxSkillCardMoveButtonCount",
+      "displayName": "技能卡移动数量文本区域",
+      "type": "hint-box",
+      "annotationId": "a267e094-d8be-4add-9b00-1037d47763e0",
+      "useHintRect": false,
+      "description": "用于培育中技能卡移动对话框"
+    }
+  },
+  "annotations": [
+    {
+      "id": "db7d3f03-1f7f-43bf-8125-f7c2d345fca2",
+      "type": "rect",
+      "data": {
+        "x1": 15,
+        "y1": 35,
+        "x2": 59,
+        "y2": 78
+      }
+    },
+    {
+      "id": "a267e094-d8be-4add-9b00-1037d47763e0",
+      "type": "rect",
+      "data": {
+        "x1": 339,
+        "y1": 1170,
+        "x2": 381,
+        "y2": 1195
+      }
+    }
+  ]
+}

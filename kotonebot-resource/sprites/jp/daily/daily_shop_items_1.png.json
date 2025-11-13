@@ -1,1 +1,210 @@
-{"definitions":{"0949c622-9067-4f0d-bac2-3f938a1d2ed2":{"name":"Shop.ItemLessonNote","displayName":"レッスンノート","type":"template","annotationId":"0949c622-9067-4f0d-bac2-3f938a1d2ed2","useHintRect":false},"b2af59e9-60e3-4d97-8c72-c7ba092113a3":{"name":"Shop.ItemVeteranNote","displayName":"ベテランノート","type":"template","annotationId":"b2af59e9-60e3-4d97-8c72-c7ba092113a3","useHintRect":false},"835489e2-b29b-426c-b4c9-3bb9f8eb6195":{"name":"Shop.ItemSupportEnhancementPt","displayName":"サポート強化Pt 支援强化Pt","type":"template","annotationId":"835489e2-b29b-426c-b4c9-3bb9f8eb6195","useHintRect":false},"c5b7d67e-7260-4f08-a0e9-4d31ce9bbecf":{"name":"Shop.ItemSenseNoteVocal","displayName":"センスノート（ボーカル）感性笔记（声乐）","type":"template","annotationId":"c5b7d67e-7260-4f08-a0e9-4d31ce9bbecf","useHintRect":false},"0f7d581d-cea3-4039-9205-732e4cd29293":{"name":"Shop.ItemSenseNoteDance","displayName":"センスノート（ダンス）感性笔记（舞蹈）","type":"template","annotationId":"0f7d581d-cea3-4039-9205-732e4cd29293","useHintRect":false},"d3cc3323-51af-4882-ae12-49e7384b746d":{"name":"Shop.ItemSenseNoteVisual","displayName":"センスノート（ビジュアル）感性笔记（形象）","type":"template","annotationId":"d3cc3323-51af-4882-ae12-49e7384b746d","useHintRect":false},"a1df3af1-a3e7-4521-a085-e4dc3cd1cc57":{"name":"Shop.ItemLogicNoteVocal","displayName":"ロジックノート（ボーカル）理性笔记（声乐）","type":"template","annotationId":"a1df3af1-a3e7-4521-a085-e4dc3cd1cc57","useHintRect":false},"a9fcaf04-0c1f-4b0f-bb5b-ede9da96180f":{"name":"Shop.ItemLogicNoteDance","displayName":"ロジックノート（ダンス）理性笔记（舞蹈）","type":"template","annotationId":"a9fcaf04-0c1f-4b0f-bb5b-ede9da96180f","useHintRect":false},"c3f536d6-a04a-4651-b3f9-dd2c22593f7f":{"name":"Shop.ItemLogicNoteVisual","displayName":"ロジックノート（ビジュアル）理性笔记（形象）","type":"template","annotationId":"c3f536d6-a04a-4651-b3f9-dd2c22593f7f","useHintRect":false},"eef25cf9-afd0-43b1-b9c5-fbd997bd5fe0":{"name":"Shop.ItemAnomalyNoteVocal","displayName":"アノマリーノート（ボーカル）非凡笔记（声乐）","type":"template","annotationId":"eef25cf9-afd0-43b1-b9c5-fbd997bd5fe0","useHintRect":false},"df991b42-ed8e-4f2c-bf0c-aa7522f147b6":{"name":"Shop.ItemAnomalyNoteDance","displayName":"アノマリーノート（ダンス）非凡笔记（舞蹈）","type":"template","annotationId":"df991b42-ed8e-4f2c-bf0c-aa7522f147b6","useHintRect":false},"81c97cd3-df53-44d3-bf3d-1eb4dc67b62a":{"name":"Daily.ButtonRefreshMoneyShop","displayName":"リスト更新：1回無料","type":"template","annotationId":"81c97cd3-df53-44d3-bf3d-1eb4dc67b62a","useHintRect":false}},"annotations":[{"id":"0949c622-9067-4f0d-bac2-3f938a1d2ed2","type":"rect","data":{"x1":243,"y1":355,"x2":313,"y2":441}},{"id":"b2af59e9-60e3-4d97-8c72-c7ba092113a3","type":"rect","data":{"x1":414,"y1":355,"x2":484,"y2":441}},{"id":"835489e2-b29b-426c-b4c9-3bb9f8eb6195","type":"rect","data":{"x1":574,"y1":363,"x2":662,"y2":438}},{"id":"c5b7d67e-7260-4f08-a0e9-4d31ce9bbecf","type":"rect","data":{"x1":71,"y1":594,"x2":142,"y2":667}},{"id":"0f7d581d-cea3-4039-9205-732e4cd29293","type":"rect","data":{"x1":241,"y1":593,"x2":309,"y2":667}},{"id":"d3cc3323-51af-4882-ae12-49e7384b746d","type":"rect","data":{"x1":417,"y1":586,"x2":481,"y2":668}},{"id":"a1df3af1-a3e7-4521-a085-e4dc3cd1cc57","type":"rect","data":{"x1":585,"y1":591,"x2":651,"y2":669}},{"id":"a9fcaf04-0c1f-4b0f-bb5b-ede9da96180f","type":"rect","data":{"x1":69,"y1":825,"x2":138,"y2":899}},{"id":"c3f536d6-a04a-4651-b3f9-dd2c22593f7f","type":"rect","data":{"x1":242,"y1":820,"x2":310,"y2":898}},{"id":"eef25cf9-afd0-43b1-b9c5-fbd997bd5fe0","type":"rect","data":{"x1":413,"y1":821,"x2":481,"y2":897}},{"id":"df991b42-ed8e-4f2c-bf0c-aa7522f147b6","type":"rect","data":{"x1":583,"y1":823,"x2":649,"y2":900}},{"id":"81c97cd3-df53-44d3-bf3d-1eb4dc67b62a","type":"rect","data":{"x1":440,"y1":149,"x2":679,"y2":179}}]}
+{
+  "definitions": {
+    "0949c622-9067-4f0d-bac2-3f938a1d2ed2": {
+      "name": "Shop.ItemLessonNote",
+      "displayName": "レッスンノート",
+      "type": "template",
+      "annotationId": "0949c622-9067-4f0d-bac2-3f938a1d2ed2",
+      "useHintRect": false
+    },
+    "b2af59e9-60e3-4d97-8c72-c7ba092113a3": {
+      "name": "Shop.ItemVeteranNote",
+      "displayName": "ベテランノート",
+      "type": "template",
+      "annotationId": "b2af59e9-60e3-4d97-8c72-c7ba092113a3",
+      "useHintRect": false
+    },
+    "835489e2-b29b-426c-b4c9-3bb9f8eb6195": {
+      "name": "Shop.ItemSupportEnhancementPt",
+      "displayName": "サポート強化Pt 支援强化Pt",
+      "type": "template",
+      "annotationId": "835489e2-b29b-426c-b4c9-3bb9f8eb6195",
+      "useHintRect": false
+    },
+    "c5b7d67e-7260-4f08-a0e9-4d31ce9bbecf": {
+      "name": "Shop.ItemSenseNoteVocal",
+      "displayName": "センスノート（ボーカル）感性笔记（声乐）",
+      "type": "template",
+      "annotationId": "c5b7d67e-7260-4f08-a0e9-4d31ce9bbecf",
+      "useHintRect": false
+    },
+    "0f7d581d-cea3-4039-9205-732e4cd29293": {
+      "name": "Shop.ItemSenseNoteDance",
+      "displayName": "センスノート（ダンス）感性笔记（舞蹈）",
+      "type": "template",
+      "annotationId": "0f7d581d-cea3-4039-9205-732e4cd29293",
+      "useHintRect": false
+    },
+    "d3cc3323-51af-4882-ae12-49e7384b746d": {
+      "name": "Shop.ItemSenseNoteVisual",
+      "displayName": "センスノート（ビジュアル）感性笔记（形象）",
+      "type": "template",
+      "annotationId": "d3cc3323-51af-4882-ae12-49e7384b746d",
+      "useHintRect": false
+    },
+    "a1df3af1-a3e7-4521-a085-e4dc3cd1cc57": {
+      "name": "Shop.ItemLogicNoteVocal",
+      "displayName": "ロジックノート（ボーカル）理性笔记（声乐）",
+      "type": "template",
+      "annotationId": "a1df3af1-a3e7-4521-a085-e4dc3cd1cc57",
+      "useHintRect": false
+    },
+    "a9fcaf04-0c1f-4b0f-bb5b-ede9da96180f": {
+      "name": "Shop.ItemLogicNoteDance",
+      "displayName": "ロジックノート（ダンス）理性笔记（舞蹈）",
+      "type": "template",
+      "annotationId": "a9fcaf04-0c1f-4b0f-bb5b-ede9da96180f",
+      "useHintRect": false
+    },
+    "c3f536d6-a04a-4651-b3f9-dd2c22593f7f": {
+      "name": "Shop.ItemLogicNoteVisual",
+      "displayName": "ロジックノート（ビジュアル）理性笔记（形象）",
+      "type": "template",
+      "annotationId": "c3f536d6-a04a-4651-b3f9-dd2c22593f7f",
+      "useHintRect": false
+    },
+    "eef25cf9-afd0-43b1-b9c5-fbd997bd5fe0": {
+      "name": "Shop.ItemAnomalyNoteVocal",
+      "displayName": "アノマリーノート（ボーカル）非凡笔记（声乐）",
+      "type": "template",
+      "annotationId": "eef25cf9-afd0-43b1-b9c5-fbd997bd5fe0",
+      "useHintRect": false
+    },
+    "df991b42-ed8e-4f2c-bf0c-aa7522f147b6": {
+      "name": "Shop.ItemAnomalyNoteDance",
+      "displayName": "アノマリーノート（ダンス）非凡笔记（舞蹈）",
+      "type": "template",
+      "annotationId": "df991b42-ed8e-4f2c-bf0c-aa7522f147b6",
+      "useHintRect": false
+    },
+    "81c97cd3-df53-44d3-bf3d-1eb4dc67b62a": {
+      "name": "Daily.ButtonRefreshMoneyShop",
+      "displayName": "リスト更新：1回無料",
+      "type": "template",
+      "annotationId": "81c97cd3-df53-44d3-bf3d-1eb4dc67b62a",
+      "useHintRect": false
+    }
+  },
+  "annotations": [
+    {
+      "id": "0949c622-9067-4f0d-bac2-3f938a1d2ed2",
+      "type": "rect",
+      "data": {
+        "x1": 243,
+        "y1": 355,
+        "x2": 313,
+        "y2": 441
+      }
+    },
+    {
+      "id": "b2af59e9-60e3-4d97-8c72-c7ba092113a3",
+      "type": "rect",
+      "data": {
+        "x1": 414,
+        "y1": 355,
+        "x2": 484,
+        "y2": 441
+      }
+    },
+    {
+      "id": "835489e2-b29b-426c-b4c9-3bb9f8eb6195",
+      "type": "rect",
+      "data": {
+        "x1": 574,
+        "y1": 363,
+        "x2": 662,
+        "y2": 438
+      }
+    },
+    {
+      "id": "c5b7d67e-7260-4f08-a0e9-4d31ce9bbecf",
+      "type": "rect",
+      "data": {
+        "x1": 71,
+        "y1": 594,
+        "x2": 142,
+        "y2": 667
+      }
+    },
+    {
+      "id": "0f7d581d-cea3-4039-9205-732e4cd29293",
+      "type": "rect",
+      "data": {
+        "x1": 241,
+        "y1": 593,
+        "x2": 309,
+        "y2": 667
+      }
+    },
+    {
+      "id": "d3cc3323-51af-4882-ae12-49e7384b746d",
+      "type": "rect",
+      "data": {
+        "x1": 417,
+        "y1": 586,
+        "x2": 481,
+        "y2": 668
+      }
+    },
+    {
+      "id": "a1df3af1-a3e7-4521-a085-e4dc3cd1cc57",
+      "type": "rect",
+      "data": {
+        "x1": 585,
+        "y1": 591,
+        "x2": 651,
+        "y2": 669
+      }
+    },
+    {
+      "id": "a9fcaf04-0c1f-4b0f-bb5b-ede9da96180f",
+      "type": "rect",
+      "data": {
+        "x1": 69,
+        "y1": 825,
+        "x2": 138,
+        "y2": 899
+      }
+    },
+    {
+      "id": "c3f536d6-a04a-4651-b3f9-dd2c22593f7f",
+      "type": "rect",
+      "data": {
+        "x1": 242,
+        "y1": 820,
+        "x2": 310,
+        "y2": 898
+      }
+    },
+    {
+      "id": "eef25cf9-afd0-43b1-b9c5-fbd997bd5fe0",
+      "type": "rect",
+      "data": {
+        "x1": 413,
+        "y1": 821,
+        "x2": 481,
+        "y2": 897
+      }
+    },
+    {
+      "id": "df991b42-ed8e-4f2c-bf0c-aa7522f147b6",
+      "type": "rect",
+      "data": {
+        "x1": 583,
+        "y1": 823,
+        "x2": 649,
+        "y2": 900
+      }
+    },
+    {
+      "id": "81c97cd3-df53-44d3-bf3d-1eb4dc67b62a",
+      "type": "rect",
+      "data": {
+        "x1": 440,
+        "y1": 149,
+        "x2": 679,
+        "y2": 179
+      }
+    }
+  ]
+}

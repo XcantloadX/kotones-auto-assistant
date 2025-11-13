@@ -1,1 +1,23 @@
-{"definitions":{"c74f2151-74b0-4b47-bf80-356c48f431e0":{"name":"InPurodyuusu.BoxNoSkillCard","displayName":"手札のスキルカ学ドが0枚です","type":"hint-box","annotationId":"c74f2151-74b0-4b47-bf80-356c48f431e0","useHintRect":false}},"annotations":[{"id":"c74f2151-74b0-4b47-bf80-356c48f431e0","type":"rect","data":{"x1":180,"y1":977,"x2":529,"y2":1026}}]}
+{
+  "definitions": {
+    "c74f2151-74b0-4b47-bf80-356c48f431e0": {
+      "name": "InPurodyuusu.BoxNoSkillCard",
+      "displayName": "手札のスキルカ学ドが0枚です",
+      "type": "hint-box",
+      "annotationId": "c74f2151-74b0-4b47-bf80-356c48f431e0",
+      "useHintRect": false
+    }
+  },
+  "annotations": [
+    {
+      "id": "c74f2151-74b0-4b47-bf80-356c48f431e0",
+      "type": "rect",
+      "data": {
+        "x1": 180,
+        "y1": 977,
+        "x2": 529,
+        "y2": 1026
+      }
+    }
+  ]
+}

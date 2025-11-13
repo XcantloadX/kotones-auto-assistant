@@ -1,1 +1,23 @@
-{"definitions":{"de325534-3fd3-480a-9eb8-eb47960a753a":{"name":"Daily.TextDefaultExchangeCountChangeDialog","displayName":"商店默认购买次数改变对话框","type":"template","annotationId":"de325534-3fd3-480a-9eb8-eb47960a753a","useHintRect":false}},"annotations":[{"id":"de325534-3fd3-480a-9eb8-eb47960a753a","type":"rect","data":{"x1":52,"y1":573,"x2":419,"y2":619}}]}
+{
+  "definitions": {
+    "de325534-3fd3-480a-9eb8-eb47960a753a": {
+      "name": "Daily.TextDefaultExchangeCountChangeDialog",
+      "displayName": "商店默认购买次数改变对话框",
+      "type": "template",
+      "annotationId": "de325534-3fd3-480a-9eb8-eb47960a753a",
+      "useHintRect": false
+    }
+  },
+  "annotations": [
+    {
+      "id": "de325534-3fd3-480a-9eb8-eb47960a753a",
+      "type": "rect",
+      "data": {
+        "x1": 52,
+        "y1": 573,
+        "x2": 419,
+        "y2": 619
+      }
+    }
+  ]
+}

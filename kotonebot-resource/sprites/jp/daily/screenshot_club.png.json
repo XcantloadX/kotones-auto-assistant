@@ -1,1 +1,23 @@
-{"definitions":{"a85fbf42-f94c-4f53-8976-6e8d16be4d26":{"name":"Daily.Club.NoteRequestHintBox","displayName":"日常 社团 笔记请求HintBox","type":"hint-box","annotationId":"a85fbf42-f94c-4f53-8976-6e8d16be4d26","useHintRect":false}},"annotations":[{"id":"a85fbf42-f94c-4f53-8976-6e8d16be4d26","type":"rect","data":{"x1":314,"y1":1071,"x2":450,"y2":1099}}]}
+{
+  "definitions": {
+    "a85fbf42-f94c-4f53-8976-6e8d16be4d26": {
+      "name": "Daily.Club.NoteRequestHintBox",
+      "displayName": "日常 社团 笔记请求HintBox",
+      "type": "hint-box",
+      "annotationId": "a85fbf42-f94c-4f53-8976-6e8d16be4d26",
+      "useHintRect": false
+    }
+  },
+  "annotations": [
+    {
+      "id": "a85fbf42-f94c-4f53-8976-6e8d16be4d26",
+      "type": "rect",
+      "data": {
+        "x1": 314,
+        "y1": 1071,
+        "x2": 450,
+        "y2": 1099
+      }
+    }
+  ]
+}

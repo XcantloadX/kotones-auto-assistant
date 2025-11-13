@@ -1,1 +1,23 @@
-{"definitions":{"71d6160f-ce9e-40fa-8d0b-8fa9cb3f841d":{"name":"Daily.BoxApkUpdateDialogTitle","displayName":"游戏本体更新提示对话框标题 区域","type":"hint-box","annotationId":"71d6160f-ce9e-40fa-8d0b-8fa9cb3f841d","useHintRect":false}},"annotations":[{"id":"71d6160f-ce9e-40fa-8d0b-8fa9cb3f841d","type":"rect","data":{"x1":26,"y1":905,"x2":342,"y2":967}}]}
+{
+  "definitions": {
+    "71d6160f-ce9e-40fa-8d0b-8fa9cb3f841d": {
+      "name": "Daily.BoxApkUpdateDialogTitle",
+      "displayName": "游戏本体更新提示对话框标题 区域",
+      "type": "hint-box",
+      "annotationId": "71d6160f-ce9e-40fa-8d0b-8fa9cb3f841d",
+      "useHintRect": false
+    }
+  },
+  "annotations": [
+    {
+      "id": "71d6160f-ce9e-40fa-8d0b-8fa9cb3f841d",
+      "type": "rect",
+      "data": {
+        "x1": 26,
+        "y1": 905,
+        "x2": 342,
+        "y2": 967
+      }
+    }
+  ]
+}

@@ -1,1 +1,23 @@
-{"definitions":{"24dc7158-036c-4a66-9280-e934f470be53":{"name":"Daily.TextShopItemSoldOut","displayName":"交換済みです","type":"template","annotationId":"24dc7158-036c-4a66-9280-e934f470be53","useHintRect":false}},"annotations":[{"id":"24dc7158-036c-4a66-9280-e934f470be53","type":"rect","data":{"x1":287,"y1":625,"x2":434,"y2":655}}]}
+{
+  "definitions": {
+    "24dc7158-036c-4a66-9280-e934f470be53": {
+      "name": "Daily.TextShopItemSoldOut",
+      "displayName": "交換済みです",
+      "type": "template",
+      "annotationId": "24dc7158-036c-4a66-9280-e934f470be53",
+      "useHintRect": false
+    }
+  },
+  "annotations": [
+    {
+      "id": "24dc7158-036c-4a66-9280-e934f470be53",
+      "type": "rect",
+      "data": {
+        "x1": 287,
+        "y1": 625,
+        "x2": 434,
+        "y2": 655
+      }
+    }
+  ]
+}

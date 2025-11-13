@@ -1,1 +1,51 @@
-{"definitions":{"11bf08ea-8994-437f-adfb-3470e370deb2":{"name":"Daily.SupportCard.DragDownStartPoint","displayName":"日常 支援卡 向下拖动起点","type":"hint-point","annotationId":"11bf08ea-8994-437f-adfb-3470e370deb2","useHintRect":false},"c3264daf-9834-475e-b230-9de00f1fe507":{"name":"Daily.SupportCard.DragDownEndPoint","displayName":"日常 支援卡 向下拖动终点","type":"hint-point","annotationId":"c3264daf-9834-475e-b230-9de00f1fe507","useHintRect":false},"3cd62da4-543c-48b6-ae02-eafd6f6d8355":{"name":"Daily.SupportCard.TargetSupportCard","displayName":"日常 支援卡 目标支援卡位置","type":"hint-point","annotationId":"3cd62da4-543c-48b6-ae02-eafd6f6d8355","useHintRect":false}},"annotations":[{"id":"11bf08ea-8994-437f-adfb-3470e370deb2","type":"point","data":{"x":357,"y":872}},{"id":"c3264daf-9834-475e-b230-9de00f1fe507","type":"point","data":{"x":362,"y":194}},{"id":"3cd62da4-543c-48b6-ae02-eafd6f6d8355","type":"point","data":{"x":138,"y":432}}]}
+{
+  "definitions": {
+    "11bf08ea-8994-437f-adfb-3470e370deb2": {
+      "name": "Daily.SupportCard.DragDownStartPoint",
+      "displayName": "日常 支援卡 向下拖动起点",
+      "type": "hint-point",
+      "annotationId": "11bf08ea-8994-437f-adfb-3470e370deb2",
+      "useHintRect": false
+    },
+    "c3264daf-9834-475e-b230-9de00f1fe507": {
+      "name": "Daily.SupportCard.DragDownEndPoint",
+      "displayName": "日常 支援卡 向下拖动终点",
+      "type": "hint-point",
+      "annotationId": "c3264daf-9834-475e-b230-9de00f1fe507",
+      "useHintRect": false
+    },
+    "3cd62da4-543c-48b6-ae02-eafd6f6d8355": {
+      "name": "Daily.SupportCard.TargetSupportCard",
+      "displayName": "日常 支援卡 目标支援卡位置",
+      "type": "hint-point",
+      "annotationId": "3cd62da4-543c-48b6-ae02-eafd6f6d8355",
+      "useHintRect": false
+    }
+  },
+  "annotations": [
+    {
+      "id": "11bf08ea-8994-437f-adfb-3470e370deb2",
+      "type": "point",
+      "data": {
+        "x": 357,
+        "y": 872
+      }
+    },
+    {
+      "id": "c3264daf-9834-475e-b230-9de00f1fe507",
+      "type": "point",
+      "data": {
+        "x": 362,
+        "y": 194
+      }
+    },
+    {
+      "id": "3cd62da4-543c-48b6-ae02-eafd6f6d8355",
+      "type": "point",
+      "data": {
+        "x": 138,
+        "y": 432
+      }
+    }
+  ]
+}

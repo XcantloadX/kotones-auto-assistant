@@ -1,1 +1,24 @@
-{"definitions":{"25f00ee3-8dfe-42d1-a67e-191fa5c3df4b":{"name":"InPurodyuusu.TextExchangeConfirm","displayName":"交換確認","type":"template","annotationId":"25f00ee3-8dfe-42d1-a67e-191fa5c3df4b","useHintRect":false,"description":"咨询中，购买确认对话框的标题"}},"annotations":[{"id":"25f00ee3-8dfe-42d1-a67e-191fa5c3df4b","type":"rect","data":{"x1":53,"y1":612,"x2":191,"y2":652}}]}
+{
+  "definitions": {
+    "25f00ee3-8dfe-42d1-a67e-191fa5c3df4b": {
+      "name": "InPurodyuusu.TextExchangeConfirm",
+      "displayName": "交換確認",
+      "type": "template",
+      "annotationId": "25f00ee3-8dfe-42d1-a67e-191fa5c3df4b",
+      "useHintRect": false,
+      "description": "咨询中，购买确认对话框的标题"
+    }
+  },
+  "annotations": [
+    {
+      "id": "25f00ee3-8dfe-42d1-a67e-191fa5c3df4b",
+      "type": "rect",
+      "data": {
+        "x1": 53,
+        "y1": 612,
+        "x2": 191,
+        "y2": 652
+      }
+    }
+  ]
+}

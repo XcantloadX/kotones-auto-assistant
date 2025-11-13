@@ -1,1 +1,23 @@
-{"definitions":{"f43c313b-8a7b-467b-8442-fc5bcb8b4388":{"name":"Produce.TextStepIndicator3","displayName":"3.メモリー選択","type":"template","annotationId":"f43c313b-8a7b-467b-8442-fc5bcb8b4388","useHintRect":false}},"annotations":[{"id":"f43c313b-8a7b-467b-8442-fc5bcb8b4388","type":"rect","data":{"x1":98,"y1":34,"x2":248,"y2":61}}]}
+{
+  "definitions": {
+    "f43c313b-8a7b-467b-8442-fc5bcb8b4388": {
+      "name": "Produce.TextStepIndicator3",
+      "displayName": "3.メモリー選択",
+      "type": "template",
+      "annotationId": "f43c313b-8a7b-467b-8442-fc5bcb8b4388",
+      "useHintRect": false
+    }
+  },
+  "annotations": [
+    {
+      "id": "f43c313b-8a7b-467b-8442-fc5bcb8b4388",
+      "type": "rect",
+      "data": {
+        "x1": 98,
+        "y1": 34,
+        "x2": 248,
+        "y2": 61
+      }
+    }
+  ]
+}

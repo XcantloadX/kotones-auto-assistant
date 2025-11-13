@@ -1,1 +1,70 @@
-{"definitions":{"7e3e3a94-e05c-477e-bd92-0afc172bdb94":{"name":"Produce.BoxSetCountIndicator","displayName":"培育开始页面 当前编成编号","type":"hint-box","annotationId":"7e3e3a94-e05c-477e-bd92-0afc172bdb94","useHintRect":false},"389bdefb-4b76-4ac3-9460-d59c144f8de7":{"name":"Produce.PointProduceNextSet","displayName":"培育开始页面 下一个编成","type":"hint-point","annotationId":"389bdefb-4b76-4ac3-9460-d59c144f8de7","useHintRect":false},"745d904e-19eb-4e15-b734-ef116e6e7c48":{"name":"Produce.PointProducePrevSet","displayName":"培育开始页面 上一个编成","type":"hint-point","annotationId":"745d904e-19eb-4e15-b734-ef116e6e7c48","useHintRect":false},"a48324ae-7c1a-489e-b3c4-93d12267f88d":{"name":"Produce.TextStepIndicator2","displayName":"2. サポート選択","type":"template","annotationId":"a48324ae-7c1a-489e-b3c4-93d12267f88d","useHintRect":false}},"annotations":[{"id":"7e3e3a94-e05c-477e-bd92-0afc172bdb94","type":"rect","data":{"x1":66,"y1":651,"x2":139,"y2":686}},{"id":"389bdefb-4b76-4ac3-9460-d59c144f8de7","type":"point","data":{"x":702,"y":832}},{"id":"745d904e-19eb-4e15-b734-ef116e6e7c48","type":"point","data":{"x":14,"y":832}},{"id":"a48324ae-7c1a-489e-b3c4-93d12267f88d","type":"rect","data":{"x1":59,"y1":34,"x2":208,"y2":64}}]}
+{
+  "definitions": {
+    "7e3e3a94-e05c-477e-bd92-0afc172bdb94": {
+      "name": "Produce.BoxSetCountIndicator",
+      "displayName": "培育开始页面 当前编成编号",
+      "type": "hint-box",
+      "annotationId": "7e3e3a94-e05c-477e-bd92-0afc172bdb94",
+      "useHintRect": false
+    },
+    "389bdefb-4b76-4ac3-9460-d59c144f8de7": {
+      "name": "Produce.PointProduceNextSet",
+      "displayName": "培育开始页面 下一个编成",
+      "type": "hint-point",
+      "annotationId": "389bdefb-4b76-4ac3-9460-d59c144f8de7",
+      "useHintRect": false
+    },
+    "745d904e-19eb-4e15-b734-ef116e6e7c48": {
+      "name": "Produce.PointProducePrevSet",
+      "displayName": "培育开始页面 上一个编成",
+      "type": "hint-point",
+      "annotationId": "745d904e-19eb-4e15-b734-ef116e6e7c48",
+      "useHintRect": false
+    },
+    "a48324ae-7c1a-489e-b3c4-93d12267f88d": {
+      "name": "Produce.TextStepIndicator2",
+      "displayName": "2. サポート選択",
+      "type": "template",
+      "annotationId": "a48324ae-7c1a-489e-b3c4-93d12267f88d",
+      "useHintRect": false
+    }
+  },
+  "annotations": [
+    {
+      "id": "7e3e3a94-e05c-477e-bd92-0afc172bdb94",
+      "type": "rect",
+      "data": {
+        "x1": 66,
+        "y1": 651,
+        "x2": 139,
+        "y2": 686
+      }
+    },
+    {
+      "id": "389bdefb-4b76-4ac3-9460-d59c144f8de7",
+      "type": "point",
+      "data": {
+        "x": 702,
+        "y": 832
+      }
+    },
+    {
+      "id": "745d904e-19eb-4e15-b734-ef116e6e7c48",
+      "type": "point",
+      "data": {
+        "x": 14,
+        "y": 832
+      }
+    },
+    {
+      "id": "a48324ae-7c1a-489e-b3c4-93d12267f88d",
+      "type": "rect",
+      "data": {
+        "x1": 59,
+        "y1": 34,
+        "x2": 208,
+        "y2": 64
+      }
+    }
+  ]
+}

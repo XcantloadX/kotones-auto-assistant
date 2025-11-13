@@ -1,1 +1,23 @@
-{"definitions":{"207594fa-6a0b-45ec-aeff-b3e45348c508":{"name":"InPurodyuusu.TextRechallengeEndProduce","displayName":"再挑战对话框的结束培育","type":"template","annotationId":"207594fa-6a0b-45ec-aeff-b3e45348c508","useHintRect":false}},"annotations":[{"id":"207594fa-6a0b-45ec-aeff-b3e45348c508","type":"rect","data":{"x1":152,"y1":1127,"x2":323,"y2":1192}}]}
+{
+  "definitions": {
+    "207594fa-6a0b-45ec-aeff-b3e45348c508": {
+      "name": "InPurodyuusu.TextRechallengeEndProduce",
+      "displayName": "再挑战对话框的结束培育",
+      "type": "template",
+      "annotationId": "207594fa-6a0b-45ec-aeff-b3e45348c508",
+      "useHintRect": false
+    }
+  },
+  "annotations": [
+    {
+      "id": "207594fa-6a0b-45ec-aeff-b3e45348c508",
+      "type": "rect",
+      "data": {
+        "x1": 152,
+        "y1": 1127,
+        "x2": 323,
+        "y2": 1192
+      }
+    }
+  ]
+}

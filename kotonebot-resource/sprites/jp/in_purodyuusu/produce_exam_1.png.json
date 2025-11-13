@@ -1,108 +1,108 @@
 {
-    "definitions": {
-        "1fbb6008-7112-46ce-b6aa-413648acc5e5": {
-            "name": "InPurodyuusu.BoxExamTop",
-            "displayName": "考试场景 最上方排名区域",
-            "type": "hint-box",
-            "annotationId": "1fbb6008-7112-46ce-b6aa-413648acc5e5",
-            "useHintRect": false
-        },
-        "621d24ca-ad72-4c10-a2a1-77b76dcff8f3": {
-            "name": "InPurodyuusu.BoxCardLetter",
-            "displayName": "手牌类型字母区域",
-            "type": "hint-box",
-            "annotationId": "621d24ca-ad72-4c10-a2a1-77b76dcff8f3",
-            "useHintRect": false
-        },
-        "69efda7b-9338-483a-a5d4-fba1acf1e7f1": {
-            "name": "InPurodyuusu.BoxDrink",
-            "displayName": "饮品区域",
-            "type": "hint-box",
-            "annotationId": "69efda7b-9338-483a-a5d4-fba1acf1e7f1",
-            "useHintRect": false
-        },
-        "f37b6e21-b344-4e5d-9dbe-ae03eb5117bc": {
-            "name": "InPurodyuusu.BoxDrink1",
-            "displayName": "第一个饮品区域",
-            "type": "hint-box",
-            "annotationId": "f37b6e21-b344-4e5d-9dbe-ae03eb5117bc",
-            "useHintRect": false
-        },
-        "118d1a5e-73fa-428a-9c34-e58b2a208182": {
-            "name": "InPurodyuusu.BoxDrink2",
-            "displayName": "第二个饮品区域",
-            "type": "hint-box",
-            "annotationId": "118d1a5e-73fa-428a-9c34-e58b2a208182",
-            "useHintRect": false
-        },
-        "7c7ee88a-cff3-40fe-ac69-656621692e84": {
-            "name": "InPurodyuusu.BoxDrink3",
-            "displayName": "第三个饮品区域",
-            "type": "hint-box",
-            "annotationId": "7c7ee88a-cff3-40fe-ac69-656621692e84",
-            "useHintRect": false
-        }
+  "definitions": {
+    "1fbb6008-7112-46ce-b6aa-413648acc5e5": {
+      "name": "InPurodyuusu.BoxExamTop",
+      "displayName": "考试场景 最上方排名区域",
+      "type": "hint-box",
+      "annotationId": "1fbb6008-7112-46ce-b6aa-413648acc5e5",
+      "useHintRect": false
     },
-    "annotations": [
-        {
-            "id": "1fbb6008-7112-46ce-b6aa-413648acc5e5",
-            "type": "rect",
-            "data": {
-                "x1": 5,
-                "y1": 2,
-                "x2": 712,
-                "y2": 55
-            }
-        },
-        {
-            "id": "621d24ca-ad72-4c10-a2a1-77b76dcff8f3",
-            "type": "rect",
-            "data": {
-                "x1": 6,
-                "y1": 1081,
-                "x2": 715,
-                "y2": 1100
-            }
-        },
-        {
-            "id": "69efda7b-9338-483a-a5d4-fba1acf1e7f1",
-            "type": "rect",
-            "data": {
-                "x1": 39,
-                "y1": 1150,
-                "x2": 328,
-                "y2": 1244
-            }
-        },
-        {
-            "id": "f37b6e21-b344-4e5d-9dbe-ae03eb5117bc",
-            "type": "rect",
-            "data": {
-                "x1": 53,
-                "y1": 1166,
-                "x2": 121,
-                "y2": 1234
-            }
-        },
-        {
-            "id": "118d1a5e-73fa-428a-9c34-e58b2a208182",
-            "type": "rect",
-            "data": {
-                "x1": 149,
-                "y1": 1166,
-                "x2": 217,
-                "y2": 1234
-            }
-        },
-        {
-            "id": "7c7ee88a-cff3-40fe-ac69-656621692e84",
-            "type": "rect",
-            "data": {
-                "x1": 245,
-                "y1": 1166,
-                "x2": 313,
-                "y2": 1234
-            }
-        }
-    ]
+    "621d24ca-ad72-4c10-a2a1-77b76dcff8f3": {
+      "name": "InPurodyuusu.BoxCardLetter",
+      "displayName": "手牌类型字母区域",
+      "type": "hint-box",
+      "annotationId": "621d24ca-ad72-4c10-a2a1-77b76dcff8f3",
+      "useHintRect": false
+    },
+    "69efda7b-9338-483a-a5d4-fba1acf1e7f1": {
+      "name": "InPurodyuusu.BoxDrink",
+      "displayName": "饮品区域",
+      "type": "hint-box",
+      "annotationId": "69efda7b-9338-483a-a5d4-fba1acf1e7f1",
+      "useHintRect": false
+    },
+    "f37b6e21-b344-4e5d-9dbe-ae03eb5117bc": {
+      "name": "InPurodyuusu.BoxDrink1",
+      "displayName": "第一个饮品区域",
+      "type": "hint-box",
+      "annotationId": "f37b6e21-b344-4e5d-9dbe-ae03eb5117bc",
+      "useHintRect": false
+    },
+    "118d1a5e-73fa-428a-9c34-e58b2a208182": {
+      "name": "InPurodyuusu.BoxDrink2",
+      "displayName": "第二个饮品区域",
+      "type": "hint-box",
+      "annotationId": "118d1a5e-73fa-428a-9c34-e58b2a208182",
+      "useHintRect": false
+    },
+    "7c7ee88a-cff3-40fe-ac69-656621692e84": {
+      "name": "InPurodyuusu.BoxDrink3",
+      "displayName": "第三个饮品区域",
+      "type": "hint-box",
+      "annotationId": "7c7ee88a-cff3-40fe-ac69-656621692e84",
+      "useHintRect": false
+    }
+  },
+  "annotations": [
+    {
+      "id": "1fbb6008-7112-46ce-b6aa-413648acc5e5",
+      "type": "rect",
+      "data": {
+        "x1": 5,
+        "y1": 2,
+        "x2": 712,
+        "y2": 55
+      }
+    },
+    {
+      "id": "621d24ca-ad72-4c10-a2a1-77b76dcff8f3",
+      "type": "rect",
+      "data": {
+        "x1": 6,
+        "y1": 1081,
+        "x2": 715,
+        "y2": 1100
+      }
+    },
+    {
+      "id": "69efda7b-9338-483a-a5d4-fba1acf1e7f1",
+      "type": "rect",
+      "data": {
+        "x1": 39,
+        "y1": 1150,
+        "x2": 328,
+        "y2": 1244
+      }
+    },
+    {
+      "id": "f37b6e21-b344-4e5d-9dbe-ae03eb5117bc",
+      "type": "rect",
+      "data": {
+        "x1": 53,
+        "y1": 1166,
+        "x2": 121,
+        "y2": 1234
+      }
+    },
+    {
+      "id": "118d1a5e-73fa-428a-9c34-e58b2a208182",
+      "type": "rect",
+      "data": {
+        "x1": 149,
+        "y1": 1166,
+        "x2": 217,
+        "y2": 1234
+      }
+    },
+    {
+      "id": "7c7ee88a-cff3-40fe-ac69-656621692e84",
+      "type": "rect",
+      "data": {
+        "x1": 245,
+        "y1": 1166,
+        "x2": 313,
+        "y2": 1234
+      }
+    }
+  ]
 }

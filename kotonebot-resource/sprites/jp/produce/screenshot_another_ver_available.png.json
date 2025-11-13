@@ -1,1 +1,23 @@
-{"definitions":{"cbf4ce9c-f8d8-4fb7-a197-15bb9847df04":{"name":"Produce.TextAnotherIdolAvailableDialog","displayName":"Another 版本偶像可用对话框标题","type":"template","annotationId":"cbf4ce9c-f8d8-4fb7-a197-15bb9847df04","useHintRect":false}},"annotations":[{"id":"cbf4ce9c-f8d8-4fb7-a197-15bb9847df04","type":"rect","data":{"x1":54,"y1":568,"x2":450,"y2":615}}]}
+{
+  "definitions": {
+    "cbf4ce9c-f8d8-4fb7-a197-15bb9847df04": {
+      "name": "Produce.TextAnotherIdolAvailableDialog",
+      "displayName": "Another 版本偶像可用对话框标题",
+      "type": "template",
+      "annotationId": "cbf4ce9c-f8d8-4fb7-a197-15bb9847df04",
+      "useHintRect": false
+    }
+  },
+  "annotations": [
+    {
+      "id": "cbf4ce9c-f8d8-4fb7-a197-15bb9847df04",
+      "type": "rect",
+      "data": {
+        "x1": 54,
+        "y1": 568,
+        "x2": 450,
+        "y2": 615
+      }
+    }
+  ]
+}

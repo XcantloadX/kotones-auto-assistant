@@ -1,1 +1,23 @@
-{"definitions":{"a3768ef5-d71a-491a-9153-c83905fed616":{"name":"Daily.BoxMissonTabs","displayName":"任务奖励领取页面 底部 Tab","type":"hint-box","annotationId":"a3768ef5-d71a-491a-9153-c83905fed616","useHintRect":false}},"annotations":[{"id":"a3768ef5-d71a-491a-9153-c83905fed616","type":"rect","data":{"x1":11,"y1":929,"x2":703,"y2":1030}}]}
+{
+  "definitions": {
+    "a3768ef5-d71a-491a-9153-c83905fed616": {
+      "name": "Daily.BoxMissonTabs",
+      "displayName": "任务奖励领取页面 底部 Tab",
+      "type": "hint-box",
+      "annotationId": "a3768ef5-d71a-491a-9153-c83905fed616",
+      "useHintRect": false
+    }
+  },
+  "annotations": [
+    {
+      "id": "a3768ef5-d71a-491a-9153-c83905fed616",
+      "type": "rect",
+      "data": {
+        "x1": 11,
+        "y1": 929,
+        "x2": 703,
+        "y2": 1030
+      }
+    }
+  ]
+}

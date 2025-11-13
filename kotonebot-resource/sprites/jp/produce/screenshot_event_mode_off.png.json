@@ -1,1 +1,23 @@
-{"definitions":{"c5356ad6-0f1e-42be-b090-059f33ea7cee":{"name":"Produce.SwitchEventModeOff","displayName":"イベントモード 切换开关 OFF","type":"template","annotationId":"c5356ad6-0f1e-42be-b090-059f33ea7cee","useHintRect":false}},"annotations":[{"id":"c5356ad6-0f1e-42be-b090-059f33ea7cee","type":"rect","data":{"x1":269,"y1":747,"x2":508,"y2":778}}]}
+{
+  "definitions": {
+    "c5356ad6-0f1e-42be-b090-059f33ea7cee": {
+      "name": "Produce.SwitchEventModeOff",
+      "displayName": "イベントモード 切换开关 OFF",
+      "type": "template",
+      "annotationId": "c5356ad6-0f1e-42be-b090-059f33ea7cee",
+      "useHintRect": false
+    }
+  },
+  "annotations": [
+    {
+      "id": "c5356ad6-0f1e-42be-b090-059f33ea7cee",
+      "type": "rect",
+      "data": {
+        "x1": 269,
+        "y1": 747,
+        "x2": 508,
+        "y2": 778
+      }
+    }
+  ]
+}

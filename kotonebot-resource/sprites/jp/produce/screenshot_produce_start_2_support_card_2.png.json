@@ -1,1 +1,23 @@
-{"definitions":{"f5c16d2f-ebc5-4617-9b96-971696af7c52":{"name":"Produce.TextAutoSet","displayName":"おまかせ編成","type":"template","annotationId":"f5c16d2f-ebc5-4617-9b96-971696af7c52","useHintRect":false}},"annotations":[{"id":"f5c16d2f-ebc5-4617-9b96-971696af7c52","type":"rect","data":{"x1":56,"y1":919,"x2":257,"y2":957}}]}
+{
+  "definitions": {
+    "f5c16d2f-ebc5-4617-9b96-971696af7c52": {
+      "name": "Produce.TextAutoSet",
+      "displayName": "おまかせ編成",
+      "type": "template",
+      "annotationId": "f5c16d2f-ebc5-4617-9b96-971696af7c52",
+      "useHintRect": false
+    }
+  },
+  "annotations": [
+    {
+      "id": "f5c16d2f-ebc5-4617-9b96-971696af7c52",
+      "type": "rect",
+      "data": {
+        "x1": 56,
+        "y1": 919,
+        "x2": 257,
+        "y2": 957
+      }
+    }
+  ]
+}

@@ -1,1 +1,23 @@
-{"definitions":{"5ebcde3b-f0fd-4e5d-b3de-ada8f0b5e03b":{"name":"Common.ButtonSelect2","displayName":"選択する","type":"template","annotationId":"5ebcde3b-f0fd-4e5d-b3de-ada8f0b5e03b","useHintRect":false}},"annotations":[{"id":"5ebcde3b-f0fd-4e5d-b3de-ada8f0b5e03b","type":"rect","data":{"x1":393,"y1":1145,"x2":577,"y2":1176}}]}
+{
+  "definitions": {
+    "5ebcde3b-f0fd-4e5d-b3de-ada8f0b5e03b": {
+      "name": "Common.ButtonSelect2",
+      "displayName": "選択する",
+      "type": "template",
+      "annotationId": "5ebcde3b-f0fd-4e5d-b3de-ada8f0b5e03b",
+      "useHintRect": false
+    }
+  },
+  "annotations": [
+    {
+      "id": "5ebcde3b-f0fd-4e5d-b3de-ada8f0b5e03b",
+      "type": "rect",
+      "data": {
+        "x1": 393,
+        "y1": 1145,
+        "x2": 577,
+        "y2": 1176
+      }
+    }
+  ]
+}

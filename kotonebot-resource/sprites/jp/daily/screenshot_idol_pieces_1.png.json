@@ -1,1 +1,23 @@
-{"definitions":{"921eefeb-730e-46fc-9924-d338fb286592":{"name":"Shop.IdolPiece.姬崎莉波_clumsy_trick","displayName":"","type":"template","annotationId":"921eefeb-730e-46fc-9924-d338fb286592","useHintRect":false}},"annotations":[{"id":"921eefeb-730e-46fc-9924-d338fb286592","type":"rect","data":{"x1":88,"y1":914,"x2":141,"y2":963}}]}
+{
+  "definitions": {
+    "921eefeb-730e-46fc-9924-d338fb286592": {
+      "name": "Shop.IdolPiece.姬崎莉波_clumsy_trick",
+      "displayName": "",
+      "type": "template",
+      "annotationId": "921eefeb-730e-46fc-9924-d338fb286592",
+      "useHintRect": false
+    }
+  },
+  "annotations": [
+    {
+      "id": "921eefeb-730e-46fc-9924-d338fb286592",
+      "type": "rect",
+      "data": {
+        "x1": 88,
+        "y1": 914,
+        "x2": 141,
+        "y2": 963
+      }
+    }
+  ]
+}
