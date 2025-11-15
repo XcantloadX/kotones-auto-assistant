@@ -232,3 +232,39 @@ debug.auto_save_to_folder = 'dumps'
 debug.enabled = True
 ```
 你可以把这段代码放到模块的 `__main__` 里，用于临时调试。
+
+## 测试
+完成游戏逻辑代码修改后，我们建议你先充分测试，然后再提交代码。我们可以借助覆盖率工具确保所有修改位置都能测试到。
+
+如果你使用 VSCode，可以直接运行「Gradio UI (Coverage)」启用覆盖率（必须以非调试模式执行），
+或者执行
+```powershell
+coverage -m kaa.tasks.your_task_module_name
+```
+
+执行完成后，一定**正常退出程序**，不要使用 IDE 的结束调试功能强行停止（Ctrl + C 可以使用），否则无法正常记录数据。
+然后执行 `coverage xml` 导出数据到 `./coverage.xml`。
+
+接下来你有两种方法查看覆盖率数据：
+1. 使用 diff-cover 工具（`pip install diff_cover`）
+```powershell
+(.venv) PS E:\GithubRepos\KotonesAutoAssistant> diff-cover .\coverage.xml
+-------------
+Diff Coverage
+Diff: origin/main...HEAD, staged and unstaged changes
+-------------
+kaa/config/schema.py (100%)
+kaa/main/gr.py (50.0%): Missing lines 1567
+kaa/tasks/produce/common.py (71.2%): Missing lines 286,301-304,329-330,337-338,348-350,373-377,385,417-424,426-427,429-430,432-439,444,451
+kaa/tasks/produce/in_purodyuusu.py (83.3%): Missing lines 757,898
+kaa/tasks/produce/non_lesson_actions.py (10.0%): Missing lines 60,103,120,122,135,154,266,280,284
+-------------
+Total:   165 lines
+Missing: 52 lines
+Coverage: 68%
+-------------
+
+(.venv) PS E:\GithubRepos\KotonesAutoAssistant> 
+```
+
+2. 对于 VSCode，安装 `ryanluker.vscode-coverage-gutters` 扩展，然后执行命令 `Coverage Gutters: Watch` 命令，就可以在编辑器内 inline 展示覆盖率情况。此时你可以打开编辑器的 Git Diff 界面，查看变更行的覆盖率。
