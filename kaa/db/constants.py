@@ -8,7 +8,8 @@ class CharacterId(Enum):
     kllj = "kllj" # Katsuragi Lilja, 葛城リーリヤ
     kcna = "kcna" # Kuramoto China, 倉本千奈
     ssmk = "ssmk" # Shiun Sumika, 紫云清夏
-    shro = "shro" # Shinosawa Hiro, 篠澤廣
+    shro = "shro" # Shinosawa Hiro, 篠澤広
     hrnm = "hrnm" # Himesaki Rinami, 姫崎莉波
     hume = "hume" # Hanami Ume, 花海佑芽
     jsna = "jsna" # Juo Sena, 十王星南
+    atmb = "atmb" # Amaya Tsubame, 雨夜燕
