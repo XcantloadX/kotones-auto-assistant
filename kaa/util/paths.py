@@ -1,11 +1,7 @@
 import os
-from typing import cast
-from importlib import resources
-
-from kaa import resources as res
+from importlib.resources import files
 
 CACHE = os.path.join('cache')
-RESOURCE = cast(list[str], res.__path__)[0]
 
 if not os.path.exists(CACHE):
     os.makedirs(CACHE)
@@ -16,8 +12,8 @@ def cache(path: str) -> str:
     return p
 
 def resource(path: str) -> str:
-    return os.path.join(RESOURCE, path)
+    return str(files('kaa.resource.game').joinpath(path))
 
 def get_ahk_path() -> str:
     """获取 AutoHotkey 可执行文件路径"""
-    return str(resources.files('kaa.res.bin') / 'AutoHotkey.exe')
+    return str(files('kaa.res.bin') / 'AutoHotkey.exe')

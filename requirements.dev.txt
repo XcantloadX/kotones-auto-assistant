@@ -1,4 +1,5 @@
--r requirements.txt
+-e ./kaa-resource-game
+# -r requirements.txt
 # Packaging
 pyinstaller==6.11.1
 twine==6.1.0
