@@ -1,0 +1,4 @@
+*
+!.gitignore
+!version.json
+!__init__.py

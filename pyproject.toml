@@ -30,6 +30,7 @@ dependencies = [
     "pydantic==2.10.4",
     # Resource
     "ksaa-res==0.2.0",
+    "kaa-resource-game~=1.0",
     # Other
     "typing-extensions==4.12.2",
     "python-dotenv==1.0.1",

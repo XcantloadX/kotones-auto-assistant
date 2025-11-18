@@ -44,7 +44,7 @@ def download_to(asset_id: str, path: str, overwrite: bool = False) -> bool:
                 return False
             manifest.download(asset_id, path=path, categorize=False)
             return True
-        except requests.exceptions.ReadTimeout | requests.exceptions.SSLError | requests.exceptions.ConnectionError as e:
+        except Exception as e:
             retry_count += 1
             if retry_count >= MAX_RETRY_COUNT:
                 raise e
@@ -73,14 +73,15 @@ def run(tasks: List[DownloadTask], description: str = "下载中") -> None:
 
 # 创建目录
 print("创建资源目录...")
-IDOL_CARD_PATH = './kaa/resources/idol_cards'
-SKILL_CARD_PATH = './kaa/resources/skill_cards'
-DRINK_PATH = './kaa/resources/drinks'
+RESOURCE_GAME_PATH = './kaa-resource-game/kaa/resource/game'
+IDOL_CARD_PATH = f'{RESOURCE_GAME_PATH}/idol_cards'
+SKILL_CARD_PATH = f'{RESOURCE_GAME_PATH}/skill_cards'
+DRINK_PATH = f'{RESOURCE_GAME_PATH}/drinks'
 os.makedirs(IDOL_CARD_PATH, exist_ok=True)
 os.makedirs(SKILL_CARD_PATH, exist_ok=True)
 os.makedirs(DRINK_PATH, exist_ok=True)
 
-db = sqlite3.connect("./kaa/resources/game.db")
+db = sqlite3.connect(f"{RESOURCE_GAME_PATH}/game.db")
 
 def resize_idol_card_image(path: str) -> None:
     """偶像卡图片后处理：调整分辨率为 140x188"""

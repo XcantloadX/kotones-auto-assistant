@@ -6,7 +6,9 @@ import zipfile
 import logging
 import traceback
 import importlib.metadata
+import json
 from datetime import datetime
+from importlib.resources import files
 from typing_extensions import override
 
 import cv2
@@ -67,8 +69,40 @@ class Kaa(KotoneBot):
         self.upgrade_msg = upgrade_msg
         self.version = importlib.metadata.version('ksaa')
         logger.info('Version: %s', self.version)
+        self._check_resource_version()
         logger.info('Python Version: %s', sys.version)
         logger.info('Python Executable: %s', sys.executable)
+
+    def _check_resource_version(self):
+        """
+        Checks if the installed game resource package version is compatible.
+        """
+        COMPATIBLE_RESOURCE_MAJOR_VERSION = 1
+        logger.info('Checking resource version...')
+        try:
+            version_file = files('kaa.resource.game').joinpath('version.json')
+            with version_file.open('r') as f:
+                version_data = json.load(f)
+            
+            resource_version = version_data.get('v', '0.0')
+            resource_major_version = int(resource_version.split('.')[0])
+            
+            logger.info(f'Required resource major version: {COMPATIBLE_RESOURCE_MAJOR_VERSION}')
+            logger.info(f'Found resource version: {resource_version}')
+
+            if resource_major_version != COMPATIBLE_RESOURCE_MAJOR_VERSION:
+                raise RuntimeError(
+                    f"Incompatible resource version. "
+                    f"Required major version: {COMPATIBLE_RESOURCE_MAJOR_VERSION}, "
+                    f"but found version: {resource_version}. "
+                    f"Please update the 'kaa-resource-game' package."
+                )
+            logger.info('Resource version check passed.')
+        except (ModuleNotFoundError, FileNotFoundError):
+            raise RuntimeError(
+                "Game resource package 'kaa.resource.game' not found or is corrupted. "
+                "Please make sure 'kaa-resource-game' is installed correctly."
+            )
 
     def add_file_logger(self, log_path: str):
         log_dir = os.path.abspath(os.path.dirname(log_path))

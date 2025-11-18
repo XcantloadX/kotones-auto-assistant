@@ -1,11 +1,11 @@
 import sqlite3
 import threading
 from logging import getLogger
-from typing import Any, cast, Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
-from kaa import resources as res
+from kaa.util import paths
 
-_db_path = cast(str, res.__path__)[0] + '/game.db'
+_db_path = paths.resource('game.db')
 
 _db_dict = {}
 

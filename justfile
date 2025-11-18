@@ -85,7 +85,7 @@ extract-game-data:
 
         $currentHash | Out-File -FilePath $hashFile
         Remove-Item ./kaa/resources/game.db
-        python ./tools/db/extract_schema.py -i ./submodules/gakumasu-diff -d ./kaa/resources/game.db
+        python ./tools/db/extract_schema.py -i ./submodules/gakumasu-diff -d ./kaa-resource-game/kaa/resource/game/game.db
         python ./tools/db/extract_resources.py
     }
 
@@ -93,8 +93,12 @@ extract-game-data:
     Write-Host "Packaging kotonebot-resource..."
     @python -m build -s kotonebot-resource
 
+@package-resource-game: extract-game-data
+    Write-Host "Packaging kaa-resource-game..."
+    @python -m build -s kaa-resource-game
+
 # Package KAA
-@package: env package-resource generate-metadata extract-game-data
+@package: env package-resource package-resource-game generate-metadata
     python tools/make_resources.py -p # Make R.py in production mode
 
     Write-Host "Removing old build files..."
@@ -105,6 +109,8 @@ extract-game-data:
     
     Write-Host "Copying kotonebot-resource to dist..."
     Copy-Item ./kotonebot-resource/dist/* ./dist/
+    Write-Host "Copying kaa-resource-game to dist..."
+    Copy-Item ./kaa-resource-game/dist/* ./dist/
 
     python tools/make_resources.py # Make R.py in development mode
 

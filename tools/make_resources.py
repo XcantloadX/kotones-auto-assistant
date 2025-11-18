@@ -457,7 +457,7 @@ if __name__ == '__main__':
     parser.add_argument('-i', '--ide', help='IDE 类型', default=ide_type())
     args = parser.parse_args()
 
-    if os.path.exists(r'kaa/prites'):
+    if os.path.exists(r'kaa/sprites'):
         shutil.rmtree(r'kaa/sprites')
     path = PATH + '/jp'
     files = scan_png_files(path)
