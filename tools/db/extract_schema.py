@@ -6,11 +6,13 @@ import sys
 import glob
 import json
 import sqlite3
+import time
+import itertools
 from dataclasses import dataclass
 from typing import Dict, Any, Literal, Optional, List
 
 import yaml
-from tqdm import tqdm
+from rich.progress import Progress, TextColumn, BarColumn, TimeElapsedColumn
 from jinja2 import Template
 
 SchemaDataType = Literal[
@@ -249,6 +251,38 @@ def insert_data_to_sqlite(conn, table_name: str, data_list: list):
     conn.executemany(insert_sql, rows)
     conn.commit()
 
+try:
+    from yaml import CSafeLoader as SafeLoader
+except ImportError:
+    from yaml import SafeLoader
+
+def process_file_worker(yaml_file: str) -> tuple[Optional[str], Optional[str], str, Any]:
+    """
+    Worker function to process a single YAML file.
+    Reads, parses, and generates schema, SQL, and Python model.
+    """
+    with open(yaml_file, 'r', encoding='utf-8') as f:
+        content = f.read()
+    
+    # Clean content
+    content = content.replace('\t', '\\t').replace('\x0b', ' ')
+    
+    data = yaml.load(content, Loader=SafeLoader)
+    
+    table_name = os.path.splitext(os.path.basename(yaml_file))[0]
+    
+    schema, sql = process_yaml_data(data, table_name)
+    
+    if not schema:
+        return None, None, yaml_file, data
+        
+    class_name = table_name
+    python_model = generate_python_models(schema, class_name)
+    
+    return python_model, sql, yaml_file, data
+
+
+
 def find_composite_key(data: List[dict]) -> List[str]:
     """查找组合主键
     返回组成组合主键的字段名列表
@@ -298,8 +332,11 @@ def find_composite_key(data: List[dict]) -> List[str]:
                 
     return []
 
-if __name__ == "__main__":
+def main():
     import argparse
+    import concurrent.futures
+    
+    start_time = time.time()
     
     # 设置命令行参数
     parser = argparse.ArgumentParser(description='从YAML文件提取schema并生成Python类和SQLite数据库')
@@ -328,30 +365,51 @@ if __name__ == "__main__":
     
     all_python_models = []
     all_sql_statements = []
-    
     yaml_data = {}
-    for yaml_file in tqdm(yaml_files, desc="转换 YAML 数据中"):
-        with open(yaml_file, 'r', encoding='utf-8') as f:
-            content = f.read()
-        # yaml.scanner.ScannerError: while scanning for the next token
-        # found character '\t' that cannot start any token
-        content = content.replace('\t', '\\t')
-        # yaml.reader.ReaderError: unacceptable character #x000b:
-        # special characters are not allowed
-        content = content.replace('\x0b', ' ')
-        data = yaml.safe_load(content)
-        yaml_data[yaml_file] = data
 
-        # 从文件名获取表名（去掉路径和扩展名）
-        table_name = os.path.splitext(os.path.basename(yaml_file))[0]
+    progress_columns = [
+        TextColumn("[progress.description]{task.description}"),
+        BarColumn(),
+        TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
+        TextColumn("({task.completed}/{task.total})"),
+        TimeElapsedColumn(),
+    ]
 
-        # 处理YAML数据
-        schema, sql = process_yaml_data(data, table_name)
-        if schema:
-            class_name = os.path.splitext(os.path.basename(yaml_file))[0]
-            python_model = generate_python_models(schema, class_name)
-            all_python_models.append(python_model)
-            all_sql_statements.append(sql)
+    with Progress(*progress_columns) as progress:
+        with concurrent.futures.ProcessPoolExecutor(max_workers=10) as executor:
+            
+            overall_task = progress.add_task("[bold green]总进度", total=len(yaml_files))
+            files_iter = iter(yaml_files)
+            
+            # Submit the first batch of tasks
+            futures = {
+                executor.submit(process_file_worker, f): 
+                progress.add_task(os.path.basename(f))
+                for f in itertools.islice(files_iter, 10) if f
+            }
+            
+            while futures:
+                done_future = next(concurrent.futures.as_completed(futures))
+                
+                task_id = futures.pop(done_future)
+                
+                python_model, sql, yaml_file, data = done_future.result()
+                
+                progress.remove_task(task_id)
+                progress.update(overall_task, advance=1)
+
+                yaml_data[yaml_file] = data
+                if python_model and sql:
+                    all_python_models.append(python_model)
+                    all_sql_statements.append(sql)
+
+                try:
+                    new_file = next(files_iter)
+                    new_future = executor.submit(process_file_worker, new_file)
+                    new_task_id = progress.add_task(os.path.basename(new_file))
+                    futures[new_future] = new_task_id
+                except StopIteration:
+                    pass
 
     if args.python:
         with open(args.python, 'w', encoding='utf-8') as f:
@@ -377,12 +435,23 @@ if __name__ == "__main__":
         # 在创建数据库后添加以下代码
         print("\n开始插入数据...")
         with sqlite3.connect(args.database) as conn:
-            for yaml_file in tqdm(yaml_data.keys(), desc="插入数据中"):
-                table_name = os.path.splitext(os.path.basename(yaml_file))[0]
-                data = yaml_data[yaml_file]
-                if isinstance(data, list) and data:
-                    try:
-                        insert_data_to_sqlite(conn, table_name, data)
-                    except Exception as e:
-                        print(f"\n警告：插入数据到表 {table_name} 时出错：{str(e)}")
-        print("\n数据插入完成！") 
+            with Progress(*progress_columns, transient=True) as progress:
+                task = progress.add_task("插入数据中...", total=len(yaml_data))
+                for yaml_file in yaml_data.keys():
+                    table_name = os.path.splitext(os.path.basename(yaml_file))[0]
+                    data = yaml_data[yaml_file]
+                    if isinstance(data, list) and data:
+                        try:
+                            insert_data_to_sqlite(conn, table_name, data)
+                        except Exception as e:
+                            print(f"\n警告：插入数据到表 {table_name} 时出错：{str(e)}")
+                    progress.update(task, advance=1)
+        print("\n数据插入完成！")
+        
+    end_time = time.time()
+    print(f"\n总耗时: {end_time - start_time:.2f} 秒") 
+        
+if __name__ == '__main__':
+        
+    main()
+        
