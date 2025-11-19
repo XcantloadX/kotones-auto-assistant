@@ -20,6 +20,40 @@ class KaaUserFriendlyError(UserFriendlyError, KaaError):
     def __str__(self):
         return f'【发生错误】{self.message}。访问 {self.help_link} 以获取更多帮助。'
 
+class ServiceError(KaaUserFriendlyError):
+    """Base class for service-related errors."""
+    def __init__(self, message: str, help_link: str):
+        super().__init__(message, help_link)
+
+class UpdateServiceError(ServiceError):
+    """Base class for update service errors."""
+    pass
+
+class UpdateFetchListError(UpdateServiceError):
+    def __init__(self, reason: str):
+        super().__init__(
+            f'Failed to fetch version list: {reason}',
+            '' # TODO
+        )
+
+class CompatibilityError(UpdateServiceError):
+    def __init__(self, launcher_version: str, target_version: str):
+        super().__init__(
+            f"❌ 版本兼容性错误\n\n"
+            f"启动器版本: {launcher_version}\n"
+            f"要安装的版本: {target_version}\n\n"
+            f"v2025.9b1 及以上版本需要**启动器 v0.5.0*** 或更高版本支持。\n"
+            f"请先升级启动器到 v0.5.0 以上版本。",
+            ''
+        )
+
+class UpdateInstallError(UpdateServiceError):
+    def __init__(self, reason: str):
+        super().__init__(
+            f'Failed to start installation process: {reason}',
+            '' # TODO
+        )
+
 class ProduceSolutionNotFoundError(KaaUserFriendlyError):
     def __init__(self, solution_id: str):
         self.solution_id = solution_id

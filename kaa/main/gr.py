@@ -14,7 +14,7 @@ from typing import List, Dict, Tuple, Literal, Generator, Callable, Any, get_arg
 import cv2
 import gradio as gr
 
-from kaa.errors import ProduceSolutionNotFoundError
+from kaa.errors import ProduceSolutionNotFoundError, UpdateServiceError, UpdateFetchListError
 from kaa.main import Kaa
 from kaa.db import IdolCard
 from kotonebot.backend.context.context import vars
@@ -34,6 +34,7 @@ from kaa.config import (
 from kaa.config.produce import ProduceSolution, ProduceSolutionManager, ProduceData
 from kaa.application.adapter.misc_adapter import create_desktop_shortcut
 from kaa.application.core.idle_mode import IdleModeManager
+from kaa.application.core.update_service import UpdateService
 
 logger = logging.getLogger(__name__)
 GradioInput = gr.Textbox | gr.Number | gr.Checkbox | gr.Dropdown | gr.Radio | gr.Slider | gr.Tabs | gr.Tab
@@ -234,6 +235,7 @@ class KotoneBotUI:
         self.is_single_task_stopping: bool = False  # 新增：标记单个任务是否正在停止
         self._kaa = kaa
         self._load_config()
+        self.update_service = UpdateService()
         # IdleModeManager 空闲检测
         def safe_get_is_running():
             try:
@@ -2666,18 +2668,12 @@ class KotoneBotUI:
         with gr.Tab("更新"):
             gr.Markdown("## 版本管理")
 
-            # 更新日志
             with gr.Accordion("更新日志", open=False):
                 from kaa.metadata import WHATS_NEW
                 gr.Markdown(WHATS_NEW)
 
-            # 载入信息按钮
             load_info_btn = gr.Button("载入信息", variant="primary")
-
-            # 状态信息
             status_text = gr.Markdown("")
-
-            # 版本选择下拉框（用于安装）
             version_dropdown = gr.Dropdown(
                 label="选择要安装的版本",
                 choices=[],
@@ -2685,381 +2681,71 @@ class KotoneBotUI:
                 visible=False,
                 interactive=True
             )
-
-            # 安装选定版本按钮
             install_selected_btn = gr.Button("安装选定版本", visible=False)
 
-            def list_all_versions():
-                """列出所有可用版本"""
-                import logging
-                import re
-                logger = logging.getLogger(__name__)
-                
-                # 检查启动器版本
-                def check_launcher_version():
-                    """通过读取bootstrap.pyz/meta.py获取启动器版本"""
-                    import zipfile
-                    try:
-                        bootstrap_path = os.path.join(os.getcwd(), "bootstrap.pyz")
-                        if not os.path.exists(bootstrap_path):
-                            logger.warning("启动器文件不存在")
-                            gr.Warning("启动器文件不存在")
-                            return None
-                        
-                        # 尝试从bootstrap.pyz中读取meta.py
-                        try:
-                            with zipfile.ZipFile(bootstrap_path, 'r') as zip_file:
-                                if 'meta.py' in zip_file.namelist():
-                                    # 读取meta.py内容
-                                    meta_content = zip_file.read('meta.py').decode('utf-8')
-                                    
-                                    # 创建一个安全的执行环境
-                                    exec_globals = {}
-                                    exec_locals = {}
-                                    
-                                    # 执行meta.py内容
-                                    exec(meta_content, exec_globals, exec_locals)
-                                    
-                                    # 获取VERSION变量
-                                    if 'VERSION' in exec_locals:
-                                        version = exec_locals['VERSION']
-                                        # 移除v前缀（如果有）
-                                        if isinstance(version, str) and version.startswith('v'):
-                                            version = version[1:]
-                                        logger.info(f"从meta.py读取到启动器版本: {version}")
-                                        return str(version)
-                                    else:
-                                        logger.warning("meta.py中未找到VERSION变量")
-                                        gr.Warning("meta.py中未找到VERSION变量")
-                                        return None
-                                else:
-                                    logger.warning("bootstrap.pyz中未找到meta.py文件")
-                                    gr.Warning("bootstrap.pyz中未找到meta.py文件")
-                                    return None
-                        except zipfile.BadZipFile:
-                            # 不是有效的zip文件，可能是旧版本启动器
-                            logger.info("bootstrap.pyz不是有效的zip文件，判断为旧版本启动器")
-                            return "0.4.x"
-                        except Exception as e:
-                            logger.warning(f"读取bootstrap.pyz失败: {str(e)}")
-                            gr.Warning(f"读取bootstrap.pyz失败: {str(e)}")
-                            return None
-                            
-                    except Exception as e:
-                        logger.warning(f"检查启动器版本失败: {str(e)}")
-                        gr.Warning(f"检查启动器版本失败: {str(e)}")
-                        return None
-
-                try:
-                    # 构建命令，使用清华镜像源
-                    cmd = [
-                        sys.executable, "-m", "pip", "index", "versions", "ksaa", "--json", "--pre",
-                        "--index-url", "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple",
-                        "--trusted-host", "mirrors.tuna.tsinghua.edu.cn"
-                    ]
-                    logger.info(f"执行命令: {' '.join(cmd)}")
-
-                    # 使用 pip index versions --json 来获取版本信息
-                    result = subprocess.run(
-                        cmd,
-                        capture_output=True,
-                        text=True,
-                        timeout=30
-                    )
-
-                    logger.info(f"命令返回码: {result.returncode}")
-                    if result.stdout:
-                        logger.info(f"命令输出: {result.stdout[:500]}...")  # 只记录前500字符
-                    if result.stderr:
-                        logger.warning(f"命令错误输出: {result.stderr}")
-
-                    if result.returncode != 0:
-                        error_msg = f"获取版本列表失败: {result.stderr}"
-                        logger.error(error_msg)
-                        return (
-                            error_msg,
-                            gr.Button(value="载入信息", interactive=True),
-                            gr.Dropdown(visible=False),
-                            gr.Button(visible=False)
-                        )
-
-                    # 解析 JSON 输出
-                    try:
-                        data = json.loads(result.stdout)
-                        versions = data.get("versions", [])
-                        latest_version = data.get("latest", "")
-                        installed_version = data.get("installed_version", "")
-
-                        logger.info(f"解析到 {len(versions)} 个版本")
-                        logger.info(f"最新版本: {latest_version}")
-                        logger.info(f"已安装版本: {installed_version}")
-
-                    except json.JSONDecodeError as e:
-                        error_msg = f"解析版本信息失败: {str(e)}"
-                        logger.error(error_msg)
-                        return (
-                            error_msg,
-                            gr.Button(value="载入信息", interactive=True),
-                            gr.Dropdown(visible=False),
-                            gr.Button(visible=False)
-                        )
-
-                    if not versions:
-                        error_msg = "未找到可用版本"
-                        logger.warning(error_msg)
-                        return (
-                            error_msg,
-                            gr.Button(value="载入信息", interactive=True),
-                            gr.Dropdown(visible=False),
-                            gr.Button(visible=False)
-                        )
-
-                    # 检查启动器版本
-                    launcher_version = check_launcher_version()
-                    
-                    # 构建状态信息
-                    status_info = []
-                    if installed_version:
-                        status_info.append(f"**当前安装版本:** {installed_version}")
-                    if latest_version:
-                        status_info.append(f"**最新版本:** {latest_version}")
-                    if launcher_version:
-                        if launcher_version == "0.4.x":
-                            status_info.append(f"**启动器版本:** < v0.5.0 (旧版本)")
-                        else:
-                            status_info.append(f"**启动器版本:** v{launcher_version}")
-                    else:
-                        status_info.append(f"**启动器版本:** 未知")
-                    status_info.append(f"**找到 {len(versions)} 个可用版本**")
-
-                    status_message = "\n\n".join(status_info)
-                    logger.info(f"版本信息载入完成: {status_message}")
-
-                    # 返回更新后的组件
-                    return (
-                        status_message,
-                        gr.Button(value="载入信息", interactive=True),
-                        gr.Dropdown(choices=versions, value=versions[0] if versions else None, visible=True, label="选择要安装的版本"),
-                        gr.Button(visible=True, value="安装选定版本")
-                    )
-
-                except subprocess.TimeoutExpired:
-                    error_msg = "获取版本列表超时"
-                    logger.error(error_msg)
-                    return (
-                        error_msg,
-                        gr.Button(value="载入信息", interactive=True),
-                        gr.Dropdown(visible=False),
-                        gr.Button(visible=False)
-                    )
-                except Exception as e:
-                    error_msg = f"获取版本列表失败: {str(e)}"
-                    logger.error(error_msg)
-                    return (
-                        error_msg,
-                        gr.Button(value="载入信息", interactive=True),
-                        gr.Dropdown(visible=False),
-                        gr.Button(visible=False)
-                    )
-
-            def install_selected_version(selected_version: str):
-                """安装选定的版本"""
-                import logging
-                import threading
-                import time
-                import re
-                logger = logging.getLogger(__name__)
-
-                if not selected_version:
-                    error_msg = "请先选择一个版本"
-                    logger.warning(error_msg)
-                    return error_msg
-                
-
-                def compare_version(version1: str, version2: str) -> int:
-                    """比较版本号，返回-1(v1<v2), 0(v1==v2), 1(v1>v2)"""
-                    # 处理特殊标记
-                    if version1 == "0.4.x":
-                        version1 = "0.4.0"
-                    
-                    def parse_version(v):
-                        # 移除v前缀并解析版本号和预发布标识
-                        v = v.lstrip('v')
-                        if 'b' in v:
-                            base, beta = v.split('b', 1)
-                            return tuple(map(int, base.split('.'))) + (-1, int(beta))
-                        elif 'a' in v:
-                            base, alpha = v.split('a', 1)
-                            return tuple(map(int, base.split('.'))) + (-2, int(alpha))
-                        elif 'rc' in v:
-                            base, rc = v.split('rc', 1)
-                            return tuple(map(int, base.split('.'))) + (-0.5, int(rc))
-                        else:
-                            return tuple(map(int, v.split('.'))) + (0, 0)
-                    
-                    v1_parsed = parse_version(version1)
-                    v2_parsed = parse_version(version2)
-                    
-                    if v1_parsed < v2_parsed:
-                        return -1
-                    elif v1_parsed > v2_parsed:
-                        return 1
-                    else:
-                        return 0
-                
-                # 检查启动器版本进行兼容性验证
-                def check_launcher_version_simple():
-                    """通过读取bootstrap.pyz/meta.py获取启动器版本"""
-                    import zipfile
-                    try:
-                        bootstrap_path = os.path.join(os.getcwd(), "bootstrap.pyz")
-                        if not os.path.exists(bootstrap_path):
-                            logger.warning("启动器文件不存在")
-                            gr.Warning("启动器文件不存在")
-                            return None
-                        
-                        # 尝试从bootstrap.pyz中读取meta.py
-                        try:
-                            with zipfile.ZipFile(bootstrap_path, 'r') as zip_file:
-                                if 'meta.py' in zip_file.namelist():
-                                    # 读取meta.py内容
-                                    meta_content = zip_file.read('meta.py').decode('utf-8')
-                                    
-                                    # 创建一个安全的执行环境
-                                    exec_globals = {}
-                                    exec_locals = {}
-                                    
-                                    # 执行meta.py内容
-                                    exec(meta_content, exec_globals, exec_locals)
-                                    
-                                    # 获取VERSION变量
-                                    if 'VERSION' in exec_locals:
-                                        version = exec_locals['VERSION']
-                                        # 移除v前缀（如果有）
-                                        if isinstance(version, str) and version.startswith('v'):
-                                            version = version[1:]
-                                        logger.info(f"从meta.py读取到启动器版本: {version}")
-                                        return str(version)
-                                    else:
-                                        logger.warning("meta.py中未找到VERSION变量")
-                                        gr.Warning("meta.py中未找到VERSION变量")
-                                        return None
-                                else:
-                                    logger.warning("bootstrap.pyz中未找到meta.py文件")
-                                    gr.Warning("bootstrap.pyz中未找到meta.py文件")
-                                    return None
-                        except zipfile.BadZipFile:
-                            # 不是有效的zip文件，可能是旧版本启动器
-                            logger.info("bootstrap.pyz不是有效的zip文件，判断为旧版本启动器")
-                            return "0.4.x"
-                        except Exception as e:
-                            logger.warning(f"读取bootstrap.pyz失败: {str(e)}")
-                            gr.Warning(f"读取bootstrap.pyz失败: {str(e)}")
-                            return None
-                            
-                    except Exception as e:
-                        logger.warning(f"检查启动器版本失败: {str(e)}")
-                        gr.Warning(f"检查启动器版本失败: {str(e)}")
-                        return None
-                
-                # 执行启动器版本检查
-                launcher_version = check_launcher_version_simple()
-                logger.info(f"检测到启动器版本: {launcher_version}")
-                
-                # 版本兼容性检查
-                if launcher_version:
-                    if compare_version(launcher_version, "0.5.0") < 0:
-                        # 启动器版本低于0.5.0
-                        logger.warning(f"启动器版本 {launcher_version} 低于 v0.5.0")
-                        
-                        # 检查要安装的版本是否 >= v2025.9b1
-                        if compare_version(selected_version, "2025.9b1") >= 0:
-                            error_msg = (
-                                f"❌ 版本兼容性错误\n\n"
-                                f"启动器版本: {launcher_version}\n"
-                                f"要安装的版本: {selected_version}\n\n"
-                                f"v2025.9b1 及以上版本需要**启动器 v0.5.0*** 或更高版本支持。\n"
-                                f"请先升级启动器到 v0.5.0 以上版本。[查看帮助](https://www.kdocs.cn/l/cetCY8mGKHLj?linkname=UhPH1itaSv)"
-                            )
-                            logger.error(error_msg)
-                            return error_msg
-                        else:
-                            # 版本兼容，但给出警告
-                            logger.warning(f"启动器版本较低，建议升级到 v0.5.0 以上")
-                            gr.Warning("启动器版本较低，建议升级到 v0.5.0 以上")
-                else:
-                    # 无法获取启动器版本，给出警告但继续
-                    logger.warning("无法获取启动器版本，可以继续安装但可能存在兼容性问题")
-                    gr.Warning("无法获取启动器版本，可以继续安装但可能存在兼容性问题")
-
-                def install_and_exit():
-                    """在后台线程中执行安装并退出程序"""
-                    try:
-                        # 等待一小段时间确保UI响应已返回
-                        time.sleep(1)
-
-                        # 构建启动器命令
-                        bootstrap_path = os.path.join(os.getcwd(), "bootstrap.pyz")
-                        cmd = [sys.executable, bootstrap_path, f"--install-version={selected_version}"]
-                        logger.info(f"开始通过启动器安装版本 {selected_version}")
-                        logger.info(f"执行命令: {' '.join(cmd)}")
-
-                        # 启动启动器进程（不等待完成）
-                        subprocess.Popen(
-                            cmd,
-                            cwd=os.getcwd(),
-                            creationflags=subprocess.CREATE_NEW_CONSOLE if os.name == 'nt' else 0
-                        )
-
-                        # 退出当前程序
-                        logger.info("安装即将开始，正在退出当前程序...")
-                        os._exit(0)
-
-                    except Exception as e:
-                        raise
-
-                try:
-                    # 在后台线程中执行安装和退出
-                    install_thread = threading.Thread(target=install_and_exit, daemon=True)
-                    install_thread.start()
-
-                    return f"正在启动器中安装版本 {selected_version}，程序将自动重启..."
-
-                except Exception as e:
-                    error_msg = f"启动安装进程失败: {str(e)}"
-                    logger.error(error_msg)
-                    return error_msg
-
-            def load_info_with_button_state():
-                """载入信息并管理按钮状态"""
-                import logging
-                logger = logging.getLogger(__name__)
-
-                logger.info("开始载入版本信息")
-
-                # 先禁用按钮
+            def on_load_info():
+                """使用 UpdateService 加载版本信息。"""
                 yield (
                     "正在载入版本信息...",
                     gr.Button(value="载入中...", interactive=False),
                     gr.Dropdown(visible=False),
                     gr.Button(visible=False)
                 )
+                try:
+                    versions_data = self.update_service.list_remote_versions()
+                except UpdateFetchListError as e:
+                    gr.Error(str(e))
+                    yield (
+                        str(e),
+                        gr.Button(value="载入信息", interactive=True),
+                        gr.Dropdown(visible=False),
+                        gr.Button(visible=False)
+                    )
+                    return
 
-                # 执行载入操作
-                result = list_all_versions()
-                logger.info("版本信息载入操作完成")
-                yield result
+                status_info = [
+                    f"**当前安装版本:** {versions_data.installed_version or '未知'}",
+                    f"**最新版本:** {versions_data.latest or '未知'}",
+                ]
+                if versions_data.launcher_version:
+                    if versions_data.launcher_version == "0.4.x":
+                        status_info.append("**启动器版本:** < v0.5.0 (旧版本)")
+                    else:
+                        status_info.append(f"**启动器版本:** v{versions_data.launcher_version}")
+                else:
+                    status_info.append("**启动器版本:** 未知")
+                
+                status_info.append(f"**找到 {len(versions_data.versions)} 个可用版本**")
+                status_message = "\n\n".join(status_info)
 
-            # 绑定事件
+                yield (
+                    status_message,
+                    gr.Button(value="载入信息", interactive=True),
+                    gr.Dropdown(choices=versions_data.versions, value=versions_data.versions[0] if versions_data.versions else None, visible=True),
+                    gr.Button(visible=True)
+                )
+
+            def on_install_selected(selected_version: str):
+                """使用 UpdateService 安装所选版本。"""
+                if not selected_version:
+                    gr.Warning("请先选择一个版本。")
+                    return
+
+                try:
+                    self.update_service.install_version(selected_version)
+                    gr.Info(f"正在启动器中安装版本 {selected_version}，程序将自动重启...")
+                except UpdateServiceError as e:
+                    gr.Error(str(e))
+
             load_info_btn.click(
-                fn=load_info_with_button_state,
+                fn=on_load_info,
                 outputs=[status_text, load_info_btn, version_dropdown, install_selected_btn]
             )
 
             install_selected_btn.click(
-                fn=install_selected_version,
+                fn=on_install_selected,
                 inputs=[version_dropdown],
-                outputs=[status_text]
+                outputs=[] 
             )
 
     def _create_screen_tab(self) -> None:
