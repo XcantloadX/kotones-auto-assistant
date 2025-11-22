@@ -5,6 +5,7 @@ from typing import Literal
 from kaa.config.schema import produce_solution
 from kaa.game_ui.schedule import Schedule
 from kaa.tasks import R
+from kaa.tasks.common import skip
 from ..actions import loading
 from kaa.game_ui import WhiteFilter, dialog
 from ..actions.scenes import at_home
@@ -342,7 +343,7 @@ def produce_end(has_live: bool = True):
                 elif image.find(R.Produce.TextSkipLiveDialogTitle):
                     logger.info("Confirming skip live.")
                     device.click(image.expect_wait(R.Common.IconButtonCheck))
-                device.click(10, 10)
+                skip()
             else:
                 break
         # 选择封面
@@ -385,7 +386,7 @@ def produce_end(has_live: bool = True):
             break
         else:
             device.click_center()
-            device.click(10, 10) # 为了兼容has_live==False的情况
+            skip() # 为了兼容has_live==False的情况
         sleep(2)
     # 后续动画
     logger.info("Waiting for memory generation animation completed...")

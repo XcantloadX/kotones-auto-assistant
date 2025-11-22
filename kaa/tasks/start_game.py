@@ -16,6 +16,7 @@ from .actions.loading import loading
 from kaa.config import Priority, conf
 from .actions.scenes import at_home, goto_home
 from .actions.commu import handle_unread_commu
+from kaa.tasks.common import skip
 from kaa.errors import ElevationRequiredError, GameUpdateNeededError, DmmGameLaunchError
 
 logger = logging.getLogger(__name__)
@@ -138,7 +139,7 @@ def wait_for_home():
             device.click()
 
         if should_click and click_cd.expired():
-            device.click(10, 10)
+            skip()
             click_cd.reset()
 
 @action('启动游戏.Android', screenshot_mode='manual-inherit')
