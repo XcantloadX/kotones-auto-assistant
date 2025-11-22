@@ -1,4 +1,3 @@
-import logging
 from functools import partial
 from typing import Callable, NamedTuple, Literal
 
@@ -9,6 +8,7 @@ from cv2.typing import MatLike
 from kaa.db.drink import Drink
 from kaa.game_ui.drinks_overview import locate_all_drinks_in_3_drink_slots
 from kaa.tasks import R
+from kaa.tasks.common import skip
 from kaa.config import conf
 from kaa.game_ui import dialog
 from kaa.tasks.produce.common import acquisition_date_change_dialog
@@ -16,6 +16,7 @@ from kaa.util.trace import trace
 from kotonebot.primitives import RectTuple, Rect
 from kotonebot import action, Interval, Countdown, device, image, sleep, ocr, contains, use_screenshot, color
 from kotonebot.backend.loop import Loop
+from kotonebot import logging
 
 class SkillCard(NamedTuple):
     available: bool
@@ -143,7 +144,7 @@ def do_cards(
     DRINK_MAX_RETRIES = 5
 
     for _ in Loop(interval=1/30):
-        device.click(10, 10)
+        skip()
         img = device.screenshot()
 
         # 技能卡自选移动对话框
@@ -420,7 +421,7 @@ def detect_recommended_card(
     filtered_results = list(filter(partial(threshold_predicate, card_count), results))
     if not filtered_results:
         max_result = max(results, key=lambda x: x.score)
-        logger.info("Max card detect result (discarded): value=%d score=%.4f borders=(%.4f, %.4f, %.4f, %.4f)",
+        logger.verbose("Max card detect result (discarded): value=%d score=%.4f borders=(%.4f, %.4f, %.4f, %.4f)",
             max_result.type,
             max_result.score,
             max_result.left_score,
@@ -430,7 +431,7 @@ def detect_recommended_card(
         )
         return None
     filtered_results.sort(key=lambda x: x.score, reverse=True)
-    logger.info("Max card detect result: value=%d score=%.4f borders=(%.4f, %.4f, %.4f, %.4f)",
+    logger.debug("Max card detect result: value=%d score=%.4f borders=(%.4f, %.4f, %.4f, %.4f)",
         filtered_results[0].type,
         filtered_results[0].score,
         filtered_results[0].left_score,
