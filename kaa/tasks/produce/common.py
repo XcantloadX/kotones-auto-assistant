@@ -14,6 +14,7 @@ from kaa.config.schema import produce_solution
 from kaa.tasks.start_game import wait_for_home
 from kotonebot.primitives import Rect
 from kaa.tasks import R
+from kaa.tasks.common import skip
 from .p_drink import acquire_p_drink
 from kotonebot.util import measure_time
 from kaa.config import conf
@@ -257,6 +258,8 @@ def acquisition_date_change_dialog() -> AcquisitionType | None:
 
     return None
 
+# TODO: 这里要改善一下输出日志。
+# Acquisitions finished. Handled: xxx(event name or 'none'). Checked: 12(number of acquisitions) / 12(number of acquisitions)
 @measure_time()
 @action('处理培育事件', screenshot_mode='manual')
 def fast_acquisitions() -> AcquisitionType | None:
@@ -268,13 +271,13 @@ def fast_acquisitions() -> AcquisitionType | None:
     if loading():
         logger.info("Loading...")
         return "Loading"
-    device.click(10, 10)
+    skip()
 
     # 跳过未读交流
     logger.debug("Check skip commu...")
     if produce_solution().data.skip_commu and handle_unread_commu(img):
         return "SkipCommu"
-    device.click(10, 10)
+    skip()
 
     # P饮料到达上限
     logger.debug("Check PDrink max...")
@@ -304,19 +307,19 @@ def fast_acquisitions() -> AcquisitionType | None:
                 logger.info("Confirm button found")
                 device.click(confirm)
                 return "PDrinkMax"
-    device.click(10, 10)
+    skip()
 
     # 技能卡自选强化
     if image.find(R.InPurodyuusu.IconTitleSkillCardEnhance):
         if handle_skill_card_enhance():
             return "PSkillCardEnhanceSelect"
-    device.click(10, 10)
+    skip()
 
     # 技能卡自选删除
     if image.find(R.InPurodyuusu.IconTitleSkillCardRemoval):
         if handle_skill_card_removal():
             return "PSkillCardRemoveSelect"
-    device.click(10, 10)
+    skip()
 
     # 网络中断弹窗
     logger.debug("Check network error popup...")
@@ -326,7 +329,7 @@ def fast_acquisitions() -> AcquisitionType | None:
         logger.info("Network error popup found")
         device.click(btn_retry)
         return "NetworkError"
-    device.click(10, 10)
+    skip()
 
     # 物品选择对话框
     logger.debug("Check award select dialog...")
@@ -351,13 +354,13 @@ def fast_acquisitions() -> AcquisitionType | None:
             logger.info("Acquire PItem found")
             select_p_item()
             return "PItemSelect"
-    device.click(10, 10)
+    skip()
 
     # 日期变更
     result = acquisition_date_change_dialog()
     if result is not None:
         return result
-    device.click(10, 10)
+    skip()
 
     return None
 

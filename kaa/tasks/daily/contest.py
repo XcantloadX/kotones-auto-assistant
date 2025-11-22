@@ -8,6 +8,7 @@ from kaa.config import conf
 from kaa.game_ui import WhiteFilter, dialog
 from ..actions.scenes import at_home, goto_home
 from ..actions.loading import wait_loading_end
+from kaa.tasks.common import skip
 from kotonebot import device, image, ocr, color, action, task, rect_expand, sleep, contains, Interval
 from kotonebot.backend.loop import Loop
 from kotonebot.backend.context.context import vars
@@ -195,7 +196,7 @@ def contest():
         if not handled: 
             handled = handle_challenge()
         if not handled:
-            device.click(10, 10)
+            skip()
         has_ongoing_contest = False
     goto_home()
     logger.info('Contest all finished.')

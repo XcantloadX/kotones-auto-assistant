@@ -92,7 +92,7 @@ ConfigKey = Literal[
     'trace_recommend_card_detection',
     
     # misc
-    'check_update', 'auto_install_update', 'expose_to_lan', 'update_channel',
+    'check_update', 'auto_install_update', 'expose_to_lan', 'update_channel', 'log_level',
 
     # idle
     'idle_enabled', 'idle_seconds', 'idle_minimize_on_pause',
@@ -2452,6 +2452,16 @@ class KotoneBotUI:
                 info=MiscConfig.model_fields['update_channel'].description,
                 interactive=True
             )
+            log_level = gr.Dropdown(
+                choices=[
+                    ("调试", "debug"),
+                    ("详细", "verbose")
+                ],
+                value=self.current_config.options.misc.log_level,
+                label="日志等级",
+                info=MiscConfig.model_fields['log_level'].description,
+                interactive=True
+            )
             with gr.Row():
                 gr.Button("创建桌面快捷方式").click(
                     fn=self._create_shortcut_button_click(False),
@@ -2467,12 +2477,14 @@ class KotoneBotUI:
             config.misc.auto_install_update = data['auto_install_update']
             config.misc.expose_to_lan = data['expose_to_lan']
             config.misc.update_channel = data['update_channel']
+            config.misc.log_level = data['log_level']
         
         return set_config, {
             'check_update': check_update,
             'auto_install_update': auto_install_update,
             'expose_to_lan': expose_to_lan,
-            'update_channel': update_channel
+            'update_channel': update_channel,
+            'log_level': log_level
         }
 
     def _create_shortcut_button_click(self, start_immediately: bool) -> Callable[[], None]:
