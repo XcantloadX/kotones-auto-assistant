@@ -200,6 +200,10 @@ class MiscConfig(ConfigBaseModel):
     * release: 只使用稳定版。
     * beta: 包含预发布版本（如 alpha/beta/rc）。
     """
+    log_level: Literal['debug', 'verbose'] = 'debug'
+    """
+    日志等级。
+    """
 
 class IdleModeConfig(ConfigBaseModel):
     enabled: bool = False
