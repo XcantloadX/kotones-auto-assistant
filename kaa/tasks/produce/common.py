@@ -1,6 +1,7 @@
-from typing import Literal
 from logging import getLogger
+from typing import Literal, Callable
 
+from cv2.typing import MatLike
 from kotonebot import (
     ocr,
     device,
@@ -10,17 +11,23 @@ from kotonebot import (
     Loop,
     Interval,
 )
-from kaa.config.schema import produce_solution
-from kaa.tasks.start_game import wait_for_home
+from kotonebot.util import Countdown
 from kotonebot.primitives import Rect
 from kaa.tasks import R
 from kaa.tasks.common import skip
 from .p_drink import acquire_p_drink
 from kotonebot.util import measure_time
+from kotonebot.backend.core import Image
+from kotonebot.errors import UnrecoverableError
+
+from kaa.tasks import R
 from kaa.config import conf
+from .p_drink import acquire_p_drink
 from kaa.tasks.actions.loading import loading
-from kaa.game_ui import CommuEventButtonUI, dialog, badge
+from kaa.config.schema import produce_solution
+from kaa.tasks.start_game import wait_for_home
 from kaa.tasks.actions.commu import handle_unread_commu
+from kaa.game_ui import CommuEventButtonUI, dialog, badge
 
 logger = getLogger(__name__)
 
@@ -260,109 +267,193 @@ def acquisition_date_change_dialog() -> AcquisitionType | None:
 
 # TODO: 这里要改善一下输出日志。
 # Acquisitions finished. Handled: xxx(event name or 'none'). Checked: 12(number of acquisitions) / 12(number of acquisitions)
-@measure_time()
-@action('处理培育事件', screenshot_mode='manual')
-def fast_acquisitions() -> AcquisitionType | None:
-    """处理行动开始前和结束后可能需要处理的事件"""
-    img = device.screenshot()
-    logger.info("Acquisition stuffs...")
-    
-    # 加载画面
-    if loading():
-        logger.info("Loading...")
-        return "Loading"
-    skip()
+class ProduceInterrupt:
+    def __init__(self, *, timeout: float | None = None):
+        """
+        :param timeout: 超时时间，单位秒。默认为 None，表示使用配置文件中的时间。
+        """
+        timeout = timeout or conf().produce.interrupt_timeout
+        self.cd = Countdown(timeout)
 
-    # 跳过未读交流
-    logger.debug("Check skip commu...")
-    if produce_solution().data.skip_commu and handle_unread_commu(img):
-        return "SkipCommu"
-    skip()
+    @staticmethod
+    def _check_loading(img: MatLike) -> AcquisitionType | None:
+        """检查加载画面"""
+        if loading():
+            logger.info("Loading...")
+            return "Loading"
+        return None
 
-    # P饮料到达上限
-    logger.debug("Check PDrink max...")
-    # TODO: 需要封装一个更好的实现方式。比如 wait_stable？
-    if image.find(R.InPurodyuusu.TextPDrinkMax):
-        logger.debug("PDrink max found")
-        device.screenshot()
+    @staticmethod
+    def _check_skip_commu(img: MatLike) -> AcquisitionType | None:
+        """检查跳过未读交流"""
+        logger.debug("Check skip commu...")
+        if produce_solution().data.skip_commu and handle_unread_commu(img):
+            return "SkipCommu"
+        return None
+
+    @staticmethod
+    def _check_pdrink_max(img: MatLike) -> AcquisitionType | None:
+        """检查P饮料到达上限"""
+        logger.debug("Check PDrink max...")
+        # TODO: 需要封装一个更好的实现方式。比如 wait_stable？
         if image.find(R.InPurodyuusu.TextPDrinkMax):
-            # 有对话框标题，但是没找到确认按钮
-            # 可能是需要勾选一个饮料
-            if not image.find(R.InPurodyuusu.ButtonLeave, colored=True):
-                logger.info("No leave button found, click checkbox")
-                device.click(image.expect(R.Common.CheckboxUnchecked, colored=True))
-                sleep(0.2)
-                device.screenshot()
-            if leave := image.find(R.InPurodyuusu.ButtonLeave, colored=True):
-                logger.info("Leave button found")
-                device.click(leave)
-                return "PDrinkMax"
-    # P饮料到达上限 确认提示框
-    # [kotonebot-resource\sprites\jp\in_purodyuusu\screenshot_pdrink_max_confirm.png]
-    if image.find(R.InPurodyuusu.TextPDrinkMaxConfirmTitle):
-        logger.debug("PDrink max confirm found")
-        device.screenshot()
+            logger.debug("PDrink max found")
+            device.screenshot()
+            if image.find(R.InPurodyuusu.TextPDrinkMax):
+                # 有对话框标题，但是没找到确认按钮
+                # 可能是需要勾选一个饮料
+                if not image.find(R.InPurodyuusu.ButtonLeave, colored=True):
+                    logger.info("No leave button found, click checkbox")
+                    device.click(image.expect(R.Common.CheckboxUnchecked, colored=True))
+                    sleep(0.2)
+                    device.screenshot()
+                if leave := image.find(R.InPurodyuusu.ButtonLeave, colored=True):
+                    logger.info("Leave button found")
+                    device.click(leave)
+                    return "PDrinkMax"
+        return None
+
+    @staticmethod
+    def _check_pdrink_max_confirm(img: MatLike) -> AcquisitionType | None:
+        """检查P饮料到达上限确认提示框"""
+        # [kotonebot-resource/sprites/jp/in_purodyuusu/screenshot_pdrink_max_confirm.png]
         if image.find(R.InPurodyuusu.TextPDrinkMaxConfirmTitle):
-            if confirm := image.find(R.Common.ButtonConfirm):
-                logger.info("Confirm button found")
-                device.click(confirm)
-                return "PDrinkMax"
-    skip()
+            logger.debug("PDrink max confirm found")
+            device.screenshot()
+            if image.find(R.InPurodyuusu.TextPDrinkMaxConfirmTitle):
+                if confirm := image.find(R.Common.ButtonConfirm):
+                    logger.info("Confirm button found")
+                    device.click(confirm)
+                    return "PDrinkMax"
+        return None
 
-    # 技能卡自选强化
-    if image.find(R.InPurodyuusu.IconTitleSkillCardEnhance):
-        if handle_skill_card_enhance():
-            return "PSkillCardEnhanceSelect"
-    skip()
+    @staticmethod
+    def _check_skill_card_enhance(img: MatLike) -> AcquisitionType | None:
+        """检查技能卡自选强化"""
+        if image.find(R.InPurodyuusu.IconTitleSkillCardEnhance):
+            if handle_skill_card_enhance():
+                return "PSkillCardEnhanceSelect"
+        return None
 
-    # 技能卡自选删除
-    if image.find(R.InPurodyuusu.IconTitleSkillCardRemoval):
-        if handle_skill_card_removal():
-            return "PSkillCardRemoveSelect"
-    skip()
+    @staticmethod
+    def _check_skill_card_removal(img: MatLike) -> AcquisitionType | None:
+        """检查技能卡自选删除"""
+        if image.find(R.InPurodyuusu.IconTitleSkillCardRemoval):
+            if handle_skill_card_removal():
+                return "PSkillCardRemoveSelect"
+        return None
 
-    # 网络中断弹窗
-    logger.debug("Check network error popup...")
-    if (image.find(R.Common.TextNetworkError) 
-        and (btn_retry := image.find(R.Common.ButtonRetry))
-    ):
-        logger.info("Network error popup found")
-        device.click(btn_retry)
-        return "NetworkError"
-    skip()
+    @staticmethod
+    def _check_network_error(img: MatLike) -> AcquisitionType | None:
+        """检查网络中断弹窗"""
+        logger.debug("Check network error popup...")
+        if (image.find(R.Common.TextNetworkError) 
+            and (btn_retry := image.find(R.Common.ButtonRetry))
+        ):
+            logger.info("Network error popup found")
+            device.click(btn_retry)
+            return "NetworkError"
+        return None
 
-    # 物品选择对话框
-    logger.debug("Check award select dialog...")
-    if image.find(R.InPurodyuusu.TextClaim):
-        logger.info("Award select dialog found.")
+    @staticmethod
+    def _check_award_select(img: MatLike) -> AcquisitionType | None:
+        """检查物品选择对话框"""
+        logger.debug("Check award select dialog...")
+        if image.find(R.InPurodyuusu.TextClaim):
+            logger.info("Award select dialog found.")
 
-        # P饮料选择
-        logger.debug("Check PDrink select...")
-        if image.find(R.InPurodyuusu.TextPDrink):
-            logger.info("PDrink select found")
-            acquire_p_drink()
-            return "PDrinkSelect"
-        # 技能卡选择
-        logger.debug("Check skill card select...")
-        if image.find(R.InPurodyuusu.TextSkillCard):
-            logger.info("Acquire skill card found")
-            acquire_skill_card()
-            return "PSkillCardSelect"
-        # P物品选择
-        logger.debug("Check PItem select...")
-        if image.find(R.InPurodyuusu.TextPItem):
-            logger.info("Acquire PItem found")
-            select_p_item()
-            return "PItemSelect"
-    skip()
+            # P饮料选择
+            logger.debug("Check PDrink select...")
+            if image.find(R.InPurodyuusu.TextPDrink):
+                logger.info("PDrink select found")
+                acquire_p_drink()
+                return "PDrinkSelect"
+            # 技能卡选择
+            logger.debug("Check skill card select...")
+            if image.find(R.InPurodyuusu.TextSkillCard):
+                logger.info("Acquire skill card found")
+                acquire_skill_card()
+                return "PSkillCardSelect"
+            # P物品选择
+            logger.debug("Check PItem select...")
+            if image.find(R.InPurodyuusu.TextPItem):
+                logger.info("Acquire PItem found")
+                select_p_item()
+                return "PItemSelect"
+        return None
 
-    # 日期变更
-    result = acquisition_date_change_dialog()
-    if result is not None:
-        return result
-    skip()
+    @staticmethod
+    def _check_date_change(img: MatLike) -> AcquisitionType | None:
+        """检查日期变更"""
+        result = acquisition_date_change_dialog()
+        if result is not None:
+            return result
+        return None
 
-    return None
+    handlers = [
+        _check_loading,
+        _check_skip_commu,
+        _check_pdrink_max,
+        _check_pdrink_max_confirm,
+        _check_skill_card_enhance,
+        _check_skill_card_removal,
+        _check_network_error,
+        _check_award_select,
+        _check_date_change
+    ]
+
+    @classmethod
+    @action('处理培育事件', screenshot_mode='manual')
+    def check(cls) -> AcquisitionType | None:
+        """处理行动开始前和结束后可能需要处理的事件"""
+        img = device.screenshot()
+        logger.info("Acquisition stuffs...")
+        
+        # 检查各个可能的中断事件        
+        for handler in cls.handlers:
+            result = handler(img)
+            if result:
+                return result
+            skip()
+
+        return None
+
+    def resolve(self, end_condition: Callable[[], bool] | Image | None = None):
+        self.cd.reset().start()
+        result: Literal[False] | AcquisitionType | None = False
+        for l in Loop():
+            if end_condition is not None:
+                if callable(end_condition) and end_condition():
+                    break
+                elif isinstance(end_condition, Image) and image.find(end_condition):
+                    break
+            else:
+                if result is None:
+                    break
+
+            if self.cd.expired():
+                raise UnrecoverableError("ProduceInterrupt.resolve timed out after 180 seconds")
+            
+            img = l.screenshot
+            if img is None:
+                img = device.screenshot()
+            for handler in self.handlers:
+                result = handler(img)
+                if result:
+                    break
+            skip()
+
+    def handle(self):
+        """处理中断事件，并检查是否超时。"""
+        if self.cd.expired():
+            raise UnrecoverableError('Unable to detect produce scene. Reseason: timed out.')
+        return self.check()
+    
+    def until(self, end_img: Image):
+        """
+        持续处理中断事件，直到指定图片出现为止。
+        """
+        return self.resolve(lambda: image.find(end_img) is not None)
 
 def until_acquisition_clear():
     """
@@ -372,7 +463,7 @@ def until_acquisition_clear():
     结束条件：任意
     """
     interval = Interval(0.6)
-    while fast_acquisitions():
+    while ProduceInterrupt.check():
         interval.wait()
 
 ORANGE_RANGE = ((14, 87, 23)), ((37, 211, 255))

@@ -36,9 +36,18 @@
             "type": "python",
             "request": "launch",
             "console": "integratedTerminal",
-            "module": "kaa.main.gr",
+            "module": "kaa.main.gr"
+        },
+        {
+            "name": "Gradio UI (Coverage)",
+            "type": "python",
+            "request": "launch",
+            "console": "integratedTerminal",
+            "module": "coverage",
             "args": [
-                "${relativeFile}"
+                "run",
+                "-m",
+                "kaa.main.gr"
             ]
         }
     ]

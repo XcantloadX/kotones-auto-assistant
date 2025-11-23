@@ -2,7 +2,7 @@ import logging
 from typing_extensions import assert_never
 from typing import Literal
 
-from kaa.config.schema import produce_solution
+from kaa.config.schema import conf, produce_solution
 from kaa.game_ui.schedule import Schedule
 from kaa.tasks import R
 from kaa.tasks.common import skip
@@ -15,7 +15,7 @@ from kotonebot.errors import UnrecoverableError
 from kotonebot.util import Countdown, cropped
 from kotonebot.backend.loop import Loop
 from kaa.config import ProduceAction, RecommendCardDetectionMode
-from ..produce.common import until_acquisition_clear, commu_event, fast_acquisitions
+from ..produce.common import until_acquisition_clear, commu_event, ProduceInterrupt
 from kotonebot import ocr, device, contains, image, regex, action, sleep, wait
 from ..produce.non_lesson_actions import (
     enter_allowance, allowance_available,
@@ -142,9 +142,10 @@ def handle_recommended_action(final_week: bool = False) -> ProduceAction | None:
         return recommended
 
 
-@action('等待进入行动场景')
+@action('等待进入行动场景', screenshot_mode='manual')
 def until_action_scene(week_first: bool = False):
     """等待进入行动场景"""
+    pi = ProduceInterrupt()
     for _ in Loop(interval=0.2):
         if not image.find_multi([
             R.InPurodyuusu.TextPDiary, # 普通周
@@ -159,13 +160,13 @@ def until_action_scene(week_first: bool = False):
             # [screenshots/produce/in_produce/initial_commu_event.png]
             if week_first and commu_event():
                 continue
-            if fast_acquisitions():
+            if pi.handle():
                 continue
         else:
             logger.info("Now at action scene.")
             return 
 
-@action('等待进入练习场景')
+@action('等待进入练习场景', screenshot_mode='manual')
 def until_practice_scene():
     """等待进入练习场景"""
     for _ in Loop():
@@ -174,7 +175,7 @@ def until_practice_scene():
         else:
             break
 
-@action('等待进入考试场景')
+@action('等待进入考试场景', screenshot_mode='manual')
 def until_exam_scene():
     """等待进入考试场景"""
     # NOTE: is_exam_scene() 通过 OCR 剩余回合数判断是否处于考试场景。
@@ -751,8 +752,10 @@ def detect_produce_scene() -> ProduceStage:
     结束状态：游戏主页面\n
     """
     logger.info("Detecting current produce stage...")
-    
+    cd = Countdown(conf().produce.interrupt_timeout).start()
     for _ in Loop():
+        if cd.expired():
+            raise UnrecoverableError('Unable to detect produce scene. Reseason: timed out.')
         # 行动场景
         texts = ocr.ocr()
         if (
@@ -770,7 +773,7 @@ def detect_produce_scene() -> ProduceStage:
             logger.info("Detection result: At exam scene.")
             return 'exam-ongoing'
         else:
-            if fast_acquisitions():
+            if ProduceInterrupt.check():
                 # 继续循环检测
                 pass
             elif commu_event():

@@ -10,7 +10,7 @@ from kaa.game_ui import dialog
 
 from kaa.tasks import R
 from kaa.config import conf
-from ..produce.common import fast_acquisitions
+from ..produce.common import ProduceInterrupt
 from kaa.game_ui.commu_event_buttons import CommuEventButtonUI
 from kotonebot.util import Countdown
 from kotonebot.backend.loop import Loop
@@ -57,12 +57,7 @@ def enter_study():
     device.double_click(image.expect_wait(R.InPurodyuusu.ButtonIconStudy))
     # 等待进入页面。中间可能会出现未读交流
     # [screenshots/produce/action_study2.png]
-    for _ in Loop():
-        if not image.find(R.InPurodyuusu.IconTitleStudy):
-            logger.debug("Waiting for 授業 screen.")
-            fast_acquisitions()
-        else:
-            break
+    ProduceInterrupt().until(R.InPurodyuusu.IconTitleStudy)
     # 首先需要判断是不是自习课
     # [kotonebot-resource\sprites\jp\in_purodyuusu\screenshot_study_self_study.png]
     if image.find_multi([
@@ -105,11 +100,7 @@ def enter_study():
             device.click(target_btn)
         else:
             device.double_click(target_btn)
-        for _ in Loop():
-            if fast_acquisitions() is None:
-                logger.info("Waiting for acquisitions finished.")
-            else:
-                break
+        ProduceInterrupt().resolve()
     logger.info("授業 completed.")
 
 
@@ -126,13 +117,9 @@ def enter_allowance():
     logger.info("Double clicking on 活動支給.")
     device.double_click(image.expect(R.InPurodyuusu.ButtonTextAllowance), interval=1)
     # 等待进入页面
-    for _ in Loop():
-        if not image.find(R.InPurodyuusu.IconTitleAllowance):
-            logger.debug("Waiting for 活動支給 screen.")
-            fast_acquisitions()
-        else:
-            break
+    ProduceInterrupt().until(R.InPurodyuusu.IconTitleAllowance)
     # 领取奖励
+    pi = ProduceInterrupt()
     for _ in Loop():
         # TODO: 检测是否在行动页面应当单独一个函数
         if image.find_multi([
@@ -145,7 +132,7 @@ def enter_allowance():
             device.click()
             sleep(0.5) # 防止点击了第一个箱子后立马点击了第二个
             continue
-        if fast_acquisitions() is not None:
+        if pi.handle():
             continue
     logger.info("活動支給 completed.")
 
@@ -164,13 +151,7 @@ def enter_consult():
     device.double_click(image.expect(R.InPurodyuusu.ButtonIconConsult), interval=1)
     
     # 等待进入页面
-    for _ in Loop():
-        if not image.find(R.InPurodyuusu.IconTitleConsult):
-            device.screenshot()
-            logger.debug("Waiting for 相談 screen.")
-            fast_acquisitions()
-        else:
-            break
+    ProduceInterrupt().until(R.InPurodyuusu.IconTitleConsult)
     # # 尝试固定购买第一个物品
     # device.click(R.InPurodyuusu.PointConsultFirstItem)
     # sleep(0.5)
@@ -282,12 +263,7 @@ def enter_outing():
     logger.info("Double clicking on おでかけ.")
     device.double_click(image.expect(R.InPurodyuusu.ButtonIconOuting))
     # 等待进入页面
-    for _ in Loop():
-        if not image.find(R.InPurodyuusu.TitleIconOuting):
-            logger.debug("Waiting for おでかけ screen.")
-            fast_acquisitions()
-        else:
-            break
+    ProduceInterrupt().until(R.InPurodyuusu.TitleIconOuting)
     # 固定选中第二个选项
     # TODO: 可能需要二次处理外出事件
     # [kotonebot-resource\sprites\jp\in_purodyuusu\screenshot_outing.png]
@@ -301,10 +277,11 @@ def enter_outing():
         device.click(target_btn)
     else:
         device.double_click(target_btn)
+    pi = ProduceInterrupt()
     for _ in Loop():
         if at_action_scene():
             break
-        elif fast_acquisitions():
+        elif pi.handle():
             pass
         # [screenshots\produce\outing_ap_confirm.png]
         elif image.find(R.Common.ButtonSelect2):

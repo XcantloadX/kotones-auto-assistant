@@ -4,6 +4,7 @@
         "wholroyd.jinja",
         "mgiesen.image-comments",
         "ms-python.vscode-pylance",
-        "ms-python.python"
+        "ms-python.python",
+        "ryanluker.vscode-coverage-gutters"
     ]
 }

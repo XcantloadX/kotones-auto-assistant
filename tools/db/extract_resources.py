@@ -22,8 +22,34 @@ import GkmasObjectManager as gom # type: ignore
 print('拉取清单文件...')
 manifest = gom.fetch()
 
-# 定义下载任务类型：(资源ID, 下载路径, 下载完成后调用的函数)
-DownloadTask = Tuple[str, str, Callable[[str], None] | None]
+
+def make_image_validator(expected_size: tuple[int, int]) -> Callable[[str], bool]:
+    """
+    Creates a validation function that checks if an image file has the expected dimensions.
+
+    :param expected_size: A tuple (width, height).
+    :return: A function that takes a file path and returns True if the image has the correct size.
+    """
+    def validator(path: str) -> bool:
+        try:
+            img = cv2.imread(path)
+            if img is None:
+                print(f"Validation failed: OpenCV cannot read {path}")
+                return False
+            # img.shape is (height, width, channels)
+            actual_size = (img.shape[1], img.shape[0])
+            if actual_size != expected_size:
+                print(f"Validation failed: incorrect size for {path}. Expected {expected_size}, got {actual_size}")
+                return False
+            return True
+        except Exception as e:
+            print(f"Validation failed: error reading {path}: {e}")
+            return False
+    return validator
+
+
+# 定义下载任务类型：(资源ID, 下载路径, 下载完成后调用的函数, 验证函数)
+DownloadTask = Tuple[str, str, Callable[[str], None] | None, Callable[[str], bool] | None]
 download_tasks: List[DownloadTask] = []
 
 MAX_RETRY_COUNT = 5
@@ -42,9 +68,9 @@ def download_to(asset_id: str, path: str, overwrite: bool = False) -> bool:
             if not overwrite and os.path.exists(path):
                 print(f'Skipped {asset_id}.')
                 return False
-            manifest.download(asset_id, path=path, categorize=False)
+            manifest.download(asset_id, path=path, categorize=False, no_progress=True)
             return True
-        except requests.exceptions.ReadTimeout | requests.exceptions.SSLError | requests.exceptions.ConnectionError as e:
+        except (requests.exceptions.ReadTimeout, requests.exceptions.SSLError, requests.exceptions.ConnectionError, urllib3.exceptions.MaxRetryError) as e:
             retry_count += 1
             if retry_count >= MAX_RETRY_COUNT:
                 raise e
@@ -54,13 +80,26 @@ def download_to(asset_id: str, path: str, overwrite: bool = False) -> bool:
 def run(tasks: List[DownloadTask], description: str = "下载中") -> None:
     """并行执行下载任务列表"""
     def _download(task: DownloadTask) -> None:
-        asset_id, path, post_process_func = task
+        asset_id, path, post_process_func, validator = task
         try:
-            result = download_to(asset_id, path)
-            if result and post_process_func is not None:
-                post_process_func(path)
-        except Exception as e:
-            print(f'Failed to download {asset_id}')
+            downloaded = download_to(asset_id, path)
+            if downloaded:
+                if post_process_func is not None:
+                    post_process_func(path)
+            
+            if validator is not None:
+                # Validate for both downloaded and skipped files
+                if os.path.exists(path):
+                    if not validator(path):
+                        os.remove(path) # Delete invalid file
+                        print(f"Validation failed for {path}, file removed and marked for retry.")
+                        return # Exit _download for this task, it's handled by retry.
+                elif downloaded:
+                    # This case means download_to returned True but file is not there.
+                    raise FileNotFoundError(f"File {path} not found after reported download.")
+
+        except Exception:
+            print(f'Failed to download or validate {asset_id}')
             traceback.print_exc()
             raise
     with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
@@ -134,17 +173,19 @@ for row in tqdm.tqdm(cursor.fetchall(), desc="构建偶像卡任务"):
     if asset_id is None:
         raise ValueError(f"未找到P偶像卡资源：{skin_id} {name}")
 
+    validator = make_image_validator((140, 188))
+
     # 低特训等级
     asset_id0 = f'img_general_{asset_id}_0-thumb-portrait'
     path0 = IDOL_CARD_PATH + f'/{skin_id}_0.png'
-    download_tasks.append((asset_id0, path0, resize_idol_card_image))
+    download_tasks.append((asset_id0, path0, resize_idol_card_image, validator))
 
     # 高特训等级
     asset_id1 = f'img_general_{asset_id}_1-thumb-portrait'
     path1 = IDOL_CARD_PATH + f'/{skin_id}_1.png'
-    download_tasks.append((asset_id1, path1, resize_idol_card_image))
+    download_tasks.append((asset_id1, path1, resize_idol_card_image, validator))
 
-# 2. 构建技能卡下载任务
+# # 2. 构建技能卡下载任务
 # print("添加技能卡任务...")
 # cursor = db.execute("""
 # SELECT
@@ -158,12 +199,12 @@ for row in tqdm.tqdm(cursor.fetchall(), desc="构建偶像卡任务"):
 #     assert asset_id is not None
 #     if not is_character_asset:
 #         path = SKILL_CARD_PATH + f'/{asset_id}.png'
-#         download_tasks.append((asset_id, path, None))
+#         download_tasks.append((asset_id, path, None, None))
 #     else:
 #         for ii in CharacterId:
 #             actual_asset_id = f'{asset_id}-{ii.value}'
 #             path = SKILL_CARD_PATH + f'/{actual_asset_id}.png'
-#             download_tasks.append((actual_asset_id, path, None))
+#             download_tasks.append((actual_asset_id, path, None, None))
 
 # 3. 构建饮品下载任务
 print("添加饮品任务...")
@@ -177,7 +218,7 @@ for row in tqdm.tqdm(cursor.fetchall(), desc="构建饮品任务"):
     asset_id = row[0]
     assert asset_id is not None
     path = DRINK_PATH + f'/{asset_id}.png'
-    download_tasks.append((asset_id, path, resize_drink_image))
+    download_tasks.append((asset_id, path, resize_drink_image, make_image_validator((68, 68))))
 
 print(f'开始下载 {len(download_tasks)} 个资源，并发数 {MAX_WORKERS}...')
 run(download_tasks)
@@ -192,11 +233,16 @@ def check_downloaded_files(tasks: List[DownloadTask]) -> List[DownloadTask]:
 
     print("检查下载的文件...")
     for task in tqdm.tqdm(tasks, desc="检查文件"):
-        _, path, _ = task
+        _, path, _, validator = task
 
         # 检查文件是否存在
         if not os.path.exists(path):
             print(f"文件不存在: {path}")
+            failed_tasks.append(task)
+            continue
+
+        # 使用自定义验证器（如果提供）
+        if validator and not validator(path):
             failed_tasks.append(task)
             continue
 
@@ -237,7 +283,7 @@ while retry_round < max_retry_rounds:
 
     # 删除失败的文件，准备重新下载
     for task in failed_tasks:
-        _, path, _ = task
+        _, path, _, _ = task
         if os.path.exists(path):
             try:
                 os.remove(path)
@@ -256,7 +302,7 @@ while retry_round < max_retry_rounds:
 if failed_tasks:
     print(f"警告：仍有 {len(failed_tasks)} 个文件下载失败：")
     for task in failed_tasks:
-        asset_id, path, _ = task
+        asset_id, path, _, _ = task
         print(f"  - {asset_id} -> {path}")
 
 
