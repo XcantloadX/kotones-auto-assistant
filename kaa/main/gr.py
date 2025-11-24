@@ -2636,30 +2636,6 @@ class KotoneBotUI:
                 outputs=[] 
             )
 
-    def _create_screen_tab(self) -> None:
-        with gr.Tab("画面"):
-            gr.Markdown("## 当前设备画面")
-            refresh_btn = gr.Button("刷新画面", variant="primary")
-            WIDTH = 720 // 3
-            HEIGHT = 1280 // 3
-            last_update_text = gr.Markdown("上次更新时间：无数据")
-            screenshot_display = gr.Image(type="numpy", width=WIDTH, height=HEIGHT)
-
-            def update_screenshot():
-                ctx = ContextStackVars.current()
-                if ctx is None:
-                    return [None, "上次更新时间：无上下文数据"]
-                screenshot = ctx._screenshot
-                if screenshot is None:
-                    return [None, "上次更新时间：无截图数据"]
-                screenshot = cv2.cvtColor(screenshot, cv2.COLOR_BGR2RGB)
-                return screenshot, f"上次更新时间：{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
-
-            refresh_btn.click(
-                fn=update_screenshot,
-                outputs=[screenshot_display, last_update_text]
-            )
-
     def _load_config(self) -> None:
         # 加载配置文件
         config_path = "config.json"
@@ -2702,7 +2678,6 @@ class KotoneBotUI:
                     self._create_produce_tab()
                     self._create_log_tab()
                     self._create_whats_new_tab()
-                    self._create_screen_tab()
 
         # 启动 IdleModeManager 后台线程
         self.idle_mgr.start()
