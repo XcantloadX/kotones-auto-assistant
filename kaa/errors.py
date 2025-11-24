@@ -51,7 +51,25 @@ class UpdateInstallError(UpdateServiceError):
     def __init__(self, reason: str):
         super().__init__(
             f'Failed to start installation process: {reason}',
-            '' # TODO
+            'https://www.kdocs.cn/l/cetCY8mGKHLj?linkname=some-link' # TODO
+        )
+
+class FeedbackServiceError(ServiceError):
+    """Base class for feedback service errors."""
+    pass
+
+class ReportCreationError(FeedbackServiceError):
+    def __init__(self, reason: str):
+        super().__init__(
+            f'Failed to create bug report: {reason}',
+            'https://www.kdocs.cn/l/cetCY8mGKHLj?linkname=some-link' # TODO
+        )
+
+class UploadError(FeedbackServiceError):
+    def __init__(self, reason: str):
+        super().__init__(
+            f'Failed to upload bug report: {reason}',
+            'https://www.kdocs.cn/l/cetCY8mGKHLj?linkname=some-link' # TODO
         )
 
 class ProduceSolutionNotFoundError(KaaUserFriendlyError):

@@ -14,27 +14,12 @@ from typing import List, Dict, Tuple, Literal, Generator, Callable, Any, get_arg
 import cv2
 import gradio as gr
 
-from kaa.errors import ProduceSolutionNotFoundError, UpdateServiceError, UpdateFetchListError
-from kaa.main import Kaa
-from kaa.db import IdolCard
-from kotonebot.backend.context.context import vars
-from kotonebot.errors import ContextNotInitializedError
-from kotonebot.client.host import Mumu12Host, LeidianHost
-from kotonebot.client.host.mumu12_host import Mumu12V5Host
-from kotonebot.config.manager import load_config, save_config
-from kotonebot.config.base_config import UserConfig, BackendConfig
-from kotonebot.backend.context import task_registry, ContextStackVars
-from kaa.config import (
-    BaseConfig, APShopItems, CapsuleToysConfig, ClubRewardConfig, PurchaseConfig, ActivityFundsConfig,
-    PresentsConfig, AssignmentConfig, ContestConfig, ProduceConfig,
-    MissionRewardConfig, DailyMoneyShopItems, ProduceAction,
-    RecommendCardDetectionMode, TraceConfig, StartGameConfig, EndGameConfig, UpgradeSupportCardConfig, MiscConfig,
-    IdleModeConfig,
-)
-from kaa.config.produce import ProduceSolution, ProduceSolutionManager, ProduceData
-from kaa.application.adapter.misc_adapter import create_desktop_shortcut
 from kaa.application.core.idle_mode import IdleModeManager
 from kaa.application.core.update_service import UpdateService
+from kaa.application.core.feedback_service import FeedbackService
+from kaa.errors import (
+    ProduceSolutionNotFoundError, UpdateServiceError, UpdateFetchListError, FeedbackServiceError
+)
 
 logger = logging.getLogger(__name__)
 GradioInput = gr.Textbox | gr.Number | gr.Checkbox | gr.Dropdown | gr.Radio | gr.Slider | gr.Tabs | gr.Tab
@@ -105,128 +90,6 @@ CONFIG_KEY_VALUE: tuple[str] = get_args(ConfigKey)
 ConfigSetFunction = Callable[[BaseConfig, Dict[ConfigKey, Any]], None]
 ConfigBuilderReturnValue = Tuple[ConfigSetFunction, Dict[ConfigKey, GradioInput]]
 
-def _save_bug_report(
-    title: str,
-    description: str,
-    version: str,
-    upload: bool,
-    path: str | None = None
-) -> Generator[str, None, str]:
-    """
-    保存报告
-
-    :param title: 标题
-    :param description: 描述
-    :param version: 版本号
-    :param upload: 是否上传
-    :param path: 保存的路径。若为 `None`，则保存到 `./reports/bug-YY-MM-DD HH-MM-SS_标题.zip`。
-    :return: 保存的路径
-    """
-    from kotonebot import device
-    from kotonebot.backend.context import ContextStackVars
-    import re
-
-    # 过滤标题中的非法文件名字符
-    def sanitize_filename(s: str) -> str:
-        # 替换 \/:*?"<>| 为空或下划线
-        return re.sub(r'[\\/:*?"<>|]', '_', s)
-
-    # 确保目录存在
-    os.makedirs('logs', exist_ok=True)
-    os.makedirs('reports', exist_ok=True)
-
-    error = ""
-    if path is None:
-        safe_title = sanitize_filename(title)[:30] or "无标题"
-        timestamp = datetime.now().strftime("%y-%m-%d-%H-%M-%S")
-        path = f'./reports/bug_{timestamp}_{safe_title}.zip'
-    with zipfile.ZipFile(path, 'w', zipfile.ZIP_DEFLATED, compresslevel=9) as zipf:
-        # 打包描述文件
-        yield "### 打包描述文件..."
-        try:
-            description_content = f"标题：{title}\n类型：bug\n内容：\n{description}"
-            zipf.writestr('description.txt', description_content.encode('utf-8'))
-        except Exception as e:
-            error += f"保存描述文件失败：{str(e)}\n"
-
-        # 打包截图
-        yield "### 打包上次截图..."
-        try:
-            stack = ContextStackVars.current()
-            screenshot = None
-            if stack is not None:
-                screenshot = stack._screenshot
-                if screenshot is not None:
-                    img = cv2.imencode('.png', screenshot)[1].tobytes()
-                    zipf.writestr('last_screenshot.png', img)
-            if screenshot is None:
-                error += "无上次截图数据\n"
-        except Exception as e:
-            error += f"保存上次截图失败：{str(e)}\n"
-
-        # 打包当前截图
-        yield "### 打包当前截图..."
-        try:
-            screenshot = device.screenshot()
-            img = cv2.imencode('.png', screenshot)[1].tobytes()
-            zipf.writestr('current_screenshot.png', img)
-        except Exception as e:
-            error += f"保存当前截图失败：{str(e)}\n"
-
-        # 打包配置文件
-        yield "### 打包配置文件..."
-        try:
-            with open('config.json', 'r', encoding='utf-8') as f:
-                zipf.writestr('config.json', f.read())
-        except Exception as e:
-            error += f"保存配置文件失败：{str(e)}\n"
-
-        # 打包 logs 文件夹
-        if os.path.exists('logs'):
-            for root, dirs, files in os.walk('logs'):
-                for file in files:
-                    file_path = os.path.join(root, file)
-                    arcname = os.path.join('logs', os.path.relpath(file_path, 'logs'))
-                    zipf.write(file_path, arcname)
-                    yield f"### 打包 log 文件：{arcname}"
-
-        # 打包 conf 文件夹
-        if os.path.exists('conf'):
-            for root, dirs, files in os.walk('conf'):
-                for file in files:
-                    file_path = os.path.join(root, file)
-                    arcname = os.path.join('conf', os.path.relpath(file_path, 'conf'))
-                    zipf.write(file_path, arcname)
-                    yield f"### 打包配置文件：{arcname}"
-
-        # 写出版本号
-        zipf.writestr('version.txt', version)
-
-    if not upload:
-        yield f"### 报告已保存至 {os.path.abspath(path)}"
-        return path
-
-    # 上传报告
-    from kotonebot.ui.file_host.sensio import upload as upload_file
-    yield "### 上传报告..."
-    url = ''
-    try:
-        url = upload_file(path)
-    except Exception as e:
-        yield f"### 上传报告失败：{str(e)}\n\n"
-        return ''
-
-    final_msg = f"### 报告导出成功：{url}\n\n"
-    expire_time = datetime.now() + timedelta(days=7)
-    if error:
-        final_msg += "### 但发生了以下错误\n\n"
-        final_msg += '\n* '.join(error.strip().split('\n'))
-    final_msg += '\n'
-    final_msg += f"### 此链接将于 {expire_time.strftime('%Y-%m-%d %H:%M:%S')}（7 天后）过期\n\n"
-    final_msg += '### 复制以上文本并反馈给开发者'
-    yield final_msg
-    return path
-
 class KotoneBotUI:
     def __init__(self, kaa: Kaa) -> None:
         self.is_running: bool = False
@@ -236,6 +99,7 @@ class KotoneBotUI:
         self._kaa = kaa
         self._load_config()
         self.update_service = UpdateService()
+        self.feedback_service = FeedbackService()
         # IdleModeManager 空闲检测
         def safe_get_is_running():
             try:
@@ -2646,19 +2510,43 @@ class KotoneBotUI:
 
                 result_text = gr.Markdown("等待操作\n\n\n")
 
-            def on_upload_click(title: str, description: str):
-                yield from _save_bug_report(title, description, self._kaa.version, upload=True)
+            def create_report(title: str, description: str, upload: bool, progress=gr.Progress()):
+                
+                def on_progress(data: Dict[str, Any]):
+                    progress_val = data['step'] / data['total_steps']
+                    if data['type'] == 'packing':
+                        desc = f"({data['step']}/{data['total_steps']}) 正在打包 {data['item']}"
+                    elif data['type'] == 'uploading':
+                        desc = f"({data['step']}/{data['total_steps']}) 正在上传 {data['item']}"
+                    elif data['type'] == 'done':
+                        if 'url' in data:
+                            desc = "上传完成"
+                        else:
+                            desc = "已保存至本地"
+                    else:
+                        desc = "正在处理..."
+                    progress(progress_val, desc=desc)
 
-            def on_save_local_click(title: str, description: str):
-                yield from _save_bug_report(title, description, self._kaa.version, upload=False)
+                try:
+                    result = self.feedback_service.report(
+                        title=title,
+                        description=description,
+                        version=self._kaa.version,
+                        upload=upload,
+                        on_progress=on_progress
+                    )
+                    return result.message
+                except FeedbackServiceError as e:
+                    gr.Error(str(e))
+                    return f"### 操作失败\n\n{e}"
 
             upload_report_btn.click(
-                fn=on_upload_click,
+                fn=partial(create_report, upload=True),
                 inputs=[report_title, report_description],
                 outputs=[result_text]
             )
             save_local_report_btn.click(
-                fn=on_save_local_click,
+                fn=partial(create_report, upload=False),
                 inputs=[report_title, report_description],
                 outputs=[result_text]
             )
