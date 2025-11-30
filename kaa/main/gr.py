@@ -14,6 +14,25 @@ from typing import List, Dict, Tuple, Literal, Generator, Callable, Any, get_arg
 import cv2
 import gradio as gr
 
+from kaa.errors import ProduceSolutionNotFoundError
+from kaa.main import Kaa
+from kaa.db import IdolCard
+from kotonebot.backend.context.context import vars
+from kotonebot.errors import ContextNotInitializedError
+from kotonebot.client.host import Mumu12Host, LeidianHost
+from kotonebot.client.host.mumu12_host import Mumu12V5Host
+from kotonebot.config.manager import load_config, save_config
+from kotonebot.config.base_config import UserConfig, BackendConfig
+from kotonebot.backend.context import task_registry, ContextStackVars
+from kaa.config import (
+    BaseConfig, APShopItems, CapsuleToysConfig, ClubRewardConfig, PurchaseConfig, ActivityFundsConfig,
+    PresentsConfig, AssignmentConfig, ContestConfig, ProduceConfig,
+    MissionRewardConfig, DailyMoneyShopItems, ProduceAction,
+    RecommendCardDetectionMode, TraceConfig, StartGameConfig, EndGameConfig, UpgradeSupportCardConfig, MiscConfig,
+    IdleModeConfig,
+)
+from kaa.config.produce import ProduceSolution, ProduceSolutionManager, ProduceData
+from kaa.application.adapter.misc_adapter import create_desktop_shortcut
 from kaa.application.core.idle_mode import IdleModeManager
 from kaa.application.core.update_service import UpdateService
 from kaa.application.core.feedback_service import FeedbackService
