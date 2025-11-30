@@ -7,10 +7,6 @@ build==1.2.2.post1
 # Profiling
 snakeviz==2.2.2
 
-# Used by kotonebot-devtool
-python-lsp-server==1.12.0
-wxpython==4.2.2
-
 # Make resources
 jinja2==3.1.5
 dataclasses-json==0.6.7
