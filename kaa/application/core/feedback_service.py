@@ -114,7 +114,7 @@ class FeedbackService:
         final_msg = (
             f"报告导出成功：{url}\n\n"
             f"此链接将于 {expire_time.strftime('%Y-%m-%d %H:%M:%S')}（7 天后）过期\n\n"
-            '复制以上文本并反馈给开发者'
+            '**复制以上文本并发送至 QQ 群、Github issue、B站私信等**'
         )
         _progress({'type': 'done', 'url': url, 'step': 6, 'total_steps': total_steps})
         return BugReportResult(file_path=file_path, upload_url=url, message=final_msg)
