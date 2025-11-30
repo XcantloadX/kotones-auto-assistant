@@ -302,11 +302,13 @@ class ProduceInterrupt:
             if image.find(R.InPurodyuusu.TextPDrinkMax):
                 # 有对话框标题，但是没找到确认按钮
                 # 可能是需要勾选一个饮料
+                # 也有可能是对话框正在往下退出
                 if not image.find(R.InPurodyuusu.ButtonLeave, colored=True):
                     logger.info("No leave button found, click checkbox")
-                    device.click(image.expect(R.Common.CheckboxUnchecked, colored=True))
-                    sleep(0.2)
-                    device.screenshot()
+                    if image.find(R.Common.CheckboxUnchecked, colored=True):
+                        device.click()
+                        sleep(0.2)
+                        device.screenshot()
                 if leave := image.find(R.InPurodyuusu.ButtonLeave, colored=True):
                     logger.info("Leave button found")
                     device.click(leave)

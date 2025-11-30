@@ -17,6 +17,9 @@ POSTIONS = [
 def acquire_p_drink():
     """
     领取 P 饮料
+
+    前置：领取饮料弹窗
+
     :param index: 要领取的 P 饮料的索引。从 0 开始。
     """
     # TODO: 随机领取一个饮料改成根据具体情况确定最佳
@@ -26,7 +29,8 @@ def acquire_p_drink():
         logger.info("Skip claiming PDrink.")
         device.click()
         sleep(0.3)
-        device.click(image.expect_wait(R.InPurodyuusu.ButtonDontClaim))
+        if image.find(R.InPurodyuusu.ButtonDontClaim):
+            device.click()
     else:
         # 点击饮料
         device.click(POSTIONS[0])
