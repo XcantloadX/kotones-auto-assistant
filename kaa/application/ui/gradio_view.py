@@ -1,14 +1,14 @@
 import logging
 import gradio as gr
 
-from kaa.ui.facade import KaaFacade
-from kaa.ui.common import GradioComponents, ConfigBuilderReturnValue
-from kaa.ui.views.status_view import StatusView
-from kaa.ui.views.task_view import TaskView
-from kaa.ui.views.produce_view import ProduceView
-from kaa.ui.views.settings_view import SettingsView
-from kaa.ui.views.feedback_view import FeedbackView
-from kaa.ui.views.update_view import UpdateView
+from kaa.application.ui.facade import KaaFacade
+from kaa.application.ui.common import GradioComponents, ConfigBuilderReturnValue
+from kaa.application.ui.views.status_view import StatusView
+from kaa.application.ui.views.task_view import TaskView
+from kaa.application.ui.views.produce_view import ProduceView
+from kaa.application.ui.views.settings_view import SettingsView
+from kaa.application.ui.views.feedback_view import FeedbackView
+from kaa.application.ui.views.update_view import UpdateView
 
 logger = logging.getLogger(__name__)
 
@@ -124,6 +124,16 @@ class KaaGradioView:
         gr.Timer(1.0).tick(
             fn=update_task_status_df,
             outputs=[self.components.task_status_df]
+        )
+
+        # Timer for task runtime
+        def update_task_runtime():
+            runtime_str = self.facade.get_task_runtime()
+            return gr.Textbox(value=runtime_str)
+
+        gr.Timer(1.0).tick(
+            fn=update_task_runtime,
+            outputs=[self.components.task_runtime_text]
         )
         
         # Timer for quick-setting checkboxes

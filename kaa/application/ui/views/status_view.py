@@ -1,6 +1,6 @@
 import gradio as gr
-from kaa.ui.facade import KaaFacade, ConfigValidationError
-from kaa.ui.common import GradioComponents
+from kaa.application.ui.facade import KaaFacade, ConfigValidationError
+from kaa.application.ui.common import GradioComponents
 
 class StatusView:
     def __init__(self, facade: KaaFacade, components: GradioComponents):
@@ -71,6 +71,15 @@ class StatusView:
             gr.Markdown(
                 '<div style="color: red; font-size: larger;">当前启用了调试功能「保留截图数据」，调试结束后正常使用时建议关闭此选项！</div>'
             )
+
+        with gr.Row():
+            task_runtime_text = gr.Textbox(
+                label="任务运行时间",
+                value="未运行",
+                interactive=False,
+                scale=1
+            )
+        self.components.task_runtime_text = task_runtime_text
 
         task_status_df = gr.Dataframe(headers=["任务", "状态"], label="任务状态")
         self.components.task_status_df = task_status_df

@@ -1,5 +1,6 @@
 import logging
-from typing import List, Dict, Tuple
+from datetime import datetime, timedelta
+from typing import List, Dict, Tuple, Optional
 
 from kaa.main.kaa import Kaa
 from kotonebot.backend.context import task_registry, vars as context_vars, Task
@@ -21,6 +22,7 @@ class TaskControlService:
         self.is_running_all: bool = False
         self.is_running_single: bool = False
         self.is_stopping: bool = False
+        self.task_start_time: Optional[datetime] = None
 
     def is_running(self) -> bool:
         """Checks if any task (either all or single) is currently running."""
@@ -35,6 +37,7 @@ class TaskControlService:
         logger.info("Starting all tasks...")
         self.is_running_all = True
         self.is_stopping = False
+        self.task_start_time = datetime.now()
         self.run_status = self._kaa.start_all()
 
     def start_single_task(self, task_name: str) -> None:
@@ -55,6 +58,7 @@ class TaskControlService:
         logger.info(f"Starting single task: {task_name}")
         self.is_running_single = True
         self.is_stopping = False
+        self.task_start_time = datetime.now()
         self.run_status = self._kaa.start([task])
 
     def stop_tasks(self) -> None:
@@ -89,6 +93,7 @@ class TaskControlService:
             self.is_running_all = False
             self.is_running_single = False
             self.is_stopping = False
+            self.task_start_time = None
 
         status_list: List[Tuple[str, str]] = []
         for task_status in self.run_status.tasks:
@@ -128,3 +133,13 @@ Toggles the pause/resume state of the running tasks.
     def get_all_task_names(self) -> List[str]:
         """Returns a list of all registered task names."""
         return list(task_registry.keys())
+
+    def get_task_runtime(self) -> Optional[timedelta]:
+        """
+        Gets the current task runtime.
+
+        :return: A timedelta object representing the runtime, or None if no task is running.
+        """
+        if self.task_start_time is None:
+            return None
+        return datetime.now() - self.task_start_time

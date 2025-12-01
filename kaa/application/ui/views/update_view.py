@@ -1,7 +1,7 @@
 import gradio as gr
 import logging
-from kaa.ui.facade import KaaFacade
-from kaa.ui.common import GradioComponents
+from kaa.application.ui.facade import KaaFacade
+from kaa.application.ui.common import GradioComponents
 
 logger = logging.getLogger(__name__)
 

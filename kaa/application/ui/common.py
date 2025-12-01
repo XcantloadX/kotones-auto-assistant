@@ -84,6 +84,7 @@ class GradioComponents:
     pause_btn: Optional[gr.Button] = None
     end_action_dropdown: Optional[gr.Dropdown] = None
     quick_checkboxes: List[gr.Checkbox] = field(default_factory=list)
+    task_runtime_text: Optional[gr.Textbox] = None
     task_status_df: Optional[gr.Dataframe] = None
     
     # Update tab components

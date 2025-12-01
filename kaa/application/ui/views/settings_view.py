@@ -1,8 +1,8 @@
 import gradio as gr
 from typing import List, Dict, Any, cast
-from kaa.ui.facade import KaaFacade, ConfigValidationError
-from kaa.ui.common import GradioComponents, GradioInput, ConfigKey, ConfigBuilderReturnValue
-from kaa.config.schema import BaseConfig, PurchaseConfig, AssignmentConfig, ContestConfig, ProduceConfig
+from kaa.application.ui.facade import KaaFacade, ConfigValidationError
+from kaa.application.ui.common import GradioComponents, GradioInput, ConfigKey, ConfigBuilderReturnValue
+from kaa.config.schema import BaseConfig, ContestConfig, ProduceConfig
 from kaa.config.const import DailyMoneyShopItems, APShopItems
 from kotonebot.client.host import Mumu12Host, Mumu12V5Host, LeidianHost
 import logging

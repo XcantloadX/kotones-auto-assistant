@@ -1,8 +1,8 @@
 import gradio as gr
 from typing import Dict, Any
 from functools import partial
-from kaa.ui.facade import KaaFacade
-from kaa.ui.common import GradioComponents
+from kaa.application.ui.facade import KaaFacade
+from kaa.application.ui.common import GradioComponents
 from kaa.errors import FeedbackServiceError
 
 class FeedbackView:

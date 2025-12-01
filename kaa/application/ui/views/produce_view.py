@@ -1,7 +1,6 @@
 import gradio as gr
-from typing import Any, Dict, List
-from kaa.ui.facade import KaaFacade
-from kaa.ui.common import GradioComponents
+from kaa.application.ui.facade import KaaFacade
+from kaa.application.ui.common import GradioComponents
 from kaa.config.produce import ProduceData, ProduceSolution
 from kaa.config.const import ProduceAction, RecommendCardDetectionMode
 from kaa.db.idol_card import IdolCard

@@ -1,6 +1,6 @@
 import gradio as gr
-from kaa.ui.facade import KaaFacade
-from kaa.ui.common import GradioComponents
+from kaa.application.ui.facade import KaaFacade
+from kaa.application.ui.common import GradioComponents
 
 class TaskView:
     def __init__(self, facade: KaaFacade, components: GradioComponents):

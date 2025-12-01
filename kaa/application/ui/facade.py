@@ -6,9 +6,9 @@ from functools import cmp_to_key
 from typing import Any, Dict, List, Tuple
 
 from kaa.main.kaa import Kaa
-from kaa.services.config_service import ConfigService, ConfigValidationError
-from kaa.services.produce_solution_service import ProduceSolutionService
-from kaa.services.task_control_service import TaskControlService
+from kaa.application.services.config_service import ConfigService, ConfigValidationError
+from kaa.application.services.produce_solution_service import ProduceSolutionService
+from kaa.application.services.task_control_service import TaskControlService
 from kaa.application.core.update_service import UpdateService
 from kaa.application.core.feedback_service import FeedbackService
 from kaa.application.core.idle_mode import IdleModeManager
@@ -155,6 +155,21 @@ class KaaFacade:
             "text": "恢复" if is_paused else "暂停",
             "interactive": can_pause,
         }
+
+    def get_task_runtime(self) -> str:
+        """
+        Gets the current task runtime as a formatted string.
+        :return: A string representing the runtime (e.g., "00:05:23"), or "未运行" if no task is running.
+        """
+        runtime = self.task_control_service.get_task_runtime()
+        if runtime is None:
+            return "未运行"
+        
+        total_seconds = int(runtime.total_seconds())
+        hours = total_seconds // 3600
+        minutes = (total_seconds % 3600) // 60
+        seconds = total_seconds % 60
+        return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
 
     # --- Configuration ---
 

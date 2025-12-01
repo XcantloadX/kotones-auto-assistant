@@ -3,8 +3,8 @@ import traceback
 import gradio as gr
 
 from kaa.main.kaa import Kaa
-from kaa.ui.facade import KaaFacade
-from kaa.ui.gradio_view import KaaGradioView
+from kaa.application.ui.facade import KaaFacade
+from kaa.application.ui.gradio_view import KaaGradioView
 
 def main(kaa_ins: Kaa, start_immediately: bool = False):
     """
