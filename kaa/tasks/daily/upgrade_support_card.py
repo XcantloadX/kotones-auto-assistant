@@ -31,8 +31,18 @@ def upgrade_support_card():
     device.click(image.expect_wait(R.Common.ButtonIdolSupportCard, timeout=5))
     sleep(2)
 
-    # 往下滑，划到最底部
-    Scrollable().to(1)
+    # 重试10次
+    for retry_idx in range(10):
+        logger.debug(f'Scrolling down to find low-level support cards, attempt {retry_idx + 1}/10')
+        # 往下滑，划到最底部
+        scrollbar = Scrollable()
+        scrollbar.to(1)
+        sleep(0.1)
+        scrollbar.update()
+        if scrollbar.position >= 0.99:
+            logger.debug('Successfully scrolled to the bottom.')
+            break
+        sleep(0.5)
     
     # 点击左上角第一张支援卡
     # 点击位置百分比: (0.18, 0.34)
