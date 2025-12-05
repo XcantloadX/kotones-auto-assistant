@@ -31,6 +31,8 @@ class PurchaseConfig(ConfigBaseModel):
     """是否启用AP购买"""
     ap_items: Sequence[Literal[0, 1, 2, 3]] = []
     """AP商店要购买的物品"""
+    weekly_enabled: bool = False
+    """是否启用周免费礼包购买"""
 
 
 class ActivityFundsConfig(ConfigBaseModel):
