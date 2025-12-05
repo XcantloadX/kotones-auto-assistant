@@ -536,7 +536,7 @@ def handle_action(action: ProduceAction, final_week: bool = False) -> ProduceAct
             logger.warning("Unknown action: %s", action)
             return None
 
-def week_normal(week_first: bool = False):
+def week_normal(week_first: bool = False) -> bool:
     until_action_scene(week_first)
     logger.info("Handling actions...")
     action: ProduceAction | None = None
@@ -572,7 +572,9 @@ def week_normal(week_first: bool = False):
             assert_never(action)
     until_action_scene()
 
-def week_final_lesson():
+    return True # 继续执行下一周
+
+def week_final_lesson() -> bool:
     until_action_scene()
     action: ProduceAction | None = None
     actions = produce_solution().data.actions_order
@@ -599,6 +601,8 @@ def week_final_lesson():
             raise ValueError("Action is None.")
         case _:
             assert_never(action)
+            
+    return True # 继续执行下一周
 
 def week_mid_and_final_exam_common():
     logger.info("Wait for exam scene...")
@@ -609,23 +613,27 @@ def week_mid_and_final_exam_common():
     sleep(0.5)
     loading.wait_loading_end()
 
-def week_mid_exam():
+def week_mid_exam() -> bool:
     logger.info("Week mid exam started.")
 
     week_mid_and_final_exam_common()
     
     if exam('mid'):
         until_action_scene() # 考试通过
+        return True
     else:
         produce_end(has_live=False) # 考试不合格
+        return False
 
-def week_final_exam():
+def week_final_exam() -> bool:
     logger.info("Week final exam started.")
 
     week_mid_and_final_exam_common()
 
     exam('final')
+    
     produce_end()
+    return False
 
 @action('执行 Regular 培育', screenshot_mode='manual-inherit')
 def hajime_regular(week: int = -1, start_from: int = 1):
@@ -658,7 +666,9 @@ def hajime_regular(week: int = -1, start_from: int = 1):
     else:
         for i, w in enumerate(weeks[start_from-1:]):
             logger.info("Week %d started.", i + start_from)
-            w()
+            if not w():
+                logger.info("Exit produce after week %d.", i + start_from)
+                break
 
 @action('执行 PRO 培育', screenshot_mode='manual-inherit')
 def hajime_pro(week: int = -1, start_from: int = 1):
@@ -692,7 +702,9 @@ def hajime_pro(week: int = -1, start_from: int = 1):
     else:
         for i, w in enumerate(weeks[start_from-1:]):
             logger.info("Week %d started.", i + start_from)
-            w()
+            if not w():
+                logger.info("Exit produce after week %d.", i + start_from)
+                break
 
 @action("执行 MASTER 培育", screenshot_mode='manual-inherit')
 def hajime_master(week: int = -1, start_from: int = 1):
@@ -728,7 +740,9 @@ def hajime_master(week: int = -1, start_from: int = 1):
     else:
         for i, w in enumerate(weeks[start_from-1:]):
             logger.info("Week %d started.", i + start_from)
-            w()
+            if not w():
+                logger.info("Exit produce after week %d.", i + start_from)
+                break
 
 @action('是否在考试场景')
 def is_exam_scene():
