@@ -169,6 +169,23 @@ def ap_items():
             logger.warning(f'AP item #{index} not found')
     logger.info(f'Purchasing AP items completed. {len(item_indices)} items purchased.')
 
+@action('购买 周免费礼包')
+def weekly_free_pack():
+    """
+    购买 周免费礼包
+
+    前置条件：位于主商店页面
+    """
+    logger.info(f'Purchasing weekly free pack.')
+    
+    sleep(1.0) # 动画加载完毕，但是按钮不可点击
+    device.click(image.expect_wait(R.Common.ShopPackButton))
+
+    if image.wait_for(R.Daily.WeeklyFreePack, colored=True, timeout=1):
+        device.click()
+        device.click(image.expect_wait(R.Common.ButtonConfirmNoIcon))
+        logger.info('Confirming purchase of weekly free pack.')
+
 @task('商店购买')
 def purchase():
     """
@@ -212,6 +229,13 @@ def purchase():
         sleep(0.5)
     else:
         logger.info('AP purchase is disabled.')
+    
+    # 返回主商店页面
+    device.click(image.expect_wait(R.Common.ButtonToolbarBack))
+    
+    # 购买周免费礼包
+    if conf().purchase.weekly_enabled:
+        weekly_free_pack()
     
     goto_home()
 
