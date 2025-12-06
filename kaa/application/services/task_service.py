@@ -1,16 +1,16 @@
 import logging
 from datetime import datetime, timedelta
-from typing import List, Dict, Tuple, Optional
+from typing import List, Tuple, Optional
 
 from kaa.main.kaa import Kaa
-from kotonebot.backend.context import task_registry, vars as context_vars, Task
+from kotonebot.backend.context import task_registry, vars as context_vars
 from kotonebot.backend.bot import RunStatus
 from kotonebot.errors import ContextNotInitializedError
 
 logger = logging.getLogger(__name__)
 
 
-class TaskControlService:
+class TaskService:
     """
     Manages the lifecycle of Kaa tasks, including starting, stopping,
     and pausing. It encapsulates the state related to task execution.
@@ -100,35 +100,35 @@ class TaskControlService:
             status_list.append((task_status.task.name, task_status.status))
         return status_list
 
-    def toggle_pause(self) -> str:
+    def toggle_pause(self) -> bool | None:
         """
-Toggles the pause/resume state of the running tasks.
+        Toggles the pause/resume state of the running tasks.
 
-:return: The new state ("paused" or "resumed").
+        :return: True if paused, False if resumed, None if context not initialized.
         """
         try:
             if context_vars.flow.is_paused:
                 context_vars.flow.request_resume()
                 logger.info("Tasks resumed.")
-                return "resumed"
+                return False
             else:
                 context_vars.flow.request_pause()
                 logger.info("Tasks paused.")
-                return "paused"
+                return True
         except ContextNotInitializedError:
             logger.warning("Cannot toggle pause, context not initialized.")
-            return "unknown"
+            return None
 
-    def get_pause_status(self) -> str:
+    def get_pause_status(self) -> bool | None:
         """
         Gets the current pause status.
 
-        :return: "paused", "resumed", or "unknown".
+        :return: True if paused, False if resumed, None if context not initialized.
         """
         try:
-            return "paused" if context_vars.flow.is_paused else "resumed"
+            return context_vars.flow.is_paused
         except ContextNotInitializedError:
-            return "unknown"
+            return None
 
     def get_all_task_names(self) -> List[str]:
         """Returns a list of all registered task names."""

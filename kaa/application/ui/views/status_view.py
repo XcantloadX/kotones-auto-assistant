@@ -87,7 +87,7 @@ class StatusView:
         # --- Event Handlers ---
 
         def on_run_click():
-            if self.facade.task_control_service.is_running_all:
+            if self.facade.task_service.is_running_all:
                 self.facade.stop_all_tasks()
             else:
                 self.facade.start_all_tasks()

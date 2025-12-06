@@ -66,30 +66,8 @@ class KaaGradioView:
                 self.update_view.create_ui()
 
             self._setup_timers()
-
-            # Add blocks.load for initial update check and produce solution details
-            all_load_outputs = [self.components.update_info_md] + self.components.produce_all_detail_components
-            blocks.load(
-                fn=self._on_ui_load,
-                outputs=all_load_outputs
-            )
         return blocks
 
-    def _on_ui_load(self):
-        # 1. Handle update check
-        update_msg = self.update_view.initial_update_check_handler()
-
-        # 2. Handle produce solution details
-        initial_solution_id = self.components.produce_tab_solution_dropdown.value
-        produce_updates_dict = self.produce_view.update_produce_solution_details(initial_solution_id)
-        
-        # 3. Order the produce updates correctly according to the component list
-        produce_updates_tuple = tuple(
-            produce_updates_dict[comp] for comp in self.components.produce_all_detail_components
-        )
-        
-        # 4. Return combined tuple of all updates
-        return (update_msg,) + produce_updates_tuple
     
     def _create_header(self):
         gr.Markdown(f"# 琴音小助手 v{self.facade._kaa.version}")

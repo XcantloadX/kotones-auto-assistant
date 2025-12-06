@@ -12,7 +12,7 @@ class TaskView:
         gr.Markdown("## 执行任务")
 
         # Get all tasks from the facade
-        task_names = self.facade.task_control_service.get_all_task_names()
+        task_names = self.facade.task_service.get_all_task_names()
         
         with gr.Row():
             stop_all_btn = gr.Button("停止任务", variant="stop", scale=1)
@@ -32,7 +32,7 @@ class TaskView:
         def start_single_task_by_name(task_name: str):
             """Event handler to start a single task."""
             try:
-                self.facade.task_control_service.start_single_task(task_name)
+                self.facade.task_service.start_single_task(task_name)
                 gr.Info(f"任务 {task_name} 开始执行")
             except ValueError as e:
                 gr.Warning(str(e))
@@ -41,7 +41,7 @@ class TaskView:
 
         def stop_all_tasks():
             """Event handler to stop the running single task."""
-            self.facade.task_control_service.stop_tasks()
+            self.facade.task_service.stop_tasks()
             self.facade.idle_mgr.notify_on_stop()
 
         def on_pause_click():
@@ -60,7 +60,7 @@ class TaskView:
         # --- Timers for status updates ---
 
         def update_task_ui_status():
-            tcs = self.facade.task_control_service
+            tcs = self.facade.task_service
             is_running = tcs.is_running_single
             is_stopping = tcs.is_stopping
 

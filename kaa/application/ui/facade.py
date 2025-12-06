@@ -8,10 +8,10 @@ from typing import Any, Dict, List, Tuple
 from kaa.main.kaa import Kaa
 from kaa.application.services.config_service import ConfigService, ConfigValidationError
 from kaa.application.services.produce_solution_service import ProduceSolutionService
-from kaa.application.services.task_control_service import TaskControlService
-from kaa.application.core.update_service import UpdateService
-from kaa.application.core.feedback_service import FeedbackService
-from kaa.application.core.idle_mode import IdleModeManager
+from kaa.application.services.task_service import TaskService
+from kaa.application.services.update_service import UpdateService
+from kaa.application.services.feedback_service import FeedbackService
+from kaa.application.services.idle_mode import IdleModeManager
 from kaa.config.produce import ProduceSolution
 from kotonebot.errors import ContextNotInitializedError
 
@@ -79,7 +79,7 @@ class KaaFacade:
         # Core services
         self.config_service = ConfigService()
         self.produce_solution_service = ProduceSolutionService()
-        self.task_control_service = TaskControlService(kaa_instance)
+        self.task_service = TaskService(kaa_instance)
 
         # Other existing services
         self.update_service = UpdateService()
@@ -93,13 +93,14 @@ class KaaFacade:
 
         def is_task_running():
             try:
-                return self.task_control_service.is_running() and not self.task_control_service.is_stopping
+                return self.task_service.is_running() and not self.task_service.is_stopping
             except ContextNotInitializedError:
                 return False
 
         def is_task_paused():
             try:
-                return self.task_control_service.get_pause_status() == "paused"
+                status = self.task_service.get_pause_status()
+                return status is True
             except ContextNotInitializedError:
                 return False
 
@@ -113,12 +114,12 @@ class KaaFacade:
 
     def start_all_tasks(self):
         """Starts all tasks and notifies the idle manager."""
-        self.task_control_service.start_all_tasks()
+        self.task_service.start_all_tasks()
         self.idle_mgr.notify_on_start()
 
     def stop_all_tasks(self):
         """Stops all running tasks and notifies the idle manager."""
-        self.task_control_service.stop_tasks()
+        self.task_service.stop_tasks()
         self.idle_mgr.notify_on_stop()
 
     def get_run_status(self) -> Dict[str, Any]:
@@ -126,7 +127,7 @@ class KaaFacade:
         Gets the comprehensive status for the main run button.
         :return: A dictionary with 'text' and 'interactive' keys for the button.
         """
-        tcs = self.task_control_service
+        tcs = self.task_service
         if not tcs.is_running_all:
             return {"text": "启动", "interactive": True}
         if tcs.is_stopping:
@@ -135,11 +136,11 @@ class KaaFacade:
 
     def get_task_statuses(self) -> List[Tuple[str, str]]:
         """Gets a list of all tasks and their current statuses."""
-        return self.task_control_service.get_task_statuses()
+        return self.task_service.get_task_statuses()
 
-    def toggle_pause(self) -> str:
+    def toggle_pause(self) -> bool | None:
         """Toggles the pause/resume state of tasks."""
-        return self.task_control_service.toggle_pause()
+        return self.task_service.toggle_pause()
 
     def get_pause_button_status(self) -> Dict[str, Any]:
         """
@@ -147,9 +148,10 @@ class KaaFacade:
         Gets the status for the pause button.
         :return: A dictionary with 'text' and 'interactive' keys for the button.
         """
-        is_paused = self.task_control_service.get_pause_status() == "paused"
-        is_stoppable = not self.task_control_service.is_stopping
-        can_pause = self.task_control_service.is_running() and is_stoppable
+        pause_status = self.task_service.get_pause_status()
+        is_paused = pause_status is True
+        is_stoppable = not self.task_service.is_stopping
+        can_pause = self.task_service.is_running() and is_stoppable
 
         return {
             "text": "恢复" if is_paused else "暂停",
@@ -161,7 +163,7 @@ class KaaFacade:
         Gets the current task runtime as a formatted string.
         :return: A string representing the runtime (e.g., "00:05:23"), or "未运行" if no task is running.
         """
-        runtime = self.task_control_service.get_task_runtime()
+        runtime = self.task_service.get_task_runtime()
         if runtime is None:
             return "未运行"
         

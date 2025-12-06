@@ -89,6 +89,9 @@ class GradioComponents:
     
     # Update tab components
     update_info_md: Optional[gr.Markdown] = None
+    update_status_text: Optional[gr.Markdown] = None
+    update_version_dropdown: Optional[gr.Dropdown] = None
+    update_install_btn: Optional[gr.Button] = None
     
     # Produce tab components
     produce_tab_solution_dropdown: Optional[gr.Dropdown] = None
