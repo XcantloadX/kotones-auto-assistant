@@ -106,28 +106,12 @@ class SettingsView:
 
         with gr.Tabs(selected=current_tab_id) as G_backend_tabs:
             with gr.Tab("MuMu 12 v4.x", id="mumu12") as tab_mumu12:
-                def _get_mumu_instances_data():
-                    choices = []
-                    value = None
-                    try:
-                        instances = Mumu12Host.list()
-                        choices = [(i.name, i.id) for i in instances]
-                        value = backend_config.instance_id
-                    except Exception as e:
-                        logger.exception('Failed to list MuMu12 instances')
-                        gr.Error("获取 MuMu12 模拟器列表失败，请检查模拟器版本。")
-                        # Return empty choices and value on error for initial UI render
-                    return choices, value
-
-                # Initialize dropdown with choices and value if 'mumu12' is the current_tab_id
-                initial_mumu_choices, initial_mumu_value = ([], None)
-                if current_tab_id == 'mumu12':
-                    initial_mumu_choices, initial_mumu_value = _get_mumu_instances_data()
-
+                gr.Markdown("已选中 MuMu 12 v4.x 模拟器")
+                mumu_refresh_message = gr.Markdown("<div style='color: red;'>点击下方「刷新」按钮载入信息</div>", visible=True)
+                
                 mumu_instance = gr.Dropdown(
                     label="选择多开实例",
-                    choices=initial_mumu_choices,
-                    value=initial_mumu_value,
+                    choices=[],
                     interactive=True
                 )
                 mumu_refresh_btn = gr.Button("刷新")
@@ -137,36 +121,40 @@ class SettingsView:
                     interactive=True
                 )
                 
-                # The click handler can now use the helper function and return a gr.Dropdown.update
                 def refresh_mumu_instances_on_click():
-                    choices, value = _get_mumu_instances_data()
-                    return gr.Dropdown(choices=choices, value=value, interactive=True)
+                    try:
+                        instances = Mumu12Host.list()
+                        is_mumu12 = backend_config.type == 'mumu12'
+                        current_id = backend_config.instance_id if is_mumu12 else None
+                        choices = [(i.name, i.id) for i in instances]
+                        return gr.Dropdown(choices=choices, value=current_id, interactive=True), gr.Markdown(visible=False)
+                    except Exception:
+                        logger.exception('Failed to list installed MuMu12')
+                        gr.Error("获取 MuMu12 模拟器列表失败，请升级模拟器到最新版本。若问题依旧，前往 QQ 群、QQ 频道或 Github 反馈 bug。")
+                        return gr.Dropdown(choices=[], interactive=True), gr.Markdown(visible=True)
                 
-                mumu_refresh_btn.click(fn=refresh_mumu_instances_on_click, outputs=[mumu_instance])
+                mumu_refresh_btn.click(fn=refresh_mumu_instances_on_click, outputs=[mumu_instance, mumu_refresh_message])
+                
+                # 如果当前是 MuMu 模拟器且有配置的 instance_id，立即加载实例列表
+                if current_tab_id == 'mumu12' and backend_config.instance_id:
+                    try:
+                        instances = Mumu12Host.list()
+                        choices = [(i.name, i.id) for i in instances]
+                        mumu_instance.choices = choices
+                        mumu_instance.value = backend_config.instance_id
+                        mumu_refresh_message.visible = False
+                    except Exception:
+                        logger.exception('Failed to auto-load MuMu12 instances')
             
             tab_mumu12.select(fn=lambda: "mumu12", outputs=backend_type_state)
 
             with gr.Tab("MuMu 12 v5.x", id="mumu12v5") as tab_mumu12v5:
-                def _get_mumu12v5_instances_data():
-                    choices = []
-                    value = None
-                    try:
-                        instances = Mumu12V5Host.list()
-                        choices = [(i.name, i.id) for i in instances]
-                        value = backend_config.instance_id
-                    except Exception as e:
-                        logger.exception('Failed to list MuMu12v5 instances')
-                        gr.Error("获取 MuMu12 v5 模拟器列表失败，请检查模拟器版本。")
-                    return choices, value
-
-                initial_mumu12v5_choices, initial_mumu12v5_value = ([], None)
-                if current_tab_id == 'mumu12v5':
-                    initial_mumu12v5_choices, initial_mumu12v5_value = _get_mumu12v5_instances_data()
-
+                gr.Markdown("已选中 MuMu 12 v5.x 模拟器")
+                mumu12v5_refresh_message = gr.Markdown("<div style='color: red;'>点击下方「刷新」按钮载入信息</div>", visible=True)
+                
                 mumu12v5_instance = gr.Dropdown(
                     label="选择多开实例",
-                    choices=initial_mumu12v5_choices,
-                    value=initial_mumu12v5_value,
+                    choices=[],
                     interactive=True
                 )
                 mumu12v5_refresh_btn = gr.Button("刷新")
@@ -177,43 +165,68 @@ class SettingsView:
                 )
                 
                 def refresh_mumu12v5_instances_on_click():
-                    choices, value = _get_mumu12v5_instances_data()
-                    return gr.Dropdown(choices=choices, value=value, interactive=True)
+                    try:
+                        instances = Mumu12V5Host.list()
+                        is_mumu12v5 = backend_config.type == 'mumu12v5'
+                        current_id = backend_config.instance_id if is_mumu12v5 else None
+                        choices = [(i.name, i.id) for i in instances]
+                        return gr.Dropdown(choices=choices, value=current_id, interactive=True), gr.Markdown(visible=False)
+                    except:
+                        logger.exception('Failed to list installed MuMu12v5')
+                        gr.Error("获取 MuMu12 模拟器列表失败，请升级模拟器到最新版本。若问题依旧，前往 QQ 群、QQ 频道或 Github 反馈 bug。")
+                        return gr.Dropdown(choices=[], interactive=True), gr.Markdown(visible=True)
                 
-                mumu12v5_refresh_btn.click(fn=refresh_mumu12v5_instances_on_click, outputs=[mumu12v5_instance])
+                mumu12v5_refresh_btn.click(fn=refresh_mumu12v5_instances_on_click, outputs=[mumu12v5_instance, mumu12v5_refresh_message])
+                
+                # 如果当前是 MuMu 模拟器且有配置的 instance_id，立即加载实例列表
+                if current_tab_id == 'mumu12v5' and backend_config.instance_id:
+                    try:
+                        instances = Mumu12V5Host.list()
+                        choices = [(i.name, i.id) for i in instances]
+                        mumu12v5_instance.choices = choices
+                        mumu12v5_instance.value = backend_config.instance_id
+                        mumu12v5_refresh_message.visible = False
+                    except:
+                        logger.exception('Failed to auto-load MuMu12v5 instances')
             
             tab_mumu12v5.select(fn=lambda: "mumu12v5", outputs=backend_type_state)
 
             with gr.Tab("雷电", id="leidian") as tab_leidian:
-                def _get_leidian_instances_data():
-                    choices = []
-                    value = None
-                    try:
-                        instances = LeidianHost.list()
-                        choices = [(i.name, i.id) for i in instances]
-                        value = backend_config.instance_id
-                    except Exception:
-                        logger.exception('Failed to list Leidian instances')
-                        gr.Error("获取雷电模拟器列表失败。")
-                    return choices, value
-
-                initial_leidian_choices, initial_leidian_value = ([], None)
-                if current_tab_id == 'leidian':
-                    initial_leidian_choices, initial_leidian_value = _get_leidian_instances_data()
+                gr.Markdown("已选中雷电模拟器")
+                leidian_refresh_message = gr.Markdown("<div style='color: red;'>点击下方「刷新」按钮载入信息</div>", visible=True)
                 
                 leidian_instance = gr.Dropdown(
                     label="选择多开实例",
-                    choices=initial_leidian_choices,
-                    value=initial_leidian_value,
+                    choices=[],
                     interactive=True
                 )
                 leidian_refresh_btn = gr.Button("刷新")
                 
                 def refresh_leidian_instances_on_click():
-                    choices, value = _get_leidian_instances_data()
-                    return gr.Dropdown(choices=choices, value=value, interactive=True)
+                    try:
+                        instances = LeidianHost.list()
+                        is_leidian = backend_config.type == 'leidian'
+                        current_id = backend_config.instance_id if is_leidian else None
+                        choices = [(i.name, i.id) for i in instances]
+                        return gr.Dropdown(choices=choices, value=current_id, interactive=True), gr.Markdown(visible=False)
+                    except:
+                        logger.exception('Failed to list installed Leidian')
+                        gr.Error("获取雷电模拟器列表失败，请前往 QQ 群、QQ 频道或 Github 反馈 bug。")
+                        return gr.Dropdown(choices=[], interactive=True), gr.Markdown(visible=True)
                 
-                leidian_refresh_btn.click(fn=refresh_leidian_instances_on_click, outputs=[leidian_instance])
+                leidian_refresh_btn.click(fn=refresh_leidian_instances_on_click, outputs=[leidian_instance, leidian_refresh_message])
+                
+                # 如果当前是雷电模拟器且有配置的 instance_id，立即加载实例列表
+                if current_tab_id == 'leidian' and backend_config.instance_id:
+                    try:
+                        instances = LeidianHost.list()
+                        choices = [(i.name, i.id) for i in instances]
+                        leidian_instance.choices = choices
+                        leidian_instance.value = backend_config.instance_id
+                        leidian_refresh_message.visible = False
+                    except:
+                        logger.exception('Failed to auto-load Leidian instances')
+                        # 保持显示刷新提示
             
             tab_leidian.select(fn=lambda: "leidian", outputs=backend_type_state)
 
