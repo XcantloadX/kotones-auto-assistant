@@ -1,5 +1,6 @@
 import gradio as gr
 from typing import List, Dict, Any, cast
+from kaa.application.ui.components.alert import Alert
 from kaa.application.ui.facade import KaaFacade, ConfigValidationError
 from kaa.application.ui.common import GradioComponents, GradioInput, ConfigKey, ConfigBuilderReturnValue
 from kaa.config.schema import BaseConfig, ContestConfig, ProduceConfig
@@ -465,14 +466,22 @@ class SettingsView:
             gr.Markdown("### 培育设置")
             
             opts = self.facade.config_service.get_options()
+            solutions = self.facade.list_produce_solutions()
             
             produce_enabled = gr.Checkbox(
                 label="启用培育",
                 value=opts.produce.enabled
             )
 
+            if not solutions:
+                alert = Alert("你似乎还没有创建任何培育方案。你需要先到「方案」里创建一个！", "提示", action_text="去创建")
+                def _go_to_produce_tab():
+                    return gr.Tabs(selected="produce")
+
+                alert.click(fn=_go_to_produce_tab, inputs=[], outputs=[self.components.tabs])
+
+
             with gr.Group(visible=opts.produce.enabled) as produce_group:
-                solutions = self.facade.list_produce_solutions()
                 solution_choices = [(f"{sol.name} - {sol.description or '无描述'}", sol.id) for sol in solutions]
 
                 solution_dropdown = gr.Dropdown(
