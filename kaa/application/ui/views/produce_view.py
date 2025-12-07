@@ -12,7 +12,7 @@ class ProduceView:
 
     def create_ui(self):
         """Creates the content for the 'Produce' tab for managing solutions."""
-        gr.Markdown("## 培育管理")
+        gr.Markdown("## 方案管理")
 
         solutions = self.facade.list_produce_solutions()
         solution_choices = [(f"{sol.name}{f' - {sol.description}' if sol.description else ''}", sol.id) for sol in solutions]
