@@ -15,12 +15,11 @@ class ProduceView:
         gr.Markdown("## 培育管理")
 
         solutions = self.facade.list_produce_solutions()
-        solution_choices = [(f"{sol.name} - {sol.description or '无描述'}", sol.id) for sol in solutions]
-        selected_solution_id = self.facade.config_service.get_options().produce.selected_solution_id
+        solution_choices = [(f"{sol.name}{f' - {sol.description}' if sol.description else ''}", sol.id) for sol in solutions]
 
         solution_dropdown = gr.Dropdown(
             choices=solution_choices,
-            value=selected_solution_id,
+            value=None,
             label="选择培育方案",
             interactive=True
         )
@@ -31,7 +30,7 @@ class ProduceView:
             delete_solution_btn = gr.Button("删除当前培育", scale=1)
 
         # Solution details group
-        with gr.Group() as solution_settings_group:
+        with gr.Group(visible=False) as solution_settings_group:
             self.components.produce_solution_settings_group = solution_settings_group
             
             solution_name = gr.Textbox(label="方案名称", interactive=True)
@@ -110,40 +109,37 @@ class ProduceView:
 
         def on_new_solution():
             """Creates a new solution and refreshes the dropdowns."""
-            new_solution = self.facade.create_produce_solution()
+            new_solution = self.facade.create_produce_solution("新培育方案")
             solutions = self.facade.list_produce_solutions()
-            choices = [(f"{s.name} - {s.description or '无描述'}", s.id) for s in solutions]
+            choices = [(f"{s.name}{f' - {s.description}' if s.description else ''}", s.id) for s in solutions]
             gr.Success("新培育方案创建成功")
-            return {
-                solution_dropdown: gr.Dropdown(choices=choices, value=new_solution.id),
-                self.components.settings_solution_dropdown: gr.Dropdown(choices=choices)
-            }
+            # TODO: 创建一个 state 用于记录当前选中的培育 id
+            # Return an update for the solution dropdown (use gr.update for better typing)
+            return gr.update(choices=choices, value=new_solution.id)
 
         def on_delete_solution(solution_id):
             """Deletes the selected solution and refreshes dropdowns."""
             if not solution_id:
                 gr.Warning("请先选择要删除的培育方案")
-                return {}
+                # No change to dropdown
+                return gr.update()
             try:
                 self.facade.delete_produce_solution(solution_id)
                 solutions = self.facade.list_produce_solutions()
-                choices = [(f"{s.name} - {s.description or '无描述'}", s.id) for s in solutions]
+                choices = [(f"{s.name}{f' - {s.description}' if s.description else ''}", s.id) for s in solutions]
                 gr.Success("培育方案删除成功")
-                return {
-                    solution_dropdown: gr.Dropdown(choices=choices, value=None),
-                    self.components.settings_solution_dropdown: gr.Dropdown(choices=choices)
-                }
+                return gr.update(choices=choices, value=None)
             except ValueError as e:
                 gr.Warning(str(e))
-                return {}
+                return gr.update()
             except Exception as e:
                 gr.Error(f"删除失败: {e}")
-                return {}
+                return gr.update()
         
         def on_save_solution(solution_id, name, desc, mode, idol, auto_mem, mem_set, auto_sup, sup_set, pt_boost, note_boost, follow, study, pref_ap, actions, detect_mode, ap_drink, skip):
             if not solution_id:
                 gr.Warning("没有选择要保存的方案")
-                return
+                return gr.update()
             try:
                 produce_data = ProduceData(
                     mode=mode, idol=idol,
@@ -161,13 +157,10 @@ class ProduceView:
                 # Refresh dropdowns to reflect name/desc changes
                 solutions = self.facade.list_produce_solutions()
                 choices = [(f"{s.name} - {s.description or '无描述'}", s.id) for s in solutions]
-                return {
-                    solution_dropdown: gr.Dropdown(choices=choices, value=solution_id),
-                    self.components.settings_solution_dropdown: gr.Dropdown(choices=choices)
-                }
+                return gr.update(choices=choices, value=solution_id)
             except Exception as e:
                 gr.Error(f"保存失败: {e}")
-                return {}
+                return gr.update()
 
 
         # --- UI Callbacks ---
@@ -178,11 +171,11 @@ class ProduceView:
             outputs=all_detail_components
         )
 
-        auto_set_memory.change(fn=lambda x: gr.Group(visible=not x), inputs=[auto_set_memory], outputs=[memory_sets_group])
-        auto_set_support.change(fn=lambda x: gr.Group(visible=not x), inputs=[auto_set_support], outputs=[support_card_sets_group])
+        auto_set_memory.change(fn=lambda x: gr.update(visible=not x), inputs=[auto_set_memory], outputs=[memory_sets_group])
+        auto_set_support.change(fn=lambda x: gr.update(visible=not x), inputs=[auto_set_support], outputs=[support_card_sets_group])
 
-        new_solution_btn.click(fn=on_new_solution)
-        delete_solution_btn.click(fn=on_delete_solution, inputs=[solution_dropdown])
+        new_solution_btn.click(fn=on_new_solution, outputs=[solution_dropdown])
+        delete_solution_btn.click(fn=on_delete_solution, inputs=[solution_dropdown], outputs=[solution_dropdown])
 
         save_inputs = [
             solution_dropdown, solution_name, solution_description, produce_mode, produce_idols,
@@ -191,7 +184,7 @@ class ProduceView:
             prefer_lesson_ap, actions_order, recommend_card_detection_mode,
             use_ap_drink, skip_commu
         ]
-        save_solution_btn.click(fn=on_save_solution, inputs=save_inputs)
+        save_solution_btn.click(fn=on_save_solution, inputs=save_inputs, outputs=[solution_dropdown])
 
     def update_produce_solution_details(self, solution_id: str):
         """Updates the produce solution detail view when the selected solution changes."""
