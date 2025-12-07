@@ -25,13 +25,13 @@ dependencies = [
     "websockets==14.1",
     "psutil==6.1.1",
     # GUI
-    "gradio==5.21.0",
+    "gradio==6.0.2",
     # Configuration
     "pydantic==2.10.4",
     # Resource
     "ksaa-res==0.2.0",
     # Other
-    "typing-extensions==4.12.2",
+    "typing-extensions~=4.12",
     "python-dotenv==1.0.1",
     # ImportError: DLL load failed while importing onnxruntime_pybind11_state
     "onnxruntime==1.14.0",
