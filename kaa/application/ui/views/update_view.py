@@ -104,15 +104,3 @@ class UpdateView:
                 inputs=[version_dropdown],
                 outputs=[] 
             )
-
-    def _get_update_message(self) -> str:
-        try:
-            has_update, latest_version, changelog = self.facade.check_for_updates()
-            if has_update:
-                return f"**发现新版本！**\n\n**版本:** {latest_version}\n\n**更新日志:**\n\n{changelog}"
-            else:
-                return f"当前已是最新版本 ({self.facade._kaa.version})。"
-        except Exception as e:
-            logger.error("Failed to check for updates", exc_info=True)
-            return f"检查更新失败: {e}"
-

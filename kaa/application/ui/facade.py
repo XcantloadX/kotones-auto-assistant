@@ -2,7 +2,6 @@ import logging
 import os
 import zipfile
 from datetime import datetime
-from functools import cmp_to_key
 from typing import Any, Dict, List, Tuple
 
 from kaa.main.kaa import Kaa
@@ -16,57 +15,6 @@ from kaa.config.produce import ProduceSolution
 from kotonebot.errors import ContextNotInitializedError
 
 logger = logging.getLogger(__name__)
-
-
-# Copied from kaa/application/core/update_service.py
-def _compare_versions(version1: str, version2: str) -> int:
-    """
-    比较两个版本字符串。
-
-    :param version1: 第一个版本号
-    :param version2: 第二个版本号
-    :return: -1 表示 version1 < version2, 0 表示 version1 == version2, 1 表示 version1 > version2
-    """
-    if version1 == "0.4.x":
-        version1 = "0.4.0"
-    if version2 == "0.4.x":
-        version2 = "0.4.0"
-
-    def parse(v):
-        v = v.lstrip('v')
-        parts = v.split('.')
-        base = []
-        release_mod = ''
-        for part in parts:
-            mod_found = None
-            for mod in ['a', 'b', 'rc', 'post']:
-                if mod in part:
-                    mod_found = mod
-                    break
-            
-            if mod_found:
-                num, mod_val = part.split(mod_found)
-                if num:
-                    base.append(int(num))
-                release_mod = (mod_found, int(mod_val))
-                break
-            else:
-                base.append(int(part))
-        
-        mod_map = {'a': -3, 'b': -2, 'rc': -1, 'post': 1}
-        if release_mod:
-            return tuple(base) + (mod_map[release_mod[0]], release_mod[1])
-        return tuple(base) + (0, 0)
-
-    v1_parsed = parse(version1)
-    v2_parsed = parse(version2)
-
-    if v1_parsed < v2_parsed:
-        return -1
-    if v1_parsed > v2_parsed:
-        return 1
-    return 0
-
 
 class KaaFacade:
     """
@@ -227,44 +175,6 @@ class KaaFacade:
     def save_produce_solution(self, solution: ProduceSolution):
         """Saves a produce solution."""
         self.produce_solution_service.save_solution(solution)
-
-    # --- Update / Feedback ---
-
-    def check_for_updates(self):
-        """Checks for application updates."""
-        channel = self.config_service.get_options().misc.update_channel
-        version_info = self.update_service.list_remote_versions()
-        
-        if not version_info.installed_version:
-            return False, None, "无法确定当前安装的版本。"
-
-        available_versions = []
-        if channel == 'release':
-            for v in version_info.versions:
-                if 'a' not in v and 'b' not in v and 'rc' not in v:
-                    available_versions.append(v)
-        else: # beta channel
-            available_versions = version_info.versions
-            
-        if not available_versions:
-            return False, None, "没有找到可用的更新版本。"
-
-        latest_version_in_channel = max(available_versions, key=cmp_to_key(_compare_versions))
-
-        if not latest_version_in_channel:
-             return False, None, "在当前更新通道中没有找到可用的更新版本。"
-
-        has_update = _compare_versions(latest_version_in_channel, version_info.installed_version) > 0
-        
-        changelog = "无" # The changelog is not available from this service.
-        if has_update:
-             changelog = "发现新版本，请更新！"
-
-        return has_update, latest_version_in_channel, changelog
-
-    def submit_feedback(self, title: str, content: str):
-        """Submits user feedback."""
-        return self.feedback_service.submit(title, content)
 
     # --- Misc ---
     def export_logs_as_zip(self) -> str:
