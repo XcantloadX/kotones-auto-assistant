@@ -6,6 +6,18 @@ from kaa.main.kaa import Kaa
 from kaa.application.ui.facade import KaaFacade
 from kaa.application.ui.gradio_view import KaaGradioView
 
+custom_css = """
+.no-padding-dropdown {
+    padding: 0 !important;
+}
+.no-padding-dropdown > label {
+    padding: 0 !important;
+}
+.no-padding-dropdown > div {
+    padding: 0 !important;
+}
+"""
+
 def main(kaa_ins: Kaa, start_immediately: bool = False):
     """
     Main entry point for the KAA Gradio application.
@@ -49,6 +61,7 @@ def main(kaa_ins: Kaa, start_immediately: bool = False):
         blocks.launch(
             share=misc_opts.expose_to_lan,
             inbrowser=True,
+            css=custom_css
         )
 
     except Exception:

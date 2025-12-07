@@ -37,18 +37,7 @@ class KaaGradioView:
         """
         Builds the entire Gradio UI and returns the final Blocks object.
         """
-        custom_css = """
-        .no-padding-dropdown {
-            padding: 0 !important;
-        }
-        .no-padding-dropdown > label {
-            padding: 0 !important;
-        }
-        .no-padding-dropdown > div {
-            padding: 0 !important;
-        }
-        """
-        with gr.Blocks(title=f"琴音小助手 v{self.facade._kaa.version}", css=custom_css) as blocks:
+        with gr.Blocks(title=f"琴音小助手 v{self.facade._kaa.version}") as blocks:
             self._create_header()
             with gr.Tabs() as tabs:
                 self.components.tabs = tabs
