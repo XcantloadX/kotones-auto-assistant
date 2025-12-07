@@ -17,3 +17,6 @@ tqdm==4.67.1
 pypika==0.48.9
 UnityPy==1.21.3
 rich
+
+# Coverage Test
+coverage
