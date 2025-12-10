@@ -1,0 +1,18 @@
+-r requirements.dev.txt
+
+rich == 14.2.0
+flask == 3.1.2
+PyYAML == 6.0.2
+
+# Manifest:
+# request, decrypt, parse, export
+requests == 2.32.5
+cryptography == 42.0.0
+protobuf == 6.33.1
+pandas == 2.3.3
+
+# Object/Media plugins for
+# .unity3d, image, audio
+UnityPy == 1.21.3
+pillow == 11.3.0
+pydub == 0.25.1

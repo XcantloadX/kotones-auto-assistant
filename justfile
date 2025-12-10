@@ -34,6 +34,7 @@ env: fetch-submodule
     if ($IsWindows) {
         ./.venv/Scripts/pip install -r requirements.dev.txt
         ./.venv/Scripts/pip install -r requirements.win.txt
+        ./.venv/Scripts/pip install -r requirements.GkmasObjectManager.txt
         ./.venv/Scripts/pip install -r ./submodules/GkmasObjectManager/requirements.txt
     } else {
         ./.venv/bin/pip install -r requirements.dev.txt
