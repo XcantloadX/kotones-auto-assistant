@@ -85,6 +85,7 @@ def acquire_skill_card():
         if acquire_btn := image.find(R.InPurodyuusu.AcquireBtnDisabled):
             logger.debug("Click acquire button")
             device.click(acquire_btn)
+            sleep(0.2)
             break
 
 @action('选择P物品', screenshot_mode='auto')
