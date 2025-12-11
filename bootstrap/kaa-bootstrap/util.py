@@ -175,7 +175,7 @@ def run_command(command: str, check: bool = True, verbatim: bool = False, scroll
     try:
         process = subprocess.Popen(
             command,
-            shell=True,
+            shell=False,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             env=env,
