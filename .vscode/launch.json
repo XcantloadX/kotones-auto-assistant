@@ -36,7 +36,7 @@
             "type": "python",
             "request": "launch",
             "console": "integratedTerminal",
-            "module": "kaa.main.gr"
+            "module": "kaa.main.cli",
         },
         {
             "name": "Gradio UI (Coverage)",
@@ -47,7 +47,20 @@
             "args": [
                 "run",
                 "-m",
-                "kaa.main.gr"
+                "kaa.main.cli"
+            ]
+        },
+        {
+            "name": "Gradio UI (Accumulated Coverage)",
+            "type": "python",
+            "request": "launch",
+            "console": "integratedTerminal",
+            "module": "coverage",
+            "args": [
+                "run",
+                "-m",
+                "--append",
+                "kaa.main.cli"
             ]
         }
     ]

@@ -2,3 +2,6 @@
 omit = 
     config.py
     config-3.py
+
+[report]
+ignore_errors = True
