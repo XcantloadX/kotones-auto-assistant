@@ -10,6 +10,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 class SettingsView:
     def __init__(self, facade: KaaFacade, components: GradioComponents, config_builders: List[ConfigBuilderReturnValue]):
         self.facade = facade
@@ -247,8 +248,49 @@ class SettingsView:
             choices=['adb', 'adb_raw', 'uiautomator2', 'windows', 'remote_windows', 'nemu_ipc'],
             value=backend_config.screenshot_impl,
             label="截图方法",
-            interactive=True
+            interactive=True,
+            info="MuMu 模拟器推荐选择 `nemu_ipc`，其他模拟器推荐 `adb`，DMM 仅可使用 `windows`"
         )
+
+        @gr.render(inputs=[screenshot_impl, backend_type_state])
+        def _tip(impl: str, backend_type: str):
+            if not impl or not backend_type:
+                return
+
+            is_mumu = 'mumu' in backend_type
+            # 1. 检查 DMM 兼容性
+            if backend_type == 'dmm':
+                if impl != 'windows' and impl != 'remote_windows':
+                    Alert(
+                        title="提示", 
+                        value="DMM 版本仅支持 `windows` 截图方式",
+                        variant="warning",
+                        show_close=False
+                    )
+            
+            # 2. 检查模拟器兼容性
+            else:
+                if impl == 'nemu_ipc' and not is_mumu:
+                    Alert(
+                        title="提示",
+                        value="`nemu_ipc` 仅适用于 MuMu 模拟器，其他模拟器请选择 `adb` 或 `uiautomator`",
+                        variant="warning",
+                        show_close=False
+                    )
+                elif is_mumu and impl in ['adb', 'adb_raw', 'uiautomator2']:
+                    Alert(
+                        title="提示",
+                        value="MuMu 模拟器推荐使用 `nemu_ipc` 截图方式，性能更佳且更稳定",
+                        variant="info",
+                        show_close=False
+                    )
+                elif impl in ['windows', 'remote_windows']:
+                    Alert(
+                        title="提示",
+                        value="模拟器不支持 `windows` 截图方式，建议使用 `adb` 或 `nemu_ipc`",
+                        variant="warning",
+                        show_close=False
+                    )
         
         target_screenshot_interval = gr.Number(
             label="最小截图间隔（秒）",
@@ -313,39 +355,52 @@ class SettingsView:
                 value=opts.purchase.enabled
             )
             with gr.Group(visible=opts.purchase.enabled) as purchase_group:
+                
+                # Money Purchase
                 money_enabled = gr.Checkbox(
                     label="启用金币购买",
                     value=opts.purchase.money_enabled
                 )
-                money_items = gr.Dropdown(
-                    multiselect=True,
-                    choices=[(DailyMoneyShopItems.to_ui_text(item), item.value) for item in DailyMoneyShopItems],
-                    value=[item.value for item in opts.purchase.money_items],
-                    label="金币商店购买物品"
-                )
-                money_refresh = gr.Checkbox(
-                    label="每日一次免费刷新金币商店",
-                    value=opts.purchase.money_refresh
-                )
+                with gr.Group(visible=opts.purchase.money_enabled) as money_group:
+                    money_items = gr.Dropdown(
+                        multiselect=True,
+                        choices=[(DailyMoneyShopItems.to_ui_text(item), item.value) for item in DailyMoneyShopItems],
+                        value=[item.value for item in opts.purchase.money_items],
+                        label="金币商店购买物品"
+                    )
+                    money_refresh = gr.Checkbox(
+                        label="每日一次免费刷新金币商店",
+                        value=opts.purchase.money_refresh
+                    )
+                
+                money_enabled.change(fn=lambda x: gr.Group(visible=x), inputs=[money_enabled], outputs=[money_group])
+
+                # AP Purchase
                 ap_enabled = gr.Checkbox(
                     label="启用AP购买",
                     value=opts.purchase.ap_enabled
                 )
+                
                 ap_items_map = {
                     APShopItems.PRODUCE_PT_UP: "支援强化点数提升",
                     APShopItems.PRODUCE_NOTE_UP: "笔记数提升",
                     APShopItems.RECHALLENGE: "重新挑战券",
                     APShopItems.REGENERATE_MEMORY: "回忆再生成券"
                 }
-                selected_ap_items = [ap_items_map[APShopItems(v)] for v in opts.purchase.ap_items]
-                ap_items = gr.Dropdown(
-                    multiselect=True,
-                    choices=list(ap_items_map.values()),
-                    value=selected_ap_items,
-                    label="AP商店购买物品"
-                )
+
+                with gr.Group(visible=opts.purchase.ap_enabled) as ap_group:
+                    selected_ap_items = [ap_items_map[APShopItems(v)] for v in opts.purchase.ap_items]
+                    ap_items = gr.Dropdown(
+                        multiselect=True,
+                        choices=list(ap_items_map.values()),
+                        value=selected_ap_items,
+                        label="AP商店购买物品"
+                    )
+                
+                ap_enabled.change(fn=lambda x: gr.Group(visible=x), inputs=[ap_enabled], outputs=[ap_group])
 
             purchase_enabled.change(fn=lambda x: gr.Group(visible=x), inputs=[purchase_enabled], outputs=[purchase_group])
+
 
         def set_config(config: BaseConfig, data: dict[ConfigKey, Any]) -> None:
             purchase = config.purchase
@@ -493,7 +548,6 @@ class SettingsView:
 
                 alert.click(fn=_go_to_produce_tab, inputs=[], outputs=[self.components.tabs])
 
-
             with gr.Group(visible=opts.produce.enabled) as produce_group:
                 solution_choices = [(f"{sol.name} - {sol.description or '无描述'}", sol.id) for sol in solutions]
 
@@ -560,6 +614,7 @@ class SettingsView:
         """Creates the UI for game start settings."""
         with gr.Column():
             gr.Markdown("### 启动游戏设置")
+            gr.Markdown("自动检测游戏或模拟器是否在运行，然后自动启动")
             
             opts = self.facade.config_service.get_options()
             backend_opts = self.facade.config_service.get_current_user_config().backend
@@ -567,25 +622,26 @@ class SettingsView:
             start_game_enabled = gr.Checkbox(label="启用自动启动游戏", value=opts.start_game.enabled, interactive=True)
             
             with gr.Group(visible=opts.start_game.enabled) as start_game_group:
-                start_through_kuyo = gr.Checkbox(label="通过Kuyo来启动游戏", value=opts.start_game.start_through_kuyo, interactive=True)
-                game_package_name = gr.Textbox(label="游戏包名", value=opts.start_game.game_package_name, interactive=True)
-                kuyo_package_name = gr.Textbox(label="Kuyo包名", value=opts.start_game.kuyo_package_name, interactive=True)
-                
                 gr.Markdown("#### DMM 设置")
                 disable_gakumas_localify = gr.Checkbox(label="自动禁用 Gakumas Localify 汉化", value=opts.start_game.disable_gakumas_localify, interactive=True)
                 dmm_game_path = gr.Textbox(label="DMM 版游戏路径 (可选)", value=opts.start_game.dmm_game_path, interactive=True)
-                dmm_bypass = gr.Checkbox(label="绕过 DMM 启动器 (实验性)", value=opts.start_game.dmm_bypass, interactive=True)
+                dmm_bypass = gr.Checkbox(label="绕过 DMM 启动器", value=opts.start_game.dmm_bypass, interactive=True, info="尝试绕过 DMMGamePlayer，直接启动游戏。")
 
-                gr.Markdown("#### 自定义模拟器启动")
-                check_emulator = gr.Checkbox(
-                    label="检查并启动模拟器(仅自定义)",
-                    value=backend_opts.check_emulator,
-                    interactive=True
-                )
+                gr.Markdown("#### 模拟器设置")
+                with gr.Group():
+                    check_emulator = gr.Checkbox(
+                        label="自动启动模拟器",
+                        value=backend_opts.check_emulator,
+                        interactive=True
+                    )
+                    start_through_kuyo = gr.Checkbox(label="通过Kuyo来启动游戏", value=opts.start_game.start_through_kuyo, interactive=True)
+                    game_package_name = gr.Textbox(label="游戏包名", value=opts.start_game.game_package_name, interactive=True, info="启动游戏时所使用的包名，通常无需修改")
+                    kuyo_package_name = gr.Textbox(label="Kuyo包名", value=opts.start_game.kuyo_package_name, interactive=True, visible=False)
+                
                 with gr.Group(visible=backend_opts.check_emulator) as check_emulator_group:
                     emulator_path = gr.Textbox(value=backend_opts.emulator_path, label="模拟器 exe 文件路径", interactive=True)
                     adb_emulator_name = gr.Textbox(value=backend_opts.adb_emulator_name, label="ADB 模拟器名称", interactive=True)
-                    emulator_args = gr.Textbox(value=backend_opts.emulator_args, label="模拟器启动参数", interactive=True)
+                    emulator_args = gr.Textbox(value=backend_opts.emulator_args, label="模拟器启动参数", interactive=True, info="部分模拟器在启动时可能需要额外指定参数，例如多开实例等，可在此处填写")
                 check_emulator.change(fn=lambda x: gr.Group(visible=x), inputs=[check_emulator], outputs=[check_emulator_group])
 
             start_game_enabled.change(fn=lambda x: gr.Group(visible=x), inputs=[start_game_enabled], outputs=[start_game_group])
