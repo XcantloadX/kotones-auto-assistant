@@ -10,7 +10,7 @@ from kaa.application.services.produce_solution_service import ProduceSolutionSer
 from kaa.application.services.task_service import TaskService
 from kaa.application.services.update_service import UpdateService
 from kaa.application.services.feedback_service import FeedbackService
-from kaa.application.services.idle_mode import IdleModeManager
+from kaa.application.core.idle_mode import IdleModeManager
 from kaa.config.produce import ProduceSolution
 from kotonebot.errors import ContextNotInitializedError
 
