@@ -221,6 +221,9 @@ def purchase():
     
     # 购买 AP 物品
     if conf().purchase.ap_enabled:
+        # 如果不购买マニー物品，则需要等待动画加载完毕，否则按钮无法点击
+        # FIXME: 使用Loop形式重构整个purchase函数
+        sleep(0.5)
         # 点击 AP 选项卡
         device.click(ap_tab)
         # 等待 AP 选项卡加载完成
