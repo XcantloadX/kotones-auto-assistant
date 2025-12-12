@@ -154,7 +154,12 @@ def ap_items():
             if purchased is not None:
                 logger.info(f'AP item #{index} already purchased.')
                 continue
-            comfirm = image.expect_wait(R.Common.ButtonConfirm, timeout=2)
+            comfirm = image.wait_for(R.Common.ButtonConfirm, colored=True, timeout=2)
+            # 如果体力不足
+            if comfirm is None:
+                logger.info(f'Not enough AP for item #{index}. Skipping all AP items.')
+                device.click(image.expect_wait(R.Common.ButtonIconClose))
+                break
             # 如果数量不是最大,调到最大
             for _ in Loop(interval=0.3):
                 if image.find(R.Daily.ButtonShopCountAdd, colored=True):
