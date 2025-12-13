@@ -10,7 +10,7 @@ from kaa.application.services.produce_solution_service import ProduceSolutionSer
 from kaa.application.services.task_service import TaskService
 from kaa.application.services.update_service import UpdateService
 from kaa.application.services.feedback_service import FeedbackService
-from kaa.application.services.idle_mode import IdleModeManager
+from kaa.application.core.idle_mode import IdleModeManager
 from kaa.config.produce import ProduceSolution
 from kotonebot.errors import ContextNotInitializedError
 
@@ -130,17 +130,13 @@ class KaaFacade:
         """
         return self.config_service.get_root_config(), self.config_service.get_current_user_config()
 
-    def save_and_reload_configs(self):
+    def save_configs(self):
         """
         Saves the current configuration and re-initializes Kaa.
         The UI is responsible for updating the config object in ConfigService before calling this.
         """
         try:
             self.config_service.save()
-            # After saving, reload the config into the services that need it
-            self.config_service.reload()
-            # Re-initialize the Kaa instance with the new config
-            self._kaa.initialize()
             logger.info("Configuration saved and Kaa re-initialized.")
             return "设置已保存并应用！"
         except ConfigValidationError as e:

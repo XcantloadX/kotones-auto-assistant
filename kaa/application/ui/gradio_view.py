@@ -45,10 +45,10 @@ class KaaGradioView:
                     self.status_view.create_ui()
                 with gr.Tab("任务", id="tasks"):
                     self.task_view.create_ui()
-                with gr.Tab("方案", id="produce"):
-                    self.produce_view.create_ui()
                 with gr.Tab("设置", id="settings"):
                     self.settings_view.create_ui()
+                with gr.Tab("方案", id="produce"):
+                    self.produce_view.create_ui()
                 with gr.Tab("反馈", id="feedback"):
                     self.feedback_view.create_ui()
                 # Update tab is created inside the view itself because it's a single tab

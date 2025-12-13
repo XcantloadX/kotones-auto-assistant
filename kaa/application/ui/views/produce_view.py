@@ -1,4 +1,5 @@
 import gradio as gr
+from kaa.application.ui.components.alert import Alert
 from kaa.application.ui.facade import KaaFacade
 from kaa.application.ui.common import GradioComponents
 from kaa.config.produce import ProduceData, ProduceSolution
@@ -12,7 +13,7 @@ class ProduceView:
 
     def create_ui(self):
         """Creates the content for the 'Produce' tab for managing solutions."""
-        gr.Markdown("## 方案管理")
+        gr.Markdown("## 培育方案管理")
 
         solutions = self.facade.list_produce_solutions()
         solution_choices = [(f"{sol.name}{f' - {sol.description}' if sol.description else ''}", sol.id) for sol in solutions]
@@ -56,6 +57,8 @@ class ProduceView:
             
             auto_set_support = gr.Checkbox(label="自动编成支援卡", interactive=True)
             self.components.produce_auto_set_support = auto_set_support
+
+            Alert('目前只能自动编成支援卡，无论是否勾选“自动编成支援卡”', variant="info")
             
             with gr.Group() as support_card_sets_group:
                 self.components.produce_support_card_sets_group = support_card_sets_group
@@ -94,6 +97,13 @@ class ProduceView:
             
             skip_commu = gr.Checkbox(label="检测并跳过交流", interactive=True)
             self.components.produce_skip_commu = skip_commu
+            @gr.render([skip_commu])
+            def _tip(skip):
+                if not skip: return
+                Alert(
+                    variant="warning",
+                    value="建议关闭此处设置，转而开启游戏内快进所有交流，效果更佳。",
+                )
 
             save_solution_btn = gr.Button("保存培育方案", variant="primary")
 
