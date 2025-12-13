@@ -130,17 +130,13 @@ class KaaFacade:
         """
         return self.config_service.get_root_config(), self.config_service.get_current_user_config()
 
-    def save_and_reload_configs(self):
+    def save_configs(self):
         """
         Saves the current configuration and re-initializes Kaa.
         The UI is responsible for updating the config object in ConfigService before calling this.
         """
         try:
             self.config_service.save()
-            # After saving, reload the config into the services that need it
-            self.config_service.reload()
-            # Re-initialize the Kaa instance with the new config
-            self._kaa.initialize()
             logger.info("Configuration saved and Kaa re-initialized.")
             return "设置已保存并应用！"
         except ConfigValidationError as e:

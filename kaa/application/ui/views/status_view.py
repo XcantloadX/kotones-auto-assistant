@@ -99,7 +99,7 @@ class StatusView:
             """保存快速设置并立即应用"""
             try:
                 # 保存配置
-                msg = self.facade.save_and_reload_configs()
+                msg = self.facade.save_configs()
                 # 尝试热重载配置
                 gr.Success(success_msg)
             except (ConfigValidationError, RuntimeError) as e:
