@@ -154,7 +154,12 @@ def ap_items():
             if purchased is not None:
                 logger.info(f'AP item #{index} already purchased.')
                 continue
-            comfirm = image.expect_wait(R.Common.ButtonConfirm, timeout=2)
+            comfirm = image.wait_for(R.Common.ButtonConfirm, colored=True, timeout=2)
+            # 如果体力不足
+            if comfirm is None:
+                logger.info(f'Not enough AP for item #{index}. Skipping all AP items.')
+                device.click(image.expect_wait(R.Common.ButtonIconClose))
+                break
             # 如果数量不是最大,调到最大
             for _ in Loop(interval=0.3):
                 if image.find(R.Daily.ButtonShopCountAdd, colored=True):
@@ -221,6 +226,9 @@ def purchase():
     
     # 购买 AP 物品
     if conf().purchase.ap_enabled:
+        # 如果不购买マニー物品，则需要等待动画加载完毕，否则按钮无法点击
+        # FIXME: 使用Loop形式重构整个purchase函数
+        sleep(0.5)
         # 点击 AP 选项卡
         device.click(ap_tab)
         # 等待 AP 选项卡加载完成
