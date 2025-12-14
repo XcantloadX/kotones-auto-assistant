@@ -3,46 +3,46 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-dynamic = ["version"]
+version = "v2025.11"
 name = "ksaa"
 description = "Kotones Auto Assistant(kaa) is a script for game 'Gakuen Idol M@ster' that automates the dailies and produces."
 readme = "README.md"
 requires-python = "~=3.10.0"
 dependencies = [
     # Image Processing & OCR
-    "opencv-python==4.10.0.84",
-    "rapidocr_onnxruntime==1.4.3",
-    "av==14.0.1",
-    "scikit-image==0.25.0",
-    "thefuzz==0.22.1",
+    "opencv-python~=4.10",
+    "rapidocr_onnxruntime~=1.4",
+    "av~=14.0",
+    "scikit-image~=0.25",
+    "thefuzz~=0.22",
     # Adb Control
-    "adbutils==2.8.0",
-    "uiautomator2==3.2.8",
+    "adbutils~=2.8",
+    "uiautomator2~=3.2",
     # Visual Debugger
-    "fastapi==0.115.6",
-    "uvicorn==0.34.0",
-    "python-multipart==0.0.20",
-    "websockets==14.1",
-    "psutil==6.1.1",
+    "fastapi~=0.115.6",
+    "uvicorn~=0.34.0",
+    "python-multipart~=0.0.20",
+    "websockets~=14.1",
+    "psutil~=6.1",
     # GUI
-    "gradio==6.0.2",
+    "gradio~=6.0",
     # Configuration
-    "pydantic==2.10.4",
+    "pydantic~=2.10",
     # Resource
     "ksaa-res==0.2.0",
     # Other
     "typing-extensions~=4.12",
-    "python-dotenv==1.0.1",
+    "python-dotenv~=1.0.1",
     # ImportError: DLL load failed while importing onnxruntime_pybind11_state
-    "onnxruntime==1.14.0",
+    "onnxruntime~=1.14.0",
     # A module that was compiled using NumPy 1.x cannot be run in NumPy 2.0.0 as it may crash.
     "numpy<2.0",
     # For DMM version
     # TODO: move these dependencies to optional-dependencies
     "pywin32==310; sys_platform == 'win32'",
-    "ahk==1.8.3; sys_platform == 'win32'",
-    "win11toast==0.35; sys_platform == 'win32'",  # For Windows Toast Notification
-    "keyboard==0.13.5",
+    "ahk~=1.8.3; sys_platform == 'win32'",
+    "win11toast~=0.35; sys_platform == 'win32'",  # For Windows Toast Notification
+    "keyboard~=0.13.5",
     "kotonebot[android]==0.5.0",
     "kotonebot[windows]==0.5.0; sys_platform == 'win32'",
 ]

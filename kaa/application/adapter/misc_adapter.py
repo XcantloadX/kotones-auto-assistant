@@ -1,4 +1,4 @@
-from ..services import misc_core
+from ..core import misc_core
 
 
 def create_desktop_shortcut(start_immediately: bool):
