@@ -25,6 +25,7 @@ def club_reward():
     # 进入社团UI
     logger.info('Entering club UI')
     device.click(toolbar_menu(True))
+    sleep(0.5) # 避免过早点击
     device.click(image.expect_wait(R.Daily.IconMenuClub, timeout=5))
     sleep(3)
 
