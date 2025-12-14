@@ -27,13 +27,25 @@ class ConfigService:
     def load(self):
         """
         Loads the configuration from the specified config file.
+        If the file does not exist or is empty, it creates and saves a default configuration.
         It populates the root configuration and sets the current user config.
         """
-        self._root_config = load_config(self.config_path, type=BaseConfig)
-        if self._root_config and self._root_config.user_configs:
-            self._current_user_config = self._root_config.user_configs[0]
-        else:
-            raise FileNotFoundError(f"No user configuration found in {self.config_path}")
+        self._root_config = load_config(self.config_path, type=BaseConfig, use_default_if_not_found=True)
+
+        if not self._root_config.user_configs:
+            logger.info("config.json not found or is empty, creating a default configuration.")
+            default_config = UserConfig[BaseConfig](
+                name="默认配置",
+                category="default",
+                description="默认配置",
+                backend=BackendConfig(),
+                options=BaseConfig()
+            )
+            self._root_config.user_configs.append(default_config)
+            save_config(self._root_config, self.config_path)
+            logger.info("New default configuration created at %s", self.config_path)
+
+        self._current_user_config = self._root_config.user_configs[0]
 
     def reload(self):
         """Reloads configuration from disk."""
@@ -98,4 +110,3 @@ class ConfigService:
 
         if options.purchase.money_enabled and not options.purchase.money_items:
             raise ConfigValidationError("启用金币购买时，金币商店购买物品不能为空。")
-
