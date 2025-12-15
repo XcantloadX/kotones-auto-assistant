@@ -17,6 +17,7 @@ from kotonebot.primitives import RectTuple, Rect
 from kotonebot import action, Interval, Countdown, device, image, sleep, ocr, contains, use_screenshot, color
 from kotonebot.backend.loop import Loop
 from kotonebot import logging
+from kotonebot.core import AnyOf
 
 class SkillCard(NamedTuple):
     available: bool
@@ -148,14 +149,13 @@ def do_cards(
         img = device.screenshot()
 
         # 技能卡自选移动对话框
-        if image.find(R.InPurodyuusu.IconTitleSkillCardMove):
+        if R.InPurodyuusu.IconTitleSkillCardMove.exists():
             if handle_skill_card_move():
                 sleep(4)  # 等待卡片刷新
                 continue
         # 饮品详细对话框（需要在 ButtonIconCheckMark 之前，因为ButtonUse也是√）
-        if image.find(R.InPurodyuusu.ButtonUse):
-            # 任何情况下都点击（避免卡死）
-            device.click()
+        if R.InPurodyuusu.ButtonUse.try_click():
+            # 点击已完成 by try_click()
             if enable_drink and drinks_list is not None:
                 if drink_selected_idx < 0 or drink_selected_idx >= len(drinks_list):
                     logger.warning('`drink_selected_idx` dismatches, internal error!')
@@ -172,9 +172,8 @@ def do_cards(
                 logger.warning('Unexpected use drink dialog.')
             continue
         # 技能卡效果无法发动对话框
-        if image.find(R.Common.ButtonIconCheckMark):
+        if R.Common.ButtonIconCheckMark.try_click():
             logger.info("Confirmation dialog detected")
-            device.click()
             sleep(4)  # 等待卡片刷新
             continue
 
@@ -275,11 +274,11 @@ def handle_skill_card_move():
     前置条件：技能卡移动对话框\n
     结束状态：对话框结束瞬间
     """
-    cards = image.find_all_multi([
+    cards = AnyOf[
         R.InPurodyuusu.A,
         R.InPurodyuusu.M,
         R.InPurodyuusu.T,
-    ])
+    ].find_all()
     if not cards:
         logger.info("No skill cards found")
         return False
@@ -288,7 +287,7 @@ def handle_skill_card_move():
     for _ in Loop():
         # 判断对话框是否关闭
         # 已关闭，开始计时
-        if not image.find(R.InPurodyuusu.IconTitleSkillCardMove):
+        if not R.InPurodyuusu.IconTitleSkillCardMove.exists():
             cd.start()
             if cd.expired():
                 logger.info("Skill card move dialog closed.")
@@ -298,11 +297,11 @@ def handle_skill_card_move():
             cd.reset()
             if not cards:
                 logger.info("No skill cards left. Retrying...")
-                cards = image.find_all_multi([
+                cards = AnyOf[
                     R.InPurodyuusu.A,
                     R.InPurodyuusu.M,
                     R.InPurodyuusu.T,
-                ])
+                ].find_all()
             card = cards.pop()
             device.double_click(card)
             sleep(1)
@@ -312,11 +311,11 @@ def handle_skill_card_move():
 @action('获取当前卡牌信息', screenshot_mode='manual-inherit')
 def obtain_cards(img: MatLike | None = None):
     img = use_screenshot(img)
-    cards_rects = image.find_all_multi([
+    cards_rects = AnyOf[
         R.InPurodyuusu.A,
         R.InPurodyuusu.M,
-        R.InPurodyuusu.T
-    ])
+        R.InPurodyuusu.T,
+    ].find_all()
     logger.info("Current cards: %s", len(cards_rects))
     cards = []
     for result in cards_rects:
@@ -344,9 +343,9 @@ def skill_card_count(img: MatLike | None = None):
     img = use_screenshot(img)
     x, y, w, h = R.InPurodyuusu.BoxCardLetter.xywh
     img = img[y:y+h, x:x+w]
-    count = image.raw().count(img, R.InPurodyuusu.A)
-    count += image.raw().count(img, R.InPurodyuusu.M)
-    count += image.raw().count(img, R.InPurodyuusu.T)
+    count = image.raw().count(img, R.InPurodyuusu.A.template)
+    count += image.raw().count(img, R.InPurodyuusu.M.template)
+    count += image.raw().count(img, R.InPurodyuusu.T.template)
     logger.info("Current skill card count: %d", count)
     return count
 

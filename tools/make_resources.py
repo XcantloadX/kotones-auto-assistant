@@ -4,17 +4,18 @@ import argparse
 
 from kotonebot.devtools.resgen.parsers import ParserRegistry, KotoneV1Parser, BasicSpriteParser
 from kotonebot.devtools.resgen.utils import build_class_tree
-from kotonebot.devtools.resgen.codegen import StandardGenerator
+from kotonebot.devtools.resgen.codegen import StandardGenerator, EntityGenerator
 
 ROOT_SCAN_PATH = './kotonebot-resource/sprites/jp' # 图片资源根目录
 OUTPUT_IMG_DIR = './kaa/sprites'                  # 处理后的图片存放处
 OUTPUT_CODE_FILE = './kaa/tasks/R.py'             # 生成的代码文件
 
 
-class KaaGenerator(StandardGenerator):
+class KaaGenerator(EntityGenerator):
     def render_header(self):
         super().render_header()
         self.writer.write("from kaa.common import sprite_path")
+        self.writer.write("from kaa.game_ui.elements import GakumasPrimaryButtonPrefab")
 
 def scan_files(path: str) -> list[str]:
     files = []

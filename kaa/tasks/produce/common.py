@@ -1,4 +1,5 @@
 from logging import getLogger
+from turtle import color
 from typing import Literal, Callable
 
 from cv2.typing import MatLike
@@ -11,6 +12,7 @@ from kotonebot import (
     Loop,
     Interval,
 )
+from kotonebot.core import AnyOf
 from kotonebot.util import Countdown
 from kotonebot.primitives import Rect
 from kaa.tasks import R
@@ -20,6 +22,7 @@ from kotonebot.util import measure_time
 from kotonebot.backend.core import Image
 from kotonebot.errors import UnrecoverableError
 
+from kotonebot.core import Prefab
 from kaa.tasks import R
 from kaa.config import conf
 from .p_drink import acquire_p_drink
@@ -45,22 +48,22 @@ def acquire_skill_card():
     for _ in Loop():
         # 是否显示技能卡选择指导的对话框
         # [kotonebot-resource/sprites/jp/in_purodyuusu/screenshot_show_skill_card_select_guide_dialog.png]
-        if image.find(R.InPurodyuusu.TextSkillCardSelectGuideDialogTitle):
+        if R.InPurodyuusu.TextSkillCardSelectGuideDialogTitle.exists():
             # 默认就是显示，直接确认
             dialog.yes()
             continue
         if not cards:
-            cards = image.find_all_multi([
+            cards = AnyOf[
                 R.InPurodyuusu.A,
                 R.InPurodyuusu.M
-            ])
+            ].find_all()
             if not cards:
                 logger.warning("No skill cards found. Skip acquire.")
                 return
-            cards = sorted(cards, key=lambda x: (x.position[0], x.position[1]))
+            cards = sorted(cards, key=lambda x: x.rect.top_left)
             logger.info(f"Found {len(cards)} skill cards")
             # 判断是否有推荐卡
-            rec_badges = image.find_all(R.InPurodyuusu.TextRecommend)
+            rec_badges = R.InPurodyuusu.TextRecommend.find_all()
             rec_badges = [card.rect for card in rec_badges]
             if rec_badges:
                 cards = [card.rect for card in cards]
@@ -82,7 +85,7 @@ def acquire_skill_card():
             card_clicked = True
             sleep(0.2)
             continue
-        if acquire_btn := image.find(R.InPurodyuusu.AcquireBtnDisabled):
+        if acquire_btn := R.InPurodyuusu.AcquireBtnDisabled.find():
             logger.debug("Click acquire button")
             device.click(acquire_btn)
             sleep(0.2)
@@ -117,22 +120,21 @@ def handle_skill_card_enhance():
     """
     # 前置条件 [kotonebot-resource\sprites\jp\in_purodyuusu\screenshot_skill_card_enhane.png]
     # 结束状态 [screenshots/produce/in_produce/skill_card_enhance.png]
-    cards = image.find_all_multi([
+    cards = AnyOf[
         R.InPurodyuusu.A,
         R.InPurodyuusu.M
-    ])
+    ].find_all()
     if cards is None:
         logger.info("No skill cards found")
         return False
-    cards = sorted(cards, key=lambda x: (x.position[1], x.position[0]))
+    cards = sorted(cards, key=lambda x: x.rect.top_left.xy)
     it = Interval(0.5)
     for card in reversed(cards):
         device.click(card)
         it.wait()
         device.screenshot()
-        if image.find(R.InPurodyuusu.ButtonEnhance, colored=True):
-            logger.debug("Enhance button found")
-            device.click()
+        if R.InPurodyuusu.ButtonEnhance(enabled=True).try_click():
+            logger.debug("Enhance button clicked")
             it.wait()
             break
     logger.debug("Handle skill card enhance finished.")
@@ -145,17 +147,16 @@ def handle_skill_card_removal():
     结束状态：技能卡删除动画结束后瞬间
     """
     # 前置条件 [kotonebot-resource\sprites\jp\in_purodyuusu\screenshot_remove_skill_card.png]
-    card = image.find_multi([
+    card = AnyOf[
         R.InPurodyuusu.A,
         R.InPurodyuusu.M
-    ])
+    ].find()
     if card is None:
         logger.info("No skill cards found")
         return False
     device.click(card)
     for _ in Loop():
-        if image.find(R.InPurodyuusu.ButtonRemove):
-            device.click()
+        if R.InPurodyuusu.ButtonRemove.try_click():
             logger.debug("Remove button clicked.")
             break
     logger.debug("Handle skill card removal finished.")
@@ -174,18 +175,18 @@ def resume_produce_pre() -> tuple[Literal['regular', 'pro', 'master'], int]:
     # [res/sprites/jp/daily/home_1.png]
     logger.info('Click ongoing produce button.')
     device.click(R.Produce.BoxProduceOngoing)
-    btn_resume = image.expect_wait(R.Produce.ButtonResume)
+    btn_resume = R.Produce.ButtonResume.wait()
     # 判断信息
-    mode_result = image.find_multi([
+    mode_result = AnyOf[
         R.Produce.ResumeDialogRegular,
         R.Produce.ResumeDialogPro,
         R.Produce.ResumeDialogMaster
-    ])
+    ].find()
     if not mode_result:
         raise ValueError('Failed to detect produce mode.')
-    if mode_result.index == 0:
+    if mode_result.prefab == R.Produce.ResumeDialogRegular:
         mode = 'regular'
-    elif mode_result.index == 1:
+    elif mode_result.prefab == R.Produce.ResumeDialogPro:
         mode = 'pro'
     else:
         mode = 'master'
@@ -195,12 +196,14 @@ def resume_produce_pre() -> tuple[Literal['regular', 'pro', 'master'], int]:
     current_week = None
     while retry_count < max_retries:
         week_text = ocr.ocr(R.Produce.BoxResumeDialogWeeks, lang='en').squash().regex(r'\d+/\d+')
+        logger.debug('Week text: %s', week_text)
         if week_text:
             weeks = week_text[0].split('/')
             logger.info(f'Current week: {weeks[0]}/{weeks[1]}')
             if len(weeks) >= 2:
                 current_week = int(weeks[0])
                 break
+        logger.debug('Week text2: %s', week_text)
         week_text2 = ocr.ocr(R.Produce.BoxResumeDialogWeeks_Saving, lang='en').squash().regex(r'\d+/\d+')
         if week_text2:
             weeks = week_text2[0].split('/')
@@ -253,10 +256,10 @@ def acquisition_date_change_dialog() -> AcquisitionType | None:
 
     # 日期变更（可以考虑加入版本更新，但因为我目前没有版本更新的720x1080素材，所以没法加）
     logger.debug("Check date change dialog...")
-    if image.find(R.Daily.TextDateChangeDialog):
+    if R.Daily.TextDateChangeDialog.exists():
         logger.info("Date change dialog found.")
         # 点击确认
-        device.click(image.expect(R.Daily.TextDateChangeDialogConfirmButton))
+        R.Daily.TextDateChangeDialogConfirmButton.require().click()
         # 进入游戏
         # 注：wait_for_home()里的Loop类第一次进入循环体时，会自动执行device.screenshot()
         wait_for_home()
@@ -297,22 +300,21 @@ class ProduceInterrupt:
         """检查P饮料到达上限"""
         logger.debug("Check PDrink max...")
         # TODO: 需要封装一个更好的实现方式。比如 wait_stable？
-        if image.find(R.InPurodyuusu.TextPDrinkMax):
+        if R.InPurodyuusu.TextPDrinkMax.exists():
             logger.debug("PDrink max found")
             device.screenshot()
-            if image.find(R.InPurodyuusu.TextPDrinkMax):
+            if R.InPurodyuusu.TextPDrinkMax.exists():
                 # 有对话框标题，但是没找到确认按钮
                 # 可能是需要勾选一个饮料
                 # 也有可能是对话框正在往下退出
-                if not image.find(R.InPurodyuusu.ButtonLeave, colored=True):
+                if not R.InPurodyuusu.ButtonLeave(enabled=True).find():
                     logger.info("No leave button found, click checkbox")
-                    if image.find(R.Common.CheckboxUnchecked, colored=True):
-                        device.click()
+                    if chk := R.Common.CheckboxUnchecked.find(colored=True):
+                        device.click(chk)
                         sleep(0.2)
                         device.screenshot()
-                if leave := image.find(R.InPurodyuusu.ButtonLeave, colored=True):
-                    logger.info("Leave button found")
-                    device.click(leave)
+                if R.InPurodyuusu.ButtonLeave(enabled=True).try_click():
+                    logger.info("Leave button clicked")
                     return "PDrinkMax"
         return None
 
@@ -320,11 +322,11 @@ class ProduceInterrupt:
     def _check_pdrink_max_confirm(img: MatLike) -> AcquisitionType | None:
         """检查P饮料到达上限确认提示框"""
         # [kotonebot-resource/sprites/jp/in_purodyuusu/screenshot_pdrink_max_confirm.png]
-        if image.find(R.InPurodyuusu.TextPDrinkMaxConfirmTitle):
+        if R.InPurodyuusu.TextPDrinkMaxConfirmTitle.exists():
             logger.debug("PDrink max confirm found")
             device.screenshot()
-            if image.find(R.InPurodyuusu.TextPDrinkMaxConfirmTitle):
-                if confirm := image.find(R.Common.ButtonConfirm):
+            if R.InPurodyuusu.TextPDrinkMaxConfirmTitle.exists():
+                if confirm := R.Common.ButtonConfirm.find():
                     logger.info("Confirm button found")
                     device.click(confirm)
                     return "PDrinkMax"
@@ -333,7 +335,7 @@ class ProduceInterrupt:
     @staticmethod
     def _check_skill_card_enhance(img: MatLike) -> AcquisitionType | None:
         """检查技能卡自选强化"""
-        if image.find(R.InPurodyuusu.IconTitleSkillCardEnhance):
+        if R.InPurodyuusu.IconTitleSkillCardEnhance.exists():
             if handle_skill_card_enhance():
                 return "PSkillCardEnhanceSelect"
         return None
@@ -341,7 +343,7 @@ class ProduceInterrupt:
     @staticmethod
     def _check_skill_card_removal(img: MatLike) -> AcquisitionType | None:
         """检查技能卡自选删除"""
-        if image.find(R.InPurodyuusu.IconTitleSkillCardRemoval):
+        if R.InPurodyuusu.IconTitleSkillCardRemoval.exists():
             if handle_skill_card_removal():
                 return "PSkillCardRemoveSelect"
         return None
@@ -350,8 +352,8 @@ class ProduceInterrupt:
     def _check_network_error(img: MatLike) -> AcquisitionType | None:
         """检查网络中断弹窗"""
         logger.debug("Check network error popup...")
-        if (image.find(R.Common.TextNetworkError) 
-            and (btn_retry := image.find(R.Common.ButtonRetry))
+        if (R.Common.TextNetworkError.exists()
+            and (btn_retry := R.Common.ButtonRetry.find())
         ):
             logger.info("Network error popup found")
             device.click(btn_retry)
@@ -362,24 +364,24 @@ class ProduceInterrupt:
     def _check_award_select(img: MatLike) -> AcquisitionType | None:
         """检查物品选择对话框"""
         logger.debug("Check award select dialog...")
-        if image.find(R.InPurodyuusu.TextClaim):
+        if R.InPurodyuusu.TextClaim.exists():
             logger.info("Award select dialog found.")
 
             # P饮料选择
             logger.debug("Check PDrink select...")
-            if image.find(R.InPurodyuusu.TextPDrink):
+            if R.InPurodyuusu.TextPDrink.exists():
                 logger.info("PDrink select found")
                 acquire_p_drink()
                 return "PDrinkSelect"
             # 技能卡选择
             logger.debug("Check skill card select...")
-            if image.find(R.InPurodyuusu.TextSkillCard):
+            if R.InPurodyuusu.TextSkillCard.exists():
                 logger.info("Acquire skill card found")
                 acquire_skill_card()
                 return "PSkillCardSelect"
             # P物品选择
             logger.debug("Check PItem select...")
-            if image.find(R.InPurodyuusu.TextPItem):
+            if R.InPurodyuusu.TextPItem.exists():
                 logger.info("Acquire PItem found")
                 select_p_item()
                 return "PItemSelect"
@@ -452,11 +454,11 @@ class ProduceInterrupt:
             raise UnrecoverableError('Unable to detect produce scene. Reseason: timed out.')
         return self.check()
     
-    def until(self, end_img: Image):
+    def until(self, end_prefab: type[Prefab]):
         """
-        持续处理中断事件，直到指定图片出现为止。
+        持续处理中断事件，直到指定 Prefab 出现为止。
         """
-        return self.resolve(lambda: image.find(end_img) is not None)
+        return self.resolve(end_prefab.exists)
 
 def until_acquisition_clear():
     """

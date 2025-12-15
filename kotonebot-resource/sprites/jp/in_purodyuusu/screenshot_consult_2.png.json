@@ -3,8 +3,11 @@
     "4096cffa-a889-4622-852e-760fc7022d93": {
       "name": "InPurodyuusu.ButtonIconExchange",
       "displayName": "交换按钮的图标",
-      "type": "template",
-      "annotationId": "4096cffa-a889-4622-852e-760fc7022d93"
+      "type": "prefab",
+      "annotationId": "4096cffa-a889-4622-852e-760fc7022d93",
+      "prefab": {
+        "className": "GakumasPrimaryButtonPrefab"
+      }
     }
   },
   "annotations": [

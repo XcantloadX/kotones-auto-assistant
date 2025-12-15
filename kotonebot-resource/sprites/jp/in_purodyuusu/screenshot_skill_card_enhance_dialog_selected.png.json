@@ -9,8 +9,11 @@
     "da439e8c-3b74-4371-9657-0736d826c7d1": {
       "name": "InPurodyuusu.ButtonEnhance",
       "displayName": "技能卡 强化按钮",
-      "type": "template",
-      "annotationId": "da439e8c-3b74-4371-9657-0736d826c7d1"
+      "annotationId": "da439e8c-3b74-4371-9657-0736d826c7d1",
+      "type": "prefab",
+      "prefab": {
+        "className": "GakumasPrimaryButtonPrefab"
+      }
     }
   },
   "annotations": [

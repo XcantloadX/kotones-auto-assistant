@@ -4,6 +4,7 @@ import logging
 import argparse
 
 from kaa.common import BaseConfig
+from kotonebot.primitives.geometry import Size
 
 
 def run_script(script_path: str) -> None:
@@ -21,6 +22,8 @@ def run_script(script_path: str) -> None:
     # 运行脚本
     from kotonebot.backend.context import init_context, manual_context
     from kaa.main.kaa import Kaa
+    from kotonebot.config.config import conf
+    conf().device.default_logic_resolution = Size(720, 1280)
     logging.getLogger('kotonebot').setLevel(logging.DEBUG)
     logging.getLogger('kaa').setLevel(logging.DEBUG)
     config_path = './config.json'

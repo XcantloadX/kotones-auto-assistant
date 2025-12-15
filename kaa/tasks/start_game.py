@@ -8,8 +8,7 @@ import subprocess
 
 from kotonebot.util import Countdown
 from kotonebot.backend.loop import Loop
-from kotonebot import task, action, sleep, device, image, ocr, config
-from kotonebot.backend.context.context import vars
+from kotonebot import task, action, sleep, device, ocr, config
 
 from kaa.tasks import R
 from .actions.loading import loading
@@ -107,17 +106,17 @@ def wait_for_home():
     for _ in Loop():
         logger.info('尝试进入/返回主页中...')
         # 首页
-        if image.find(R.Daily.ButtonHomeCurrent):
+        if R.Daily.ButtonHomeCurrent.exists():
             break
         # TAP TO START 画面
         # [screenshots/startup/1.png]
-        elif image.find(R.Daily.ButonLinkData):
+        elif R.Daily.ButonLinkData.exists():
             should_click = True
         elif loading():
             pass
         # 热更新
         # [screenshots/startup/update.png]
-        elif image.find(R.Common.TextGameUpdate) and image.find(R.Common.ButtonConfirm):
+        elif R.Common.TextGameUpdate.exists() and R.Common.ButtonConfirm.exists():
             device.click()
         # 本体更新
         # [kotonebot-resource/sprites/jp/daily/screenshot_apk_update.png]
@@ -125,7 +124,7 @@ def wait_for_home():
             raise GameUpdateNeededError()
         # 公告
         # [screenshots/startup/announcement1.png]
-        elif image.find(R.Common.ButtonIconClose):
+        elif R.Common.ButtonIconClose.exists():
             device.click()
         # 生日
         # [screenshots/startup/birthday.png]
@@ -133,9 +132,9 @@ def wait_for_home():
             pass
         # 如果已经进入游戏，但是在其他页面，也尝试跳转回主页面
         # 左下角是否有 Home 图标
-        elif image.find(R.Common.ButtonToolbarHome):
+        elif R.Common.ButtonToolbarHome.exists():
             device.click()
-        elif image.find(R.Common.ButtonHome):
+        elif R.Common.ButtonHome.exists():
             device.click()
 
         if should_click and click_cd.expired():
@@ -170,11 +169,11 @@ def android_launch():
         # 启动kuyo
         _device.launch_app('org.kuyo.game')
         # 点击"加速"
-        device.click(image.expect_wait(R.Kuyo.ButtonTab3Speedup, timeout=10))
+        R.Kuyo.ButtonTab3Speedup.wait(timeout=10).click()
         # Kuyo会延迟加入广告，导致识别后，原位置突然弹出广告，导致进入广告页面
         sleep(2)
         # 点击"K空间启动"
-        device.click(image.expect_wait(R.Kuyo.ButtonStartGame, timeout=10))
+        R.Kuyo.ButtonStartGame.wait(timeout=10).click()
 
 @action('启动游戏.Windows', screenshot_mode='manual-inherit')
 def windows_launch():

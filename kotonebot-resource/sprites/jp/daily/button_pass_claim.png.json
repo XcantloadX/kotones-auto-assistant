@@ -1,0 +1,9 @@
+{
+  "isSimple": true,
+  "definition": {
+    "type": "prefab",
+    "prefab": {
+      "className": "GakumasPrimaryButtonPrefab"
+    }
+  }
+}
