@@ -4,29 +4,25 @@
       "name": "Produce.BoxSetCountIndicator",
       "displayName": "培育开始页面 当前编成编号",
       "type": "hint-box",
-      "annotationId": "7e3e3a94-e05c-477e-bd92-0afc172bdb94",
-      "useHintRect": false
+      "annotationId": "7e3e3a94-e05c-477e-bd92-0afc172bdb94"
     },
     "389bdefb-4b76-4ac3-9460-d59c144f8de7": {
       "name": "Produce.PointProduceNextSet",
       "displayName": "培育开始页面 下一个编成",
       "type": "hint-point",
-      "annotationId": "389bdefb-4b76-4ac3-9460-d59c144f8de7",
-      "useHintRect": false
+      "annotationId": "389bdefb-4b76-4ac3-9460-d59c144f8de7"
     },
     "745d904e-19eb-4e15-b734-ef116e6e7c48": {
       "name": "Produce.PointProducePrevSet",
       "displayName": "培育开始页面 上一个编成",
       "type": "hint-point",
-      "annotationId": "745d904e-19eb-4e15-b734-ef116e6e7c48",
-      "useHintRect": false
+      "annotationId": "745d904e-19eb-4e15-b734-ef116e6e7c48"
     },
     "a48324ae-7c1a-489e-b3c4-93d12267f88d": {
       "name": "Produce.TextStepIndicator2",
       "displayName": "2. サポート選択",
       "type": "template",
-      "annotationId": "a48324ae-7c1a-489e-b3c4-93d12267f88d",
-      "useHintRect": false
+      "annotationId": "a48324ae-7c1a-489e-b3c4-93d12267f88d"
     }
   },
   "annotations": [

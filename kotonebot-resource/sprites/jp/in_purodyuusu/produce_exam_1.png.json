@@ -4,43 +4,37 @@
       "name": "InPurodyuusu.BoxExamTop",
       "displayName": "考试场景 最上方排名区域",
       "type": "hint-box",
-      "annotationId": "1fbb6008-7112-46ce-b6aa-413648acc5e5",
-      "useHintRect": false
+      "annotationId": "1fbb6008-7112-46ce-b6aa-413648acc5e5"
     },
     "621d24ca-ad72-4c10-a2a1-77b76dcff8f3": {
       "name": "InPurodyuusu.BoxCardLetter",
       "displayName": "手牌类型字母区域",
       "type": "hint-box",
-      "annotationId": "621d24ca-ad72-4c10-a2a1-77b76dcff8f3",
-      "useHintRect": false
+      "annotationId": "621d24ca-ad72-4c10-a2a1-77b76dcff8f3"
     },
     "69efda7b-9338-483a-a5d4-fba1acf1e7f1": {
       "name": "InPurodyuusu.BoxDrink",
       "displayName": "饮品区域",
       "type": "hint-box",
-      "annotationId": "69efda7b-9338-483a-a5d4-fba1acf1e7f1",
-      "useHintRect": false
+      "annotationId": "69efda7b-9338-483a-a5d4-fba1acf1e7f1"
     },
     "f37b6e21-b344-4e5d-9dbe-ae03eb5117bc": {
       "name": "InPurodyuusu.BoxDrink1",
       "displayName": "第一个饮品区域",
       "type": "hint-box",
-      "annotationId": "f37b6e21-b344-4e5d-9dbe-ae03eb5117bc",
-      "useHintRect": false
+      "annotationId": "f37b6e21-b344-4e5d-9dbe-ae03eb5117bc"
     },
     "118d1a5e-73fa-428a-9c34-e58b2a208182": {
       "name": "InPurodyuusu.BoxDrink2",
       "displayName": "第二个饮品区域",
       "type": "hint-box",
-      "annotationId": "118d1a5e-73fa-428a-9c34-e58b2a208182",
-      "useHintRect": false
+      "annotationId": "118d1a5e-73fa-428a-9c34-e58b2a208182"
     },
     "7c7ee88a-cff3-40fe-ac69-656621692e84": {
       "name": "InPurodyuusu.BoxDrink3",
       "displayName": "第三个饮品区域",
       "type": "hint-box",
-      "annotationId": "7c7ee88a-cff3-40fe-ac69-656621692e84",
-      "useHintRect": false
+      "annotationId": "7c7ee88a-cff3-40fe-ac69-656621692e84"
     }
   },
   "annotations": [

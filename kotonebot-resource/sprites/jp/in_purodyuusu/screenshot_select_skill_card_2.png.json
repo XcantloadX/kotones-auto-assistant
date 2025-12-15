@@ -5,7 +5,6 @@
       "displayName": "おすすめ",
       "type": "template",
       "annotationId": "b0283997-7931-476d-a92f-d7569f6ea34c",
-      "useHintRect": false,
       "description": "技能卡选择对话框中的推荐卡片"
     }
   },

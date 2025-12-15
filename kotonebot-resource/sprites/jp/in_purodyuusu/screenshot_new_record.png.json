@@ -4,8 +4,7 @@
       "name": "Common.ButtonOK",
       "displayName": "OK 按钮",
       "type": "template",
-      "annotationId": "8424ecdd-8857-4764-9fd0-d4bfa440c128",
-      "useHintRect": false
+      "annotationId": "8424ecdd-8857-4764-9fd0-d4bfa440c128"
     }
   },
   "annotations": [

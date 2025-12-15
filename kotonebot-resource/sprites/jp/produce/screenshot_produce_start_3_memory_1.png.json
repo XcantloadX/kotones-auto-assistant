@@ -4,8 +4,7 @@
       "name": "Produce.TextRentAvailable",
       "displayName": "レンタル可能",
       "type": "template",
-      "annotationId": "74ec3510-583d-4a76-ac69-38480fbf1387",
-      "useHintRect": false
+      "annotationId": "74ec3510-583d-4a76-ac69-38480fbf1387"
     }
   },
   "annotations": [

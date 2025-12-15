@@ -4,29 +4,25 @@
       "name": "Common.ShopPackButton",
       "displayName": "商店礼包页面按钮",
       "type": "template",
-      "annotationId": "5c49d3b3-656e-4c8c-ae1a-9b0209b9dcc3",
-      "useHintRect": false
+      "annotationId": "5c49d3b3-656e-4c8c-ae1a-9b0209b9dcc3"
     },
     "f50150b4-211b-425b-8a36-142df62f6621": {
       "name": "Common.ShopPackRedDot",
       "displayName": "商店礼包页面红点范围",
       "type": "hint-box",
-      "annotationId": "f50150b4-211b-425b-8a36-142df62f6621",
-      "useHintRect": false
+      "annotationId": "f50150b4-211b-425b-8a36-142df62f6621"
     },
     "7b5c8883-a1f9-4ce9-bd84-26668577dfc6": {
       "name": "Common.ButtonToolbarHome",
       "displayName": "工具栏的主页按钮",
       "type": "template",
-      "annotationId": "7b5c8883-a1f9-4ce9-bd84-26668577dfc6",
-      "useHintRect": false
+      "annotationId": "7b5c8883-a1f9-4ce9-bd84-26668577dfc6"
     },
     "41904062-e218-4b28-972a-b5cfcd058d2c": {
       "name": "Common.ButtonToolbarBack",
       "displayName": "工具栏的返回按钮",
       "type": "template",
-      "annotationId": "41904062-e218-4b28-972a-b5cfcd058d2c",
-      "useHintRect": false
+      "annotationId": "41904062-e218-4b28-972a-b5cfcd058d2c"
     }
   },
   "annotations": [

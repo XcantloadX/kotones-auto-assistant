@@ -4,8 +4,7 @@
       "name": "Produce.SwitchEventModeOff",
       "displayName": "イベントモード 切换开关 OFF",
       "type": "template",
-      "annotationId": "c5356ad6-0f1e-42be-b090-059f33ea7cee",
-      "useHintRect": false
+      "annotationId": "c5356ad6-0f1e-42be-b090-059f33ea7cee"
     }
   },
   "annotations": [

@@ -4,8 +4,7 @@
       "name": "Produce.ButtonSkipLive",
       "displayName": "培育结束跳过演出按钮",
       "type": "template",
-      "annotationId": "e5e84f9e-28da-4cf4-bcba-c9145fe39b07",
-      "useHintRect": false
+      "annotationId": "e5e84f9e-28da-4cf4-bcba-c9145fe39b07"
     }
   },
   "annotations": [

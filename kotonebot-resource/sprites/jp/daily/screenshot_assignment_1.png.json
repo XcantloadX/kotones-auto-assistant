@@ -4,8 +4,7 @@
       "name": "Daily.ButtonAssignmentShortenTime",
       "displayName": "工作页面 短缩 时间",
       "type": "template",
-      "annotationId": "1652f06a-5417-49ef-8949-4854772d9ab7",
-      "useHintRect": false
+      "annotationId": "1652f06a-5417-49ef-8949-4854772d9ab7"
     }
   },
   "annotations": [

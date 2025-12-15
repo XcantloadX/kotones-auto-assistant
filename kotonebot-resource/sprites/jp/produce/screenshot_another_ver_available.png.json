@@ -4,8 +4,7 @@
       "name": "Produce.TextAnotherIdolAvailableDialog",
       "displayName": "Another 版本偶像可用对话框标题",
       "type": "template",
-      "annotationId": "cbf4ce9c-f8d8-4fb7-a197-15bb9847df04",
-      "useHintRect": false
+      "annotationId": "cbf4ce9c-f8d8-4fb7-a197-15bb9847df04"
     }
   },
   "annotations": [

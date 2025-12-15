@@ -4,15 +4,13 @@
       "name": "Common.ButtonCommuSkip",
       "displayName": "跳过交流按钮",
       "type": "template",
-      "annotationId": "f1f21925-3e22-4dd1-b53b-bb52bcf26c2b",
-      "useHintRect": false
+      "annotationId": "f1f21925-3e22-4dd1-b53b-bb52bcf26c2b"
     },
     "f6ca6bd3-543f-4779-8367-c5c883f04b95": {
       "name": "Common.ButtonCommuFastforward",
       "displayName": "快进交流按钮",
       "type": "template",
-      "annotationId": "f6ca6bd3-543f-4779-8367-c5c883f04b95",
-      "useHintRect": false
+      "annotationId": "f6ca6bd3-543f-4779-8367-c5c883f04b95"
     }
   },
   "annotations": [

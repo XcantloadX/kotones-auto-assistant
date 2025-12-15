@@ -4,22 +4,19 @@
       "name": "Produce.IconPIdolLevel",
       "displayName": "P偶像卡上的等级图标",
       "type": "template",
-      "annotationId": "30a6f399-6999-4f04-bb77-651e0214112f",
-      "useHintRect": false
+      "annotationId": "30a6f399-6999-4f04-bb77-651e0214112f"
     },
     "b71165dd-7285-45a7-bb8c-d4fccee2b0ba": {
       "name": "Produce.KbIdolOverviewName",
       "displayName": "P偶像总览界面偶像名称",
       "type": "hint-box",
-      "annotationId": "b71165dd-7285-45a7-bb8c-d4fccee2b0ba",
-      "useHintRect": false
+      "annotationId": "b71165dd-7285-45a7-bb8c-d4fccee2b0ba"
     },
     "46607060-cefc-43a0-abaf-9d4887d46cb8": {
       "name": "Produce.BoxIdolOverviewIdols",
       "displayName": "偶像总览 偶像列表区域",
       "type": "hint-box",
-      "annotationId": "46607060-cefc-43a0-abaf-9d4887d46cb8",
-      "useHintRect": false
+      "annotationId": "46607060-cefc-43a0-abaf-9d4887d46cb8"
     }
   },
   "annotations": [

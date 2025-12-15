@@ -4,36 +4,31 @@
       "name": "Produce.ButtonHajime1Regular",
       "displayName": "",
       "type": "template",
-      "annotationId": "3b473fe6-e147-477f-b088-9b8fb042a4f6",
-      "useHintRect": false
+      "annotationId": "3b473fe6-e147-477f-b088-9b8fb042a4f6"
     },
     "2ededcf5-1d80-4e2a-9c83-2a31998331ce": {
       "name": "Produce.ButtonHajime1Pro",
       "displayName": "",
       "type": "template",
-      "annotationId": "2ededcf5-1d80-4e2a-9c83-2a31998331ce",
-      "useHintRect": false
+      "annotationId": "2ededcf5-1d80-4e2a-9c83-2a31998331ce"
     },
     "24e99232-9434-457f-a9a0-69dd7ecf675f": {
       "name": "Produce.ButtonHajime1Master",
       "displayName": "",
       "type": "template",
-      "annotationId": "24e99232-9434-457f-a9a0-69dd7ecf675f",
-      "useHintRect": false
+      "annotationId": "24e99232-9434-457f-a9a0-69dd7ecf675f"
     },
     "aca9e953-1955-46eb-920c-77b1750bcb34": {
       "name": "Produce.PointHajimeToNia",
       "displayName": "Hajime 右侧翻页箭头",
       "type": "hint-point",
-      "annotationId": "aca9e953-1955-46eb-920c-77b1750bcb34",
-      "useHintRect": false
+      "annotationId": "aca9e953-1955-46eb-920c-77b1750bcb34"
     },
     "e6b45405-cd9f-4c6e-a9f1-6ec953747c65": {
       "name": "Produce.LogoHajime",
       "displayName": "Hajime LOGO 定期公演",
       "type": "template",
-      "annotationId": "e6b45405-cd9f-4c6e-a9f1-6ec953747c65",
-      "useHintRect": false
+      "annotationId": "e6b45405-cd9f-4c6e-a9f1-6ec953747c65"
     }
   },
   "annotations": [

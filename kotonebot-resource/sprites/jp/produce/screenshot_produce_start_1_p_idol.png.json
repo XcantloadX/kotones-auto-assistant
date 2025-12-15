@@ -4,22 +4,19 @@
       "name": "Produce.ButtonPIdolOverview",
       "displayName": "Pアイドルー覧  P偶像列表展示",
       "type": "template",
-      "annotationId": "e88c9ad1-ec37-4fcd-b086-862e1e7ce8fd",
-      "useHintRect": false
+      "annotationId": "e88c9ad1-ec37-4fcd-b086-862e1e7ce8fd"
     },
     "44ba8515-4a60-42c9-8878-b42e4e34ee15": {
       "name": "Produce.TextStepIndicator1",
       "displayName": "1. アイドル選択",
       "type": "template",
-      "annotationId": "44ba8515-4a60-42c9-8878-b42e4e34ee15",
-      "useHintRect": false
+      "annotationId": "44ba8515-4a60-42c9-8878-b42e4e34ee15"
     },
     "34606d7d-52c8-4cd1-b7f4-b31032f1fb70": {
       "name": "Produce.BoxSelectedIdol",
       "displayName": "当前选中的偶像",
       "type": "hint-box",
       "annotationId": "34606d7d-52c8-4cd1-b7f4-b31032f1fb70",
-      "useHintRect": false,
       "description": "偶像选择界面当前选中的偶像"
     }
   },

@@ -4,8 +4,7 @@
       "name": "Produce.EmptySupportCardSlot",
       "displayName": "空支援卡槽位",
       "type": "template",
-      "annotationId": "d3424d31-0502-4623-996e-f0194e5085ce",
-      "useHintRect": false
+      "annotationId": "d3424d31-0502-4623-996e-f0194e5085ce"
     }
   },
   "annotations": [

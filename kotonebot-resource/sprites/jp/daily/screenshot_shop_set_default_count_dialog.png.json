@@ -4,8 +4,7 @@
       "name": "Daily.TextDefaultExchangeCountChangeDialog",
       "displayName": "商店默认购买次数改变对话框",
       "type": "template",
-      "annotationId": "de325534-3fd3-480a-9eb8-eb47960a753a",
-      "useHintRect": false
+      "annotationId": "de325534-3fd3-480a-9eb8-eb47960a753a"
     }
   },
   "annotations": [

@@ -1,23 +1,22 @@
 {
-    "definitions": {
-        "ae4742aa-acda-442d-bf73-b3fe7b66e85c": {
-            "name": "Daily.WeeklyFreePack",
-            "displayName": "每周免费礼包购买按钮",
-            "type": "template",
-            "annotationId": "ae4742aa-acda-442d-bf73-b3fe7b66e85c",
-            "useHintRect": false
-        }
-    },
-    "annotations": [
-        {
-            "id": "ae4742aa-acda-442d-bf73-b3fe7b66e85c",
-            "type": "rect",
-            "data": {
-                "x1": 481,
-                "y1": 666,
-                "x2": 556,
-                "y2": 704
-            }
-        }
-    ]
+  "definitions": {
+    "ae4742aa-acda-442d-bf73-b3fe7b66e85c": {
+      "name": "Daily.WeeklyFreePack",
+      "displayName": "每周免费礼包购买按钮",
+      "type": "template",
+      "annotationId": "ae4742aa-acda-442d-bf73-b3fe7b66e85c"
+    }
+  },
+  "annotations": [
+    {
+      "id": "ae4742aa-acda-442d-bf73-b3fe7b66e85c",
+      "type": "rect",
+      "data": {
+        "x1": 481,
+        "y1": 666,
+        "x2": 556,
+        "y2": 704
+      }
+    }
+  ]
 }

@@ -4,8 +4,7 @@
       "name": "Daily.BoxMissonTabs",
       "displayName": "任务奖励领取页面 底部 Tab",
       "type": "hint-box",
-      "annotationId": "a3768ef5-d71a-491a-9153-c83905fed616",
-      "useHintRect": false
+      "annotationId": "a3768ef5-d71a-491a-9153-c83905fed616"
     }
   },
   "annotations": [

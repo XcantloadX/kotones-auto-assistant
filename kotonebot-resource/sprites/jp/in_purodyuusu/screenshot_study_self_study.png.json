@@ -4,22 +4,19 @@
       "name": "InPurodyuusu.TextSelfStudyVocal",
       "displayName": "文化课事件 自习 声乐",
       "type": "template",
-      "annotationId": "c78c38cc-7b61-4dc4-820d-0a5b684ef52e",
-      "useHintRect": false
+      "annotationId": "c78c38cc-7b61-4dc4-820d-0a5b684ef52e"
     },
     "83d0a033-466c-463a-bb8c-be0f2953e9b2": {
       "name": "InPurodyuusu.TextSelfStudyDance",
       "displayName": "文化课事件 自习 舞蹈",
       "type": "template",
-      "annotationId": "83d0a033-466c-463a-bb8c-be0f2953e9b2",
-      "useHintRect": false
+      "annotationId": "83d0a033-466c-463a-bb8c-be0f2953e9b2"
     },
     "4695f96b-c4f5-4bb6-a021-a13b6ceb2883": {
       "name": "InPurodyuusu.TextSelfStudyVisual",
       "displayName": "文化课事件 自习 形象",
       "type": "template",
-      "annotationId": "4695f96b-c4f5-4bb6-a021-a13b6ceb2883",
-      "useHintRect": false
+      "annotationId": "4695f96b-c4f5-4bb6-a021-a13b6ceb2883"
     }
   },
   "annotations": [

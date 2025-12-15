@@ -4,15 +4,13 @@
       "name": "Daily.TextDateChangeDialogConfirmButton",
       "displayName": "日期变更对话框的确认按钮",
       "type": "template",
-      "annotationId": "eaad330d-4e50-4b55-be2c-8da0f72764d9",
-      "useHintRect": false
+      "annotationId": "eaad330d-4e50-4b55-be2c-8da0f72764d9"
     },
     "9483fae5-3a72-4684-9403-d25d2c602d3d": {
       "name": "Daily.TextDateChangeDialog",
       "displayName": "日期变更对话框",
       "type": "template",
-      "annotationId": "9483fae5-3a72-4684-9403-d25d2c602d3d",
-      "useHintRect": false
+      "annotationId": "9483fae5-3a72-4684-9403-d25d2c602d3d"
     }
   },
   "annotations": [

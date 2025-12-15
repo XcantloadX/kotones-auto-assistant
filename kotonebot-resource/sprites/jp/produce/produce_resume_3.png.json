@@ -4,8 +4,7 @@
       "name": "Produce.ResumeDialogMaster",
       "displayName": "培育再开对话框 MASTER",
       "type": "template",
-      "annotationId": "3c8b477a-8eda-407e-9e9f-7540c8808f89",
-      "useHintRect": false
+      "annotationId": "3c8b477a-8eda-407e-9e9f-7540c8808f89"
     }
   },
   "annotations": [

@@ -4,22 +4,19 @@
       "name": "Produce.ButtonHajime0Regular",
       "displayName": "",
       "type": "template",
-      "annotationId": "6cd80be8-c9b3-4ba5-bf17-3ffc9b000743",
-      "useHintRect": false
+      "annotationId": "6cd80be8-c9b3-4ba5-bf17-3ffc9b000743"
     },
     "55f7db71-0a18-4b3d-b847-57959b8d2e32": {
       "name": "Produce.ButtonHajime0Pro",
       "displayName": "",
       "type": "template",
-      "annotationId": "55f7db71-0a18-4b3d-b847-57959b8d2e32",
-      "useHintRect": false
+      "annotationId": "55f7db71-0a18-4b3d-b847-57959b8d2e32"
     },
     "0bf5e34e-afc6-4447-bbac-67026ce2ad26": {
       "name": "Produce.TitleIconProudce",
       "displayName": "培育页面左上角标题图标",
       "type": "template",
-      "annotationId": "0bf5e34e-afc6-4447-bbac-67026ce2ad26",
-      "useHintRect": false
+      "annotationId": "0bf5e34e-afc6-4447-bbac-67026ce2ad26"
     }
   },
   "annotations": [

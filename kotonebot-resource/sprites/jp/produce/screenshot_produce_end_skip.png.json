@@ -4,15 +4,13 @@
       "name": "Produce.TextSkipLiveDialogTitle",
       "displayName": "跳过演出确认对话框标题",
       "type": "template",
-      "annotationId": "b6b94f21-ef4b-4425-9c7e-ca2b574b0add",
-      "useHintRect": false
+      "annotationId": "b6b94f21-ef4b-4425-9c7e-ca2b574b0add"
     },
     "fad5eec2-5fd5-412f-9abb-987a3087dc54": {
       "name": "Common.IconButtonCheck",
       "displayName": "按钮✓图标",
       "type": "template",
       "annotationId": "fad5eec2-5fd5-412f-9abb-987a3087dc54",
-      "useHintRect": false,
       "description": "通常会显示在对话框按钮上"
     },
     "bc7155ac-18c9-4335-9ec2-c8762d37a057": {
@@ -20,7 +18,6 @@
       "displayName": "按钮×图标",
       "type": "template",
       "annotationId": "bc7155ac-18c9-4335-9ec2-c8762d37a057",
-      "useHintRect": false,
       "description": "通常会显示在对话框按钮上"
     }
   },

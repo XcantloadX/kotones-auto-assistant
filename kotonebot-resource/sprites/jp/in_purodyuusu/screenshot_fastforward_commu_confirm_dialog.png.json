@@ -5,7 +5,6 @@
       "displayName": "早送り確認",
       "type": "template",
       "annotationId": "50e23c8a-7ba2-4c9c-9cfb-196c260fa1d5",
-      "useHintRect": false,
       "description": "快进未读交流确认对话框标题文字"
     }
   },

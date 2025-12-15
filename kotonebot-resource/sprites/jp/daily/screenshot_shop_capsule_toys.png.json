@@ -5,7 +5,6 @@
       "displayName": "日常 扭蛋 下一页起始点",
       "type": "hint-point",
       "annotationId": "26ce71b2-59dc-4237-b50f-41690d7b8ecf",
-      "useHintRect": false,
       "description": "扭蛋页面翻页时的起始点"
     },
     "ada5c1e1-1524-4476-bdf9-aa0aab8b35ad": {
@@ -13,15 +12,13 @@
       "displayName": "日常 扭蛋 下一页终点",
       "type": "hint-point",
       "annotationId": "ada5c1e1-1524-4476-bdf9-aa0aab8b35ad",
-      "useHintRect": false,
       "description": "扭蛋页面翻页时的终点"
     },
     "2bd6fe88-99fa-443d-8e42-bb3de5881213": {
       "name": "Daily.CapsuleToys.IconTitle",
       "displayName": "日常 扭蛋 页面标题图标",
       "type": "template",
-      "annotationId": "2bd6fe88-99fa-443d-8e42-bb3de5881213",
-      "useHintRect": false
+      "annotationId": "2bd6fe88-99fa-443d-8e42-bb3de5881213"
     }
   },
   "annotations": [

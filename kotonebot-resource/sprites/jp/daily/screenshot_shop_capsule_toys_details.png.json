@@ -5,7 +5,6 @@
       "displayName": "日常 扭蛋 滑动条起点",
       "type": "hint-point",
       "annotationId": "045e21c4-350b-4b6c-bcb7-aeb007da05b3",
-      "useHintRect": false,
       "description": "扭蛋数量滑动条的右端点（置0时的起始点）"
     },
     "5ba55176-f5a1-4d3f-8fd8-75e868715ad8": {
@@ -13,7 +12,6 @@
       "displayName": "日常 扭蛋 滑动条终点",
       "type": "hint-point",
       "annotationId": "5ba55176-f5a1-4d3f-8fd8-75e868715ad8",
-      "useHintRect": false,
       "description": "扭蛋数量滑动条的左端点（置0时的终点）"
     }
   },

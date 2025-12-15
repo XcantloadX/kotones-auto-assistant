@@ -4,15 +4,13 @@
       "name": "InPurodyuusu.IconTitleSkillCardEnhance",
       "displayName": "技能卡强化 标题 图标",
       "type": "template",
-      "annotationId": "79abd239-5eed-4195-9fa8-d729daa874ca",
-      "useHintRect": false
+      "annotationId": "79abd239-5eed-4195-9fa8-d729daa874ca"
     },
     "da439e8c-3b74-4371-9657-0736d826c7d1": {
       "name": "InPurodyuusu.ButtonEnhance",
       "displayName": "技能卡 强化按钮",
       "type": "template",
-      "annotationId": "da439e8c-3b74-4371-9657-0736d826c7d1",
-      "useHintRect": false
+      "annotationId": "da439e8c-3b74-4371-9657-0736d826c7d1"
     }
   },
   "annotations": [

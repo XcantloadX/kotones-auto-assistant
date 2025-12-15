@@ -4,8 +4,7 @@
       "name": "Common.TextSkipCommuComfirmation",
       "displayName": "跳过未读交流确认对话框标题",
       "type": "template",
-      "annotationId": "4d78add6-1027-4939-bb51-f99fca7db2ce",
-      "useHintRect": false
+      "annotationId": "4d78add6-1027-4939-bb51-f99fca7db2ce"
     }
   },
   "annotations": [

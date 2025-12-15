@@ -4,8 +4,7 @@
       "name": "Produce.TextAutoSet",
       "displayName": "おまかせ編成",
       "type": "template",
-      "annotationId": "f5c16d2f-ebc5-4617-9b96-971696af7c52",
-      "useHintRect": false
+      "annotationId": "f5c16d2f-ebc5-4617-9b96-971696af7c52"
     }
   },
   "annotations": [

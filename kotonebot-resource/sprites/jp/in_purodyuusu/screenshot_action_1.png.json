@@ -5,7 +5,6 @@
       "displayName": "考试剩余周",
       "type": "hint-box",
       "annotationId": "be6836bd-ee42-432b-9166-469c74f32f0b",
-      "useHintRect": false,
       "description": "培育中左上角的下次考试剩余周数"
     },
     "d6b64759-26b7-45b1-bf8e-5c0d98611e0d": {
@@ -13,7 +12,6 @@
       "displayName": "Vo. レッスン",
       "type": "template",
       "annotationId": "d6b64759-26b7-45b1-bf8e-5c0d98611e0d",
-      "useHintRect": false,
       "description": "培育 行动页面 声乐课程按钮文字"
     },
     "303cccc1-c674-4d3a-8c89-19ea729fdbef": {
@@ -21,7 +19,6 @@
       "displayName": "Da. レッスン",
       "type": "template",
       "annotationId": "303cccc1-c674-4d3a-8c89-19ea729fdbef",
-      "useHintRect": false,
       "description": "培育 行动页面 舞蹈课程按钮文字"
     },
     "cc8a495d-330d-447d-8a80-a8a6ecc409c5": {
@@ -29,7 +26,6 @@
       "displayName": "Vi. レッスン",
       "type": "template",
       "annotationId": "cc8a495d-330d-447d-8a80-a8a6ecc409c5",
-      "useHintRect": false,
       "description": "培育 行动页面 形象课程按钮文字"
     },
     "d7667903-7149-4f2f-9c15-d8a4b5f4d347": {
@@ -37,44 +33,38 @@
       "displayName": "Asari 老师头像",
       "type": "template",
       "annotationId": "d7667903-7149-4f2f-9c15-d8a4b5f4d347",
-      "useHintRect": false,
       "description": "用于检测培育行动页面提示"
     },
     "75fdc1b6-5690-44d1-989e-95b6ab78e1dc": {
       "name": "InPurodyuusu.BoxAsariSenseiTip",
       "displayName": "Asari 老师提示文本区域",
       "type": "hint-box",
-      "annotationId": "75fdc1b6-5690-44d1-989e-95b6ab78e1dc",
-      "useHintRect": false
+      "annotationId": "75fdc1b6-5690-44d1-989e-95b6ab78e1dc"
     },
     "ce1d1d6f-38f2-48bf-98bd-6e091c7ca5b8": {
       "name": "InPurodyuusu.ButtonPracticeVocal",
       "displayName": "行动页 声乐课程按钮图标",
       "type": "template",
-      "annotationId": "ce1d1d6f-38f2-48bf-98bd-6e091c7ca5b8",
-      "useHintRect": false
+      "annotationId": "ce1d1d6f-38f2-48bf-98bd-6e091c7ca5b8"
     },
     "b2e1bf3c-2c36-4fb5-9db7-c10a29563a37": {
       "name": "InPurodyuusu.ButtonPracticeDance",
       "displayName": "行动页 舞蹈课程按钮图标",
       "type": "template",
       "annotationId": "b2e1bf3c-2c36-4fb5-9db7-c10a29563a37",
-      "useHintRect": false,
       "description": ""
     },
     "adc533a7-970b-4c5b-a037-2181531a35d6": {
       "name": "InPurodyuusu.ButtonPracticeVisual",
       "displayName": "行动页 形象课程按钮图标",
       "type": "template",
-      "annotationId": "adc533a7-970b-4c5b-a037-2181531a35d6",
-      "useHintRect": false
+      "annotationId": "adc533a7-970b-4c5b-a037-2181531a35d6"
     },
     "70898bf8-56c5-4f84-becb-629c9ab6a7da": {
       "name": "InPurodyuusu.TextFinalExamRemaining",
       "displayName": "最終まで",
       "type": "template",
-      "annotationId": "70898bf8-56c5-4f84-becb-629c9ab6a7da",
-      "useHintRect": false
+      "annotationId": "70898bf8-56c5-4f84-becb-629c9ab6a7da"
     }
   },
   "annotations": [

@@ -5,7 +5,6 @@
       "displayName": "交換確認",
       "type": "template",
       "annotationId": "25f00ee3-8dfe-42d1-a67e-191fa5c3df4b",
-      "useHintRect": false,
       "description": "咨询中，购买确认对话框的标题"
     }
   },

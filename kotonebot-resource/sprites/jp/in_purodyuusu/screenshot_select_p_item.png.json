@@ -4,15 +4,13 @@
       "name": "InPurodyuusu.BoxSelectPStuffComfirm",
       "displayName": "选择奖励对话框 领取按钮",
       "type": "hint-box",
-      "annotationId": "b3c9e526-de47-44c2-9bda-e9a8a79fdb5a",
-      "useHintRect": false
+      "annotationId": "b3c9e526-de47-44c2-9bda-e9a8a79fdb5a"
     },
     "c948f136-416f-447e-8152-54a1cd1d1329": {
       "name": "InPurodyuusu.TextClaim",
       "displayName": "文字「受け取る」",
       "type": "template",
       "annotationId": "c948f136-416f-447e-8152-54a1cd1d1329",
-      "useHintRect": false,
       "description": "用于 P 物品、P 饮料、技能卡选择对话框"
     },
     "0c0627be-4a09-4450-a078-1858d3ace532": {
@@ -20,7 +18,6 @@
       "displayName": "文字「Pアイテム」",
       "type": "template",
       "annotationId": "0c0627be-4a09-4450-a078-1858d3ace532",
-      "useHintRect": false,
       "description": "用于 P 物品选择对话框"
     }
   },

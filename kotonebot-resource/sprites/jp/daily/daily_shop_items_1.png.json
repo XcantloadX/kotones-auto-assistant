@@ -4,85 +4,73 @@
       "name": "Shop.ItemLessonNote",
       "displayName": "レッスンノート",
       "type": "template",
-      "annotationId": "0949c622-9067-4f0d-bac2-3f938a1d2ed2",
-      "useHintRect": false
+      "annotationId": "0949c622-9067-4f0d-bac2-3f938a1d2ed2"
     },
     "b2af59e9-60e3-4d97-8c72-c7ba092113a3": {
       "name": "Shop.ItemVeteranNote",
       "displayName": "ベテランノート",
       "type": "template",
-      "annotationId": "b2af59e9-60e3-4d97-8c72-c7ba092113a3",
-      "useHintRect": false
+      "annotationId": "b2af59e9-60e3-4d97-8c72-c7ba092113a3"
     },
     "835489e2-b29b-426c-b4c9-3bb9f8eb6195": {
       "name": "Shop.ItemSupportEnhancementPt",
       "displayName": "サポート強化Pt 支援强化Pt",
       "type": "template",
-      "annotationId": "835489e2-b29b-426c-b4c9-3bb9f8eb6195",
-      "useHintRect": false
+      "annotationId": "835489e2-b29b-426c-b4c9-3bb9f8eb6195"
     },
     "c5b7d67e-7260-4f08-a0e9-4d31ce9bbecf": {
       "name": "Shop.ItemSenseNoteVocal",
       "displayName": "センスノート（ボーカル）感性笔记（声乐）",
       "type": "template",
-      "annotationId": "c5b7d67e-7260-4f08-a0e9-4d31ce9bbecf",
-      "useHintRect": false
+      "annotationId": "c5b7d67e-7260-4f08-a0e9-4d31ce9bbecf"
     },
     "0f7d581d-cea3-4039-9205-732e4cd29293": {
       "name": "Shop.ItemSenseNoteDance",
       "displayName": "センスノート（ダンス）感性笔记（舞蹈）",
       "type": "template",
-      "annotationId": "0f7d581d-cea3-4039-9205-732e4cd29293",
-      "useHintRect": false
+      "annotationId": "0f7d581d-cea3-4039-9205-732e4cd29293"
     },
     "d3cc3323-51af-4882-ae12-49e7384b746d": {
       "name": "Shop.ItemSenseNoteVisual",
       "displayName": "センスノート（ビジュアル）感性笔记（形象）",
       "type": "template",
-      "annotationId": "d3cc3323-51af-4882-ae12-49e7384b746d",
-      "useHintRect": false
+      "annotationId": "d3cc3323-51af-4882-ae12-49e7384b746d"
     },
     "a1df3af1-a3e7-4521-a085-e4dc3cd1cc57": {
       "name": "Shop.ItemLogicNoteVocal",
       "displayName": "ロジックノート（ボーカル）理性笔记（声乐）",
       "type": "template",
-      "annotationId": "a1df3af1-a3e7-4521-a085-e4dc3cd1cc57",
-      "useHintRect": false
+      "annotationId": "a1df3af1-a3e7-4521-a085-e4dc3cd1cc57"
     },
     "a9fcaf04-0c1f-4b0f-bb5b-ede9da96180f": {
       "name": "Shop.ItemLogicNoteDance",
       "displayName": "ロジックノート（ダンス）理性笔记（舞蹈）",
       "type": "template",
-      "annotationId": "a9fcaf04-0c1f-4b0f-bb5b-ede9da96180f",
-      "useHintRect": false
+      "annotationId": "a9fcaf04-0c1f-4b0f-bb5b-ede9da96180f"
     },
     "c3f536d6-a04a-4651-b3f9-dd2c22593f7f": {
       "name": "Shop.ItemLogicNoteVisual",
       "displayName": "ロジックノート（ビジュアル）理性笔记（形象）",
       "type": "template",
-      "annotationId": "c3f536d6-a04a-4651-b3f9-dd2c22593f7f",
-      "useHintRect": false
+      "annotationId": "c3f536d6-a04a-4651-b3f9-dd2c22593f7f"
     },
     "eef25cf9-afd0-43b1-b9c5-fbd997bd5fe0": {
       "name": "Shop.ItemAnomalyNoteVocal",
       "displayName": "アノマリーノート（ボーカル）非凡笔记（声乐）",
       "type": "template",
-      "annotationId": "eef25cf9-afd0-43b1-b9c5-fbd997bd5fe0",
-      "useHintRect": false
+      "annotationId": "eef25cf9-afd0-43b1-b9c5-fbd997bd5fe0"
     },
     "df991b42-ed8e-4f2c-bf0c-aa7522f147b6": {
       "name": "Shop.ItemAnomalyNoteDance",
       "displayName": "アノマリーノート（ダンス）非凡笔记（舞蹈）",
       "type": "template",
-      "annotationId": "df991b42-ed8e-4f2c-bf0c-aa7522f147b6",
-      "useHintRect": false
+      "annotationId": "df991b42-ed8e-4f2c-bf0c-aa7522f147b6"
     },
     "81c97cd3-df53-44d3-bf3d-1eb4dc67b62a": {
       "name": "Daily.ButtonRefreshMoneyShop",
       "displayName": "リスト更新：1回無料",
       "type": "template",
-      "annotationId": "81c97cd3-df53-44d3-bf3d-1eb4dc67b62a",
-      "useHintRect": false
+      "annotationId": "81c97cd3-df53-44d3-bf3d-1eb4dc67b62a"
     }
   },
   "annotations": [

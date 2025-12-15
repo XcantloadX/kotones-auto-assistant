@@ -4,8 +4,7 @@
       "name": "Daily.TextShopItemSoldOut",
       "displayName": "交換済みです",
       "type": "template",
-      "annotationId": "24dc7158-036c-4a66-9280-e934f470be53",
-      "useHintRect": false
+      "annotationId": "24dc7158-036c-4a66-9280-e934f470be53"
     }
   },
   "annotations": [

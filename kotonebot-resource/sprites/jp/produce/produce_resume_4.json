@@ -4,22 +4,19 @@
       "name": "Produce.ButtonResume",
       "displayName": "再開する",
       "type": "template",
-      "annotationId": "ccbcb114-7f73-43d1-904a-3a7ae660c531",
-      "useHintRect": false
+      "annotationId": "ccbcb114-7f73-43d1-904a-3a7ae660c531"
     },
     "deb35d68-bbac-4636-a93a-1b039c5d4fb1": {
       "name": "Produce.BoxResumeDialogWeeks",
       "displayName": "再开培育对话框 当前周数区域",
       "type": "hint-box",
-      "annotationId": "deb35d68-bbac-4636-a93a-1b039c5d4fb1",
-      "useHintRect": false
+      "annotationId": "deb35d68-bbac-4636-a93a-1b039c5d4fb1"
     },
     "d5335ad3-8859-4f4f-99b3-c88d2cd2b966": {
       "name": "Produce.BoxResumeDialogIdolCard",
       "displayName": "再开培育对话框 偶像卡区域",
       "type": "hint-box",
-      "annotationId": "d5335ad3-8859-4f4f-99b3-c88d2cd2b966",
-      "useHintRect": false
+      "annotationId": "d5335ad3-8859-4f4f-99b3-c88d2cd2b966"
     }
   },
   "annotations": [

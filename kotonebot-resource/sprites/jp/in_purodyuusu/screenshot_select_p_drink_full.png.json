@@ -5,7 +5,6 @@
       "displayName": "受け取らない",
       "type": "template",
       "annotationId": "e4683def-8d1d-472b-a5ab-bb3885c0c98e",
-      "useHintRect": false,
       "description": "用在不领取饮料上"
     }
   },
