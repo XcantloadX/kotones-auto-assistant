@@ -65,8 +65,18 @@ class KaaFacade:
         self.task_service.start_all_tasks()
         self.idle_mgr.notify_on_start()
 
+    def start_single_task(self, task_name: str) -> None:
+        """Starts a single task and notifies the idle manager."""
+        self.task_service.start_single_task(task_name)
+        self.idle_mgr.notify_on_start()
+
     def stop_all_tasks(self):
         """Stops all running tasks and notifies the idle manager."""
+        self.task_service.stop_tasks()
+        self.idle_mgr.notify_on_stop()
+
+    def stop_tasks(self) -> None:
+        """Stops any running tasks (all or single) and notifies the idle manager."""
         self.task_service.stop_tasks()
         self.idle_mgr.notify_on_stop()
 

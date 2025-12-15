@@ -55,6 +55,12 @@ class KaaGradioView:
                 self.update_view.create_ui()
 
             self._setup_timers()
+
+        # 启动 IdleModeManager 后台线程
+        try:
+            self.facade.idle_mgr.start()
+        except Exception:
+            logger.exception('Failed to start IdleModeManager')
         return blocks
 
     

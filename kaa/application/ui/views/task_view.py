@@ -32,7 +32,7 @@ class TaskView:
         def start_single_task_by_name(task_name: str):
             """Event handler to start a single task."""
             try:
-                self.facade.task_service.start_single_task(task_name)
+                self.facade.start_single_task(task_name)
                 gr.Info(f"任务 {task_name} 开始执行")
             except ValueError as e:
                 gr.Warning(str(e))
@@ -41,8 +41,7 @@ class TaskView:
 
         def stop_all_tasks():
             """Event handler to stop the running single task."""
-            self.facade.task_service.stop_tasks()
-            self.facade.idle_mgr.notify_on_stop()
+            self.facade.stop_tasks()
 
         def on_pause_click():
             self.facade.toggle_pause()
