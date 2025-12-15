@@ -36,9 +36,49 @@ class Alert(gr.HTML):
             **kwargs: 其他传递给 gr.HTML 的参数。
         """
         
-        # 1. 样式模板 (CSS Template)
-        # 修改点：调整了布局，使 actions 包含在 content 内部以实现对齐
-        css = """
+        # 样式已移至 JS on_load 动态注入以避免使用 `css_template` 属性
+
+        # 2. HTML 模板 (HTML Template)
+        # 修改点：重构 HTML 结构，将 button 放入 .alert-body-wrapper 中
+        html_template = """
+        <div class="alert alert-${variant}" role="alert">
+            <svg class="alert-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                ${ {
+                    'success': `""" + ICONS['success'] + """`,
+                    'info': `""" + ICONS['info'] + """`,
+                    'warning': `""" + ICONS['warning'] + """`,
+                    'error': `""" + ICONS['error'] + """`
+                }[variant] }
+            </svg>
+            
+            <div class="alert-body-wrapper">
+                ${ title ? `<div class="alert-title">${title}</div>` : '' }
+                <div class="alert-description">${value}</div>
+                
+                ${ action_text ? `
+                <div class="alert-actions">
+                    <button class="action-btn">${action_text}</button>
+                </div>` : '' }
+            </div>
+            
+            ${ show_close ? `
+            <button class="close-btn" aria-label="Close">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                </svg>
+            </button>` : '' }
+        </div>
+        """
+
+        # 3. JS 加载逻辑 (JS on Load)
+        js = """
+        // 动态注入样式（带去重检查）
+        (function(){
+            const STYLE_ID = 'kaa-alert-styles';
+            if (!document.getElementById(STYLE_ID)) {
+                const style = document.createElement('style');
+                style.id = STYLE_ID;
+                style.innerHTML = `
         .alert {
             display: flex;
             align-items: flex-start; /* 顶部对齐 */
@@ -54,7 +94,6 @@ class Alert(gr.HTML):
             height: 1.25rem; 
             margin-right: 0.75rem; 
             flex-shrink: 0; 
-            margin-top: 0.125rem; /* 微调图标与首行文字对齐 */
         }
         
         .alert-body-wrapper {
@@ -119,42 +158,24 @@ class Alert(gr.HTML):
         }
         .close-btn:hover { opacity: 1; }
         .close-btn svg { width: 1rem; height: 1rem; }
-        """
 
-        # 2. HTML 模板 (HTML Template)
-        # 修改点：重构 HTML 结构，将 button 放入 .alert-body-wrapper 中
-        html_template = """
-        <div class="alert alert-${variant}" role="alert">
-            <svg class="alert-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                ${ {
-                    'success': `""" + ICONS['success'] + """`,
-                    'info': `""" + ICONS['info'] + """`,
-                    'warning': `""" + ICONS['warning'] + """`,
-                    'error': `""" + ICONS['error'] + """`
-                }[variant] }
-            </svg>
-            
-            <div class="alert-body-wrapper">
-                ${ title ? `<div class="alert-title">${title}</div>` : '' }
-                <div class="alert-description">${value}</div>
-                
-                ${ action_text ? `
-                <div class="alert-actions">
-                    <button class="action-btn">${action_text}</button>
-                </div>` : '' }
-            </div>
-            
-            ${ show_close ? `
-            <button class="close-btn" aria-label="Close">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                    <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
-                </svg>
-            </button>` : '' }
-        </div>
-        """
+        /* Dark Mode Support */
+        body.dark .alert-success { background-color: #064e3b; border-color: #059669; color: #d1fae5; }
+        body.dark .alert-success .alert-icon, body.dark .alert-success .action-btn { color: #34d399; }
+        
+        body.dark .alert-info { background-color: #1e3a8a; border-color: #1d4ed8; color: #dbeafe; }
+        body.dark .alert-info .alert-icon, body.dark .alert-info .action-btn { color: #60a5fa; }
+        
+        body.dark .alert-warning { background-color: #451a03; border-color: #b45309; color: #fef3c7; }
+        body.dark .alert-warning .alert-icon, body.dark .alert-warning .action-btn { color: #fbbf24; }
+        
+        body.dark .alert-error { background-color: #450a0a; border-color: #b91c1c; color: #fee2e2; }
+        body.dark .alert-error .alert-icon, body.dark .alert-error .action-btn { color: #f87171; }
+                `;
+                document.head.appendChild(style);
+            }
+        })();
 
-        # 3. JS 加载逻辑 (JS on Load)
-        js = """
         const actionBtn = element.querySelector('.action-btn');
         const closeBtn = element.querySelector('.close-btn');
         const alertBox = element.querySelector('.alert');
@@ -189,7 +210,6 @@ class Alert(gr.HTML):
             action_text=action_text,
             show_close=show_close,
             html_template=html_template,
-            css_template=css,
             js_on_load=js,
             visible=visible,
             elem_id=elem_id,
