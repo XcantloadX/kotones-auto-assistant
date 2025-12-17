@@ -224,17 +224,16 @@ def rest():
     """执行休息"""
     logger.info("Rest for this week.")
 
-    # 部分设备上，第二次click（确定）点击速度过快，导致卡死，所以这里需要添加一个sleep
-    device.click(image.expect(R.InPurodyuusu.Rest))
-    sleep(0.5)
-    device.click(image.expect(R.InPurodyuusu.RestConfirmBtn))
-    # 原方案
-    # (SimpleDispatcher('in_produce.rest')
-    #     # 点击休息
-    #     .click(R.InPurodyuusu.Rest)
-    #     # 确定
-    #     .click(R.InPurodyuusu.RestConfirmBtn, finish=True)
-    # ).run()
+    device.click(image.expect_wait(R.InPurodyuusu.Rest))
+    # 先等按钮出现
+    image.expect_wait(R.InPurodyuusu.RestConfirmBtn)
+    sleep(0.2)
+    # 然后等消失
+    for _ in Loop():
+        if image.find(R.InPurodyuusu.RestConfirmBtn):
+            device.click()
+        else:
+            break
 
 @action('判断是否处于行动页面')
 def at_action_scene():
