@@ -206,8 +206,20 @@ def windows_launch():
         if not os.path.exists(plugin_path):
             logger.warning('Gakumas Localify not found. Skipped disable.')
         else:
-            os.rename(plugin_path, plugin_path + '.disabled')
-            logger.info('Gakumas Localify disabled.')
+            dst = plugin_path + '.disabled'
+            try:
+                # Use os.replace to atomically move and overwrite an existing target on all platforms
+                os.replace(plugin_path, dst)
+                logger.info('Gakumas Localify disabled.')
+            except Exception:
+                # Fallback: if replace fails for any reason, try removing an existing dst then rename
+                try:
+                    if os.path.exists(dst):
+                        os.remove(dst)
+                    os.rename(plugin_path, dst)
+                    logger.info('Gakumas Localify disabled.')
+                except Exception as e:
+                    logger.exception('Failed to disable Gakumas Localify: %s', e)
     
     from ahk import AHK
     from kaa.util.paths import get_ahk_path
