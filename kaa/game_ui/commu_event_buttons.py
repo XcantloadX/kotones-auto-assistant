@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 from typing import Sequence
 
-from ..tasks import R
 from kotonebot.primitives import Rect, RectTuple
 from kotonebot.backend.core import HintBox
 from kotonebot.backend.color import HsvColor
@@ -53,14 +52,15 @@ class CommuEventButtonUI:
     def __init__(
         self,
         selected_colors: Sequence[tuple[HsvColor, HsvColor]] = DEFAULT_COLORS,
-        rect: HintBox = R.InPurodyuusu.BoxCommuEventButtonsArea
+        rect: HintBox | None = None
     ):
         """
         :param selected_colors: 按钮选中后的主题色。
         :param rect: 识别范围
         """
+        from ..tasks import R
         self.color_ranges = selected_colors
-        self.rect = rect
+        self.rect = rect or R.InPurodyuusu.BoxCommuEventButtonsArea
 
     @action('交流事件按钮.识别选中', screenshot_mode='manual-inherit')
     def selected(self, description: bool = True, title: bool = False) -> EventButton | None:
