@@ -224,14 +224,20 @@ def rest():
     """执行休息"""
     logger.info("Rest for this week.")
 
-    device.click(image.expect_wait(R.InPurodyuusu.Rest))
     # 先等按钮出现
-    image.expect_wait(R.InPurodyuusu.RestConfirmBtn)
-    sleep(0.2)
+    # 点击休息直到确认对话框出现
+    # TODO: 需要一种方法简化这种 pattern
+    for _ in Loop():
+        if image.find(R.InPurodyuusu.Rest):
+            device.click()
+            sleep(0.5)
+        elif image.find(R.InPurodyuusu.RestConfirmBtn):
+            break
     # 然后等消失
     for _ in Loop():
         if image.find(R.InPurodyuusu.RestConfirmBtn):
             device.click()
+            sleep(0.5)
         else:
             break
 
