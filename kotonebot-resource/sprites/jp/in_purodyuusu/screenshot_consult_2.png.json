@@ -7,7 +7,7 @@
       "type": "prefab",
       "props": {
         "template": {
-          "kind": "rect",
+          "kind": "image",
           "x1": 258,
           "y1": 1066,
           "x2": 303,
