@@ -1,38 +1,32 @@
 {
+  "version": 2,
   "definitions": {
     "a0bd6a5f-784d-4f0a-9d66-10f4b80c8d3e": {
       "name": "Produce.LogoNia",
       "displayName": "NIA LOGO (NEXT IDOL AUDITION)",
-      "type": "template",
-      "annotationId": "a0bd6a5f-784d-4f0a-9d66-10f4b80c8d3e",
-      "useHintRect": false
+      "type": "prefab",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 195,
+          "y1": 424,
+          "x2": 540,
+          "y2": 466
+        }
+      },
+      "prefab_id": "TemplateMatchPrefab"
     },
     "48a458a9-b6cf-4199-850e-78f679f4f337": {
       "name": "Produce.PointNiaToHajime",
       "displayName": "NIA 左侧翻页箭头",
       "type": "hint-point",
-      "annotationId": "48a458a9-b6cf-4199-850e-78f679f4f337",
-      "useHintRect": false
-    }
-  },
-  "annotations": [
-    {
-      "id": "a0bd6a5f-784d-4f0a-9d66-10f4b80c8d3e",
-      "type": "rect",
-      "data": {
-        "x1": 195,
-        "y1": 424,
-        "x2": 540,
-        "y2": 466
-      }
-    },
-    {
-      "id": "48a458a9-b6cf-4199-850e-78f679f4f337",
-      "type": "point",
-      "data": {
-        "x": 34,
-        "y": 596
+      "props": {
+        "point": {
+          "kind": "point",
+          "x": 34,
+          "y": 596
+        }
       }
     }
-  ]
+  }
 }

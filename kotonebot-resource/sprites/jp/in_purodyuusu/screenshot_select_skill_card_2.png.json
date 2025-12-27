@@ -1,24 +1,21 @@
 {
+  "version": 2,
   "definitions": {
     "b0283997-7931-476d-a92f-d7569f6ea34c": {
       "name": "InPurodyuusu.TextRecommend",
       "displayName": "おすすめ",
-      "type": "template",
-      "annotationId": "b0283997-7931-476d-a92f-d7569f6ea34c",
-      "useHintRect": false,
-      "description": "技能卡选择对话框中的推荐卡片"
+      "type": "prefab",
+      "description": "技能卡选择对话框中的推荐卡片",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 179,
+          "y1": 959,
+          "x2": 262,
+          "y2": 982
+        }
+      },
+      "prefab_id": "TemplateMatchPrefab"
     }
-  },
-  "annotations": [
-    {
-      "id": "b0283997-7931-476d-a92f-d7569f6ea34c",
-      "type": "rect",
-      "data": {
-        "x1": 179,
-        "y1": 959,
-        "x2": 262,
-        "y2": 982
-      }
-    }
-  ]
+  }
 }

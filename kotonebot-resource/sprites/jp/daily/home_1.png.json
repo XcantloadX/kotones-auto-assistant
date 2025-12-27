@@ -1,91 +1,75 @@
 {
+  "version": 2,
   "definitions": {
     "85c24a02-dac3-4e6c-978e-b11963e0e92d": {
       "name": "Produce.BoxProduceOngoing",
       "displayName": "首页开始培育按钮（当前有培育）",
       "type": "hint-box",
-      "annotationId": "85c24a02-dac3-4e6c-978e-b11963e0e92d",
-      "useHintRect": false
+      "props": {
+        "image": {
+          "kind": "rect",
+          "x1": 179,
+          "y1": 937,
+          "x2": 551,
+          "y2": 1091
+        }
+      }
     },
     "4fe748c8-a535-4824-aefc-244e3ad34bd4": {
       "name": "Daily.BoxHomeAssignment",
       "displayName": "首页工作按钮",
       "type": "hint-box",
-      "annotationId": "4fe748c8-a535-4824-aefc-244e3ad34bd4",
-      "useHintRect": false
+      "props": {
+        "image": {
+          "kind": "rect",
+          "x1": 33,
+          "y1": 650,
+          "x2": 107,
+          "y2": 746
+        }
+      }
     },
     "469f7f21-067c-476c-9bfc-c3ec83b935ea": {
       "name": "Daily.BoxHomeAP",
       "displayName": "首页体力",
       "type": "hint-box",
-      "annotationId": "469f7f21-067c-476c-9bfc-c3ec83b935ea",
-      "useHintRect": false
+      "props": {
+        "image": {
+          "kind": "rect",
+          "x1": 291,
+          "y1": 4,
+          "x2": 500,
+          "y2": 82
+        }
+      }
     },
     "565df1a0-d494-41a4-a3bf-603857bd8dec": {
       "name": "Daily.BoxHomeJewel",
       "displayName": "首页珠宝数量",
       "type": "hint-box",
-      "annotationId": "565df1a0-d494-41a4-a3bf-603857bd8dec",
-      "useHintRect": false
+      "props": {
+        "image": {
+          "kind": "rect",
+          "x1": 500,
+          "y1": 7,
+          "x2": 703,
+          "y2": 82
+        }
+      }
     },
     "76c92bd0-496b-403e-b545-92eb1f2f941f": {
       "name": "Daily.BoxHomeActivelyFunds",
       "displayName": "首页活动费按钮",
       "type": "hint-box",
-      "annotationId": "76c92bd0-496b-403e-b545-92eb1f2f941f",
-      "useHintRect": false
-    }
-  },
-  "annotations": [
-    {
-      "id": "85c24a02-dac3-4e6c-978e-b11963e0e92d",
-      "type": "rect",
-      "data": {
-        "x1": 179,
-        "y1": 937,
-        "x2": 551,
-        "y2": 1091
-      }
-    },
-    {
-      "id": "4fe748c8-a535-4824-aefc-244e3ad34bd4",
-      "type": "rect",
-      "data": {
-        "x1": 33,
-        "y1": 650,
-        "x2": 107,
-        "y2": 746
-      }
-    },
-    {
-      "id": "469f7f21-067c-476c-9bfc-c3ec83b935ea",
-      "type": "rect",
-      "data": {
-        "x1": 291,
-        "y1": 4,
-        "x2": 500,
-        "y2": 82
-      }
-    },
-    {
-      "id": "565df1a0-d494-41a4-a3bf-603857bd8dec",
-      "type": "rect",
-      "data": {
-        "x1": 500,
-        "y1": 7,
-        "x2": 703,
-        "y2": 82
-      }
-    },
-    {
-      "id": "76c92bd0-496b-403e-b545-92eb1f2f941f",
-      "type": "rect",
-      "data": {
-        "x1": 29,
-        "y1": 530,
-        "x2": 109,
-        "y2": 633
+      "props": {
+        "image": {
+          "kind": "rect",
+          "x1": 29,
+          "y1": 530,
+          "x2": 109,
+          "y2": 633
+        }
       }
     }
-  ]
+  }
 }

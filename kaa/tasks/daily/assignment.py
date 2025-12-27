@@ -6,7 +6,8 @@ from datetime import timedelta
 from kaa.tasks import R
 from kaa.config import conf
 from ..actions.scenes import at_home, goto_home
-from kotonebot import task, device, image, action, ocr, contains, cropped, rect_expand, color, sleep, regex
+from kotonebot import task, device, image, action, ocr, contains, cropped, color, sleep, regex
+from kotonebot.core import AnyOf
 
 logger = logging.getLogger(__name__)
 
@@ -19,8 +20,7 @@ def handle_claim_assignment():
     结束状态：分配工作页面
     """
     # 领取奖励 [screenshots/assignment/acquire.png]
-    if image.find(R.Common.ButtonCompletion):
-        device.click()
+    if R.Common.ButtonCompletion.try_click():
         return True
     return False
 
@@ -36,25 +36,25 @@ def assign(type: Literal['mini', 'online']) -> bool:
     """
     # [kotonebot/tasks/assignment.py]
     target_duration = 12
-    image.expect_wait(R.Daily.IconTitleAssign, timeout=10)
+    R.Daily.IconTitleAssign.wait(timeout=10)
     if type == 'mini':
         target_duration = conf().assignment.mini_live_duration
-        if image.find(R.Daily.IconAssignMiniLive):
-            device.click()
+        if R.Daily.IconAssignMiniLive.try_click():
+            pass
         else:
             logger.warning('MiniLive already assigned. Skipping...')
             return False
     elif type == 'online':
         target_duration = conf().assignment.online_live_duration
-        if image.find(R.Daily.IconAssignOnlineLive):
-            device.click()
+        if R.Daily.IconAssignOnlineLive.try_click():
+            pass
         else:
             logger.warning('OnlineLive already assigned. Skipping...')
             return False
     else:
         raise ValueError(f'Invalid type: {type}')
     # MiniLive/OnlineLive 页面 [screenshots/assignment/assign_mini_live.png]
-    image.expect_wait(R.Common.ButtonSelect, timeout=5)
+    R.Common.ButtonSelect.wait(timeout=5)
     logger.info('Now at assignment idol selection scene.')
     # 选择好调偶像
     selected = False
@@ -62,12 +62,12 @@ def assign(type: Literal['mini', 'online']) -> bool:
     attempts = 0
     while not selected:
         # 寻找所有好调图标
-        results = image.find_all(R.Daily.IconAssignKouchou, threshold=0.8)
+        results = R.Daily.IconAssignKouchou.find_all()
         logger.debug(f'Found {len(results)} kouchou icons.')
         if not results:
             logger.warning('No kouchou icons found. Trying again...')
             continue
-        results.sort(key=lambda r: r.position[1])
+        results.sort(key=lambda r: r.rect.x1)
         results.pop(0) # 第一个是说明文字里的图标
         # 尝试点击所有目标
         for target in results:
@@ -95,9 +95,9 @@ def assign(type: Literal['mini', 'online']) -> bool:
             break
     # 点击选择
     sleep(0.5)
-    device.click(image.expect(R.Common.ButtonSelect))
+    R.Common.ButtonSelect.click()
     # 等待页面加载
-    confirm = image.expect_wait(R.Common.ButtonConfirmNoIcon)
+    R.Common.ButtonConfirmNoIcon.wait()
     # 选择时间 [screenshots/assignment/assign_mini_live2.png]
     if ocr.find(contains(f'{target_duration}時間')):
         logger.info(f'{target_duration}時間 selected.')
@@ -107,11 +107,11 @@ def assign(type: Literal['mini', 'online']) -> bool:
     sleep(0.5)
     while not at_assignment():
         # 点击 决定する
-        if image.find(R.Common.ButtonConfirmNoIcon):
-            device.click()
-        elif image.find(R.Common.ButtonStart):
+        if R.Common.ButtonConfirmNoIcon.try_click():
+            pass
+        elif R.Common.ButtonStart.try_click():
             # 点击 開始する [screenshots/assignment/assign_mini_live3.png]
-            device.click()
+            pass
     return True
 
 @action('获取剩余时间')
@@ -140,11 +140,11 @@ def at_assignment():
     """
     # 不能以 R.Daily.IconTitleAssign 作为判断依据，
     # 因为标题出现后还有一段动画
-    return image.find_multi([
+    return AnyOf[
         R.Daily.ButtonAssignmentShortenTime,
         R.Daily.IconAssignMiniLive,
         R.Daily.IconAssignOnlineLive,
-    ]) is not None
+    ].exists()
 
 @task('工作')
 def assignment():
@@ -154,7 +154,7 @@ def assignment():
         return
     if not at_home():
         goto_home()
-    btn_assignment = image.expect_wait(R.Daily.ButtonAssignmentPartial)
+    btn_assignment = R.Daily.ButtonAssignmentPartial.wait()
 
     completed = color.find('#ff6085', rect=R.Daily.BoxHomeAssignment)
     if completed:
@@ -167,21 +167,21 @@ def assignment():
 
     # 点击工作按钮
     logger.debug('Clicking assignment icon.')
-    device.click(btn_assignment)
+    btn_assignment.click()
     # 等待加载、领取奖励
     while not at_assignment():
         if completed and handle_claim_assignment():
             logger.info('Assignment acquired.')
     # 重新分配
     if conf().assignment.mini_live_reassign_enabled:
-        if image.find(R.Daily.IconAssignMiniLive):
+        if R.Daily.IconAssignMiniLive.exists():
             assign('mini')
     else:
         logger.info('MiniLive reassign is disabled.')
     while not at_assignment():
         pass
     if conf().assignment.online_live_reassign_enabled:
-        if image.find(R.Daily.IconAssignOnlineLive):
+        if R.Daily.IconAssignOnlineLive.exists():
             assign('online')
     else:
         logger.info('OnlineLive reassign is disabled.')

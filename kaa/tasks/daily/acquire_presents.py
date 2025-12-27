@@ -16,7 +16,7 @@ def acquire_presents():
 
     if not at_home():
         goto_home()
-    present = image.expect_wait(R.Daily.ButtonPresentsPartial, timeout=1)
+    present = R.Daily.ButtonPresentsPartial.wait(timeout=1)
     rect = present.rect
     # 判断是否存在未领取礼物
     color_rect = rect_expand(rect, top=50, right=50)
@@ -27,9 +27,9 @@ def acquire_presents():
     logger.debug('Clicking presents icon.')
     device.click()
     logger.debug('Claiming presents.')
-    device.click(image.expect_wait(R.Daily.ButtonClaimAllNoIcon, timeout=5))
+    R.Daily.ButtonClaimAllNoIcon.wait(timeout=5).click()
     logger.debug('Cliking close button.')
-    device.click(image.expect_wait(R.Common.ButtonClose, timeout=5))
+    R.Common.ButtonClose.wait(timeout=5).click()
     logger.info('Claimed presents.')
     sleep(0.7)
     goto_home()
@@ -39,6 +39,5 @@ if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO, format='[%(asctime)s] [%(levelname)s] [%(name)s] [%(funcName)s] [%(lineno)d] %(message)s')
     logger.setLevel(logging.DEBUG)
     # acquire_presents()
-    print(image.find(R.Common.ButtonIconArrowShort, colored=True))
-    print(image.find(R.Common.ButtonIconArrowShortDisabled, colored=True))
+    # print(image.find(R.Common.ButtonIconArrowShort, colored=True))
 

@@ -1,23 +1,20 @@
 {
+  "version": 2,
   "definitions": {
     "a3736105-b3e6-467b-888a-f93b8f4d37be": {
       "name": "InPurodyuusu.ButtonUse",
       "displayName": "使用按钮（使用饮料按钮）",
-      "type": "template",
-      "annotationId": "a3736105-b3e6-467b-888a-f93b8f4d37be",
-      "useHintRect": false
+      "type": "prefab",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 490,
+          "y1": 1130,
+          "x2": 558,
+          "y2": 1170
+        }
+      },
+      "prefab_id": "TemplateMatchPrefab"
     }
-  },
-  "annotations": [
-    {
-      "id": "a3736105-b3e6-467b-888a-f93b8f4d37be",
-      "type": "rect",
-      "data": {
-        "x1": 490,
-        "y1": 1130,
-        "x2": 558,
-        "y2": 1170
-      }
-    }
-  ]
+  }
 }

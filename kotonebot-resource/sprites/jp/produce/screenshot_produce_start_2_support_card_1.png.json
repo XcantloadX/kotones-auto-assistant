@@ -1,23 +1,20 @@
 {
+  "version": 2,
   "definitions": {
     "d3424d31-0502-4623-996e-f0194e5085ce": {
       "name": "Produce.EmptySupportCardSlot",
       "displayName": "空支援卡槽位",
-      "type": "template",
-      "annotationId": "d3424d31-0502-4623-996e-f0194e5085ce",
-      "useHintRect": false
+      "type": "prefab",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 481,
+          "y1": 844,
+          "x2": 692,
+          "y2": 962
+        }
+      },
+      "prefab_id": "TemplateMatchPrefab"
     }
-  },
-  "annotations": [
-    {
-      "id": "d3424d31-0502-4623-996e-f0194e5085ce",
-      "type": "rect",
-      "data": {
-        "x1": 481,
-        "y1": 844,
-        "x2": 692,
-        "y2": 962
-      }
-    }
-  ]
+  }
 }

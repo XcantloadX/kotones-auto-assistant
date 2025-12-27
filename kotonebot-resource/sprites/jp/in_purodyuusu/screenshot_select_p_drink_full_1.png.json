@@ -1,24 +1,21 @@
 {
+  "version": 2,
   "definitions": {
     "447d0e44-5d87-4b7c-8e60-edb111fe1639": {
       "name": "InPurodyuusu.ButtonDontClaim",
       "displayName": "「受け取らない」按钮",
-      "type": "template",
-      "annotationId": "447d0e44-5d87-4b7c-8e60-edb111fe1639",
-      "useHintRect": false,
-      "description": "用在不领取饮料上"
+      "type": "prefab",
+      "description": "用在不领取饮料上",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 263,
+          "y1": 1072,
+          "x2": 451,
+          "y2": 1121
+        }
+      },
+      "prefab_id": "TemplateMatchPrefab"
     }
-  },
-  "annotations": [
-    {
-      "id": "447d0e44-5d87-4b7c-8e60-edb111fe1639",
-      "type": "rect",
-      "data": {
-        "x1": 263,
-        "y1": 1072,
-        "x2": 451,
-        "y2": 1121
-      }
-    }
-  ]
+  }
 }

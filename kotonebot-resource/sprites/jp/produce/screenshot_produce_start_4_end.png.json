@@ -1,23 +1,20 @@
 {
+  "version": 2,
   "definitions": {
     "b62bf889-da3c-495a-8707-f3bde73efe92": {
       "name": "Produce.TextStepIndicator4",
       "displayName": "4.開始確認",
-      "type": "template",
-      "annotationId": "b62bf889-da3c-495a-8707-f3bde73efe92",
-      "useHintRect": false
+      "type": "prefab",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 140,
+          "y1": 35,
+          "x2": 244,
+          "y2": 63
+        }
+      },
+      "prefab_id": "TemplateMatchPrefab"
     }
-  },
-  "annotations": [
-    {
-      "id": "b62bf889-da3c-495a-8707-f3bde73efe92",
-      "type": "rect",
-      "data": {
-        "x1": 140,
-        "y1": 35,
-        "x2": 244,
-        "y2": 63
-      }
-    }
-  ]
+  }
 }

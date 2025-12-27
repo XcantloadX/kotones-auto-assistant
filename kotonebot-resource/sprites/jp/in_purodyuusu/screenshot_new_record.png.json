@@ -1,23 +1,20 @@
 {
+  "version": 2,
   "definitions": {
     "8424ecdd-8857-4764-9fd0-d4bfa440c128": {
       "name": "Common.ButtonOK",
       "displayName": "OK 按钮",
-      "type": "template",
-      "annotationId": "8424ecdd-8857-4764-9fd0-d4bfa440c128",
-      "useHintRect": false
+      "type": "prefab",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 245,
+          "y1": 1139,
+          "x2": 408,
+          "y2": 1179
+        }
+      },
+      "prefab_id": "TemplateMatchPrefab"
     }
-  },
-  "annotations": [
-    {
-      "id": "8424ecdd-8857-4764-9fd0-d4bfa440c128",
-      "type": "rect",
-      "data": {
-        "x1": 245,
-        "y1": 1139,
-        "x2": 408,
-        "y2": 1179
-      }
-    }
-  ]
+  }
 }

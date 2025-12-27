@@ -1,23 +1,20 @@
 {
+  "version": 2,
   "definitions": {
     "f5c16d2f-ebc5-4617-9b96-971696af7c52": {
       "name": "Produce.TextAutoSet",
       "displayName": "おまかせ編成",
-      "type": "template",
-      "annotationId": "f5c16d2f-ebc5-4617-9b96-971696af7c52",
-      "useHintRect": false
+      "type": "prefab",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 56,
+          "y1": 919,
+          "x2": 257,
+          "y2": 957
+        }
+      },
+      "prefab_id": "TemplateMatchPrefab"
     }
-  },
-  "annotations": [
-    {
-      "id": "f5c16d2f-ebc5-4617-9b96-971696af7c52",
-      "type": "rect",
-      "data": {
-        "x1": 56,
-        "y1": 919,
-        "x2": 257,
-        "y2": 957
-      }
-    }
-  ]
+  }
 }

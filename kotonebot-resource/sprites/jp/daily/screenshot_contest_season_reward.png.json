@@ -1,21 +1,17 @@
 {
+  "version": 2,
   "definitions": {
     "b4081250-d962-46ad-9257-03b68ea99a1e": {
       "name": "Daily.PointDissmissContestReward",
       "displayName": "跳过竞赛赛季奖励动画",
       "type": "hint-point",
-      "annotationId": "b4081250-d962-46ad-9257-03b68ea99a1e",
-      "useHintRect": false
-    }
-  },
-  "annotations": [
-    {
-      "id": "b4081250-d962-46ad-9257-03b68ea99a1e",
-      "type": "point",
-      "data": {
-        "x": 604,
-        "y": 178
+      "props": {
+        "point": {
+          "kind": "point",
+          "x": 604,
+          "y": 178
+        }
       }
     }
-  ]
+  }
 }

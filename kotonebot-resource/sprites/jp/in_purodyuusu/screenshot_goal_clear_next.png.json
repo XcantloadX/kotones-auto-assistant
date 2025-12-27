@@ -1,23 +1,20 @@
 {
+  "version": 2,
   "definitions": {
     "05890a1b-8764-4e9f-9d21-65d292c22e13": {
       "name": "InPurodyuusu.TextGoalClearNext",
       "displayName": "培育目标达成 NEXT 文字",
-      "type": "template",
-      "annotationId": "05890a1b-8764-4e9f-9d21-65d292c22e13",
-      "useHintRect": false
+      "type": "prefab",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 79,
+          "y1": 503,
+          "x2": 157,
+          "y2": 532
+        }
+      },
+      "prefab_id": "TemplateMatchPrefab"
     }
-  },
-  "annotations": [
-    {
-      "id": "05890a1b-8764-4e9f-9d21-65d292c22e13",
-      "type": "rect",
-      "data": {
-        "x1": 79,
-        "y1": 503,
-        "x2": 157,
-        "y2": 532
-      }
-    }
-  ]
+  }
 }

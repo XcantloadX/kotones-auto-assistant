@@ -43,8 +43,8 @@ dependencies = [
     "ahk~=1.8.3; sys_platform == 'win32'",
     "win11toast~=0.35; sys_platform == 'win32'",  # For Windows Toast Notification
     "keyboard~=0.13.5",
-    "kotonebot[android]==0.5.0",
-    "kotonebot[windows]==0.5.0; sys_platform == 'win32'",
+    "kotonebot[android]==0.6.0",
+    "kotonebot[windows]==0.6.0; sys_platform == 'win32'",
 ]
 
 
@@ -59,3 +59,7 @@ version = {file = "./version"}
 
 [tool.basedpyright]
 typeCheckingMode = "basic"
+
+[tool.kotonebot.editor]
+prefabs_module = "kaa.game_ui.elements"
+resource_path = "kotonebot-resource/sprites/jp"

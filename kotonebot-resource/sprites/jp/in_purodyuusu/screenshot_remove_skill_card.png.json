@@ -1,41 +1,36 @@
 {
+  "version": 2,
   "definitions": {
     "bab6c393-692c-4681-ac0d-76c0d9dabea6": {
       "name": "InPurodyuusu.IconTitleSkillCardRemoval",
       "displayName": "技能卡自选删除 标题图标",
-      "type": "template",
-      "annotationId": "bab6c393-692c-4681-ac0d-76c0d9dabea6",
-      "useHintRect": false
+      "type": "prefab",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 19,
+          "y1": 36,
+          "x2": 58,
+          "y2": 79
+        }
+      },
+      "prefab_id": "TemplateMatchPrefab"
     },
     "00551158-fee9-483f-b034-549139a96f58": {
       "name": "InPurodyuusu.ButtonRemove",
       "displayName": "削除",
-      "type": "template",
-      "annotationId": "00551158-fee9-483f-b034-549139a96f58",
-      "useHintRect": false,
-      "description": "技能卡自选删除对话框上的确认按钮"
+      "type": "prefab",
+      "description": "技能卡自选删除对话框上的确认按钮",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 247,
+          "y1": 1137,
+          "x2": 417,
+          "y2": 1185
+        }
+      },
+      "prefab_id": "TemplateMatchPrefab"
     }
-  },
-  "annotations": [
-    {
-      "id": "bab6c393-692c-4681-ac0d-76c0d9dabea6",
-      "type": "rect",
-      "data": {
-        "x1": 19,
-        "y1": 36,
-        "x2": 58,
-        "y2": 79
-      }
-    },
-    {
-      "id": "00551158-fee9-483f-b034-549139a96f58",
-      "type": "rect",
-      "data": {
-        "x1": 247,
-        "y1": 1137,
-        "x2": 417,
-        "y2": 1185
-      }
-    }
-  ]
+  }
 }

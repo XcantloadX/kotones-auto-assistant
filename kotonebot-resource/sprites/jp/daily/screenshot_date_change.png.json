@@ -1,40 +1,37 @@
 {
+  "version": 2,
   "definitions": {
     "eaad330d-4e50-4b55-be2c-8da0f72764d9": {
       "name": "Daily.TextDateChangeDialogConfirmButton",
       "displayName": "日期变更对话框的确认按钮",
-      "type": "template",
-      "annotationId": "eaad330d-4e50-4b55-be2c-8da0f72764d9",
-      "useHintRect": false
+      "type": "prefab",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 256,
+          "y1": 1150,
+          "x2": 454,
+          "y2": 1183
+        },
+        "fixed": true
+      },
+      "prefab_id": "TemplateMatchPrefab"
     },
     "9483fae5-3a72-4684-9403-d25d2c602d3d": {
       "name": "Daily.TextDateChangeDialog",
       "displayName": "日期变更对话框",
-      "type": "template",
-      "annotationId": "9483fae5-3a72-4684-9403-d25d2c602d3d",
-      "useHintRect": false
+      "type": "prefab",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 60,
+          "y1": 962,
+          "x2": 188,
+          "y2": 996
+        },
+        "fixed": true
+      },
+      "prefab_id": "TemplateMatchPrefab"
     }
-  },
-  "annotations": [
-    {
-      "id": "eaad330d-4e50-4b55-be2c-8da0f72764d9",
-      "type": "rect",
-      "data": {
-        "x1": 256,
-        "y1": 1150,
-        "x2": 454,
-        "y2": 1183
-      }
-    },
-    {
-      "id": "9483fae5-3a72-4684-9403-d25d2c602d3d",
-      "type": "rect",
-      "data": {
-        "x1": 60,
-        "y1": 962,
-        "x2": 188,
-        "y2": 996
-      }
-    }
-  ]
+  }
 }

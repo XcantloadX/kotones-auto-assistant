@@ -1,59 +1,51 @@
 {
+  "version": 2,
   "definitions": {
     "b3c9e526-de47-44c2-9bda-e9a8a79fdb5a": {
       "name": "InPurodyuusu.BoxSelectPStuffComfirm",
       "displayName": "选择奖励对话框 领取按钮",
       "type": "hint-box",
-      "annotationId": "b3c9e526-de47-44c2-9bda-e9a8a79fdb5a",
-      "useHintRect": false
+      "props": {
+        "image": {
+          "kind": "rect",
+          "x1": 256,
+          "y1": 1064,
+          "x2": 478,
+          "y2": 1128
+        }
+      }
     },
     "c948f136-416f-447e-8152-54a1cd1d1329": {
       "name": "InPurodyuusu.TextClaim",
       "displayName": "文字「受け取る」",
-      "type": "template",
-      "annotationId": "c948f136-416f-447e-8152-54a1cd1d1329",
-      "useHintRect": false,
-      "description": "用于 P 物品、P 饮料、技能卡选择对话框"
+      "type": "prefab",
+      "description": "用于 P 物品、P 饮料、技能卡选择对话框",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 144,
+          "y1": 608,
+          "x2": 245,
+          "y2": 647
+        }
+      },
+      "prefab_id": "TemplateMatchPrefab"
     },
     "0c0627be-4a09-4450-a078-1858d3ace532": {
       "name": "InPurodyuusu.TextPItem",
       "displayName": "文字「Pアイテム」",
-      "type": "template",
-      "annotationId": "0c0627be-4a09-4450-a078-1858d3ace532",
-      "useHintRect": false,
-      "description": "用于 P 物品选择对话框"
+      "type": "prefab",
+      "description": "用于 P 物品选择对话框",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 247,
+          "y1": 613,
+          "x2": 354,
+          "y2": 645
+        }
+      },
+      "prefab_id": "TemplateMatchPrefab"
     }
-  },
-  "annotations": [
-    {
-      "id": "b3c9e526-de47-44c2-9bda-e9a8a79fdb5a",
-      "type": "rect",
-      "data": {
-        "x1": 256,
-        "y1": 1064,
-        "x2": 478,
-        "y2": 1128
-      }
-    },
-    {
-      "id": "c948f136-416f-447e-8152-54a1cd1d1329",
-      "type": "rect",
-      "data": {
-        "x1": 144,
-        "y1": 608,
-        "x2": 245,
-        "y2": 647
-      }
-    },
-    {
-      "id": "0c0627be-4a09-4450-a078-1858d3ace532",
-      "type": "rect",
-      "data": {
-        "x1": 247,
-        "y1": 613,
-        "x2": 354,
-        "y2": 645
-      }
-    }
-  ]
+  }
 }

@@ -26,11 +26,11 @@ def goto_contest() -> bool:
     """
     has_ongoing_contest = None
     for _ in Loop():
-        if image.find(R.Common.ButtonContest):
-            device.click()
-        elif image.find(R.Daily.TextRoadToIdol):
+        if R.Common.ButtonContest.try_click():
+            pass
+        elif R.Daily.TextRoadToIdol.exists():
             # 已进入竞赛 Tab
-            if image.find(R.Daily.TextContestLastOngoing):
+            if R.Daily.TextContestLastOngoing.try_click():
                 logger.info('Ongoing contest found.')
                 has_ongoing_contest = True
             else:
@@ -42,12 +42,12 @@ def goto_contest() -> bool:
 
         # 有未完成的挑战
         if has_ongoing_contest is True:
-            if image.find(R.Daily.ButtonContestChallengeStart):
+            if R.Daily.ButtonContestChallengeStart.exists():
                 logger.info('Challenging.')
                 break
         # 新开挑战
         elif has_ongoing_contest is False:
-            if image.find(R.Daily.ButtonContestRanking):
+            if R.Daily.ButtonContestRanking.exists():
                 logger.info('Now at pick contestant screen.')
                 break
             # 跳过奖励领取
@@ -65,12 +65,11 @@ def handle_challenge() -> bool:
     :return: 是否命中任何处理
     """
     # 挑战开始 [screenshots/contest/start1.png]
-    if image.find(R.Daily.ButtonContestStart, threshold=0.75): # TODO: 为什么默认阈值找不到？
-        logger.debug('Clicking on start button.')
-        device.click()
+    if R.Daily.ButtonContestStart.try_click(threshold=0.75): # TODO: 为什么默认阈值找不到？
+        logger.debug('Clicked on start button.')
 
     # 记忆未编成 [screenshots/contest/no_memo.png]
-    if image.find(R.Daily.TextContestNoMemory):
+    if R.Daily.TextContestNoMemory.try_click():
         logger.debug('Memory not set.')
         when_no_set = conf().contest.when_no_set
 
@@ -99,10 +98,9 @@ def handle_challenge() -> bool:
                 logger.warning(f'Unknown value for contest.when_no_set: {when_no_set}, fallback to auto.')
                 logger.debug('Using auto-compilation silently.')
                 auto_compilation = True
-        
+
         if auto_compilation:
-            if image.find(R.Daily.ButtonContestChallenge):
-                device.click()
+            if R.Daily.ButtonContestChallenge.try_click():
                 return True
 
     # 勾选跳过所有
@@ -114,25 +112,22 @@ def handle_challenge() -> bool:
 
     # 跳过所有
     # [screenshots/contest/contest1.png]
-    if image.find(R.Daily.ButtonIconSkip, preprocessors=[WhiteFilter()], threshold=0.7):
+    if image.find(R.Daily.ButtonIconSkip.template, preprocessors=[WhiteFilter()], threshold=0.7):
         logger.debug('Skipping all.')
         device.click()
         return True
 
-    if image.find(R.Common.ButtonNextNoIcon):
-        logger.debug('Clicking on next.')
-        device.click()
+    if R.Common.ButtonNextNoIcon.try_click():
+        logger.debug('Clicked on next.')
 
     # 終了 [screenshots/contest/after_contest3.png]
-    if image.find(R.Common.ButtonEnd):
-        logger.debug('Clicking on end.')
-        device.click()
+    if R.Common.ButtonEnd.try_click():
+        logger.debug('Clicked on end.')
         return True
 
     # 可能出现的奖励弹窗 [screenshots/contest/after_contest4.png]
-    if image.find(R.Common.ButtonClose):
-        logger.debug('Clicking on close.')
-        device.click()
+    if R.Common.ButtonClose.try_click():
+        logger.debug('Clicked on close.')
 
     return False
 
@@ -148,17 +143,17 @@ def handle_pick_contestant(has_ongoing_contest: bool = False) -> tuple[bool, boo
     :return: 二元组。第一个值表示是否命中任何处理。
         第二个值表示是否应该继续挑战，为 False 表示今天挑战次数已经用完了。
     """
-    if image.find(R.Daily.ButtonContestRanking):
+    if R.Daily.ButtonContestRanking.exists():
         # 无进行中挑战，说明要选择对手
         if not has_ongoing_contest:
             # 随机选一个对手 [screenshots/contest/main.png]
             logger.debug('Clicking on contestant.')
-            contestant_list = image.find_all(R.Daily.TextContestOverallStats)
+            contestant_list = R.Daily.TextContestOverallStats.find_all()
             if contestant_list is None or len(contestant_list) == 0:
                 logger.info('No contestant found. Today\'s challenge points used up.')
                 return True, False
             # 按照y坐标从上到下排序对手列表
-            contestant_list.sort(key=lambda x: x.position[1])
+            contestant_list.sort(key=lambda x: x.rect.y1)
             if len(contestant_list) != 3:
                 logger.warning('Cannot find all 3 contestants.')
             # 选择配置文件中对应的对手顺序（1最强，3最弱）
@@ -183,7 +178,7 @@ def contest():
     if not at_home():
         goto_home()
     sleep(0.3)
-    btn_contest = image.expect(R.Common.ButtonContest)
+    btn_contest = R.Common.ButtonContest.require()
     notification_dot = rect_expand(btn_contest.rect, top=35, right=35)
     if not color.find('#ff104a', rect=notification_dot):
         logger.info('No action needed.')
@@ -193,7 +188,7 @@ def contest():
         handled, should_continue = handle_pick_contestant(has_ongoing_contest)
         if not should_continue:
             break
-        if not handled: 
+        if not handled:
             handled = handle_challenge()
         if not handled:
             skip()

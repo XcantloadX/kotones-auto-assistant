@@ -27,7 +27,7 @@ def money_items2(items: Optional[list[DailyMoneyShopItems]] = None):
 
     if items is None:
         items = conf().purchase.money_items
-    
+
     device.screenshot()
     if DailyMoneyShopItems.Recommendations in items:
         dispatch_recommended_items()
@@ -38,9 +38,9 @@ def money_items2(items: Optional[list[DailyMoneyShopItems]] = None):
     scroll = 0
     while items:
         for item in items:
-            if ret := image.find(item.to_resource(), colored=True):
+            if ret := item.to_resource().find(colored=True):
                 logger.info(f'Purchasing {item.to_ui_text(item)}...')
-                confirm_purchase(ret.position)
+                confirm_purchase(ret.rect.top_left)
                 finished.append(item)
         items = [item for item in items if item not in finished]
         # 全都买完了
@@ -70,12 +70,12 @@ def dispatch_recommended_items():
     logger.info(f'Start purchasing recommended items.')
 
     for _ in Loop():
-        if rec := image.find(R.Daily.TextShopRecommended):
+        if rec := R.Daily.TextShopRecommended.find():
             logger.info(f'Clicking on recommended item.') # TODO: 计数
-            pos = rec.position.offset(dx=0, dy=80)
+            pos = rec.rect.top_left.offset(dx=0, dy=80)
             confirm_purchase(pos)
-            sleep(2.5) # 
-        elif image.find(R.Daily.IconTitleDailyShop) and not image.find(R.Daily.TextShopRecommended):
+            sleep(2.5) #
+        elif R.Daily.IconTitleDailyShop.exists() and not R.Daily.TextShopRecommended.exists():
             logger.info(f'No recommended item found. Finished.')
             break
 
@@ -95,22 +95,22 @@ def confirm_purchase(target_item_pos: Point | None = None):
         if cd.expired():
             purchased = True
             break
-        if image.find(R.Daily.TextShopItemSoldOut):
+        if R.Daily.TextShopItemSoldOut.exists():
             logger.info('Item sold out.')
             purchased = True
             break
-        elif image.find(R.Daily.TextShopItemPurchased):
+        elif R.Daily.TextShopItemPurchased.exists():
             logger.info('Item already purchased.')
             purchased = True
             break
-        elif image.find(R.Common.ButtonConfirm):
+        elif R.Common.ButtonConfirm.exists():
             logger.info('Confirming purchase...')
             device.click()
             sleep(0.5)
         else:
             if target_item_pos:
                 device.click(target_item_pos)
-    
+
     if purchased:
         logger.info('Item sold out.')
         sleep(1) # 等待售罄提示消失
@@ -119,15 +119,14 @@ def confirm_purchase(target_item_pos: Point | None = None):
         device.screenshot()
         # TODO: 这下面这段代码是干什么的？为什么上面和下面都点击了 Confirm？
         for _ in Loop(interval=0.2):
-            if image.find(R.Daily.ButtonShopCountAdd, colored=True):
-                logger.debug('Adjusting quantity(+1)...')
-                device.click()
+            if R.Daily.ButtonShopCountAdd.try_click(colored=True):
+                logger.debug('Adjusted quantity(+1)...')
             else:
                 break
         logger.debug('Confirming purchase...')
-        device.click(image.expect_wait(R.Common.ButtonConfirm))
+        device.click(R.Common.ButtonConfirm.wait())
     # 等待对话框动画结束
-    image.expect_wait(R.Daily.IconTitleDailyShop)
+    R.Daily.IconTitleDailyShop.wait()
 
 @action('购买 AP 物品')
 def ap_items():
@@ -138,10 +137,10 @@ def ap_items():
     """
     # [screenshots\shop\ap1.png]
     logger.info(f'Purchasing AP items.')
-    results = image.find_all(R.Daily.IconShopAp, threshold=0.7)
+    results = R.Daily.IconShopAp.find_all(threshold=0.7)
     sleep(1)
     # 按 X, Y 坐标排序从小到大
-    results = sorted(results, key=lambda x: (x.position[0], x.position[1]))
+    results = sorted(results, key=lambda x: x.rect.top_left)
     # 按照配置文件里的设置过滤
     item_indices = conf().purchase.ap_items
     logger.info(f'Purchasing AP items: {item_indices}')
@@ -150,21 +149,20 @@ def ap_items():
             logger.info(f'Purchasing #{index} AP item.')
             device.click(results[index])
             sleep(0.5)
-            purchased = image.wait_for(R.Daily.TextShopItemSoldOut, timeout=1)
+            purchased = R.Daily.TextShopItemSoldOut.wait(timeout=1)
             if purchased is not None:
                 logger.info(f'AP item #{index} already purchased.')
                 continue
-            comfirm = image.wait_for(R.Common.ButtonConfirm, colored=True, timeout=2)
+            comfirm = R.Common.ButtonConfirm.wait(colored=True, timeout=2)
             # 如果体力不足
             if comfirm is None:
                 logger.info(f'Not enough AP for item #{index}. Skipping all AP items.')
-                device.click(image.expect_wait(R.Common.ButtonIconClose))
+                device.click(R.Common.ButtonIconClose.wait())
                 break
             # 如果数量不是最大,调到最大
             for _ in Loop(interval=0.3):
-                if image.find(R.Daily.ButtonShopCountAdd, colored=True):
-                    logger.debug('Adjusting quantity(+1)...')
-                    device.click()
+                if R.Daily.ButtonShopCountAdd.try_click(colored=True):
+                    logger.debug('Adjusted quantity(+1)...')
                 else:
                     break
             logger.debug(f'Confirming purchase...')
@@ -182,13 +180,13 @@ def weekly_free_pack():
     前置条件：位于主商店页面
     """
     logger.info(f'Purchasing weekly free pack.')
-    
-    sleep(1.0) # 动画加载完毕，但是按钮不可点击
-    device.click(image.expect_wait(R.Common.ShopPackButton))
 
-    if image.wait_for(R.Daily.WeeklyFreePack, colored=True, timeout=1):
+    sleep(1.0) # 动画加载完毕，但是按钮不可点击
+    device.click(R.Common.ShopPackButton.wait())
+
+    if R.Daily.WeeklyFreePack.wait(colored=True, timeout=1):
         device.click()
-        device.click(image.expect_wait(R.Common.ButtonConfirmNoIcon))
+        device.click(R.Common.ButtonConfirmNoIcon.wait())
         logger.info('Confirming purchase of weekly free pack.')
 
 @task('商店购买')
@@ -202,28 +200,27 @@ def purchase():
 
     goto_shop()
     # 进入每日商店 [screenshots\shop\shop.png]
-    device.click(image.expect_wait(R.Daily.ButtonDailyShop)) # TODO: memoable
+    device.click(R.Daily.ButtonDailyShop.wait()) # TODO: memoable
     # 等待载入
-    ap_tab = image.expect_wait(R.Daily.TextTabShopAp)
+    ap_tab = R.Daily.TextTabShopAp.wait()
 
     # 购买マニー物品
     if conf().purchase.money_enabled:
-        image.expect_wait(R.Daily.IconShopMoney)
+        R.Daily.IconShopMoney.wait()
         money_items2()
         sleep(0.5)
-        if conf().purchase.money_refresh and image.find(R.Daily.ButtonRefreshMoneyShop):
+        if conf().purchase.money_refresh and R.Daily.ButtonRefreshMoneyShop.try_click():
             logger.info('Refreshing money shop.')
-            device.click()
             # 等待刷新完成
             for _ in Loop():
-                if not image.find(R.Daily.ButtonRefreshMoneyShop):
+                if not R.Daily.ButtonRefreshMoneyShop.exists():
                     break
                 logger.debug('Waiting for money shop refresh...')
             money_items2()
             sleep(0.5)
     else:
         logger.info('Money purchase is disabled.')
-    
+
     # 购买 AP 物品
     if conf().purchase.ap_enabled:
         # 如果不购买マニー物品，则需要等待动画加载完毕，否则按钮无法点击
@@ -232,19 +229,19 @@ def purchase():
         # 点击 AP 选项卡
         device.click(ap_tab)
         # 等待 AP 选项卡加载完成
-        image.expect_wait(R.Daily.IconShopAp, threshold=0.7)
+        R.Daily.IconShopAp.wait(threshold=0.7)
         ap_items()
         sleep(0.5)
     else:
         logger.info('AP purchase is disabled.')
-    
+
     # 返回主商店页面
-    device.click(image.expect_wait(R.Common.ButtonToolbarBack))
-    
+    device.click(R.Common.ButtonToolbarBack.wait())
+
     # 购买周免费礼包
     if conf().purchase.weekly_enabled:
         weekly_free_pack()
-    
+
     goto_home()
 
 if __name__ == '__main__':

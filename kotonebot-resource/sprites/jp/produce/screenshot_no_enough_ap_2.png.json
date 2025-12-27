@@ -1,24 +1,21 @@
 {
+  "version": 2,
   "definitions": {
     "cfc9c8e8-cbe1-49f0-9afa-ead7f9455a2e": {
       "name": "Produce.ButtonUse",
       "displayName": "按钮「使う」",
-      "type": "template",
-      "annotationId": "cfc9c8e8-cbe1-49f0-9afa-ead7f9455a2e",
-      "useHintRect": false,
-      "description": "用于培育开始时，AP 不足对话框中的使用饮料按钮"
+      "type": "prefab",
+      "description": "用于培育开始时，AP 不足对话框中的使用饮料按钮",
+      "props": {
+        "template": {
+          "kind": "rect",
+          "x1": 546,
+          "y1": 929,
+          "x2": 595,
+          "y2": 954
+        }
+      },
+      "prefab_id": "GakumasPrimaryButtonPrefab"
     }
-  },
-  "annotations": [
-    {
-      "id": "cfc9c8e8-cbe1-49f0-9afa-ead7f9455a2e",
-      "type": "rect",
-      "data": {
-        "x1": 546,
-        "y1": 929,
-        "x2": 595,
-        "y2": 954
-      }
-    }
-  ]
+  }
 }

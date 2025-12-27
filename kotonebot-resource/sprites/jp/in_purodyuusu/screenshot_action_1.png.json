@@ -1,182 +1,159 @@
 {
+  "version": 2,
   "definitions": {
     "be6836bd-ee42-432b-9166-469c74f32f0b": {
       "name": "InPurodyuusu.BoxWeeksUntilExam",
       "displayName": "考试剩余周",
       "type": "hint-box",
-      "annotationId": "be6836bd-ee42-432b-9166-469c74f32f0b",
-      "useHintRect": false,
-      "description": "培育中左上角的下次考试剩余周数"
+      "description": "培育中左上角的下次考试剩余周数",
+      "props": {
+        "image": {
+          "kind": "rect",
+          "x1": 11,
+          "y1": 8,
+          "x2": 237,
+          "y2": 196
+        }
+      }
     },
     "d6b64759-26b7-45b1-bf8e-5c0d98611e0d": {
       "name": "InPurodyuusu.TextActionVocal",
       "displayName": "Vo. レッスン",
-      "type": "template",
-      "annotationId": "d6b64759-26b7-45b1-bf8e-5c0d98611e0d",
-      "useHintRect": false,
-      "description": "培育 行动页面 声乐课程按钮文字"
+      "type": "prefab",
+      "description": "培育 行动页面 声乐课程按钮文字",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 116,
+          "y1": 1067,
+          "x2": 255,
+          "y2": 1097
+        }
+      },
+      "prefab_id": "TemplateMatchPrefab"
     },
     "303cccc1-c674-4d3a-8c89-19ea729fdbef": {
       "name": "InPurodyuusu.TextActionDance",
       "displayName": "Da. レッスン",
-      "type": "template",
-      "annotationId": "303cccc1-c674-4d3a-8c89-19ea729fdbef",
-      "useHintRect": false,
-      "description": "培育 行动页面 舞蹈课程按钮文字"
+      "type": "prefab",
+      "description": "培育 行动页面 舞蹈课程按钮文字",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 288,
+          "y1": 1068,
+          "x2": 431,
+          "y2": 1096
+        }
+      },
+      "prefab_id": "TemplateMatchPrefab"
     },
     "cc8a495d-330d-447d-8a80-a8a6ecc409c5": {
       "name": "InPurodyuusu.TextActionVisual",
       "displayName": "Vi. レッスン",
-      "type": "template",
-      "annotationId": "cc8a495d-330d-447d-8a80-a8a6ecc409c5",
-      "useHintRect": false,
-      "description": "培育 行动页面 形象课程按钮文字"
+      "type": "prefab",
+      "description": "培育 行动页面 形象课程按钮文字",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 466,
+          "y1": 1067,
+          "x2": 606,
+          "y2": 1096
+        }
+      },
+      "prefab_id": "TemplateMatchPrefab"
     },
     "d7667903-7149-4f2f-9c15-d8a4b5f4d347": {
       "name": "InPurodyuusu.IconAsariSenseiAvatar",
       "displayName": "Asari 老师头像",
-      "type": "template",
-      "annotationId": "d7667903-7149-4f2f-9c15-d8a4b5f4d347",
-      "useHintRect": false,
-      "description": "用于检测培育行动页面提示"
+      "type": "prefab",
+      "description": "用于检测培育行动页面提示",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 638,
+          "y1": 178,
+          "x2": 679,
+          "y2": 220
+        }
+      },
+      "prefab_id": "TemplateMatchPrefab"
     },
     "75fdc1b6-5690-44d1-989e-95b6ab78e1dc": {
       "name": "InPurodyuusu.BoxAsariSenseiTip",
       "displayName": "Asari 老师提示文本区域",
       "type": "hint-box",
-      "annotationId": "75fdc1b6-5690-44d1-989e-95b6ab78e1dc",
-      "useHintRect": false
+      "props": {
+        "image": {
+          "kind": "rect",
+          "x1": 245,
+          "y1": 150,
+          "x2": 702,
+          "y2": 243
+        }
+      }
     },
     "ce1d1d6f-38f2-48bf-98bd-6e091c7ca5b8": {
       "name": "InPurodyuusu.ButtonPracticeVocal",
       "displayName": "行动页 声乐课程按钮图标",
-      "type": "template",
-      "annotationId": "ce1d1d6f-38f2-48bf-98bd-6e091c7ca5b8",
-      "useHintRect": false
+      "type": "prefab",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 171,
+          "y1": 965,
+          "x2": 201,
+          "y2": 1038
+        }
+      },
+      "prefab_id": "TemplateMatchPrefab"
     },
     "b2e1bf3c-2c36-4fb5-9db7-c10a29563a37": {
       "name": "InPurodyuusu.ButtonPracticeDance",
       "displayName": "行动页 舞蹈课程按钮图标",
-      "type": "template",
-      "annotationId": "b2e1bf3c-2c36-4fb5-9db7-c10a29563a37",
-      "useHintRect": false,
-      "description": ""
+      "type": "prefab",
+      "description": "",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 337,
+          "y1": 970,
+          "x2": 390,
+          "y2": 1030
+        }
+      },
+      "prefab_id": "TemplateMatchPrefab"
     },
     "adc533a7-970b-4c5b-a037-2181531a35d6": {
       "name": "InPurodyuusu.ButtonPracticeVisual",
       "displayName": "行动页 形象课程按钮图标",
-      "type": "template",
-      "annotationId": "adc533a7-970b-4c5b-a037-2181531a35d6",
-      "useHintRect": false
+      "type": "prefab",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 506,
+          "y1": 972,
+          "x2": 561,
+          "y2": 1031
+        }
+      },
+      "prefab_id": "TemplateMatchPrefab"
     },
     "70898bf8-56c5-4f84-becb-629c9ab6a7da": {
       "name": "InPurodyuusu.TextFinalExamRemaining",
       "displayName": "最終まで",
-      "type": "template",
-      "annotationId": "70898bf8-56c5-4f84-becb-629c9ab6a7da",
-      "useHintRect": false
+      "type": "prefab",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 67,
+          "y1": 35,
+          "x2": 156,
+          "y2": 64
+        }
+      },
+      "prefab_id": "TemplateMatchPrefab"
     }
-  },
-  "annotations": [
-    {
-      "id": "be6836bd-ee42-432b-9166-469c74f32f0b",
-      "type": "rect",
-      "data": {
-        "x1": 11,
-        "y1": 8,
-        "x2": 237,
-        "y2": 196
-      }
-    },
-    {
-      "id": "d6b64759-26b7-45b1-bf8e-5c0d98611e0d",
-      "type": "rect",
-      "data": {
-        "x1": 116,
-        "y1": 1067,
-        "x2": 255,
-        "y2": 1097
-      }
-    },
-    {
-      "id": "303cccc1-c674-4d3a-8c89-19ea729fdbef",
-      "type": "rect",
-      "data": {
-        "x1": 288,
-        "y1": 1068,
-        "x2": 431,
-        "y2": 1096
-      }
-    },
-    {
-      "id": "cc8a495d-330d-447d-8a80-a8a6ecc409c5",
-      "type": "rect",
-      "data": {
-        "x1": 466,
-        "y1": 1067,
-        "x2": 606,
-        "y2": 1096
-      }
-    },
-    {
-      "id": "d7667903-7149-4f2f-9c15-d8a4b5f4d347",
-      "type": "rect",
-      "data": {
-        "x1": 638,
-        "y1": 178,
-        "x2": 679,
-        "y2": 220
-      }
-    },
-    {
-      "id": "75fdc1b6-5690-44d1-989e-95b6ab78e1dc",
-      "type": "rect",
-      "data": {
-        "x1": 245,
-        "y1": 150,
-        "x2": 702,
-        "y2": 243
-      }
-    },
-    {
-      "id": "ce1d1d6f-38f2-48bf-98bd-6e091c7ca5b8",
-      "type": "rect",
-      "data": {
-        "x1": 171,
-        "y1": 965,
-        "x2": 201,
-        "y2": 1038
-      }
-    },
-    {
-      "id": "b2e1bf3c-2c36-4fb5-9db7-c10a29563a37",
-      "type": "rect",
-      "data": {
-        "x1": 337,
-        "y1": 970,
-        "x2": 390,
-        "y2": 1030
-      }
-    },
-    {
-      "id": "adc533a7-970b-4c5b-a037-2181531a35d6",
-      "type": "rect",
-      "data": {
-        "x1": 506,
-        "y1": 972,
-        "x2": 561,
-        "y2": 1031
-      }
-    },
-    {
-      "id": "70898bf8-56c5-4f84-becb-629c9ab6a7da",
-      "type": "rect",
-      "data": {
-        "x1": 67,
-        "y1": 35,
-        "x2": 156,
-        "y2": 64
-      }
-    }
-  ]
+  }
 }
