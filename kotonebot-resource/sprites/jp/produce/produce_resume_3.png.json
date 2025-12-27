@@ -1,22 +1,20 @@
 {
+  "version": 2,
   "definitions": {
     "3c8b477a-8eda-407e-9e9f-7540c8808f89": {
       "name": "Produce.ResumeDialogMaster",
       "displayName": "培育再开对话框 MASTER",
-      "type": "template",
-      "annotationId": "3c8b477a-8eda-407e-9e9f-7540c8808f89"
+      "type": "prefab",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 406,
+          "y1": 510,
+          "x2": 492,
+          "y2": 533
+        }
+      },
+      "prefab_id": "TemplateMatchPrefab"
     }
-  },
-  "annotations": [
-    {
-      "id": "3c8b477a-8eda-407e-9e9f-7540c8808f89",
-      "type": "rect",
-      "data": {
-        "x1": 406,
-        "y1": 510,
-        "x2": 492,
-        "y2": 533
-      }
-    }
-  ]
+  }
 }

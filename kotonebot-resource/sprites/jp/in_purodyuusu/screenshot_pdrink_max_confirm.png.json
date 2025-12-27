@@ -1,22 +1,20 @@
 {
+  "version": 2,
   "definitions": {
     "582d36c0-0916-4706-9833-4fbc026701f5": {
       "name": "InPurodyuusu.TextPDrinkMaxConfirmTitle",
       "displayName": "P饮料溢出 不领取弹窗标题",
-      "type": "template",
-      "annotationId": "582d36c0-0916-4706-9833-4fbc026701f5"
+      "type": "prefab",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 46,
+          "y1": 829,
+          "x2": 270,
+          "y2": 876
+        }
+      },
+      "prefab_id": "TemplateMatchPrefab"
     }
-  },
-  "annotations": [
-    {
-      "id": "582d36c0-0916-4706-9833-4fbc026701f5",
-      "type": "rect",
-      "data": {
-        "x1": 46,
-        "y1": 829,
-        "x2": 270,
-        "y2": 876
-      }
-    }
-  ]
+  }
 }

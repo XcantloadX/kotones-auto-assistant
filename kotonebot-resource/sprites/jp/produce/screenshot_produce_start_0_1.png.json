@@ -1,84 +1,77 @@
 {
+  "version": 2,
   "definitions": {
     "3b473fe6-e147-477f-b088-9b8fb042a4f6": {
       "name": "Produce.ButtonHajime1Regular",
       "displayName": "",
-      "type": "template",
-      "annotationId": "3b473fe6-e147-477f-b088-9b8fb042a4f6"
+      "type": "prefab",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 65,
+          "y1": 867,
+          "x2": 214,
+          "y2": 950
+        }
+      },
+      "prefab_id": "TemplateMatchPrefab"
     },
     "2ededcf5-1d80-4e2a-9c83-2a31998331ce": {
       "name": "Produce.ButtonHajime1Pro",
       "displayName": "",
-      "type": "template",
-      "annotationId": "2ededcf5-1d80-4e2a-9c83-2a31998331ce"
+      "type": "prefab",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 307,
+          "y1": 869,
+          "x2": 421,
+          "y2": 952
+        }
+      },
+      "prefab_id": "TemplateMatchPrefab"
     },
     "24e99232-9434-457f-a9a0-69dd7ecf675f": {
       "name": "Produce.ButtonHajime1Master",
       "displayName": "",
-      "type": "template",
-      "annotationId": "24e99232-9434-457f-a9a0-69dd7ecf675f"
+      "type": "prefab",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 521,
+          "y1": 863,
+          "x2": 657,
+          "y2": 951
+        }
+      },
+      "prefab_id": "TemplateMatchPrefab"
     },
     "aca9e953-1955-46eb-920c-77b1750bcb34": {
       "name": "Produce.PointHajimeToNia",
       "displayName": "Hajime 右侧翻页箭头",
       "type": "hint-point",
-      "annotationId": "aca9e953-1955-46eb-920c-77b1750bcb34"
+      "props": {
+        "point": {
+          "kind": "point",
+          "x": 680,
+          "y": 592
+        }
+      }
     },
     "e6b45405-cd9f-4c6e-a9f1-6ec953747c65": {
       "name": "Produce.LogoHajime",
       "displayName": "Hajime LOGO 定期公演",
-      "type": "template",
-      "annotationId": "e6b45405-cd9f-4c6e-a9f1-6ec953747c65"
+      "type": "prefab",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 274,
+          "y1": 169,
+          "x2": 443,
+          "y2": 212
+        }
+      },
+      "prefab_id": "TemplateMatchPrefab"
     }
-  },
-  "annotations": [
-    {
-      "id": "3b473fe6-e147-477f-b088-9b8fb042a4f6",
-      "type": "rect",
-      "data": {
-        "x1": 65,
-        "y1": 867,
-        "x2": 214,
-        "y2": 950
-      }
-    },
-    {
-      "id": "2ededcf5-1d80-4e2a-9c83-2a31998331ce",
-      "type": "rect",
-      "data": {
-        "x1": 307,
-        "y1": 869,
-        "x2": 421,
-        "y2": 952
-      }
-    },
-    {
-      "id": "24e99232-9434-457f-a9a0-69dd7ecf675f",
-      "type": "rect",
-      "data": {
-        "x1": 521,
-        "y1": 863,
-        "x2": 657,
-        "y2": 951
-      }
-    },
-    {
-      "id": "aca9e953-1955-46eb-920c-77b1750bcb34",
-      "type": "point",
-      "data": {
-        "x": 680,
-        "y": 592
-      }
-    },
-    {
-      "id": "e6b45405-cd9f-4c6e-a9f1-6ec953747c65",
-      "type": "rect",
-      "data": {
-        "x1": 274,
-        "y1": 169,
-        "x2": 443,
-        "y2": 212
-      }
-    }
-  ]
+  }
 }

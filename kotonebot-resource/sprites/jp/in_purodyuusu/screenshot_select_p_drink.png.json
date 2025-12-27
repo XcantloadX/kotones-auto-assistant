@@ -1,23 +1,21 @@
 {
+  "version": 2,
   "definitions": {
     "8c179a21-be6f-4db8-a9b0-9afeb5c36b1c": {
       "name": "InPurodyuusu.TextPDrink",
       "displayName": "文本「Pドリンク」",
-      "type": "template",
-      "annotationId": "8c179a21-be6f-4db8-a9b0-9afeb5c36b1c",
-      "description": "用于 P 饮料选择对话框"
+      "type": "prefab",
+      "description": "用于 P 饮料选择对话框",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 244,
+          "y1": 615,
+          "x2": 357,
+          "y2": 641
+        }
+      },
+      "prefab_id": "TemplateMatchPrefab"
     }
-  },
-  "annotations": [
-    {
-      "id": "8c179a21-be6f-4db8-a9b0-9afeb5c36b1c",
-      "type": "rect",
-      "data": {
-        "x1": 244,
-        "y1": 615,
-        "x2": 357,
-        "y2": 641
-      }
-    }
-  ]
+  }
 }

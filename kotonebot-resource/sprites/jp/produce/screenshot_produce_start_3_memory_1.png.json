@@ -1,22 +1,20 @@
 {
+  "version": 2,
   "definitions": {
     "74ec3510-583d-4a76-ac69-38480fbf1387": {
       "name": "Produce.TextRentAvailable",
       "displayName": "レンタル可能",
-      "type": "template",
-      "annotationId": "74ec3510-583d-4a76-ac69-38480fbf1387"
+      "type": "prefab",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 53,
+          "y1": 848,
+          "x2": 256,
+          "y2": 887
+        }
+      },
+      "prefab_id": "TemplateMatchPrefab"
     }
-  },
-  "annotations": [
-    {
-      "id": "74ec3510-583d-4a76-ac69-38480fbf1387",
-      "type": "rect",
-      "data": {
-        "x1": 53,
-        "y1": 848,
-        "x2": 256,
-        "y2": 887
-      }
-    }
-  ]
+  }
 }

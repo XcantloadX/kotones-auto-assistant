@@ -59,7 +59,8 @@ class GakumasPrimaryButtonPrefab(TemplateMatchPrefab[GakumasPrimaryButtonObject]
     """Primary 按钮（橙色按钮）"""
     _arg_enabled: bool | None = None
 
-    class _Editor(EditorMetadata):
+    class _Editor(TemplateMatchPrefab._Editor):
+        icon = "widget-button"
         name = "主按钮"
         description = "游戏界面中的主按钮，通常为橙色，用于确认操作等。"
 
@@ -100,7 +101,7 @@ class GakumasSecondaryButtonPrefab(TemplateMatchPrefab[GakumasSecondaryButtonObj
     """Secondary 按钮（白色按钮）"""
     _arg_enabled: bool | None = None
 
-    class _Editor(EditorMetadata):
+    class _Editor(TemplateMatchPrefab._Editor):
         name = "次按钮"
         description = "游戏界面中的次按钮，通常为白色，用于取消操作等。"
 
@@ -127,6 +128,7 @@ class GakumasCheckboxPrefab(TemplateMatchPrefab):
     def checked(self) -> bool | None:
         pass
 
-    class Meta(EditorMetadata):
+    class _Editor(TemplateMatchPrefab._Editor):
+        icon = "form"
         name = "复选框"
         description = "游戏界面中的复选框按钮，用于多选操作等。"

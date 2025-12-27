@@ -1,36 +1,31 @@
 {
+  "version": 2,
   "definitions": {
     "045e21c4-350b-4b6c-bcb7-aeb007da05b3": {
       "name": "Daily.CapsuleToys.SliderStartPoint",
       "displayName": "日常 扭蛋 滑动条起点",
       "type": "hint-point",
-      "annotationId": "045e21c4-350b-4b6c-bcb7-aeb007da05b3",
-      "description": "扭蛋数量滑动条的右端点（置0时的起始点）"
+      "description": "扭蛋数量滑动条的右端点（置0时的起始点）",
+      "props": {
+        "point": {
+          "kind": "point",
+          "x": 476,
+          "y": 898
+        }
+      }
     },
     "5ba55176-f5a1-4d3f-8fd8-75e868715ad8": {
       "name": "Daily.CapsuleToys.SliderEndPoint",
       "displayName": "日常 扭蛋 滑动条终点",
       "type": "hint-point",
-      "annotationId": "5ba55176-f5a1-4d3f-8fd8-75e868715ad8",
-      "description": "扭蛋数量滑动条的左端点（置0时的终点）"
-    }
-  },
-  "annotations": [
-    {
-      "id": "045e21c4-350b-4b6c-bcb7-aeb007da05b3",
-      "type": "point",
-      "data": {
-        "x": 476,
-        "y": 898
-      }
-    },
-    {
-      "id": "5ba55176-f5a1-4d3f-8fd8-75e868715ad8",
-      "type": "point",
-      "data": {
-        "x": 230,
-        "y": 898
+      "description": "扭蛋数量滑动条的左端点（置0时的终点）",
+      "props": {
+        "point": {
+          "kind": "point",
+          "x": 230,
+          "y": 898
+        }
       }
     }
-  ]
+  }
 }

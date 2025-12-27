@@ -1,70 +1,65 @@
 {
+  "version": 2,
   "definitions": {
     "5c49d3b3-656e-4c8c-ae1a-9b0209b9dcc3": {
       "name": "Common.ShopPackButton",
       "displayName": "商店礼包页面按钮",
-      "type": "template",
-      "annotationId": "5c49d3b3-656e-4c8c-ae1a-9b0209b9dcc3"
+      "type": "prefab",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 398,
+          "y1": 685,
+          "x2": 458,
+          "y2": 740
+        },
+        "fixed": true
+      },
+      "prefab_id": "TemplateMatchPrefab"
     },
     "f50150b4-211b-425b-8a36-142df62f6621": {
       "name": "Common.ShopPackRedDot",
       "displayName": "商店礼包页面红点范围",
       "type": "hint-box",
-      "annotationId": "f50150b4-211b-425b-8a36-142df62f6621"
+      "props": {
+        "image": {
+          "kind": "rect",
+          "x1": 650,
+          "y1": 660,
+          "x2": 687,
+          "y2": 697
+        }
+      }
     },
     "7b5c8883-a1f9-4ce9-bd84-26668577dfc6": {
       "name": "Common.ButtonToolbarHome",
       "displayName": "工具栏的主页按钮",
-      "type": "template",
-      "annotationId": "7b5c8883-a1f9-4ce9-bd84-26668577dfc6"
+      "type": "prefab",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 60,
+          "y1": 1186,
+          "x2": 110,
+          "y2": 1237
+        }
+      },
+      "prefab_id": "TemplateMatchPrefab"
     },
     "41904062-e218-4b28-972a-b5cfcd058d2c": {
       "name": "Common.ButtonToolbarBack",
       "displayName": "工具栏的返回按钮",
-      "type": "template",
-      "annotationId": "41904062-e218-4b28-972a-b5cfcd058d2c"
+      "type": "prefab",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 273,
+          "y1": 1187,
+          "x2": 330,
+          "y2": 1238
+        }
+      },
+      "prefab_id": "TemplateMatchPrefab"
     }
-  },
-  "annotations": [
-    {
-      "id": "5c49d3b3-656e-4c8c-ae1a-9b0209b9dcc3",
-      "type": "rect",
-      "data": {
-        "x1": 398,
-        "y1": 685,
-        "x2": 458,
-        "y2": 740
-      }
-    },
-    {
-      "id": "f50150b4-211b-425b-8a36-142df62f6621",
-      "type": "rect",
-      "data": {
-        "x1": 650,
-        "y1": 660,
-        "x2": 687,
-        "y2": 697
-      }
-    },
-    {
-      "id": "7b5c8883-a1f9-4ce9-bd84-26668577dfc6",
-      "type": "rect",
-      "data": {
-        "x1": 60,
-        "y1": 1186,
-        "x2": 110,
-        "y2": 1237
-      }
-    },
-    {
-      "id": "41904062-e218-4b28-972a-b5cfcd058d2c",
-      "type": "rect",
-      "data": {
-        "x1": 273,
-        "y1": 1187,
-        "x2": 330,
-        "y2": 1238
-      }
-    }
-  ]
+  }
 }

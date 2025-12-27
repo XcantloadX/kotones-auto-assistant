@@ -1,22 +1,20 @@
 {
+  "version": 2,
   "definitions": {
     "16fbc93d-b294-4001-b4e9-ee2af181415f": {
       "name": "InPurodyuusu.T",
       "displayName": "睡意卡字母 T（眠気）",
-      "type": "template",
-      "annotationId": "16fbc93d-b294-4001-b4e9-ee2af181415f"
+      "type": "prefab",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 353,
+          "y1": 1084,
+          "x2": 367,
+          "y2": 1099
+        }
+      },
+      "prefab_id": "TemplateMatchPrefab"
     }
-  },
-  "annotations": [
-    {
-      "id": "16fbc93d-b294-4001-b4e9-ee2af181415f",
-      "type": "rect",
-      "data": {
-        "x1": 353,
-        "y1": 1084,
-        "x2": 367,
-        "y2": 1099
-      }
-    }
-  ]
+  }
 }

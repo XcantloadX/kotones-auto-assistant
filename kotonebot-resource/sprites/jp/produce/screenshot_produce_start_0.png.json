@@ -1,54 +1,50 @@
 {
+  "version": 2,
   "definitions": {
     "6cd80be8-c9b3-4ba5-bf17-3ffc9b000743": {
       "name": "Produce.ButtonHajime0Regular",
       "displayName": "",
-      "type": "template",
-      "annotationId": "6cd80be8-c9b3-4ba5-bf17-3ffc9b000743"
+      "type": "prefab",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 145,
+          "y1": 859,
+          "x2": 314,
+          "y2": 960
+        }
+      },
+      "prefab_id": "TemplateMatchPrefab"
     },
     "55f7db71-0a18-4b3d-b847-57959b8d2e32": {
       "name": "Produce.ButtonHajime0Pro",
       "displayName": "",
-      "type": "template",
-      "annotationId": "55f7db71-0a18-4b3d-b847-57959b8d2e32"
+      "type": "prefab",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 434,
+          "y1": 857,
+          "x2": 545,
+          "y2": 961
+        }
+      },
+      "prefab_id": "TemplateMatchPrefab"
     },
     "0bf5e34e-afc6-4447-bbac-67026ce2ad26": {
       "name": "Produce.TitleIconProudce",
       "displayName": "培育页面左上角标题图标",
-      "type": "template",
-      "annotationId": "0bf5e34e-afc6-4447-bbac-67026ce2ad26"
+      "type": "prefab",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 12,
+          "y1": 33,
+          "x2": 63,
+          "y2": 82
+        }
+      },
+      "prefab_id": "TemplateMatchPrefab"
     }
-  },
-  "annotations": [
-    {
-      "id": "6cd80be8-c9b3-4ba5-bf17-3ffc9b000743",
-      "type": "rect",
-      "data": {
-        "x1": 145,
-        "y1": 859,
-        "x2": 314,
-        "y2": 960
-      }
-    },
-    {
-      "id": "55f7db71-0a18-4b3d-b847-57959b8d2e32",
-      "type": "rect",
-      "data": {
-        "x1": 434,
-        "y1": 857,
-        "x2": 545,
-        "y2": 961
-      }
-    },
-    {
-      "id": "0bf5e34e-afc6-4447-bbac-67026ce2ad26",
-      "type": "rect",
-      "data": {
-        "x1": 12,
-        "y1": 33,
-        "x2": 63,
-        "y2": 82
-      }
-    }
-  ]
+  }
 }

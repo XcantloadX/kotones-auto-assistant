@@ -1,52 +1,46 @@
 {
+  "version": 2,
   "definitions": {
     "26ce71b2-59dc-4237-b50f-41690d7b8ecf": {
       "name": "Daily.CapsuleToys.NextPageStartPoint",
       "displayName": "日常 扭蛋 下一页起始点",
       "type": "hint-point",
-      "annotationId": "26ce71b2-59dc-4237-b50f-41690d7b8ecf",
-      "description": "扭蛋页面翻页时的起始点"
+      "description": "扭蛋页面翻页时的起始点",
+      "props": {
+        "point": {
+          "kind": "point",
+          "x": 360,
+          "y": 1167
+        }
+      }
     },
     "ada5c1e1-1524-4476-bdf9-aa0aab8b35ad": {
       "name": "Daily.CapsuleToys.NextPageEndPoint",
       "displayName": "日常 扭蛋 下一页终点",
       "type": "hint-point",
-      "annotationId": "ada5c1e1-1524-4476-bdf9-aa0aab8b35ad",
-      "description": "扭蛋页面翻页时的终点"
+      "description": "扭蛋页面翻页时的终点",
+      "props": {
+        "point": {
+          "kind": "point",
+          "x": 362,
+          "y": 267
+        }
+      }
     },
     "2bd6fe88-99fa-443d-8e42-bb3de5881213": {
       "name": "Daily.CapsuleToys.IconTitle",
       "displayName": "日常 扭蛋 页面标题图标",
-      "type": "template",
-      "annotationId": "2bd6fe88-99fa-443d-8e42-bb3de5881213"
+      "type": "prefab",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 14,
+          "y1": 34,
+          "x2": 60,
+          "y2": 78
+        }
+      },
+      "prefab_id": "TemplateMatchPrefab"
     }
-  },
-  "annotations": [
-    {
-      "id": "26ce71b2-59dc-4237-b50f-41690d7b8ecf",
-      "type": "point",
-      "data": {
-        "x": 360,
-        "y": 1167
-      }
-    },
-    {
-      "id": "ada5c1e1-1524-4476-bdf9-aa0aab8b35ad",
-      "type": "point",
-      "data": {
-        "x": 362,
-        "y": 267
-      }
-    },
-    {
-      "id": "2bd6fe88-99fa-443d-8e42-bb3de5881213",
-      "type": "rect",
-      "data": {
-        "x1": 14,
-        "y1": 34,
-        "x2": 60,
-        "y2": 78
-      }
-    }
-  ]
+  }
 }

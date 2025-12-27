@@ -1,25 +1,20 @@
 {
+  "version": 2,
   "definitions": {
     "4096cffa-a889-4622-852e-760fc7022d93": {
       "name": "InPurodyuusu.ButtonIconExchange",
       "displayName": "交换按钮的图标",
       "type": "prefab",
-      "annotationId": "4096cffa-a889-4622-852e-760fc7022d93",
-      "prefab": {
-        "className": "GakumasPrimaryButtonPrefab"
-      }
+      "props": {
+        "template": {
+          "kind": "rect",
+          "x1": 258,
+          "y1": 1066,
+          "x2": 303,
+          "y2": 1108
+        }
+      },
+      "prefab_id": "GakumasPrimaryButtonPrefab"
     }
-  },
-  "annotations": [
-    {
-      "id": "4096cffa-a889-4622-852e-760fc7022d93",
-      "type": "rect",
-      "data": {
-        "x1": 258,
-        "y1": 1066,
-        "x2": 303,
-        "y2": 1108
-      }
-    }
-  ]
+  }
 }

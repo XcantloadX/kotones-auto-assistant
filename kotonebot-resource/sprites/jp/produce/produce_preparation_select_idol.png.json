@@ -1,54 +1,48 @@
 {
+  "version": 2,
   "definitions": {
     "30a6f399-6999-4f04-bb77-651e0214112f": {
       "name": "Produce.IconPIdolLevel",
       "displayName": "P偶像卡上的等级图标",
-      "type": "template",
-      "annotationId": "30a6f399-6999-4f04-bb77-651e0214112f"
+      "type": "prefab",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 238,
+          "y1": 742,
+          "x2": 248,
+          "y2": 753
+        }
+      },
+      "prefab_id": "TemplateMatchPrefab"
     },
     "b71165dd-7285-45a7-bb8c-d4fccee2b0ba": {
       "name": "Produce.KbIdolOverviewName",
       "displayName": "P偶像总览界面偶像名称",
       "type": "hint-box",
-      "annotationId": "b71165dd-7285-45a7-bb8c-d4fccee2b0ba"
+      "props": {
+        "image": {
+          "kind": "rect",
+          "x1": 140,
+          "y1": 16,
+          "x2": 615,
+          "y2": 97
+        }
+      }
     },
     "46607060-cefc-43a0-abaf-9d4887d46cb8": {
       "name": "Produce.BoxIdolOverviewIdols",
       "displayName": "偶像总览 偶像列表区域",
       "type": "hint-box",
-      "annotationId": "46607060-cefc-43a0-abaf-9d4887d46cb8"
-    }
-  },
-  "annotations": [
-    {
-      "id": "30a6f399-6999-4f04-bb77-651e0214112f",
-      "type": "rect",
-      "data": {
-        "x1": 238,
-        "y1": 742,
-        "x2": 248,
-        "y2": 753
-      }
-    },
-    {
-      "id": "b71165dd-7285-45a7-bb8c-d4fccee2b0ba",
-      "type": "rect",
-      "data": {
-        "x1": 140,
-        "y1": 16,
-        "x2": 615,
-        "y2": 97
-      }
-    },
-    {
-      "id": "46607060-cefc-43a0-abaf-9d4887d46cb8",
-      "type": "rect",
-      "data": {
-        "x1": 26,
-        "y1": 568,
-        "x2": 696,
-        "y2": 992
+      "props": {
+        "image": {
+          "kind": "rect",
+          "x1": 26,
+          "y1": 568,
+          "x2": 696,
+          "y2": 992
+        }
       }
     }
-  ]
+  }
 }

@@ -1,23 +1,21 @@
 {
+  "version": 2,
   "definitions": {
     "25f00ee3-8dfe-42d1-a67e-191fa5c3df4b": {
       "name": "InPurodyuusu.TextExchangeConfirm",
       "displayName": "交換確認",
-      "type": "template",
-      "annotationId": "25f00ee3-8dfe-42d1-a67e-191fa5c3df4b",
-      "description": "咨询中，购买确认对话框的标题"
+      "type": "prefab",
+      "description": "咨询中，购买确认对话框的标题",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 53,
+          "y1": 612,
+          "x2": 191,
+          "y2": 652
+        }
+      },
+      "prefab_id": "TemplateMatchPrefab"
     }
-  },
-  "annotations": [
-    {
-      "id": "25f00ee3-8dfe-42d1-a67e-191fa5c3df4b",
-      "type": "rect",
-      "data": {
-        "x1": 53,
-        "y1": 612,
-        "x2": 191,
-        "y2": 652
-      }
-    }
-  ]
+  }
 }

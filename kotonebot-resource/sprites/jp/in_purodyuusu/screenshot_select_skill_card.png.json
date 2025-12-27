@@ -1,23 +1,21 @@
 {
+  "version": 2,
   "definitions": {
     "d271a24f-efe8-424d-8fd5-f6b3756ba4ca": {
       "name": "InPurodyuusu.TextSkillCard",
       "displayName": "文字「スキルカード」",
-      "type": "template",
-      "annotationId": "d271a24f-efe8-424d-8fd5-f6b3756ba4ca",
-      "description": "用于技能卡选择对话框"
+      "type": "prefab",
+      "description": "用于技能卡选择对话框",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 229,
+          "y1": 614,
+          "x2": 372,
+          "y2": 645
+        }
+      },
+      "prefab_id": "TemplateMatchPrefab"
     }
-  },
-  "annotations": [
-    {
-      "id": "d271a24f-efe8-424d-8fd5-f6b3756ba4ca",
-      "type": "rect",
-      "data": {
-        "x1": 229,
-        "y1": 614,
-        "x2": 372,
-        "y2": 645
-      }
-    }
-  ]
+  }
 }

@@ -1,150 +1,140 @@
 {
+  "version": 2,
   "definitions": {
     "3942ae40-7f22-412c-aebe-4b064f68db9b": {
       "name": "Shop.IdolPiece.花海咲季_FightingMyWay",
       "displayName": "",
-      "type": "template",
-      "annotationId": "3942ae40-7f22-412c-aebe-4b064f68db9b"
+      "type": "prefab",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 409,
+          "y1": 342,
+          "x2": 477,
+          "y2": 413
+        }
+      },
+      "prefab_id": "TemplateMatchPrefab"
     },
     "185f7838-92a7-460b-9340-f60858948ce9": {
       "name": "Shop.IdolPiece.月村手毬_LunaSayMaybe",
       "displayName": "",
-      "type": "template",
-      "annotationId": "185f7838-92a7-460b-9340-f60858948ce9"
+      "type": "prefab",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 71,
+          "y1": 512,
+          "x2": 140,
+          "y2": 585
+        }
+      },
+      "prefab_id": "TemplateMatchPrefab"
     },
     "cb3d0ca7-8d14-408a-a2f5-2e25f7b86d6c": {
       "name": "Shop.IdolPiece.藤田ことね_世界一可愛い私 ",
       "displayName": "",
-      "type": "template",
-      "annotationId": "cb3d0ca7-8d14-408a-a2f5-2e25f7b86d6c"
+      "type": "prefab",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 410,
+          "y1": 513,
+          "x2": 475,
+          "y2": 581
+        }
+      },
+      "prefab_id": "TemplateMatchPrefab"
     },
     "213016c2-c3a2-43d8-86a3-ab4d27666ced": {
       "name": "Shop.IdolPiece.花海佑芽_TheRollingRiceball",
       "displayName": "",
-      "type": "template",
-      "annotationId": "213016c2-c3a2-43d8-86a3-ab4d27666ced"
+      "type": "prefab",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 585,
+          "y1": 858,
+          "x2": 640,
+          "y2": 913
+        }
+      },
+      "prefab_id": "TemplateMatchPrefab"
     },
     "cc60b509-2ed5-493d-bb9f-333c6d2a6006": {
       "name": "Shop.IdolPiece.葛城リーリヤ_白線",
       "displayName": "",
-      "type": "template",
-      "annotationId": "cc60b509-2ed5-493d-bb9f-333c6d2a6006"
+      "type": "prefab",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 247,
+          "y1": 690,
+          "x2": 303,
+          "y2": 743
+        }
+      },
+      "prefab_id": "TemplateMatchPrefab"
     },
     "5031808b-5525-4118-92b4-317ec8bda985": {
       "name": "Shop.IdolPiece.紫云清夏_TameLieOneStep",
       "displayName": "",
-      "type": "template",
-      "annotationId": "5031808b-5525-4118-92b4-317ec8bda985"
+      "type": "prefab",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 80,
+          "y1": 860,
+          "x2": 133,
+          "y2": 908
+        }
+      },
+      "prefab_id": "TemplateMatchPrefab"
     },
     "ae9fe233-9acc-4e96-ba8e-1fb1d9bc2ea5": {
       "name": "Shop.IdolPiece.篠泽广_光景",
       "displayName": "",
-      "type": "template",
-      "annotationId": "ae9fe233-9acc-4e96-ba8e-1fb1d9bc2ea5"
+      "type": "prefab",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 418,
+          "y1": 852,
+          "x2": 471,
+          "y2": 912
+        }
+      },
+      "prefab_id": "TemplateMatchPrefab"
     },
     "8f8b7b46-53bb-42ab-907a-4ea87eb09ab4": {
       "name": "Shop.IdolPiece.倉本千奈_WonderScale",
       "displayName": "",
-      "type": "template",
-      "annotationId": "8f8b7b46-53bb-42ab-907a-4ea87eb09ab4"
+      "type": "prefab",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 589,
+          "y1": 679,
+          "x2": 639,
+          "y2": 742
+        }
+      },
+      "prefab_id": "TemplateMatchPrefab"
     },
     "0d9ac648-eefa-4869-ac99-1b0c83649681": {
       "name": "Shop.IdolPiece.有村麻央_Fluorite",
       "displayName": "",
-      "type": "template",
-      "annotationId": "0d9ac648-eefa-4869-ac99-1b0c83649681"
+      "type": "prefab",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 83,
+          "y1": 690,
+          "x2": 136,
+          "y2": 744
+        }
+      },
+      "prefab_id": "TemplateMatchPrefab"
     }
-  },
-  "annotations": [
-    {
-      "id": "3942ae40-7f22-412c-aebe-4b064f68db9b",
-      "type": "rect",
-      "data": {
-        "x1": 409,
-        "y1": 342,
-        "x2": 477,
-        "y2": 413
-      }
-    },
-    {
-      "id": "185f7838-92a7-460b-9340-f60858948ce9",
-      "type": "rect",
-      "data": {
-        "x1": 71,
-        "y1": 512,
-        "x2": 140,
-        "y2": 585
-      }
-    },
-    {
-      "id": "cb3d0ca7-8d14-408a-a2f5-2e25f7b86d6c",
-      "type": "rect",
-      "data": {
-        "x1": 410,
-        "y1": 513,
-        "x2": 475,
-        "y2": 581
-      }
-    },
-    {
-      "id": "213016c2-c3a2-43d8-86a3-ab4d27666ced",
-      "type": "rect",
-      "data": {
-        "x1": 585,
-        "y1": 858,
-        "x2": 640,
-        "y2": 913
-      }
-    },
-    {
-      "id": "cc60b509-2ed5-493d-bb9f-333c6d2a6006",
-      "type": "rect",
-      "data": {
-        "x1": 247,
-        "y1": 690,
-        "x2": 303,
-        "y2": 743
-      }
-    },
-    {
-      "id": "5031808b-5525-4118-92b4-317ec8bda985",
-      "type": "rect",
-      "data": {
-        "x1": 80,
-        "y1": 860,
-        "x2": 133,
-        "y2": 908
-      }
-    },
-    {
-      "id": "ae9fe233-9acc-4e96-ba8e-1fb1d9bc2ea5",
-      "type": "rect",
-      "data": {
-        "x1": 418,
-        "y1": 852,
-        "x2": 471,
-        "y2": 912
-      }
-    },
-    {
-      "id": "8f8b7b46-53bb-42ab-907a-4ea87eb09ab4",
-      "type": "rect",
-      "data": {
-        "x1": 589,
-        "y1": 679,
-        "x2": 639,
-        "y2": 742
-      }
-    },
-    {
-      "id": "0d9ac648-eefa-4869-ac99-1b0c83649681",
-      "type": "rect",
-      "data": {
-        "x1": 83,
-        "y1": 690,
-        "x2": 136,
-        "y2": 744
-      }
-    }
-  ]
+  }
 }
