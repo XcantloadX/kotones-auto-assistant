@@ -59,3 +59,7 @@ version = {file = "./version"}
 
 [tool.basedpyright]
 typeCheckingMode = "basic"
+
+[tool.kotonebot.editor]
+prefabs_module = "kaa.game_ui.elements"
+resource_path = "kotonebot-resource/sprites/jp"
