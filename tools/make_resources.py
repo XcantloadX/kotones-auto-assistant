@@ -12,6 +12,10 @@ OUTPUT_CODE_FILE = './kaa/tasks/R.py'             # 生成的代码文件
 
 
 class KaaGenerator(EntityGenerator):
+    def __init__(self, production: bool = False, ide_type: str | None = None):
+        path_transformer = lambda p: f'sprite_path("{os.path.relpath(p, OUTPUT_IMG_DIR).replace(os.sep, "/")}")'
+        super().__init__(production, ide_type, path_transformer)
+
     def render_header(self):
         super().render_header()
         self.writer.write("from kaa.common import sprite_path")
