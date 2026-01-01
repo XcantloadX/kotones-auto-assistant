@@ -154,6 +154,21 @@
         }
       },
       "prefab_id": "TemplateMatchPrefab"
+    },
+    "aa827983-7f27-4763-bcd6-4316e1b8e459": {
+      "type": "prefab",
+      "prefab_id": "TemplateMatchPrefab",
+      "name": "InPurodyuusu.TextReviewCriteria",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 560.9042582705029,
+          "y1": 32.94047840182331,
+          "x2": 652.8062121718203,
+          "y2": 62.78861016191536
+        }
+      },
+      "displayName": "審査基準"
     }
   }
 }

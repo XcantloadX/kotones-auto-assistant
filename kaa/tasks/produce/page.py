@@ -1,0 +1,687 @@
+import functools
+from typing import Any, Callable, Literal, TypeVar, ParamSpec, cast, TYPE_CHECKING
+
+import cv2
+import numpy as np
+from kotonebot.primitives import Rect
+from kotonebot.core import GameObject, AnyOf, Prefab
+from kotonebot.errors import UnrecoverableError
+from kotonebot import logging, device, sleep, Countdown, Loop, cropped
+
+from kaa.tasks import R
+from kaa.tasks.common import skip
+from kaa.config.const import ProduceAction
+from kaa.tasks.actions.loading import loading
+from kaa.tasks.produce.common import ProduceInterrupt
+from kaa.game_ui import CommuEventButtonUI, dialog, badge
+from .consts import Drink, Scene, SceneType, SelectDrinkDialog
+from kaa.tasks.produce.cards import CardDetectResult, detect_recommended_card, skill_card_count
+if TYPE_CHECKING:
+    from .controller import ProduceController
+
+logger = logging.getLogger(__name__)
+ORANGE_RANGE = ((14, 87, 23)), ((37, 211, 255))
+# 三个饮料的坐标
+POSTIONS = [
+    Rect(157, 820, 128, 128),  # x, y, w, h
+    Rect(296, 820, 128, 128),
+    Rect(435, 820, 128, 128),
+]  # TODO: HARD CODED
+_R = TypeVar("_R")
+_P = ParamSpec("_P")
+
+PITEM_POSTIONS = [
+    Rect(157, 820, 128, 128), # x, y, w, h
+    Rect(296, 820, 128, 128),
+    Rect(435, 820, 128, 128),
+] # TODO: HARD CODED
+
+def wait_disappear(prefab: type[Prefab[Any]], timeout_sec: float = 10.0) -> bool:
+    """等待 Prefab 消失
+
+    :param prefab: 目标 Prefab 类型
+    :param timeout_sec: 超时时间，单位秒
+    :return: 是否成功消失
+    """
+    logger.debug(f"Waiting for {prefab} to disappear...")
+    cd = Countdown(sec=timeout_sec).start()
+    for _ in Loop():
+        if cd.expired():
+            logger.warning(f'Timeout waiting for {prefab} to disappear.')
+            raise TimeoutError(f'Timeout waiting for {prefab} to disappear.')
+            return False
+        if not prefab.exists():
+            logger.debug(f"{prefab} has disappeared.")
+            return True
+    return False
+
+def eval_once(func: Callable[_P, _R]) -> Callable[_P, _R]:
+    """
+    按第一个位置参数缓存的装饰器。
+
+    行为说明：
+    - 如果调用时存在位置参数，则仅以第一个位置参数作为缓存键，后续使用相同第一个参数的调用
+      将直接返回第一次计算的结果（忽略其它参数和关键字参数）。
+    - 如果调用时没有任何位置参数，则使用单一的全局缓存（与原先的 "eval once" 行为一致）。
+    """
+    cache: dict[object, _R] = {}
+    global_cached_result: _R | None = None
+    global_is_cached = False
+
+    @functools.wraps(func)
+    def wrapper(*args: _P.args, **kwargs: _P.kwargs) -> _R:
+        nonlocal global_cached_result, global_is_cached
+
+        if args:
+            key = args[0]
+            if key in cache:
+                return cast(_R, cache[key])
+            result = func(*args, **kwargs)
+            cache[key] = result
+            return cast(_R, result)
+
+        if not global_is_cached:
+            global_cached_result = func(*args, **kwargs)
+            global_is_cached = True
+
+        return cast(_R, global_cached_result)
+
+    return wrapper
+
+class _SceneCheckMixin:
+    def check_scene(self) -> Scene | None:
+        return (
+            self._check_loading()
+            or self._check_interrupt_dialogs()
+            or self._check_dialogs()
+            or self._check_fullscreen_dialogs()
+            or self._check_action_like()
+            or self._battle_scene()
+        )
+
+    def _check_loading(self) -> Scene | None:
+        """判断加载场景"""
+        if loading():
+            return Scene(SceneType.LOADING)
+        return None
+
+    def _check_interrupt_dialogs(self) -> Scene | None:
+        """判断各种中断/弹窗场景（非正常行动/打牌界面）"""
+        # P饮料到达上限
+        if R.InPurodyuusu.TextPDrinkMax.exists():
+            logger.debug("Scene detected: PDRINK_MAX")
+            return Scene(SceneType.PDRINK_MAX)
+
+        # P饮料到达上限确认
+        if R.InPurodyuusu.TextPDrinkMaxConfirmTitle.exists():
+            logger.debug("Scene detected: PDRINK_MAX_CONFIRM")
+            return Scene(SceneType.PDRINK_MAX_CONFIRM)
+
+        # 网络错误弹窗
+        if R.Common.TextNetworkError.exists():
+            logger.debug("Scene detected: NETWORK_ERROR")
+            return Scene(SceneType.NETWORK_ERROR)
+
+        # 日期变更弹窗（会跳回首页，需要特殊处理）
+        if R.Daily.TextDateChangeDialog.exists():
+            logger.debug("Scene detected: DATE_CHANGE")
+            return Scene(SceneType.DATE_CHANGE)
+
+        return None
+
+    def _check_dialogs(self) -> Scene | None:
+        # 卡片选择
+        logger.verbose("Check skill card select...")
+        if R.InPurodyuusu.TextSkillCard.exists():
+            return Scene(SceneType.SELECT_CARD)
+        
+        # P道具选择
+        logger.verbose("Check PItem select...")
+        if R.InPurodyuusu.TextPItem.exists():
+            return Scene(SceneType.SELECT_PITEM)
+
+        # P饮料选择
+        logger.verbose("Check PDrink select...")
+        if R.InPurodyuusu.TextPDrink.exists():
+            # HACK: 有一定概率 scene check 会识别到动画未结束状态的对话框
+            # 因此这里加一个短暂的延时，确保动画结束
+            # TODO: 也许有更好的方法。此时选择饮料的文本提示已存在，选择按钮也存在，
+            # 三个饮料的图标似乎是从左到右依次出现的，最后跳过领取的勾选框才加载出来。
+            # 如果此时命中，有可能误识别成没有跳过领取的状态
+            sleep(0.3)
+            device.screenshot()
+            return Scene(SceneType.SELECT_DRINK)
+
+    def _check_fullscreen_dialogs(self) -> Scene | None:
+        # 技能卡自选强化
+        if R.InPurodyuusu.IconTitleSkillCardEnhance.exists():
+            return Scene(SceneType.SKILL_CARD_ENHANCE)
+        
+        # 技能卡自选删除
+        if R.InPurodyuusu.IconTitleSkillCardRemoval.exists():
+            return Scene(SceneType.SKILL_CARD_REMOVAL)
+
+    def _check_action_like(self) -> Scene | None:
+        """判断行动-like场景，右上角展示目标值的场景"""
+        if not R.InPurodyuusu.TextReviewCriteria.exists():
+            return None
+        
+        # 行动选择
+        if AnyOf[
+            R.InPurodyuusu.TextPDiary,
+            R.InPurodyuusu.ButtonFinalPracticeVisual
+        ].exists():
+            return Scene(SceneType.ACTION_SELECT)
+
+        # 授業
+        if R.InPurodyuusu.IconTitleStudy.exists():
+            buttons = CommuEventButtonUI().all(False, False)
+            if len(buttons) > 1:
+                return Scene(SceneType.STUDY)
+            else:
+                return Scene(SceneType.IDLE)
+        
+        # おでかけ
+        if R.InPurodyuusu.TitleIconOuting.exists():
+            buttons = CommuEventButtonUI().all(False, False)
+            if len(buttons) > 1:
+                return Scene(SceneType.OUTING)
+            else:
+                return Scene(SceneType.IDLE)
+
+        # 相談
+        if R.InPurodyuusu.IconTitleConsult.exists():
+            return Scene(SceneType.CONSULT)
+
+        # 活動支給
+        if R.InPurodyuusu.IconTitleAllowance.exists():
+            return Scene(SceneType.ALLOWANCE)
+        
+        # 培育初始饮料、卡片二选一
+        ui = CommuEventButtonUI([ORANGE_RANGE])
+        buttons = ui.all(description=False, title=False)
+        if len(buttons) > 1:
+            # return InitialDrinkOrCardSelectScene(type=SceneType.INITIAL_DRINK_OR_CARD_SELECT, buttons=buttons)
+            device.double_click(buttons[0])
+            return Scene(SceneType.IDLE)
+        
+    def _battle_scene(self) -> Scene | None:
+        """判断打牌场景"""
+        if AnyOf[
+            R.InPurodyuusu.TextClearUntil,
+            R.InPurodyuusu.TextPerfectUntil,
+        ].exists():
+            return Scene(SceneType.PRACTICE)
+        
+        if AnyOf[
+            R.InPurodyuusu.TextExamRankSmallFirst,
+            R.InPurodyuusu.TextExamRankLargeFirst,
+        ].exists():
+            return Scene(SceneType.EXAM)
+
+        return None
+
+
+class Context:
+    def __init__(self, page: 'ProducePage', controller: 'ProduceController') -> None:
+        self.page = page
+        self.controller = controller
+
+
+class DrinkSelectContext(Context):
+    """饮料选择相关"""
+    @eval_once
+    def fetch_select_drink(self) -> SelectDrinkDialog:
+        skip_btn = R.InPurodyuusu.TextDontClaim.find()
+        drinks = [Drink(index=i) for i in range(3)]
+        return SelectDrinkDialog(
+            can_skip=skip_btn is not None,
+            drinks=drinks,
+            _skip_button=skip_btn,
+        )
+
+    def commit(self, data: SelectDrinkDialog, drink: Drink | None):
+        """[饮料选择对话框] 提交
+
+        :param drink: 目标饮料下标。None 表示不选择。
+        :raises ValueError: _description_
+        """
+        if drink is None:
+            if not data._skip_button:
+                raise ValueError("Cannot skip drink selection: skip button not found.")
+            data._skip_button.click()
+            sleep(0.5)
+            AnyOf[
+                R.InPurodyuusu.ButtonDontClaim,
+                R.InPurodyuusu.AcquireBtnDisabled
+            ].try_click()
+            logger.debug("Skipped PDrink selection.")
+            return
+    
+        if drink.index < 0 or drink.index >= len(POSTIONS):
+            raise ValueError(f"Invalid drink index: {drink.index}")
+        device.click(POSTIONS[drink.index])
+        sleep(0.5)
+        logger.debug(f"PDrink clicked: {POSTIONS[drink.index]}")
+        R.InPurodyuusu.AcquireBtnDisabled.wait().click()
+        logger.debug("Clicked Acquire button for PDrink.")
+
+
+class CardSelectContext(Context):
+    @eval_once
+    def fetch_cards(self):
+        cards = AnyOf[
+            R.InPurodyuusu.A,
+            R.InPurodyuusu.M
+        ].find_all()
+        cards.sort(key=lambda x: x.rect.top_left)
+        logger.info(f"Found {len(cards)} skill cards")
+        return cards
+
+    @eval_once
+    def fetch_recommend_card(self) -> int | None:
+        rec_badges = R.InPurodyuusu.TextRecommend.find_all()
+        rec_badges = [card.rect for card in rec_badges]
+        cards = self.fetch_cards()
+        if rec_badges:
+            cards = [card.rect for card in cards]
+            matches = badge.match(cards, rec_badges, 'mb')
+            logger.debug("Recommend card badge matches: %s", matches)
+            for i, match in enumerate(matches):
+                if match.badge is not None:
+                    return i
+            return None
+        return None
+
+    def commit(self, index: int):
+        cards = self.fetch_cards()
+        target = cards[index]
+        for _ in Loop():
+            device.click(target)
+            btn = R.InPurodyuusu.AcquireBtnDisabled.find()
+            if btn:
+                btn.click()
+                sleep(0.5)
+                logger.debug(f"Clicked Acquire button for skill card index {index}.")
+            else:
+                break
+
+class PItemSelectContext(Context):
+    """PItem 选择对话框。
+
+    前置：位于 PItem 选择对话框页面 \n
+    """
+
+    @eval_once
+    def fecth_available_pitems(self) -> list[str]:
+        return ['0', '1', '2']  # TODO: HARD CODED
+
+    def commit(self, index: int):
+        positions = PITEM_POSTIONS
+        if index < 0 or index >= len(positions):
+            raise ValueError(f"Invalid PItem index: {index}")
+        device.click(positions[index])
+        logger.debug(f"PItem clicked: {positions[index]}")
+        R.InPurodyuusu.AcquireBtnDisabled.wait().click()
+        logger.debug("Clicked Acquire button for PItem.")
+
+
+class ActionSelectContext(Context):
+    """行动页面相关操作"""
+    @eval_once
+    def is_final_week(self) -> bool:
+        return R.InPurodyuusu.ButtonFinalPracticeVisual.exists()
+
+    @eval_once
+    def fetch_available_actions(self) -> tuple[list[ProduceAction], list[GameObject]]:
+        if self.is_final_week():
+            # 冲刺周只有 Da Vi Vo 三种行动
+            return [
+                ProduceAction.DANCE,
+                ProduceAction.VOCAL,
+                ProduceAction.VISUAL,
+            ], [
+                R.InPurodyuusu.ButtonFinalPracticeDance.require(threshold=0.6),
+                R.InPurodyuusu.ButtonFinalPracticeVocal.require(threshold=0.6),
+                R.InPurodyuusu.ButtonFinalPracticeVisual.require(threshold=0.6),
+            ]
+        else:
+            # 否则逐个检测
+            actions = [
+                (R.InPurodyuusu.TextActionVisual, ProduceAction.VISUAL),
+                (R.InPurodyuusu.TextActionVocal, ProduceAction.VOCAL),
+                (R.InPurodyuusu.TextActionDance, ProduceAction.DANCE),
+
+                (R.InPurodyuusu.Rest, ProduceAction.REST),
+
+                (R.InPurodyuusu.ButtonIconOuting, ProduceAction.OUTING),
+                (R.InPurodyuusu.ButtonIconStudy, ProduceAction.STUDY),
+                (R.InPurodyuusu.ButtonTextAllowance, ProduceAction.ALLOWANCE),
+                (R.InPurodyuusu.ButtonIconConsult, ProduceAction.CONSULT),
+            ]
+            buttons: list[GameObject] = []
+            result: list[ProduceAction] = []
+            for btn, action in actions:
+                if obj := btn.find():
+                    result.append(action)
+                    buttons.append(obj)
+            return result, buttons
+        
+    @eval_once
+    def fetch_sensei_tip(self) -> ProduceAction | None:
+        """读取老师推荐的行动"""
+        if not R.InPurodyuusu.IconAsariSenseiAvatar.exists():
+            return None
+
+        cd = Countdown(sec=5).start()
+        result = None
+        for _ in Loop():
+            if cd.expired():
+                break
+            logger.debug('Retrieving recommended lesson...')
+            with cropped(device, y1=0.00, y2=0.30):
+                if result := AnyOf[
+                    R.InPurodyuusu.TextSenseiTipDance,
+                    R.InPurodyuusu.TextSenseiTipVocal,
+                    R.InPurodyuusu.TextSenseiTipVisual,
+                    R.InPurodyuusu.TextSenseiTipRest,
+                    R.InPurodyuusu.TextSenseiTipConsult,
+                ].find():
+                    break
+    
+        logger.debug("image.find_multi: %s", result)
+        if result is None:
+            logger.debug("No recommended lesson found")
+            return None
+        
+        result = result.prefab
+        if result == R.InPurodyuusu.TextSenseiTipDance:
+            return ProduceAction.DANCE
+        elif result == R.InPurodyuusu.TextSenseiTipVocal:
+            return ProduceAction.VOCAL
+        elif result == R.InPurodyuusu.TextSenseiTipVisual:
+            return ProduceAction.VISUAL
+        elif result == R.InPurodyuusu.TextSenseiTipRest:
+            return ProduceAction.REST
+        elif result == R.InPurodyuusu.TextSenseiTipConsult:
+            return ProduceAction.CONSULT
+        else:
+            raise ValueError("Unrecognized sensei tip action.")
+
+    def commit(self, action: 'ProduceAction'):
+        _actions = self.fetch_available_actions()
+        if action not in _actions[0]:
+            raise ValueError(f"Action {action} is not available now.")
+        
+        index = _actions[0].index(action)
+        button = _actions[1][index]
+
+        if button.prefab in [
+            R.InPurodyuusu.ButtonIconOuting,
+            R.InPurodyuusu.ButtonIconStudy,
+            R.InPurodyuusu.ButtonTextAllowance,
+            R.InPurodyuusu.ButtonIconConsult,
+
+            R.InPurodyuusu.ButtonFinalPracticeDance,
+            R.InPurodyuusu.ButtonFinalPracticeVocal,
+            R.InPurodyuusu.ButtonFinalPracticeVisual,
+            R.InPurodyuusu.TextActionVisual,
+            R.InPurodyuusu.TextActionVocal,
+            R.InPurodyuusu.TextActionDance,
+        ]:
+            for _ in range(3):
+                button.click()
+                sleep(0.3)
+            
+            sleep(2)
+            logger.info(f"Entered action: {action}")
+            wait_disappear(button.prefab)
+        else: # rest
+            # 先等按钮出现
+            # 点击休息直到确认对话框出现
+            # TODO: 需要一种方法简化这种 pattern
+            for _ in Loop():
+                if R.InPurodyuusu.Rest.try_click():
+                    sleep(0.5)
+                elif R.InPurodyuusu.RestConfirmBtn.exists():
+                    break
+            # 然后等消失
+            for _ in Loop():
+                if R.InPurodyuusu.RestConfirmBtn.exists():
+                    device.click()
+                    sleep(0.5)
+                else:
+                    break
+
+
+
+class PracticeContext(Context):
+    def fetch_card_count(self) -> int:
+        raise NotImplementedError
+        img = device.screenshot()
+        return skill_card_count(img)
+    
+    def fetch_recommend_card(self, threshold_predicate: Callable[[int, CardDetectResult], bool]):
+        raise NotImplementedError
+        img = device.screenshot()
+        return detect_recommended_card(self.fetch_card_count(), threshold_predicate, img=img)
+
+
+class ExamContext(Context):
+    def is_final_exam(self) -> bool:
+        img = device.screenshot()
+        hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+        v = hsv[:, :, 2]
+        
+        # 只取上半截分析
+        height, _ = v.shape
+        roi = v[0:int(height/2), :] 
+        
+        # 统计亮度值大于 220 的像素点数量 (高光区域)
+        bright_threshold = 220
+        bright_pixels = np.count_nonzero(roi > bright_threshold)
+        total_pixels = roi.size
+        ratio = bright_pixels / total_pixels
+
+        if ratio > 0.60:
+            return True
+        else:
+            return False
+
+
+class StudyContext(Context):
+    @eval_once
+    def is_self_study(self) -> bool:
+        """是否为自习课"""
+        # [kotonebot-resource\sprites\jp\in_purodyuusu\screenshot_study_self_study.png]
+        return AnyOf[
+            R.InPurodyuusu.TextSelfStudyDance,
+            R.InPurodyuusu.TextSelfStudyVisual,
+            R.InPurodyuusu.TextSelfStudyVocal
+        ].exists()
+    
+    @eval_once
+    def fetch_options(self):
+        ui = CommuEventButtonUI()
+        buttons = ui.all()
+        if not buttons:
+            raise UnrecoverableError("Failed to find any buttons.")
+        return buttons
+    
+    def commit_self_study(self, lesson: Literal['dance', 'visual', 'vocal']):
+        """执行自习课行动"""
+        match lesson:
+            case 'dance':
+                R.InPurodyuusu.TextSelfStudyDance.wait().double_click()
+            case 'visual':
+                R.InPurodyuusu.TextSelfStudyVisual.wait().double_click()
+            case 'vocal':
+                R.InPurodyuusu.TextSelfStudyVocal.wait().double_click()
+            case _:
+                raise ValueError(f"Invalid self study subject: {lesson}")
+
+    def commit(self, index: int):
+        """执行非自习课内容"""
+        buttons = self.fetch_options()
+        target_btn = buttons[index]
+        if target_btn.selected:
+            device.click(target_btn)
+        else:
+            device.double_click(target_btn)
+        sleep(2)
+    
+
+class OutingContext(Context):
+    @eval_once
+    def fetch_options(self):
+        ui = CommuEventButtonUI()
+        buttons = ui.all()
+        return buttons
+
+    def commit(self, index: int):
+        buttons = self.fetch_options()
+        if index < 0 or index >= len(buttons):
+            raise ValueError(f"Invalid outing option index: {index}")
+        target_btn = buttons[index]
+        logger.debug('Clicking "%s".', target_btn.description)
+        if target_btn.selected:
+            device.click(target_btn)
+        else:
+            device.double_click(target_btn)
+        sleep(2)
+        
+
+        # pi = ProduceInterrupt()
+        # for _ in Loop():
+        #     if AnyOf[
+        #         R.InPurodyuusu.TextPDiary,
+        #         R.InPurodyuusu.ButtonFinalPracticeDance,
+        #     ].exists():
+        #         break
+        #     if pi.handle():
+        #         continue
+        #     if R.Common.ButtonSelect2.try_click():
+        #         logger.info("AP max out dialog found. Clicked continue button.")
+        #         sleep(0.1)
+
+
+class ConsultContext(Context):
+    # TODO: 需要处理从已经购买了的情况下继续执行
+    def commit(self):
+        device.click(R.InPurodyuusu.PointConsultFirstItem)
+        sleep(0.3)
+        wait_purchase_cd = Countdown(sec=5)
+        exit_cd = Countdown(sec=5)
+        purchase_clicked = False
+        purchase_confirmed = False
+        exit_clicked = False
+        for _ in Loop():
+            ProduceInterrupt.check()
+            if wait_purchase_cd.expired():
+                purchase_confirmed = True
+
+            if dialog.yes():
+                if purchase_clicked:
+                    purchase_confirmed = True
+                    continue
+                elif purchase_confirmed:
+                    continue
+                elif exit_clicked:
+                    break
+            if R.InPurodyuusu.ButtonIconExchange(enabled=True).try_click():
+                purchase_clicked = True
+                continue
+            if purchase_confirmed and R.InPurodyuusu.ButtonEndConsult.try_click():
+                exit_clicked = True
+                exit_cd.start()
+                continue
+
+            if exit_cd.expired():
+                break
+
+            if not purchase_confirmed:
+                device.click(R.InPurodyuusu.PointConsultFirstItem)
+                wait_purchase_cd.start()
+
+
+class AllowanceContext(Context):
+    def claim(self):
+        if R.InPurodyuusu.LootboxSliverLock.try_click():
+            sleep(1)
+        skip()
+
+
+class PDrinkMaxContext(Context):
+    """P饮料到达上限弹窗上下文"""
+    pass
+
+
+class PDrinkMaxConfirmContext(Context):
+    """P饮料到达上限确认弹窗上下文"""
+    pass
+
+
+class NetworkErrorContext(Context):
+    """网络错误弹窗上下文"""
+    pass
+
+
+class DateChangeContext(Context):
+    """日期变更弹窗上下文"""
+    pass
+
+
+class SkillFullScreenDialogContext(Context):
+    def __init__(self, page: 'ProducePage', controller: 'ProduceController', confirm_btn: type[Prefab[Any]]) -> None:
+        super().__init__(page, controller)
+        self.confirm_btn = confirm_btn
+
+    @eval_once
+    def fetch_cards(self):
+        # TODO: 这里目前只处理了第一个，后续需要扩展为搜索所有
+        return [AnyOf[
+            R.InPurodyuusu.A,
+            R.InPurodyuusu.M
+        ].require()]
+
+    def commit(self, index: int):
+        cards = self.fetch_cards()
+        cards[0].click()
+        self.confirm_btn.wait().click()
+        sleep(1)
+
+
+class SkillCardEnhanceContext(SkillFullScreenDialogContext):
+    def __init__(self, page: 'ProducePage', controller: 'ProduceController') -> None:
+        super().__init__(page, controller, R.InPurodyuusu.ButtonEnhance(enabled=True))
+
+
+class SkillCardRemovalContext(SkillFullScreenDialogContext):
+    def __init__(self, page: 'ProducePage', controller: 'ProduceController') -> None:
+        super().__init__(page, controller, R.InPurodyuusu.ButtonRemove)
+
+
+class ProducePage(
+        _SceneCheckMixin,
+    ):
+    pass
+
+if __name__ == '__main__':
+    from kotonebot.backend.debug.mock import MockDevice
+    from kotonebot.backend.context.context import init_context, manual_context
+    d = MockDevice()
+    # d.load_image(r'E:\GithubRepos\KotonesAutoAssistant\dump_tmp\1766923332.9383092-EXAM.png')
+    d.load_image(r'b.png')
+    init_context(target_device=d, force=True)
+    # with manual_context():
+    #     ret = AnyOf[
+    #         R.InPurodyuusu.TextExamRankSmallFirst,
+    #         R.InPurodyuusu.TextExamRankLargeFirst,
+    #     ].find()
+    #     # print(ret)
+    import cv2
+    from kotonebot.backend.image import find
+    img = cv2.imread(r'b.png')
+    assert img is not None
+    print(find(img, R.InPurodyuusu.TextExamRankLargeFirst.template, threshold=0))
+    print(find(img, R.InPurodyuusu.TextExamRankLargeFirst.template, threshold=0, rect=R.InPurodyuusu.TextExamRankLargeFirst.template.slice_rect))

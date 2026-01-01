@@ -84,6 +84,22 @@
           "y2": 1234
         }
       }
+    },
+    "5c61b817-d39e-4f8a-bcb3-bbc953d73790": {
+      "type": "prefab",
+      "prefab_id": "TemplateMatchPrefab",
+      "name": "InPurodyuusu.TextExamRankSmallFirst",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 225.21843502083019,
+          "y1": 11.3719647499113,
+          "x2": 265.50770876621624,
+          "y2": 36.386734264761174
+        },
+        "fixed": true
+      },
+      "displayName": "考试顶部 1st（小）"
     }
   }
 }

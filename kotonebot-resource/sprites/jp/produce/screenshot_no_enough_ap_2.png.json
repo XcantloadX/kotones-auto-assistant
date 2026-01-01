@@ -8,12 +8,13 @@
       "description": "用于培育开始时，AP 不足对话框中的使用饮料按钮",
       "props": {
         "template": {
-          "kind": "rect",
+          "kind": "image",
           "x1": 546,
           "y1": 929,
           "x2": 595,
           "y2": 954
-        }
+        },
+        "fixed": true
       },
       "prefab_id": "GakumasPrimaryButtonPrefab"
     }

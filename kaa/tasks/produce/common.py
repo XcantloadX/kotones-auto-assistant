@@ -38,7 +38,6 @@ logger = getLogger(__name__)
 def acquire_skill_card():
     """获取技能卡（スキルカード）"""
     # TODO: 识别卡片内容，而不是固定选卡
-    # TODO: 不硬编码坐标
     logger.debug("Locating all skill cards...")
     
     cards = None

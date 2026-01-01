@@ -4,6 +4,7 @@ from typing_extensions import assert_never
 
 from kaa.config.schema import produce_solution
 from kaa.tasks.produce.common import resume_produce_pre
+from kaa.tasks.produce.controller import ProduceController
 from kotonebot.ui import user
 from kaa.tasks import R
 from kaa.config import conf
@@ -12,9 +13,7 @@ from ..actions.scenes import at_home, goto_home
 from kotonebot.backend.loop import Loop, StatedLoop
 from kotonebot.util import Countdown, Throttler
 from kaa.game_ui.idols_overview import locate_idol, match_idol
-from ..produce.in_purodyuusu import hajime_pro, hajime_regular, hajime_master, resume_pro_produce, resume_regular_produce, \
-    resume_master_produce
-from kotonebot import device, image, ocr, task, action, sleep, contains, regex
+from kotonebot import device, ocr, task, action, sleep
 from kaa.errors import IdolCardNotFoundError
 
 logger = logging.getLogger(__name__)
@@ -117,32 +116,6 @@ def select_set(index: int):
             logger.warning(f'Failed to navigate to set #{index}. Current set is #{final_current}. Retrying... ({retry_count}/{max_retries})')
     
     logger.error(f'Failed to navigate to set #{index} after {max_retries} retries.')
-
-@action('继续当前培育.继续培育', screenshot_mode='manual-inherit')
-def resume_produce_lst(
-    mode: Literal['regular', 'pro', 'master'],
-    current_week: int
-):
-    """
-    继续当前培育.继续培育\n
-    该函数正常情况不应该被单独调用。
-
-    前置条件：培育中的任意一个页面\n
-    结束状态：游戏首页
-
-    :param mode: 培育模式
-    :param current_week: 培育的周数
-    """
-
-    match mode:
-        case 'regular':
-            resume_regular_produce(current_week)
-        case 'pro':
-            resume_pro_produce(current_week)
-        case 'master':
-            resume_master_produce(current_week)
-        case _:
-            assert_never(mode)
     
 @action('继续当前培育', screenshot_mode='manual-inherit')
 def resume_produce():
@@ -155,7 +128,7 @@ def resume_produce():
 
     mode, current_week = resume_produce_pre()
 
-    resume_produce_lst(mode, current_week)
+    ProduceController(mode=mode).run()
 
 @action('执行培育', screenshot_mode='manual-inherit')
 def do_produce(
@@ -242,8 +215,7 @@ def do_produce(
             # [kotonebot-resource\sprites\jp\produce\screenshot_no_enough_ap_3.png]
             logger.info('AP insufficient. Try to use AP drink.')
             for _ in Loop(interval=1):
-                # HACK: 这里设置 interval 是 #91 的临时 workaround
-                if R.Produce.ButtonUse(enabled=True).find():
+                if R.Produce.ButtonUse(enabled=True).try_click():
                     pass
                 elif R.Produce.ButtonRefillAP.try_click():
                     pass
@@ -366,15 +338,8 @@ def do_produce(
             pass
         if R.Common.ButtonConfirmNoIcon.try_click():
             pass
-    match mode:
-        case 'regular':
-            hajime_regular()
-        case 'pro':
-            hajime_pro()
-        case 'master':
-            hajime_master()
-        case _:
-            assert_never(mode)
+    c = ProduceController(mode=mode)
+    c.run()
     return True
 
 @task('培育')
@@ -430,12 +395,12 @@ if __name__ == '__main__':
     from kaa.main import Kaa
 
     conf().produce.enabled = True
-    conf().produce.produce_count = 1
+    conf().produce.produce_count = 3
     conf().produce.enable_fever_month = 'ignore'
     produce_solution().data.mode = 'pro'
     # produce_solution().data.idol = 'i_card-skin-hski-3-002'
-    produce_solution().data.memory_set = 1
-    produce_solution().data.auto_set_memory = False
+    # produce_solution().data.memory_set = 1
+    # produce_solution().data.auto_set_memory = True
     # do_produce(PIdol.月村手毬_初声, 'pro', 5)
     produce()
     # a()

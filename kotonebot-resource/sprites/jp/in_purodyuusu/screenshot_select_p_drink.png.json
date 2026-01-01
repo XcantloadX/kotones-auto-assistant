@@ -13,7 +13,8 @@
           "y1": 615,
           "x2": 357,
           "y2": 641
-        }
+        },
+        "fixed": true
       },
       "prefab_id": "TemplateMatchPrefab"
     }
