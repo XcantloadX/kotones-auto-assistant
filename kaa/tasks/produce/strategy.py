@@ -23,6 +23,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+
 class StandardStrategy:
     def __init__(self, controller: 'ProduceController') -> None:
         self.controller = controller

@@ -12,7 +12,6 @@ from kaa.tasks import R
 from kaa.tasks.common import skip
 from kaa.config.const import ProduceAction
 from kaa.tasks.actions.loading import loading
-from kaa.tasks.produce.common import ProduceInterrupt
 from kaa.game_ui import CommuEventButtonUI, dialog, badge
 from .consts import Drink, Scene, SceneType, SelectDrinkDialog
 from kaa.tasks.produce.cards import CardDetectResult, detect_recommended_card, skill_card_count
@@ -87,6 +86,21 @@ def eval_once(func: Callable[_P, _R]) -> Callable[_P, _R]:
         return cast(_R, global_cached_result)
 
     return wrapper
+
+class Flow:
+    """可被 `ProduceController` 调度的多步流程。
+
+    `step` 应返回是否完成当前流程。
+    """
+
+    def step(self, scene: 'Scene') -> bool:
+        """推进一步当前 Flow。会被 ProduceController 在每一 tick 调用一次。
+
+        :param scene: 当前场景。
+        :return: 若流程全部结束，则返回 True 表示退出当前流程，否则返回 False 表示继续当前流程。
+        """
+        raise NotImplementedError # pragma: no cover
+
 
 class _SceneCheckMixin:
     def check_scene(self) -> Scene | None:
@@ -564,44 +578,85 @@ class OutingContext(Context):
         #         logger.info("AP max out dialog found. Clicked continue button.")
         #         sleep(0.1)
 
+class _ConsultFlow(Flow):
+    def __init__(self, controller: 'ProduceController') -> None:
+        # start           -> 首次点击第一个条目，进入等待购买阶段
+        # waiting_purchase-> 等待购买确认（对话框/按钮）
+        # waiting_exit    -> 已点击结束按钮，等待退出完成
+        self.contoller = controller
+        self._phase: str = "start"
+        self._wait_purchase_cd = Countdown(sec=5)
+        self._exit_cd = Countdown(sec=5)
+        self._purchase_clicked: bool = False
+        self._purchase_confirmed: bool = False
+
+    def step(self, scene: 'Scene') -> bool:
+        """执行一次相談流程的单步。
+
+        返回值:
+        - True: 本次相談流程已结束；
+        - False: 仍需在后续 tick 中继续执行。
+        """
+        # Phase: start
+        if self._phase == "start":
+            device.click(R.InPurodyuusu.PointConsultFirstItem)
+            sleep(0.3)
+            self._wait_purchase_cd.start()
+            self._phase = "waiting_purchase"
+            return False
+
+        # Phase: waiting_purchase
+        elif self._phase == "waiting_purchase":
+            if self._wait_purchase_cd.expired():
+                self._purchase_confirmed = True
+
+            # 购买确认对话框
+            if dialog.yes():
+                # 第一次 yes：认为购买完成
+                if self._purchase_clicked:
+                    self._purchase_confirmed = True
+                return False
+
+            # 点击购买按钮
+            if R.InPurodyuusu.ButtonIconExchange(enabled=True).try_click():
+                self._purchase_clicked = True
+                return False
+
+            # 购买已确认，尝试点击结束咨询
+            if self._purchase_confirmed and R.InPurodyuusu.ButtonEndConsult.try_click():
+                self._exit_cd.start()
+                self._phase = "waiting_exit"
+                return False
+
+            # 仍未确认购买，重复点击第一个条目以触发对话框
+            if not self._purchase_confirmed:
+                device.click(R.InPurodyuusu.PointConsultFirstItem)
+                self._wait_purchase_cd.start()
+            return False
+
+        # Phase: waiting_exit
+        elif self._phase == "waiting_exit":
+            # 若再次出现确认对话框，继续点 yes
+            if dialog.yes():
+                return False
+
+            if not self._exit_cd.started:
+                self._exit_cd.start()
+                return False
+
+            if self._exit_cd.expired():
+                return True
+
+            return False
+        # 未知 phase，防御性结束
+        else:
+            return True
 
 class ConsultContext(Context):
-    # TODO: 需要处理从已经购买了的情况下继续执行
     def commit(self):
-        device.click(R.InPurodyuusu.PointConsultFirstItem)
-        sleep(0.3)
-        wait_purchase_cd = Countdown(sec=5)
-        exit_cd = Countdown(sec=5)
-        purchase_clicked = False
-        purchase_confirmed = False
-        exit_clicked = False
-        for _ in Loop():
-            ProduceInterrupt.check()
-            if wait_purchase_cd.expired():
-                purchase_confirmed = True
-
-            if dialog.yes():
-                if purchase_clicked:
-                    purchase_confirmed = True
-                    continue
-                elif purchase_confirmed:
-                    continue
-                elif exit_clicked:
-                    break
-            if R.InPurodyuusu.ButtonIconExchange(enabled=True).try_click():
-                purchase_clicked = True
-                continue
-            if purchase_confirmed and R.InPurodyuusu.ButtonEndConsult.try_click():
-                exit_clicked = True
-                exit_cd.start()
-                continue
-
-            if exit_cd.expired():
-                break
-
-            if not purchase_confirmed:
-                device.click(R.InPurodyuusu.PointConsultFirstItem)
-                wait_purchase_cd.start()
+        flow = _ConsultFlow(self.controller)
+        self.controller._flow = flow
+        flow.step(Scene(SceneType.CONSULT))
 
 
 class AllowanceContext(Context):
@@ -664,7 +719,8 @@ class SkillCardRemovalContext(SkillFullScreenDialogContext):
 class ProducePage(
         _SceneCheckMixin,
     ):
-    pass
+    def __init__(self) -> None:
+        pass
 
 if __name__ == '__main__':
     from kotonebot.backend.debug.mock import MockDevice

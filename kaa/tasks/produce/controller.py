@@ -8,6 +8,7 @@ from .page import (
     StudyContext, OutingContext, ConsultContext, AllowanceContext,
     SkillCardEnhanceContext, SkillCardRemovalContext,
     PDrinkMaxContext, PDrinkMaxConfirmContext, NetworkErrorContext, DateChangeContext,
+    Flow
 )
 from kaa.tasks.common import skip
 from .consts import Scene, SceneType
@@ -22,6 +23,7 @@ class ProduceController:
         self.strategy = StandardStrategy(self)
         self.running: bool = True
         self._last_scene: Scene | None = None
+        self._flow: Flow | None = None
 
     def abort(self) -> None:
         logger.info("Aborting the produce session.")
@@ -54,7 +56,7 @@ class ProduceController:
 
     @action('执行培育循环', screenshot_mode='manual')
     def run(self):
-        for l in Loop():
+        for _ in Loop():
             if not self.running:
                 logger.info("Produce session exiting.")
                 break
@@ -62,25 +64,42 @@ class ProduceController:
 
 
     def _dispatch(self, scene: 'Scene', last_scene: 'Scene | None'):
+        # PRACTICE 退出通知
         if last_scene and last_scene.type == SceneType.PRACTICE and scene.type != SceneType.PRACTICE:
             logger.info("Exited practice battle scene.")
             self.strategy.on_practice_exited()
-        
+            return
+
+        # 先处理全局中断/弹窗类场景
+        if scene.type == SceneType.PDRINK_MAX:
+            ctx = PDrinkMaxContext(self.page, self)
+            self.strategy.on_pdrink_max(ctx)
+            return
+        elif scene.type == SceneType.PDRINK_MAX_CONFIRM:
+            ctx = PDrinkMaxConfirmContext(self.page, self)
+            self.strategy.on_pdrink_max_confirm(ctx)
+            return
+        elif scene.type == SceneType.NETWORK_ERROR:
+            ctx = NetworkErrorContext(self.page, self)
+            self.strategy.on_network_error(ctx)
+            return
+        elif scene.type == SceneType.DATE_CHANGE:
+            ctx = DateChangeContext(self.page, self)
+            self.strategy.on_date_change(ctx)
+            return
+
+        # 若存在正在运行的 Flow，则优先推进它
+        if self._flow is not None:
+            done = self._flow.step(scene)
+            if done:
+                logger.debug("Flow %s completed.", type(self._flow).__name__)
+                self._flow = None
+            return
+
+        # 否则按当前场景分发
         match scene.type:
             case SceneType.LOADING:
                 logger.info("Loading...")
-            case SceneType.PDRINK_MAX:
-                ctx = PDrinkMaxContext(self.page, self)
-                self.strategy.on_pdrink_max(ctx)
-            case SceneType.PDRINK_MAX_CONFIRM:
-                ctx = PDrinkMaxConfirmContext(self.page, self)
-                self.strategy.on_pdrink_max_confirm(ctx)
-            case SceneType.NETWORK_ERROR:
-                ctx = NetworkErrorContext(self.page, self)
-                self.strategy.on_network_error(ctx)
-            case SceneType.DATE_CHANGE:
-                ctx = DateChangeContext(self.page, self)
-                self.strategy.on_date_change(ctx)
             case SceneType.SELECT_DRINK:
                 ctx = DrinkSelectContext(self.page, self)
                 sleep(0.3)
