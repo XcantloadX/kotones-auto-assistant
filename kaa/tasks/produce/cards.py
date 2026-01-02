@@ -155,7 +155,6 @@ def do_cards(
                 continue
         # 饮品详细对话框（需要在 ButtonIconCheckMark 之前，因为ButtonUse也是√）
         if R.InPurodyuusu.ButtonUse.try_click():
-            # 点击已完成 by try_click()
             if enable_drink and drinks_list is not None:
                 if drink_selected_idx < 0 or drink_selected_idx >= len(drinks_list):
                     logger.warning('`drink_selected_idx` dismatches, internal error!')
