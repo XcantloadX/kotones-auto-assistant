@@ -1,7 +1,8 @@
 from enum import Enum, auto
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
+from kaa.config.const import ProduceAction
 from kotonebot.core import GameObject
 
 if TYPE_CHECKING:
@@ -74,3 +75,9 @@ class SelectDrinkDialog:
     drinks: list[Drink]
 
     _skip_button: GameObject | None
+
+@dataclass
+class PerformanceMetricsVal:
+    current: int
+    max: int
+    lesson: Literal[ProduceAction.VOCAL, ProduceAction.DANCE, ProduceAction.VISUAL]

@@ -170,5 +170,61 @@
       },
       "displayName": "審査基準"
     }
+    ,"3b9c9e2d-1a64-4a3d-9f2f-0b9d5d2a1c11": {
+      "name": "InPurodyuusu.CurVoValue",
+      "displayName": "行动页 当前 Vo 值",
+      "type": "hint-box",
+      "props": {
+        "image": {
+          "kind": "rect",
+          "x1": 185,
+          "y1": 680,
+          "x2": 285,
+          "y2": 720
+        }
+      }
+    },
+    "4d2f7b8e-6c3a-4f22-8d9a-2f7e6b4a2f22": {
+      "name": "InPurodyuusu.CurDaValue",
+      "displayName": "行动页 当前 Da 值",
+      "type": "hint-box",
+      "props": {
+        "image": {
+          "kind": "rect",
+          "x1": 330,
+          "y1": 680,
+          "x2": 430,
+          "y2": 720
+        }
+      }
+    },
+    "7a6e5c3b-2b11-4d8f-a9c3-1e4b8f9d3e33": {
+      "name": "InPurodyuusu.CurViValue",
+      "displayName": "行动页 当前 Vi 值",
+      "type": "hint-box",
+      "props": {
+        "image": {
+          "kind": "rect",
+          "x1": 475,
+          "y1": 680,
+          "x2": 575,
+          "y2": 720
+        }
+      }
+    },
+    "9f8b6a2c-5d44-4c3e-b1a7-6c2d9e0f4b44": {
+      "name": "InPurodyuusu.MaxDaValue",
+      "displayName": "行动页 最大 Da 值",
+      "type": "hint-box",
+      "props": {
+        "image": {
+          "kind": "rect",
+          "x1": 285,
+          "y1": 720,
+          "x2": 430,
+          "y2": 750
+        }
+      }
+    }
   }
 }

@@ -6,14 +6,14 @@ import numpy as np
 from kotonebot.primitives import Rect
 from kotonebot.core import GameObject, AnyOf, Prefab
 from kotonebot.errors import UnrecoverableError
-from kotonebot import logging, device, sleep, Countdown, Loop, cropped
+from kotonebot import logging, device, sleep, Countdown, Loop, cropped, ocr
 
 from kaa.tasks import R
 from kaa.tasks.common import skip
 from kaa.config.const import ProduceAction
 from kaa.tasks.actions.loading import loading
 from kaa.game_ui import CommuEventButtonUI, dialog, badge
-from .consts import Drink, Scene, SceneType, SelectDrinkDialog
+from .consts import Drink, Scene, SceneType, SelectDrinkDialog, PerformanceMetricsVal
 from kaa.tasks.produce.cards import CardDetectResult, detect_recommended_card, skill_card_count
 if TYPE_CHECKING:
     from .controller import ProduceController
@@ -348,6 +348,7 @@ class ActionSelectContext(Context):
 
     @eval_once
     def fetch_available_actions(self) -> tuple[list[ProduceAction], list[GameObject]]:
+        """读取当前可用的行动"""
         if self.is_final_week():
             # 冲刺周只有 Da Vi Vo 三种行动
             return [
@@ -361,11 +362,8 @@ class ActionSelectContext(Context):
             ]
         else:
             # 否则逐个检测
+            # 非课程
             actions = [
-                (R.InPurodyuusu.TextActionVisual, ProduceAction.VISUAL),
-                (R.InPurodyuusu.TextActionVocal, ProduceAction.VOCAL),
-                (R.InPurodyuusu.TextActionDance, ProduceAction.DANCE),
-
                 (R.InPurodyuusu.Rest, ProduceAction.REST),
 
                 (R.InPurodyuusu.ButtonIconOuting, ProduceAction.OUTING),
@@ -379,6 +377,27 @@ class ActionSelectContext(Context):
                 if obj := btn.find():
                     result.append(action)
                     buttons.append(obj)
+            
+            # 课程与 SP 课程的处理
+            # 三个课程一定都有或都没有
+            vo = R.InPurodyuusu.ButtonPracticeVocal.find()
+            if vo is not None:
+                vo_sp = da_sp = vi_sp = False
+                da = R.InPurodyuusu.ButtonPracticeDance.require()
+                vi = R.InPurodyuusu.ButtonPracticeVisual.require()
+                sp_list = R.InPurodyuusu.IconSp.find_all()
+                for cur_sp in sp_list:
+                    if cur_sp.rect.center[0] < vo.rect.center[0]:
+                        vo_sp = True
+                    if vo.rect.center[0] < cur_sp.rect.center[0] < da.rect.center[0]:
+                        da_sp = True
+                    if da.rect.center[0] < cur_sp.rect.center[0] < vi.rect.center[0]:
+                        vi_sp = True
+                
+                buttons.extend([da, vo, vi])
+                result.append(ProduceAction.DANCE_SP if da_sp else ProduceAction.DANCE)
+                result.append(ProduceAction.VOCAL_SP if vo_sp else ProduceAction.VOCAL)
+                result.append(ProduceAction.VISUAL_SP if vi_sp else ProduceAction.VISUAL)
             return result, buttons
         
     @eval_once
@@ -422,6 +441,37 @@ class ActionSelectContext(Context):
         else:
             raise ValueError("Unrecognized sensei tip action.")
 
+    def _read_number(self, box: Rect) -> int:
+        all_number = ocr.ocr(rect=box)
+        all_number = all_number.squash().numbers()
+        if all_number:
+            try:
+                return int(all_number[0])
+            except Exception:
+                return 0
+        return 0
+
+    @eval_once
+    def fetch_perf_metrics(self) -> list[PerformanceMetricsVal]:
+        cur_vo = self._read_number(R.InPurodyuusu.CurVoValue)
+        cur_da = self._read_number(R.InPurodyuusu.CurDaValue)
+        cur_vi = self._read_number(R.InPurodyuusu.CurViValue)
+        max_val = self._read_number(R.InPurodyuusu.MaxDaValue)
+
+        return [
+            PerformanceMetricsVal(current=cur_vi, max=max_val, lesson=ProduceAction.VISUAL),
+            PerformanceMetricsVal(current=cur_da, max=max_val, lesson=ProduceAction.DANCE),
+            PerformanceMetricsVal(current=cur_vo, max=max_val, lesson=ProduceAction.VOCAL),
+        ]
+    
+    def has_sp_lesson(self) -> bool:
+        actions = self.fetch_available_actions()[0]
+        return (
+            ProduceAction.VISUAL_SP in actions or
+            ProduceAction.VOCAL_SP in actions or
+            ProduceAction.DANCE_SP in actions
+        )
+
     def commit(self, action: 'ProduceAction'):
         _actions = self.fetch_available_actions()
         if action not in _actions[0]:
@@ -442,6 +492,9 @@ class ActionSelectContext(Context):
             R.InPurodyuusu.TextActionVisual,
             R.InPurodyuusu.TextActionVocal,
             R.InPurodyuusu.TextActionDance,
+            R.InPurodyuusu.ButtonPracticeDance,
+            R.InPurodyuusu.ButtonPracticeVocal,
+            R.InPurodyuusu.ButtonPracticeVisual,
         ]:
             for _ in range(3):
                 button.click()

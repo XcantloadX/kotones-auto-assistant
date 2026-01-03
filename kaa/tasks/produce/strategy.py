@@ -8,7 +8,7 @@ from kotonebot.errors import UnrecoverableError
 from kaa.tasks import R
 from kaa.tasks.produce.cards import CardDetectResult, do_cards
 from kaa.config.schema import produce_solution
-from kaa.config.const import RecommendCardDetectionMode
+from kaa.config.const import ProduceAction, RecommendCardDetectionMode
 from kaa.tasks.produce.common import ProduceInterrupt, acquisition_date_change_dialog
 
 if TYPE_CHECKING:
@@ -23,6 +23,16 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+def _lesson_to_sp(lesson: ProduceAction | None) -> ProduceAction | None:
+    match lesson:
+        case ProduceAction.VISUAL:
+            return ProduceAction.VISUAL_SP
+        case ProduceAction.VOCAL:
+            return ProduceAction.VOCAL_SP
+        case ProduceAction.DANCE:
+            return ProduceAction.DANCE_SP
+        case _:
+            return None
 
 class StandardStrategy:
     def __init__(self, controller: 'ProduceController') -> None:
@@ -108,15 +118,43 @@ class StandardStrategy:
         ctx.commit(0)
 
     def on_action_select(self, ctx: 'ActionSelectContext'):
-        # 如果有推荐行动，优先推荐
         recommend = ctx.fetch_sensei_tip()
+        availables = ctx.fetch_available_actions()[0]
+
+        # 首先处理优先 SP
+        # 如果优先 SP，
+        if produce_solution().data.prefer_lesson_ap and ctx.has_sp_lesson():
+            # 1. 推荐行动是休息，则休息
+            if recommend == ProduceAction.REST:
+                ctx.commit(ProduceAction.REST)
+                return
+            
+            # 2. 推荐行动是 SP 课程，则执行推荐行动
+            sp = _lesson_to_sp(recommend)
+            if sp and sp in availables:
+                ctx.commit(sp)
+                return
+
+            # 3. 推荐行动是其他，优先选择 current/max < 0.8 的 SP 课程
+            metrics = ctx.fetch_perf_metrics()
+            for m in metrics:
+                sp_lesson = _lesson_to_sp(m.lesson)
+                if m.current / m.max < 0.8 and sp_lesson in availables:
+                    ctx.commit(sp_lesson)
+                    return
+
+            # 4. 如果都 > 0.8，则选择 current 最小的课程
+            min_metric = min(metrics, key=lambda x: x.current)
+            ctx.commit(min_metric.lesson)
+            return
+
+        # 如果有推荐行动，优先推荐
         if recommend:
             ctx.commit(recommend)
             return
         
         # 否则按照配置里的顺序来
         configured_actions = produce_solution().data.actions_order
-        availables = ctx.fetch_available_actions()[0]
         for ac in configured_actions:
             for available in availables:
                 if ac == available:
