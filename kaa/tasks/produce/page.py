@@ -763,10 +763,55 @@ class SkillCardEnhanceContext(SkillFullScreenDialogContext):
     def __init__(self, page: 'ProducePage', controller: 'ProduceController') -> None:
         super().__init__(page, controller, R.InPurodyuusu.ButtonEnhance(enabled=True))
 
+    @eval_once
+    def fetch_required_count(self) -> int:
+        """读入需要选择的卡片张数"""
+        raise NotImplementedError
+
+    def commit(self, index: int = 0):
+        """遍历多张卡，尝试点击每张卡并点强化按钮，直到成功为止。"""
+        if index != 0:
+            raise NotImplementedError("SkillCardEnhanceContext.commit only supports index=0 for now.")
+        cards = self.fetch_cards()
+        if not cards:
+            logger.info("No skill cards found for enhance")
+            return
+
+        # 从右侧开始尝试（反序）
+        for card in reversed(cards):
+            device.click(card)
+            sleep(0.5)
+            device.screenshot()
+            if R.InPurodyuusu.ButtonEnhance(enabled=True).try_click():
+                sleep(0.5)
+                logger.debug("Enhance button clicked for a card.")
+                break
+        logger.debug("Handle skill card enhance finished.")
+
 
 class SkillCardRemovalContext(SkillFullScreenDialogContext):
     def __init__(self, page: 'ProducePage', controller: 'ProduceController') -> None:
         super().__init__(page, controller, R.InPurodyuusu.ButtonRemove)
+
+    def commit(self, index: int = 0):
+        if index != 0:
+            raise NotImplementedError("SkillCardRemovalContext.commit only supports index=0 for now.")
+        cards = self.fetch_cards()
+        if not cards:
+            logger.info("No skill cards found for removal")
+            return
+
+        if index < 0 or index >= len(cards):
+            target = cards[0]
+        else:
+            target = cards[index]
+
+        device.click(target)
+        for _ in Loop():
+            if R.InPurodyuusu.ButtonRemove.try_click():
+                logger.debug("Remove button clicked.")
+                break
+        logger.debug("Handle skill card removal finished.")
 
 
 class ProducePage(
