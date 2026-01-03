@@ -1,8 +1,9 @@
-import React, { useState, useRef } from 'react';
-import { View, StyleSheet, ScrollView, LayoutChangeEvent, NativeSyntheticEvent, NativeScrollEvent } from 'react-native';
+import React, { useState } from 'react';
+import { View, StyleSheet, ScrollView } from 'react-native';
 import { Text, Card, Button, TextInput, IconButton, useTheme, List, SegmentedButtons } from 'react-native-paper';
 import { useDeviceType } from '../hooks/useDeviceType';
 import { MD3Switch } from '../components/MD3Switch';
+import { useScrollSpy } from '../hooks/useScrollSpy';
 
 // Mock data
 const SCHEMES = ['ktn世一可', '会长 our chant', 'Test Scheme'];
@@ -17,11 +18,8 @@ const SECTIONS = [
 export const ProduceScreen = () => {
   const { isLargeScreen } = useDeviceType();
   const theme = useTheme();
-  const [activeSection, setActiveSection] = useState('basic');
-  
-  const scrollViewRef = useRef<ScrollView>(null);
-  const sectionPositions = useRef<{ [key: string]: number }>({});
-  const isScrollingRef = useRef(false);
+  const allSectionIds = SECTIONS.map(s => s.id);
+  const { activeSection, scrollViewRef, onSectionLayout, scrollToSection, handleScroll } = useScrollSpy(allSectionIds);
 
   // State
   const [scheme, setScheme] = useState(SCHEMES[0]);
@@ -47,43 +45,6 @@ export const ProduceScreen = () => {
   // Action Priority List (Mock)
   const [actions, setActions] = useState(ACTIONS);
 
-  const onSectionLayout = (id: string, event: LayoutChangeEvent) => {
-    sectionPositions.current[id] = event.nativeEvent.layout.y;
-  };
-
-  const scrollToSection = (id: string) => {
-    const y = sectionPositions.current[id];
-    if (y !== undefined && scrollViewRef.current) {
-      isScrollingRef.current = true;
-      setActiveSection(id);
-      scrollViewRef.current.scrollTo({ y, animated: true });
-      setTimeout(() => {
-        isScrollingRef.current = false;
-      }, 500);
-    }
-  };
-
-  const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-    if (isScrollingRef.current) return;
-
-    const scrollY = event.nativeEvent.contentOffset.y;
-    const positions = sectionPositions.current;
-    
-    let currentSection = activeSection;
-
-    for (const section of SECTIONS) {
-      const pos = positions[section.id];
-      if (pos !== undefined) {
-        if (scrollY >= pos - 100) { // Buffer
-           currentSection = section.id;
-        }
-      }
-    }
-
-    if (currentSection !== activeSection) {
-      setActiveSection(currentSection);
-    }
-  };
 
   // Components
   const ConfigSwitch = ({ label, value, onChange, disabled }: { label: string, value: boolean, onChange: () => void, disabled?: boolean }) => (
@@ -300,7 +261,7 @@ const styles = StyleSheet.create({
   sidebar: {
     width: 200,
     borderRightWidth: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#F2F4F8',
     height: '100%',
   },
   sidebarItem: {

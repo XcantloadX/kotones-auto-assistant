@@ -1,11 +1,38 @@
-from typing import Any
+"""
+feedback_api：BASE=/api/feedback
+
+POST actions (body: Pydantic request models):
+* ACTION=create_report，IN=(CreateReportRequest)，OUT=ApiResponse[Any]，创建并提交反馈报告（可选上传）
+* ACTION=export_logs，IN=(ExportLogsRequest)，OUT=ApiResponse[LogExportResult]，导出日志为 zip 并返回路径/消息
+"""
+
+from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
 
 from kaa.application.ui.facade import KaaFacade
 
-from .models import ApiResponse, ErrorInfo, LogExportResult
+
+from .models import ApiResponse, ErrorInfo
 from .tasks_api import get_facade
+
+
+class LogExportResult(BaseModel):
+    message: str
+    zip_path: Optional[str] = None
+
+
+class CreateReportRequest(BaseModel):
+    action: str
+    title: str | None = None
+    description: str | None = None
+    upload: bool | None = True
+
+
+class ExportLogsRequest(BaseModel):
+    action: str
+
 
 router = APIRouter()
 
@@ -18,9 +45,16 @@ async def feedback_post(
     action = payload.get("action")
 
     if action == "create_report":
-        title = payload.get("title") or "无标题"
-        description = payload.get("description") or ""
-        upload = bool(payload.get("upload", True))
+        try:
+            req = CreateReportRequest.model_validate(payload)
+        except Exception as e:
+            return ApiResponse(
+                success=False,
+                error=ErrorInfo(code="INVALID_PAYLOAD", message=str(e)),
+            )
+        title = req.title or "无标题"
+        description = req.description or ""
+        upload = bool(req.upload if req.upload is not None else True)
 
         try:
             # 这里直接使用 changelog 所在版本段落前缀中的版本号不太可靠，
@@ -40,6 +74,13 @@ async def feedback_post(
         return ApiResponse(success=True, data=result)
 
     if action == "export_logs":
+        try:
+            _ = ExportLogsRequest.model_validate(payload)
+        except Exception as e:
+            return ApiResponse(
+                success=False,
+                error=ErrorInfo(code="INVALID_PAYLOAD", message=str(e)),
+            )
         message = facade.export_logs_as_zip()
         zip_path = None
         if "已导出到" in message:

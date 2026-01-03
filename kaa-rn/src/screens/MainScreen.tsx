@@ -13,27 +13,26 @@ export const MainScreen = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const { isLargeScreen } = useDeviceType();
 
-  const renderContent = () => {
-    switch (activeTab) {
-      case 'dashboard':
-        return <DashboardScreen />;
-      case 'config':
-        return <ConfigScreen />;
-      case 'produce':
-        return <ProduceScreen />;
-      case 'about':
-        return <AboutScreen />;
-      default:
-        return <DashboardScreen />;
-    }
-  };
+  // Always mount screens, control visibility via style (display: 'none')
+  const isActive = (id: string) => activeTab === id;
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.row}>
         {isLargeScreen && <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />}
         <View style={styles.content}>
-          {renderContent()}
+          <View style={[styles.screen, !isActive('dashboard') && styles.hidden]}>
+            <DashboardScreen />
+          </View>
+          <View style={[styles.screen, !isActive('config') && styles.hidden]}>
+            <ConfigScreen />
+          </View>
+          <View style={[styles.screen, !isActive('produce') && styles.hidden]}>
+            <ProduceScreen />
+          </View>
+          <View style={[styles.screen, !isActive('about') && styles.hidden]}>
+            <AboutScreen />
+          </View>
         </View>
       </View>
       {!isLargeScreen && <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />}
@@ -57,6 +56,12 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  screen: {
+    flex: 1,
+  },
+  hidden: {
+    display: 'none',
   },
   
 });

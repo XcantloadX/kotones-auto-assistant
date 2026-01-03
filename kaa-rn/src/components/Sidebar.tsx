@@ -6,8 +6,9 @@ const MENU_ITEMS = [
   { id: 'dashboard', label: '总览', icon: 'view-dashboard-outline' },
   { id: 'config', label: '配置', icon: 'tune' },
   { id: 'produce', label: '培育', icon: 'school-outline' },
-  { id: 'about', label: '关于', icon: 'information-outline' },
 ];
+
+const BOTTOM_ITEM = { id: 'about', label: '关于', icon: 'information-outline' };
 
 interface SidebarProps {
   activeTab: string;
@@ -17,38 +18,44 @@ interface SidebarProps {
 export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange }) => {
   const theme = useTheme();
 
+  const secondaryContainer = theme.colors?.secondaryContainer ?? '#FFDCC2';
+  const onSecondaryContainer = theme.colors?.onSecondaryContainer ?? '#2E1500';
+  const onSurfaceVariant = theme.colors?.onSurfaceVariant ?? '#49454F';
+  const onSurface = theme.colors?.onSurface ?? '#1d1b20';
+
   return (
     <View style={[styles.container, { backgroundColor: '#F2F4F8' }]}>
-      {/* Top Logo Area */}
-      <View style={styles.logoContainer}>
-        <View style={styles.logoIcon}>
-          <Icon source="book" size={20} color="#555" />
-        </View>
-      </View>
 
       {/* Menu Items */}
       <View style={styles.menuContainer}>
         {MENU_ITEMS.map((item) => {
           const isActive = activeTab === item.id;
+          const iconName = isActive ? item.icon.replace('-outline', '') : item.icon;
           return (
             <TouchableOpacity
               key={item.id}
-              style={[
-                styles.item,
-                isActive && { backgroundColor: '#E1E4E8' },
-              ]}
+              style={styles.item}
               onPress={() => onTabChange(item.id)}
+              activeOpacity={0.7}
             >
-              <Icon
-                source={item.icon}
-                size={24}
-                color={isActive ? '#1A1A1A' : '#666666'}
-              />
+              <View
+                style={[
+                  styles.iconContainer,
+                  isActive && { backgroundColor: secondaryContainer },
+                ]}
+              >
+                <Icon
+                  source={iconName}
+                  size={24}
+                  color={isActive ? onSecondaryContainer : onSurfaceVariant}
+                />
+              </View>
+
               <Text
                 variant="labelSmall"
                 style={[
                   styles.label,
-                  { color: isActive ? '#1A1A1A' : '#666666' },
+                  isActive && { color: onSurface, fontWeight: '700' },
                 ]}
               >
                 {item.label}
@@ -60,6 +67,42 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange }) => {
 
       {/* Bottom Action */}
       <View style={styles.bottomContainer}>
+        {(() => {
+          const item = BOTTOM_ITEM;
+          const isActive = activeTab === item.id;
+          const iconName = isActive ? item.icon.replace('-outline', '') : item.icon;
+          return (
+            <TouchableOpacity
+              key={item.id}
+              style={styles.item}
+              onPress={() => onTabChange(item.id)}
+              activeOpacity={0.7}
+            >
+              <View
+                style={[
+                  styles.iconContainer,
+                  isActive && { backgroundColor: secondaryContainer },
+                ]}
+              >
+                <Icon
+                  source={iconName}
+                  size={24}
+                  color={isActive ? onSecondaryContainer : onSurfaceVariant}
+                />
+              </View>
+
+              <Text
+                variant="labelSmall"
+                style={[
+                  styles.label,
+                  isActive && { color: onSurface, fontWeight: '700' },
+                ]}
+              >
+                {item.label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })()}
       </View>
     </View>
   );
@@ -67,27 +110,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange }) => {
 
 const styles = StyleSheet.create({
   container: {
-    width: 72,
+    width: 80,
     height: '100%',
     alignItems: 'center',
-    paddingVertical: 16,
-    borderRightWidth: 1,
-    borderRightColor: '#E1E4E8',
-  },
-  logoContainer: {
-    marginBottom: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: 48,
-    height: 48,
-  },
-  logoIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    backgroundColor: '#E1E4E8',
-    alignItems: 'center',
-    justifyContent: 'center',
+    paddingTop: 20,
+    paddingBottom: 12,
   },
   menuContainer: {
     flex: 1,
@@ -97,10 +124,18 @@ const styles = StyleSheet.create({
   },
   item: {
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
+    width: '100%',
+    paddingVertical: 6,
+    marginBottom: 12,
+  },
+  iconContainer: {
     width: 56,
-    height: 56,
-    borderRadius: 12,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
   },
   label: {
     marginTop: 4,

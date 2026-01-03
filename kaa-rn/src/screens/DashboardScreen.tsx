@@ -1,20 +1,29 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { View, StyleSheet, ScrollView } from 'react-native';
-import { Text, Button, useTheme, FAB } from 'react-native-paper';
+import { Text, Button, useTheme, FAB, ActivityIndicator } from 'react-native-paper';
 import { StatusCard } from '../components/StatusCard';
 import { ModuleCard } from '../components/ModuleCard';
 import { LogPanel } from '../components/LogPanel';
-import { MODULES, LOGS, STATUS } from '../data/mockData';
+import { LOGS, STATUS } from '../data/mockData';
+import useQuickSettings from '../hooks/useQuickSettings';
+import useTaskOverview from '../hooks/useTasks';
 import { useDeviceType } from '../hooks/useDeviceType';
+import useBackendVersion from '../hooks/useBackendVersion';
 
 export const DashboardScreen = () => {
   const theme = useTheme();
   const { isLargeScreen } = useDeviceType();
+  const { data: version } = useBackendVersion();
 
-  const [modules, setModules] = useState(MODULES);
+  const { data: quickData, isLoading: quickLoading, patchQuickSettings } = useQuickSettings();
+  const { data: overview, isLoading: overviewLoading, runAll, stopAll, pauseToggle } = useTaskOverview();
 
-  const toggleModule = (id: string) => {
-    setModules(prev => prev.map(m => m.id === id ? { ...m, enabled: !m.enabled } : m));
+  const toggleModule = (valueKey?: string, id?: string) => {
+    if (!quickData) return;
+    const key = valueKey || id;
+    if (!key) return;
+    const current = (quickData as any).values?.[key];
+    patchQuickSettings.mutate({ [key]: !current });
   };
 
   return (
@@ -26,19 +35,36 @@ export const DashboardScreen = () => {
           <View style={styles.header}>
             <View>
               <Text variant="headlineMedium" style={styles.appTitle}>琴音小助手</Text>
-              {isLargeScreen && <Text variant="bodySmall" style={styles.version}>v2025.11.post3</Text>}
+              {isLargeScreen && <Text variant="bodySmall" style={styles.version}>{`v${version}`}</Text>}
             </View>
             {isLargeScreen ? (
               <View style={styles.headerControls}>
-                <Button mode="contained" onPress={() => {}} style={styles.startButton}>
-                  启动
+                <Button
+                  mode="contained"
+                  onPress={() => {
+                    if (!overview) return;
+                    if (overview.run_button?.status === 'start') runAll.mutate();
+                    else runAll.mutate();
+                  }}
+                  disabled={overviewLoading || !overview?.run_button?.interactive}
+                  style={styles.startButton}
+                >
+                  {overview?.run_button?.status === 'stop' ? '停止' : overview?.run_button?.status === 'stopping' ? '停止中' : '启动'}
                 </Button>
-                <Button mode="outlined" onPress={() => {}} style={styles.actionButton}>
-                  完成后: 什么都不做
+
+                <Button
+                  mode="outlined"
+                  onPress={() => {
+                    if (!overview) return;
+                    pauseToggle.mutate();
+                  }}
+                  disabled={overviewLoading || !overview?.pause_button?.interactive}
+                  style={styles.actionButton}
+                >
+                  {overview?.pause_button?.status === 'resume' ? '恢复' : '暂停'}
                 </Button>
               </View>
             ) : (
-              // small-screen header shows compact layout (no avatar)
               <></>
             )}
           </View>
@@ -52,15 +78,28 @@ export const DashboardScreen = () => {
             {isLargeScreen && <Text variant="titleMedium" style={styles.sectionTitle}>模块开关</Text>}
             
             <View style={isLargeScreen ? styles.grid : styles.list}>
-              {modules.map((module) => (
-                <View key={module.id} style={isLargeScreen ? styles.gridItem : styles.listItem}>
-                  <ModuleCard
-                    {...module}
-                    onToggle={() => toggleModule(module.id)}
-                    isMobile={!isLargeScreen}
-                  />
+              {quickLoading ? (
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator animating={true} size={48} />
                 </View>
-              ))}
+              ) : (
+                quickData?.items?.map((module) => {
+                const key = module.value_key || module.id;
+                const enabled = quickData?.values ? (quickData.values as any)[key] : false;
+                return (
+                  <View key={module.id} style={isLargeScreen ? styles.gridItem : styles.listItem}>
+                    <ModuleCard
+                      name={module.name}
+                      icon={module.icon as any}
+                      enabled={enabled}
+                      hasSettings={!!module.has_settings}
+                      onToggle={() => toggleModule(module.value_key ?? undefined, module.id)}
+                      isMobile={!isLargeScreen}
+                    />
+                  </View>
+                );
+                })
+              )}
             </View>
           </ScrollView>
         </View>
@@ -76,7 +115,7 @@ export const DashboardScreen = () => {
           icon="play"
           style={[styles.fab, { backgroundColor: theme.colors.primary }]}
           color="white"
-          onPress={() => console.log('Start')}
+          onPress={() => runAll.mutate()}
         />
       )}
     </View>
@@ -128,6 +167,13 @@ const styles = StyleSheet.create({
   sectionTitle: {
     marginBottom: 12,
     marginTop: 8,
+  },
+  loadingContainer: {
+    width: '100%',
+    minHeight: 120,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 24,
   },
   grid: {
     flexDirection: 'row',

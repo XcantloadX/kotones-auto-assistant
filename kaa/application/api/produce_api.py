@@ -1,3 +1,16 @@
+"""
+produce_api：BASE=/api/produce
+
+GET actions:
+* ACTION=list_solutions，IN=(action=list_solutions)，OUT=ApiResponse[List[ProduceSolution]]，列出所有培育方案
+* ACTION=get_solution，IN=(action=get_solution, solution_id)，OUT=ApiResponse[ProduceSolution]，获取指定培育方案
+
+POST actions (body: Pydantic request models):
+* ACTION=create_solution，IN=(CreateSolutionRequest)，OUT=ApiResponse[ProduceSolution]，创建新方案
+* ACTION=delete_solution，IN=(DeleteSolutionRequest)，OUT=ApiResponse[None]，删除指定方案
+* ACTION=save_solution，IN=(SaveSolutionRequest)，OUT=ApiResponse[ProduceSolution]，保存方案数据
+"""
+
 from typing import Any, List
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -57,12 +70,26 @@ async def produce_post(
     action = payload.get("action")
 
     if action == "create_solution":
-        name = payload.get("name") or "新培育方案"
+        try:
+            req = CreateSolutionRequest.model_validate(payload)
+        except Exception as e:
+            return ApiResponse[ProduceSolution](
+                success=False,
+                error=ErrorInfo(code="INVALID_PAYLOAD", message=str(e)),
+            )
+        name = req.name or "新培育方案"
         solution = facade.create_produce_solution(name)
         return ApiResponse[ProduceSolution](success=True, data=solution)
 
     if action == "delete_solution":
-        solution_id = payload.get("solution_id")
+        try:
+            req = DeleteSolutionRequest.model_validate(payload)
+        except Exception as e:
+            return ApiResponse[None](
+                success=False,
+                error=ErrorInfo(code="INVALID_PAYLOAD", message=str(e)),
+            )
+        solution_id = req.solution_id
         if not solution_id:
             return ApiResponse[None](
                 success=False,

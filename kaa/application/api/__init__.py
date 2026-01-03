@@ -1,3 +1,15 @@
+"""
+api：BASE=/api
+
+* include_router: tasks -> BASE=/api/tasks
+* include_router: config -> BASE=/api/config
+* include_router: produce -> BASE=/api/produce
+* include_router: update -> BASE=/api/update
+* include_router: feedback -> BASE=/api/feedback
+* include_router: system -> BASE=/api/system
+* include_router: idle -> BASE=/api/idle
+"""
+
 from fastapi import APIRouter
 
 from .tasks_api import router as tasks_router

@@ -64,6 +64,11 @@ class ConfigService:
             raise RuntimeError("User config not loaded.")
         return self._current_user_config
 
+    def set_current_user_config(self, config: UserConfig[BaseConfig]):
+        assert self._root_config is not None, "Root config must be loaded before setting user config."
+        self._current_user_config = config
+        self._root_config.user_configs[0] = config
+
     def get_options(self) -> BaseConfig:
         """Returns the 'options' part of the current user configuration."""
         if not self._current_user_config:

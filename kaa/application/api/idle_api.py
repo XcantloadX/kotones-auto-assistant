@@ -1,4 +1,12 @@
+"""
+idle_api：BASE=/api/idle
+
+GET actions:
+* ACTION=status，IN=(action=status)，OUT=ApiResponse[IdleStatusDto]，返回空闲模式和运行/暂停状态
+"""
+
 from typing import Any
+from pydantic import BaseModel
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
@@ -7,8 +15,17 @@ from kaa.application.services.task_service import TaskService
 from kaa.application.core.idle_mode import get_system_idle_seconds
 from kaa.config.schema import IdleModeConfig
 
-from .models import ApiResponse, IdleStatusDto
+
+from .models import ApiResponse
 from .tasks_api import get_facade
+
+
+class IdleStatusDto(BaseModel):
+    enabled: bool
+    idle_seconds_config: int
+    system_idle_seconds: int
+    running: bool
+    paused: bool
 
 router = APIRouter()
 

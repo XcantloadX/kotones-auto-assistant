@@ -1,4 +1,16 @@
-from typing import Any, List
+"""
+tasks_api：BASE=/api/tasks
+
+* ACTION=list_statuses，IN=(action=list_statuses)，OUT=ApiResponse[List[TaskStatusDto]]，列出任务状态
+* ACTION=list_registry，IN=(action=list_registry)，OUT=ApiResponse[List[str]]，列出注册表中所有任务名称
+* ACTION=overview，IN=(action=overview)，OUT=ApiResponse[TaskOverviewDto]，任务运行概览
+* ACTION=run_all，IN=(body: TasksPostPayload with action=run_all)，OUT=ApiResponse[None]，启动所有任务
+* ACTION=stop，IN=(body: TasksPostPayload with action=stop)，OUT=ApiResponse[None]，停止所有任务
+* ACTION=run_single，IN=(body: TasksPostPayload with task_name)，OUT=ApiResponse[None]，启动单个任务
+* ACTION=pause_toggle，IN=(body: TasksPostPayload with action=pause_toggle)，OUT=ApiResponse[PauseToggleResult]，切换暂停状态
+"""
+
+from typing import Any, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
@@ -7,14 +19,40 @@ from kaa.application.ui.facade import KaaFacade
 from kaa.main.kaa import Kaa
 from .models import (
     ApiResponse,
-    TaskStatusDto,
-    PauseToggleResult,
-    RunButtonStatus,
-    PauseButtonStatus,
-    TaskRuntimeDto,
-    TaskOverviewDto,
     ErrorInfo,
 )
+
+
+class TaskStatusDto(BaseModel):
+    name: str
+    status: str  # pending / running / finished / error / cancelled
+
+
+class PauseToggleResult(BaseModel):
+    paused: Optional[bool]
+
+
+class RunButtonStatus(BaseModel):
+    status: str      # "start" / "stop" / "stopping"
+    interactive: bool
+
+
+class PauseButtonStatus(BaseModel):
+    status: str      # "pause" / "resume"
+    interactive: bool
+
+
+class TaskRuntimeDto(BaseModel):
+    display: str     # 始终为 "HH:MM:SS" 形式
+    seconds: int     # 总秒数
+    running: bool    # 是否当前有任务在运行
+
+
+class TaskOverviewDto(BaseModel):
+    paused: Optional[bool]
+    run_button: RunButtonStatus
+    pause_button: PauseButtonStatus
+    runtime: TaskRuntimeDto
 
 
 router = APIRouter()

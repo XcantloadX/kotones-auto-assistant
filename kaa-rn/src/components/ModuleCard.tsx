@@ -98,7 +98,6 @@ const styles = StyleSheet.create({
   title: {
     fontWeight: 'bold',
   },
-  // slider and progress styles removed per design
   progressBar: {
     marginTop: 12,
   }
