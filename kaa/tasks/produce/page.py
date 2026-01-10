@@ -120,7 +120,7 @@ class _SceneCheckMixin:
         return None
 
     def _check_interrupt_dialogs(self) -> Scene | None:
-        """判断各种中断/弹窗场景（非正常行动/打牌界面）"""
+        """判断各种中断/弹窗场景"""
         # P饮料到达上限
         if R.InPurodyuusu.TextPDrinkMax.exists():
             logger.debug("Scene detected: PDRINK_MAX")
@@ -140,6 +140,11 @@ class _SceneCheckMixin:
         if R.Daily.TextDateChangeDialog.exists():
             logger.debug("Scene detected: DATE_CHANGE")
             return Scene(SceneType.DATE_CHANGE)
+        
+        # 第一次技能卡自选引导对话框
+        if R.InPurodyuusu.TextSkillCardSelectGuideDialogTitle.exists():
+            dialog.yes()
+            return Scene(SceneType.IDLE)
 
         return None
 
