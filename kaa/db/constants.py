@@ -12,4 +12,4 @@ class CharacterId(Enum):
     hrnm = "hrnm" # Himesaki Rinami, 姫崎莉波
     hume = "hume" # Hanami Ume, 花海佑芽
     jsna = "jsna" # Juo Sena, 十王星南
-    atmb = "atmb" # Amaya Tsubame, 雨夜燕
+    atbm = "atbm" # Amaya Tsubame, 雨夜燕
