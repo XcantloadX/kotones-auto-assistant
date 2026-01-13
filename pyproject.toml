@@ -3,7 +3,7 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-version = "v2025.11.post3"
+version = "v2025.11.post4"
 name = "ksaa"
 description = "Kotones Auto Assistant(kaa) is a script for game 'Gakuen Idol M@ster' that automates the dailies and produces."
 readme = "README.md"
@@ -12,7 +12,7 @@ dependencies = [
     # Image Processing & OCR
     "opencv-python~=4.10",
     "rapidocr_onnxruntime~=1.4",
-    "av~=14.0",
+    "av==14.0.1",
     "scikit-image~=0.25",
     "thefuzz~=0.22",
     # Adb Control
