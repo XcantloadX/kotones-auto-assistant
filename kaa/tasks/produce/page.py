@@ -113,6 +113,19 @@ class _SceneCheckMixin:
             or self._battle_scene()
         )
 
+    def check_interrupt_scene(self) -> Scene | None:
+        """仅检测可在“子循环(pump)”中处理的中断/对话框类场景。
+
+        注意：这里刻意不包含 ACTION_SELECT / PRACTICE / EXAM 等主流程场景，
+        以避免在弹窗处理的阻塞循环中误触发主状态机逻辑。
+        """
+        return (
+            self._check_loading()
+            or self._check_interrupt_dialogs()
+            or self._check_dialogs()
+            or self._check_fullscreen_dialogs()
+        )
+
     def _check_loading(self) -> Scene | None:
         """判断加载场景"""
         if loading():
@@ -131,15 +144,15 @@ class _SceneCheckMixin:
             logger.debug("Scene detected: PDRINK_MAX_CONFIRM")
             return Scene(SceneType.PDRINK_MAX_CONFIRM)
 
-        # 网络错误弹窗
-        if R.Common.TextNetworkError.exists():
-            logger.debug("Scene detected: NETWORK_ERROR")
-            return Scene(SceneType.NETWORK_ERROR)
+        # # 网络错误弹窗
+        # if R.Common.TextNetworkError.exists():
+        #     logger.debug("Scene detected: NETWORK_ERROR")
+        #     return Scene(SceneType.NETWORK_ERROR)
 
-        # 日期变更弹窗（会跳回首页，需要特殊处理）
-        if R.Daily.TextDateChangeDialog.exists():
-            logger.debug("Scene detected: DATE_CHANGE")
-            return Scene(SceneType.DATE_CHANGE)
+        # # 日期变更弹窗（会跳回首页，需要特殊处理）
+        # if R.Daily.TextDateChangeDialog.exists():
+        #     logger.debug("Scene detected: DATE_CHANGE")
+        #     return Scene(SceneType.DATE_CHANGE)
         
         # 第一次技能卡自选引导对话框
         if R.InPurodyuusu.TextSkillCardSelectGuideDialogTitle.exists():
@@ -507,7 +520,7 @@ class ActionSelectContext(Context):
             
             sleep(2)
             logger.info(f"Entered action: {action}")
-            wait_disappear(button.prefab)
+            self.controller.wait_disappear(button.prefab)
         else: # rest
             # 先等按钮出现
             # 点击休息直到确认对话框出现

@@ -10,7 +10,9 @@ from kaa.tasks.produce.cards import CardDetectResult, do_cards
 from kaa.config.schema import produce_solution
 from kaa.config.const import ProduceAction, RecommendCardDetectionMode
 from kaa.tasks.produce.common import ProduceInterrupt, acquisition_date_change_dialog
+from kaa.tasks.actions.commu import handle_unread_commu
 
+from .consts import Scene, SceneType
 if TYPE_CHECKING:
     from .page import (
         DrinkSelectContext, ActionSelectContext,
@@ -71,7 +73,6 @@ class StandardStrategy:
 
     def on_pdrink_max(self, ctx: 'PDrinkMaxContext'):
         """处理 P饮料到达上限弹窗"""
-        # 复用旧的 ProduceInterrupt 逻辑，避免重复代码
         ProduceInterrupt._check_pdrink_max(device.screenshot())
 
     def on_pdrink_max_confirm(self, ctx: 'PDrinkMaxConfirmContext'):
@@ -87,6 +88,12 @@ class StandardStrategy:
         result = acquisition_date_change_dialog()
         if result is None:
             logger.warning("DATE_CHANGE scene detected but acquisition_date_change_dialog returned None.")
+
+    def try_handle_commu(self, img) -> bool:
+        """处理交流"""
+        if produce_solution().data.skip_commu and handle_unread_commu(img):
+            return True
+        return False
 
     def on_select_drink(self, ctx: 'DrinkSelectContext'):
         """选择饮料"""

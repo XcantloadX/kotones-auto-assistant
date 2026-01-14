@@ -50,12 +50,6 @@ class SceneType(Enum):
     PDRINK_MAX_CONFIRM = auto()
     """P饮料到达上限确认弹窗"""
 
-    NETWORK_ERROR = auto()
-    """网络错误弹窗"""
-
-    DATE_CHANGE = auto()
-    """日期变更弹窗"""
-
 
 @dataclass
 class Scene:
