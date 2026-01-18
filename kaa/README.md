@@ -18,4 +18,4 @@
 在脚本里对图片资源的引用都应该通过 R 获得，避免硬编码字符串。
 
 此脚本不会被提交到 Git 仓库中。因此首次 Clone 后，应当运行 `python ./tools/make_resources.py` 来生成此脚本。
-如果你用的是 VSCode，可以通过 Terminal -> Run Task... -> Make R.py 来运行此脚本。
+如果你用的是 VSCode，可以通过 Terminal -> Run Task... -> Make Resource 来运行此脚本。
