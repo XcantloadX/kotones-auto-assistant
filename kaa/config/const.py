@@ -238,6 +238,9 @@ class ProduceAction(Enum):
             ProduceAction.ALLOWANCE: '活动支给（活動支給）',
             ProduceAction.REST: '休息',
             ProduceAction.CONSULT: '咨询（相談）',
+            ProduceAction.VISUAL_SP: '形象 SP 课程',
+            ProduceAction.VOCAL_SP: '声乐 SP 课程',
+            ProduceAction.DANCE_SP: '舞蹈 SP 课程',
         }
         return MAP[self]
 
