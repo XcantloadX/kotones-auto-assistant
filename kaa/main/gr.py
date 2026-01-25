@@ -40,7 +40,8 @@ def main(kaa_ins: Kaa, start_immediately: bool = False):
         # Set log level from config
         log_level_str = facade.config_service.get_options().misc.log_level
         log_level = logging.DEBUG if log_level_str == 'verbose' else logging.INFO
-        logging.getLogger().setLevel(log_level)
+        logging.getLogger('kaa').setLevel(log_level)
+        logging.getLogger('kotonebot').setLevel(log_level)
         logger.info(f"Log level set to {log_level_str.upper()}")
 
 
