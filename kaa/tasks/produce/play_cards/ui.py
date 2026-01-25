@@ -6,6 +6,7 @@ import logging
 from typing_extensions import override
 
 from cv2.typing import MatLike
+from kaa.db.constants import CharacterId
 from kaa.image_db.descriptors.hog import HogDescriptor
 from kotonebot import image
 from kotonebot.primitives import Rect
@@ -127,8 +128,13 @@ def locate_cards(img: MatLike):
         result = skill_cards_db().match(card_img, threshold=150)
         available = color.find(img, '#7a7d7d', rect=letter) is None
         if result is not None:
+            # 从资源名称中提取 asset_id
+            card_id = result.key.removesuffix('.png')
+            for c in CharacterId:
+                suffix = '-' + c.value
+                card_id = card_id.removesuffix(suffix)
             # 查数据库
-            db_card = SkillCard.from_asset_id(result.key.rstrip('.png'))
+            db_card = SkillCard.from_asset_id(card_id)
             card = CardGameObject(
                 rect=region,
                 res_name=result.key,

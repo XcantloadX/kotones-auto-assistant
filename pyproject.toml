@@ -12,6 +12,7 @@ dependencies = [
     # Image Processing & OCR
     "opencv-python~=4.10",
     "rapidocr_onnxruntime~=1.4",
+    "ddddocr",
     "av~=14.0",
     "scikit-image~=0.25",
     "thefuzz~=0.22",

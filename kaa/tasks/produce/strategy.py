@@ -1,12 +1,14 @@
 from typing import TYPE_CHECKING, Literal
 
 from kaa.tasks.produce.in_purodyuusu import produce_end
+from kaa.tasks.produce.play_cards.bandai_strategy import BandaiStrategy
 from kotonebot import logging, sleep, device, Loop
 from kotonebot.core import AnyOf
 from kotonebot.errors import UnrecoverableError
 
 from kaa.tasks import R
 from kaa.tasks.produce.cards import CardDetectResult, do_cards
+from kaa.tasks.produce.play_cards.expert_strategy import ExpertSystemStrategy
 from kaa.config.schema import produce_solution
 from kaa.config.const import ProduceAction, RecommendCardDetectionMode
 from kaa.tasks.produce.common import ProduceInterrupt, acquisition_date_change_dialog
@@ -193,7 +195,8 @@ class StandardStrategy:
                 R.InPurodyuusu.TextPerfectUntil
             ].exists()
     
-        do_cards(False, threshold_predicate, end_predicate)
+        # do_cards(False, threshold_predicate, end_predicate, battle_strategy=BandaiStrategy(threshold_predicate))
+        do_cards(False, threshold_predicate, end_predicate, battle_strategy=ExpertSystemStrategy())
 
     def on_practice_exited(self):
         pass
@@ -270,7 +273,8 @@ class StandardStrategy:
                 and R.Common.ButtonNext.find()
             )
 
-        do_cards(True, threshold_predicate, end_predicate)
+        # do_cards(True, threshold_predicate, end_predicate, battle_strategy=BandaiStrategy(threshold_predicate))
+        do_cards(True, threshold_predicate, end_predicate, battle_strategy=ExpertSystemStrategy())
 
         R.Common.ButtonNext.wait().click()
 

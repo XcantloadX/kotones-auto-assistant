@@ -10,7 +10,7 @@ from kotonebot.primitives import Rect
 from kotonebot import logging, device, Loop, Countdown
 
 from kaa.tasks import R
-from .ui import locate_cards
+from .ui import CardGameObject, locate_cards
 from ..page import eval_once
 
 logger = logging.getLogger(__name__)
@@ -71,7 +71,7 @@ class LessonBattleContext:
         return _fetch_int(R.InPurodyuusu.InLesson.BoxHp)
     
     @eval_once
-    def fetch_genki(self) -> int | None:
+    def fetch_stamina(self) -> int | None:
         """获取当前元气值"""
         return _fetch_int(R.InPurodyuusu.InLesson.BoxGenki)
     
@@ -88,6 +88,9 @@ class LessonBattleContext:
         img = device.screenshot()
         cards = locate_cards(img)
         return cards
+
+    def commit(self, card: CardGameObject):
+        card.double_click()
 
     @deprecated('考试与冲刺周冲刺阶段里，背景是动态的，因此效果不佳')
     def wait_stablized(self, *, timeout: float = float('inf'), interval: float = 0.5, stable_time: float = 3) -> bool:
