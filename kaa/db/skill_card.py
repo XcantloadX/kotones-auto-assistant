@@ -3,6 +3,7 @@ from functools import cached_property, lru_cache
 import json
 from typing import Any
 
+from .constants import ProduceExamEffectType
 from .sqlite import select, select_many
 
 PRODUCE_CARD_COLUMNS = """
@@ -84,7 +85,7 @@ class ProduceExamEffect:
     卡牌发动后的 buff 都存放在此类中，比如好印象、元气、回合追加等所有效果。
     """
     _id: str
-    effect_type: str | None
+    effect_type: ProduceExamEffectType | None
     """效果类型"""
     effect_value1: int | None
     """效果参数 1，具体含义取决于 `effect_type`"""
@@ -119,7 +120,7 @@ class ProduceExamEffect:
         data = dict(row)
         return cls(
             str(data.get('id') or ''),
-            data.get('effectType'),
+            ProduceExamEffectType(data.get('effectType')) if data.get('effectType') is not None else None,
             data.get('effectValue1'),
             data.get('effectValue2'),
             data.get('effectCount'),
@@ -173,11 +174,21 @@ class SkillCard:
     plan_type: str | None
     category: str | None
     stamina: int | None
-    """需要消耗的元气或体力值（绿色）"""
+    """需要消耗的元气或体力值（绿色）。
+    
+    对于同一张卡片，stamina 和 force_stamina 只会有一个有值，另一个为 0。
+    """
     force_stamina: int | None
-    """需要消耗的体力值（红色）"""
+    """需要消耗的体力值（红色）
+    
+    对于同一张卡片，stamina 和 force_stamina 只会有一个有值，另一个为 0。
+    """
     cost_type: str | None
     cost_value: int | None
+    """消耗数值
+    
+    部分卡片会消耗好印象、集中等非元气或体力值的 buff，即此字段的值。
+    """
     _play_produce_exam_trigger_id: str | None
     _play_effects_raw: str
     """出牌效果（JSON 字符串）"""

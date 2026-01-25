@@ -181,8 +181,12 @@ class ProduceExamEffectType(Enum):
     无引用此效果的卡牌"""
 
     ExamLessonAddMultipleLessonBuff = 'ProduceExamEffectType_ExamLessonAddMultipleLessonBuff'
-    """集中（参数提升量随集中增加）\n
-    例：いつか見た景色+++（p_card-01-ido-3_102）"""
+    """集中（集中倍率）\n
+    例：いつか見た景色+++（p_card-01-ido-3_102）
+    
+    【参数】\n
+    `value1`：提升倍率数值。例如 300 代表提升 0.3 倍，即集中 1.3 倍。
+    """
 
     ExamLessonAddMultipleParameterBuff = 'ProduceExamEffectType_ExamLessonAddMultipleParameterBuff'
     """パラメータ（参数提升量随好调增加）\n
@@ -282,7 +286,11 @@ class ProduceExamEffectType(Enum):
 
     ExamParameterBuffMultiplePerTurn = 'ProduceExamEffectType_ExamParameterBuffMultiplePerTurn'
     """絶好調（绝好调）\n
-    例：エキサイト+++（p_card-01-act-1_036）、魅惑のパフォーマンス+++（p_card-01-act-3_010）"""
+    例：エキサイト+++（p_card-01-act-1_036）、魅惑のパフォーマンス+++（p_card-01-act-3_010）
+    
+    【参数】\n
+    `effect_turn`：持续回合数。
+    """
 
     ExamParameterBuffReduce = 'ProduceExamEffectType_ExamParameterBuffReduce'
     """好調減少（好调减少）\n
@@ -290,19 +298,36 @@ class ProduceExamEffectType(Enum):
 
     ExamParameterBuff = 'ProduceExamEffectType_ExamParameterBuff'
     """好調（好调）\n
-    例：ステップの基本+++（p_card-01-act-0_023）、軽い足取り+++（p_card-01-act-1_002）"""
+    例：ステップの基本+++（p_card-01-act-0_023）、軽い足取り+++（p_card-01-act-1_002）
+    
+    【参数】\n
+    `effect_turn`：持续回合数。
+    """
 
     ExamPlayableValueAdd = 'ProduceExamEffectType_ExamPlayableValueAdd'
     """スキルカード使用数追加（技能卡使用次数追加）\n
-    例：アイドル宣言+++（p_card-00-men-2_012）、アイドル魂+++（p_card-00-men-3_003）"""
+    例：アイドル宣言+++（p_card-00-men-2_012）、アイドル魂+++（p_card-00-men-3_003）
+    
+    【参数】\n
+    `effect_count`：允许的额外出牌次数。
+    """
 
     ExamPreservation = 'ProduceExamEffectType_ExamPreservation'
     """温存（温存）\n
-    例：カウントダウン+++（p_card-03-act-2_073）、休み休み、前へ+++（p_card-03-ido-2_084）"""
+    例：カウントダウン+++（p_card-03-act-2_073）、休み休み、前へ+++（p_card-03-ido-2_084）
+    
+    【参数】\n
+    `effect_value1`：阶段。1=温存，2=二阶温存。
+    """
 
     ExamReviewAdditive = 'ProduceExamEffectType_ExamReviewAdditive'
     """好印象増加量増加（好印象增加量增加）\n
-    例：湧き上がる気持ち+++（p_card-02-ido-3_119）、星屑センセーション+++（p_card-02-men-3_004）"""
+    例：湧き上がる気持ち+++（p_card-02-ido-3_119）、星屑センセーション+++（p_card-02-men-3_004）
+    
+    【参数】\n
+    `effect_value1`：增加倍率。例如 500 代表好印象增加量增加 50%。
+    `effect_turn`：持续回合数。
+    """
 
     ExamReviewDependExamBlock = 'ProduceExamEffectType_ExamReviewDependExamBlock'
     """元気（好印象依赖元气）\n
@@ -313,44 +338,79 @@ class ProduceExamEffectType(Enum):
     无引用此效果的卡牌"""
 
     ExamReviewMultiple = 'ProduceExamEffectType_ExamReviewMultiple'
-    """好印象強化（好印象强化）\n
-    例：空まで一直線+++（p_card-02-ido-3_148）、究極スマイル（p_card-02-men-100_008）"""
+    """好印象強化（好印象得分倍率）\n
+    例：空まで一直線+++（p_card-02-ido-3_148）、究極スマイル（p_card-02-men-100_008）
+    
+    【参数】\n
+    `effect_value1`：提升倍率数值。例如 250 代表好印象的分数收益为 1.3 倍。
+    `effect_turn`：持续回合数。-1 代表永久。
+    """
 
     ExamReviewPerSearchCount = 'ProduceExamEffectType_ExamReviewPerSearchCount'
-    """好印象（好印象依赖检索次数）\n
-    例：微熱ノスタルジー+++（p_card-02-ido-3_146）"""
+    """好印象（根据牌堆中相同技能卡数量增加好印象）\n
+    例：微熱ノスタルジー+++（p_card-02-ido-3_146）
+    
+    【参数】\n
+    `effect_value1`：增加的好印象值。例如 2000 表示：牌库或弃牌堆中每有 1 张本技能卡，好印象 +2。
+    """
 
     ExamReviewReduce = 'ProduceExamEffectType_ExamReviewReduce'
     """好印象減少（好印象减少）\n
     无引用此效果的卡牌"""
 
     ExamReviewValueMultiple = 'ProduceExamEffectType_ExamReviewValueMultiple'
-    """好印象（好印象效果倍率提升）\n
-    例：戦う理由+++（p_card-02-ido-3_132）"""
+    """好印象（好印象倍率）\n
+    例：戦う理由+++（p_card-02-ido-3_132）
+    
+    【参数】\n
+    `effect_value1`：提升倍率数值。例如 100 代表好印象 1.1 倍。
+    """
 
     ExamReview = 'ProduceExamEffectType_ExamReview'
-    """好印象（好印象）\n
-    例：可愛い仕草+++（p_card-02-act-0_009）、今日もおはよう+++（p_card-02-act-1_027）"""
+    """好印象（好印象增加）\n
+    例：可愛い仕草+++（p_card-02-act-0_009）、今日もおはよう+++（p_card-02-act-1_027）
+    
+    【参数】\n
+    `effect_value1`：增加的好印象值。例如 2 代表好印象 +2。
+    """
 
     ExamSearchPlayCardStaminaConsumptionChange = 'ProduceExamEffectType_ExamSearchPlayCardStaminaConsumptionChange'
     """消費体力変化（体力消耗变化）\n
-    例：勝利をつかめ！+++（p_card-00-sup-3_158）、全身全霊+++（p_card-03-act-3_065）"""
+    例：勝利をつかめ！+++（p_card-00-sup-3_158）、全身全霊+++（p_card-03-act-3_065）
+    
+    【参数】\n
+    `effect_turn`：持续回合数，似乎总是 -1。
+    `effect_count`：下 N 张打出的技能卡的体力消耗变为 0。
+    """
 
     ExamStaminaConsumptionAddFix = 'ProduceExamEffectType_ExamStaminaConsumptionAddFix'
     """消費体力追加（体力消耗追加）\n
     无引用此效果的卡牌"""
 
     ExamStaminaConsumptionAdd = 'ProduceExamEffectType_ExamStaminaConsumptionAdd'
-    """消費体力増加（体力消耗增加）\n
-    例：スタートダッシュ+++（p_card-01-act-2_002）、スタンドプレー+++（p_card-01-act-2_032）"""
+    """消費体力増加（体力消耗上升 50%）\n
+    例：スタートダッシュ+++（p_card-01-act-2_002）、スタンドプレー+++（p_card-01-act-2_032）
+    
+    【参数】\n
+    `effect_turn`：持续回合数。
+    """
 
     ExamStaminaConsumptionDownFix = 'ProduceExamEffectType_ExamStaminaConsumptionDownFix'
-    """消費体力削減（体力消耗削减）\n
-    例：ファーストステップ+++（p_card-00-men-1_007）、叶えたい夢+++（p_card-00-men-3_011）"""
+    """消費体力削減（体力消耗减少）\n
+    例：ファーストステップ+++（p_card-00-men-1_007）、叶えたい夢+++（p_card-00-men-3_011）
+    
+    【参数】\n
+    `effect_value1`：减少的体力值。例如 2 代表体力消耗 -2。
+    `effect_turn`：持续回合数，-1 表示永久。
+    """
 
     ExamStaminaConsumptionDown = 'ProduceExamEffectType_ExamStaminaConsumptionDown'
-    """消費体力減少（体力消耗减少）\n
-    例：気合十分！+++（p_card-00-men-1_005）、アイドル宣言+++（p_card-00-men-2_012）"""
+    """消費体力減少（体力消耗降低 50%）\n
+    例：気合十分！+++（p_card-00-men-1_005）、アイドル宣言+++（p_card-00-men-2_012）
+    
+    【参数】\n
+    `effect_turn`：持续回合数，-1 表示永久。
+    """
 
     ExamStaminaDamage = 'ProduceExamEffectType_ExamStaminaDamage'
     """体力減少（体力减少）\n
@@ -358,7 +418,11 @@ class ProduceExamEffectType(Enum):
 
     ExamStaminaRecoverFix = 'ProduceExamEffectType_ExamStaminaRecoverFix'
     """体力回復（体力恢复）\n
-    例：陽だまりの生徒会室+++（p_card-00-sup-3_025）、包容力+++（p_card-01-ido-1_014）"""
+    例：陽だまりの生徒会室+++（p_card-00-sup-3_025）、包容力+++（p_card-01-ido-1_014）
+    
+    【参数】\n
+    `effect_value1`：恢复的体力值。例如 5 代表体力 +5。
+    """
 
     ExamStaminaRecoverMultiple = 'ProduceExamEffectType_ExamStaminaRecoverMultiple'
     """体力回復（体力恢复倍率提升）\n
@@ -377,13 +441,59 @@ class ProduceExamEffectType(Enum):
     无引用此效果的卡牌"""
 
     ExamStanceReset = 'ProduceExamEffectType_ExamStanceReset'
-    """指針解除（方针解除）\n
+    """指針解除（指针解除）\n
     无引用此效果的卡牌"""
 
     ExamStatusEnchant = 'ProduceExamEffectType_ExamStatusEnchant'
     """持続効果（持续效果）\n
-    例：夏夜に咲く思い出+++（p_card-00-sup-3_152）、最高傑作（p_card-01-act-100_004）"""
+    例：夏夜に咲く思い出+++（p_card-00-sup-3_152）、最高傑作（p_card-01-act-100_004）
+    
+    【参数】\n
+    `effect_turn`：持续回合数限制。
+    `effect_count`：触发次数限制，0 表示永久。
+
+    【例】
+    1. effect_turn=3, effect_count=0 表示持续 3 回合，不限制触发次数。
+    2. effect_turn=-1, effect_count=2 表示持续到触发 2 次为止。
+    3. effect_turn=-1, effect_count=0 表示永久持续，且不限制触发次数。
+    4. effect_turn=3, effect_count=2 表示持续 3 回合，且最多触发 2 次。
+    """
 
     StanceLock = 'ProduceExamEffectType_StanceLock'
-    """指針固定（方针固定）\n
-    例：切磋琢磨+++（p_card-03-men-2_079）"""
+    """指針固定（指针固定）\n
+    例：切磋琢磨+++（p_card-03-men-2_079）
+    
+    【参数】\n
+    `effect_turn`：持续回合数。
+    """
+
+"""
+附 查询 SQL
+
+```sql
+SELECT
+    pc.id AS card_id,
+    pc.name AS card_name,
+    pee.id AS effect_id,
+    pee.effectType,
+    pee.effectValue1,
+    pee.effectValue2,
+    pee.effectTurn,
+    pee.effectCount,
+    -- 子查询：遍历 customizeProduceDescriptions 数组，提取 'text' 字段并拼接成字符串
+    (
+        SELECT group_concat(json_extract(desc_item.value, '$.text'), '')
+        FROM json_each(pee.customizeProduceDescriptions) AS desc_item
+    ) AS description
+FROM
+    ProduceCard pc
+-- 1. 展开 ProduceCard 中的 playEffects JSON 数组
+        CROSS JOIN json_each(pc.playEffects) AS pe_node
+-- 2. 通过提取出的 produceExamEffectId 关联 ProduceExamEffect 表
+        JOIN ProduceExamEffect pee
+             ON pee.id = json_extract(pe_node.value, '$.produceExamEffectId')
+WHERE
+  -- 过滤掉空的效果 ID
+    pee.id IS NOT NULL AND pee.id != '';
+```
+"""
