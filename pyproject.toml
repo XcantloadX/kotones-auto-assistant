@@ -51,6 +51,12 @@ dependencies = [
 [tool.setuptools]
 package-dir = { "kaa" = "kaa" }
 
+[project.optional-dependencies]
+dev = [
+    "kotonebot[dev]",
+    "build",
+]
+
 [project.scripts]
 kaa = "kaa.main.cli:main"
 

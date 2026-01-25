@@ -16,7 +16,7 @@ def run_script(script_path: str) -> None:
     """
     logging.basicConfig(level=logging.INFO, format='[%(asctime)s] [%(levelname)s] [%(name)s] [%(funcName)s] [%(lineno)d] %(message)s')
     # 获取模块名
-    module_name = script_path.strip('.py').lstrip('projects/').replace('\\', '/').strip('/').replace('/', '.')
+    module_name = script_path.strip('.py').replace('\\', '/').strip('/').replace('/', '.')
 
     print(f"正在运行脚本: {script_path}")
     # 运行脚本
