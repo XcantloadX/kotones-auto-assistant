@@ -36,6 +36,9 @@ class CardGameObject(GameObject):
     @cached_property
     def available(self):
         return color.find(self._screenshot, '#7a7d7d', rect=self._letter_rect) is None
+    
+    def __repr__(self) -> str:
+        return f'CardGameObject(res_name={self.res_name}, card={self.card}, available={self.available}, _screenshot={"<...>" if self._screenshot is not None else "<None>"}, _letter_rect={self._letter_rect})'
 
 class CardImageDatabase(ImageDatabase):
     @override

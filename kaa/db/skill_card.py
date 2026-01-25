@@ -233,6 +233,15 @@ class SkillCard:
             texts.append(''.join(item.get('text', '') for item in data))
         return '\n'.join(texts).replace('</nobr>', '').replace('<nobr>', '').strip()
 
+    def __repr__(self) -> str:
+        return (
+            'SkillCard('
+            f'id={self._id!r}, '
+            f'name={self.name!r}, '
+            f'asset_id={self._asset_id!r}, '
+            ')'
+        )
+
     @classmethod
     def _from_row(cls, row, effect_map: dict[str, ProduceExamEffect]) -> 'SkillCard':
         play_effects_raw = row['playEffects']
