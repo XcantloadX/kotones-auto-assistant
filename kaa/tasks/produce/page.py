@@ -565,24 +565,22 @@ class PracticeContext(Context):
         img = device.screenshot()
         return detect_recommended_card(self.fetch_card_count(), threshold_predicate, img=img)
 
-
 class ExamContext(Context):
     def is_final_exam(self) -> bool:
         img = device.screenshot()
-        hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-        v = hsv[:, :, 2]
+        roi = R.InPurodyuusu.BoxDetectExamType
+        roi_img = img[roi.y1:roi.y2, roi.x1:roi.x2]
+        # L: 亮度, a: 绿-红, b: 蓝-黄
+        cv2.imshow('roi', roi_img)
+        cv2.waitKey(1)
+        lab = cv2.cvtColor(roi_img, cv2.COLOR_BGR2Lab)
+        _, a, b = cv2.split(lab)
+        # 3. 计算 b 通道（黄蓝色轴）和 a 通道（红绿色轴）的平均值
+        avg_b = np.mean(b)
+        avg_a = np.mean(a)
         
-        # 只取上半截分析
-        height, _ = v.shape
-        roi = v[0:int(height/2), :] 
-        
-        # 统计亮度值大于 220 的像素点数量 (高光区域)
-        bright_threshold = 220
-        bright_pixels = np.count_nonzero(roi > bright_threshold)
-        total_pixels = roi.size
-        ratio = bright_pixels / total_pixels
-
-        if ratio > 0.60:
+        is_final = avg_b > 145 or (avg_b > 138 and avg_a > 135)
+        if is_final:
             return True
         else:
             return False
@@ -814,7 +812,7 @@ class SkillCardEnhanceContext(SkillFullScreenDialogContext):
             device.click(card)
             sleep(0.5)
             device.screenshot()
-            if R.InPurodyuusu.ButtonEnhance(enabled=True).try_click():
+            if R.InPurodyuusu.ButtonEnhance(enabled=True).try_click(threshold=0.7):
                 sleep(0.5)
                 logger.debug("Enhance button clicked for a card.")
                 break
@@ -855,19 +853,76 @@ class ProducePage(
 if __name__ == '__main__':
     from kotonebot.backend.debug.mock import MockDevice
     from kotonebot.backend.context.context import init_context, manual_context
-    d = MockDevice()
+    # d = MockDevice()
     # d.load_image(r'E:\GithubRepos\KotonesAutoAssistant\dump_tmp\1766923332.9383092-EXAM.png')
-    d.load_image(r'b.png')
-    init_context(target_device=d, force=True)
+    # d.load_image(r'b.png')
+    # init_context(target_device=d, force=True)
     # with manual_context():
     #     ret = AnyOf[
     #         R.InPurodyuusu.TextExamRankSmallFirst,
     #         R.InPurodyuusu.TextExamRankLargeFirst,
     #     ].find()
     #     # print(ret)
-    import cv2
-    from kotonebot.backend.image import find
-    img = cv2.imread(r'b.png')
-    assert img is not None
-    print(find(img, R.InPurodyuusu.TextExamRankLargeFirst.template, threshold=0))
-    print(find(img, R.InPurodyuusu.TextExamRankLargeFirst.template, threshold=0, rect=R.InPurodyuusu.TextExamRankLargeFirst.template.slice_rect))
+    # import cv2
+    # from kotonebot.backend.image import find
+    # img = cv2.imread(r'b.png')
+    # assert img is not None
+    # print(find(img, R.InPurodyuusu.TextExamRankLargeFirst.template, threshold=0))
+    # print(find(img, R.InPurodyuusu.TextExamRankLargeFirst.template, threshold=0, rect=R.InPurodyuusu.TextExamRankLargeFirst.template.slice_rect))
+    ctx = ExamContext(ProducePage(), None)
+    
+    
+    while True:
+        (ctx.is_final_exam())
+    
+    # accumulator for masks (float32, stores summed normalized mask values)
+    acc: np.ndarray | None = None
+    # per-frame decay (0.0 = no decay). 可按需调整或暴露为参数
+    DECAY_PER_FRAME = 0.0
+
+    while True:
+        img = device.screenshot()
+
+        # HSV，只取黄色
+        hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+        lower_yellow = np.array([14, 60, 60])
+        upper_yellow = np.array([40, 255, 255])
+        mask = cv2.inRange(hsv, lower_yellow, upper_yellow)
+
+        # 初始化累加器（与 mask 同形状，float32）
+        if acc is None:
+            acc = np.zeros_like(mask, dtype=np.float32)
+
+        # 将 mask 归一化到 0..1 后累加
+        acc += (mask.astype(np.float32) / 255.0)
+
+        # 可选的指数衰减，防止长期累加完全饱和
+        if DECAY_PER_FRAME > 0.0:
+            acc *= (1.0 - DECAY_PER_FRAME)
+
+        # 为显示做归一化：按当前最大值缩放到 0..255 保持对比度
+        maxv = float(acc.max()) if acc is not None else 0.0
+        if maxv > 0.0:
+            disp = np.clip((acc / maxv) * 255.0, 0, 255).astype(np.uint8)
+        else:
+            disp = np.zeros_like(mask, dtype=np.uint8)
+
+        # 为了更直观，用伪彩（jet）渲染累加结果
+        disp_color = cv2.applyColorMap(disp, cv2.COLORMAP_JET)
+
+        # 展示原始单帧 mask 与叠加结果
+        cv2.imshow('mask', cv2.resize(mask, None, fx=0.5, fy=0.5))
+        cv2.imshow('accum', cv2.resize(disp_color, None, fx=0.5, fy=0.5))
+
+        # 键盘控制：q 退出，r 重置累加，s 保存当前叠加图
+        key = cv2.waitKey(1) & 0xFF
+        if key == ord('q'):
+            break
+        elif key == ord('r'):
+            if acc is not None:
+                acc.fill(0)
+                logger.info('Accumulator reset')
+        elif key == ord('s'):
+            # 保存为 PNG（伪彩）
+            cv2.imwrite('accum.png', disp_color)
+            logger.info('Saved accumulated image to accum.png')

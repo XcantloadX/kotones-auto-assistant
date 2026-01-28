@@ -100,6 +100,20 @@
         "fixed": true
       },
       "displayName": "考试顶部 1st（小）"
+    },
+    "a1b2c3d4-e5f6-7890-abcd-ef1234567890": {
+      "name": "InPurodyuusu.BoxDetectExamType",
+      "displayName": "用于检测考试是其中还是期末的 box",
+      "type": "hint-box",
+      "props": {
+        "image": {
+          "kind": "rect",
+          "x1": 123,
+          "y1": 4,
+          "x2": 214,
+          "y2": 50
+        }
+      }
     }
   }
 }
