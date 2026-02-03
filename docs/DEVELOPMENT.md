@@ -2,15 +2,24 @@
 ## 共通
 1. 安装 [just](https://github.com/casey/just#packages) 构建工具。
 2. 对于非 Windows 系统，你还需要手动安装 [PowerShell](https://learn.microsoft.com/zh-cn/powershell/scripting/install/installing-powershell-on-linux?view=powershell-7.5)。
-3. 创建 Python 3.10 虚拟环境，配置 node 环境。
-4. 执行：
+3. 执行：
    ```bash
    git clone https://github.com/XcantloadX/kotones-auto-assistant.git
    cd kotones-auto-assistant
-   just env
-   cd kotonebot-devtool
-   npm i
+   # 创建 Python 3.10 环境
+   # 这里以 uv 为例，你也可以使用 conda、pyenv 等
+   uv sync --extra dev
+   # 或者 pip install -e .[dev]
+   just init # 必须先激活环境，再执行
    ```
+4. 至少运行一次主程序：
+   ```shell
+   python -m kaa.main.cli
+   # 或
+   kaa
+   ```
+   如果你用 VSCode，可以直接启动配置“Gradio UI”。
+5. 在启动后的 GUI 里改好各种配置，如模拟器设置、培育设置等
 
 ## VSCode
 1. 进入“扩展 Extension”，搜索 `@recommended` ，然后安装里面的所有插件。
@@ -56,13 +65,6 @@ pip install --find-links=dist ksaa
 just build-bootstrap
 ```
 然后将 `dist/bootstrap.pyz` 与 `dist/kaa.exe` 复制到 kaa 根目录下。
-
-## 截图
-建议使用 [XnView MP](https://www.xnview.com/en/xnviewmp/) 进行截图裁剪工作。
-
-XnView MP 可以方便的完成“打开图片 → 选区 → 裁剪图片 → 另存选取为文件”这一操作。
-只需要提前设置好右键菜单：
-![XnView MP 设置1](./images/xnview_setup1.png)
 
 ## 备注
 1. 所有 Python 脚本（包括 kaa 主体、tools 下脚本等）均需要以项目根目录为工作目录执行
