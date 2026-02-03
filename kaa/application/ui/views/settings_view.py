@@ -211,7 +211,15 @@ class SettingsView:
 
         # 通用设置
         comps['screenshot'] = gr.Dropdown(
-            choices=['adb', 'adb_raw', 'uiautomator2', 'windows', 'remote_windows', 'nemu_ipc'],
+            choices=[
+                ('adb - 模拟器通用', 'adb'),
+                ('adb_raw（已废弃勿选）', 'adb_raw'),
+                ('uiautomator2 - 模拟器通用', 'uiautomator2'),
+                ('windows - DMM 版可用', 'windows'),
+                ('remote_windows（调试专用）', 'remote_windows'),
+                ('windows_background - DMM 版后台', 'windows_background'),
+                ('nemu_ipc - MuMu 模拟器专属（推荐）', 'nemu_ipc')
+            ],
             value=backend_config.screenshot_impl, label="截图方法", interactive=True
         )
         self._bind(comps['screenshot'], ref(of(backend_config).screenshot_impl))
@@ -224,10 +232,10 @@ class SettingsView:
             is_mumu = 'mumu' in backend_type
             # 1. 检查 DMM 兼容性
             if backend_type == 'dmm':
-                if impl != 'windows' and impl != 'remote_windows':
+                if impl != 'windows' and impl != 'remote_windows' and impl != 'windows_background':
                     Alert(
                         title="提示", 
-                        value="DMM 版本仅支持 `windows` 截图方式",
+                        value="DMM 版本仅支持 `windows` 或 `windows_background` 截图方式",
                         variant="warning",
                         show_close=False
                     )
@@ -248,7 +256,7 @@ class SettingsView:
                         variant="info",
                         show_close=False
                     )
-                elif impl in ['windows', 'remote_windows']:
+                elif impl in ['windows', 'remote_windows', 'windows_background']:
                     Alert(
                         title="提示",
                         value="模拟器不支持 `windows` 截图方式，建议使用 `adb` 或 `nemu_ipc`",

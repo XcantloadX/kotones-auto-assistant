@@ -92,7 +92,7 @@ class ConfigService:
             'mumu12v5': ['adb', 'adb_raw', 'uiautomator2', 'nemu_ipc'],
             'leidian': ['adb', 'adb_raw', 'uiautomator2'],
             'custom': ['adb', 'adb_raw', 'uiautomator2'],
-            'dmm': ['remote_windows', 'windows']
+            'dmm': ['remote_windows', 'windows', 'windows_background'],
         }
         if backend_config.screenshot_impl not in valid_screenshot_methods.get(backend_config.type, []):
             raise ConfigValidationError(
