@@ -26,20 +26,8 @@ devtool:
     cd kotonebot-devtool; npm run dev
 
 # Check and create virtual environment
-env: fetch-submodule
+env: fetch-submodule extract-game-data
     #!{{shebang_pwsh}}
-    Write-Host "Installing requirements..."
-    $IsWindows = $env:OS -match "Windows"
-    
-    if ($IsWindows) {
-        ./.venv/Scripts/pip install -r requirements.dev.txt
-        ./.venv/Scripts/pip install -r requirements.win.txt
-        ./.venv/Scripts/pip install -r requirements.GkmasObjectManager.txt
-        ./.venv/Scripts/pip install -r ./submodules/GkmasObjectManager/requirements.txt
-    } else {
-        ./.venv/bin/pip install -r requirements.dev.txt
-        ./.venv/bin/pip install -r ./submodules/GkmasObjectManager/requirements.txt
-    }
     python tools/make_resources.py
 
 generate-metadata: env
