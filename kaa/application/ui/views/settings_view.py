@@ -203,7 +203,20 @@ class SettingsView:
             # --- DMM ---
             with gr.Tab("DMM", id="dmm") as tab_dmm:
                 gr.Markdown("已选中 DMM")
-                gr.Button('重置游戏窗口位置', scale=0).click(self.facade.instance_service.reset_game_window)
+                wait_cursor_speed = gr.Number(
+                    value=user_config.backend.cursor_wait_speed,
+                    label="后台挂机时光标最大速度（像素/秒）",
+                    info="""使用 DMM 版后台挂机功能时，在点击前会尝试等待光标静止，以避免发生点击偏移。
+此项规定了速度小于多少时认为光标静止，单位为像素/秒。
+
+-1 表示使用内置默认值，0 表示禁用该功能。
+值越大，等待时间越短，脚本响应越快，但点击偏移风险上升，可能导致误点击而卡住。
+值越小，等待时间越长，脚本响应越慢，但点击偏移风险下降，稳定性更好。
+""",
+                    minimum=-1, step=0.1, interactive=True
+                )
+                self._bind(wait_cursor_speed, ref(of(user_config.backend).cursor_wait_speed))
+                gr.Button('重置游戏窗口位置', scale=1).click(self.facade.instance_service.reset_game_window)
             
             tab_dmm.select(
                 fn=lambda: ("dmm", None), 

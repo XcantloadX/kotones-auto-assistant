@@ -11,20 +11,8 @@ from typing_extensions import override
 
 import cv2
 
-from kaa.errors import WindowsOnlyError
 from kotonebot.util import is_windows
 from kotonebot.client.host.mumu12_host import MuMu12HostConfig
-
-from kotonebot.client.device import Device
-from kotonebot.ui import user
-from kotonebot import KotoneBot
-from ..util.paths import get_ahk_path
-from ..kaa_context import _set_instance
-if is_windows():
-    from .dmm_host import DmmHost, DmmInstance
-else:
-    DmmHost = DmmInstance = None
-from ..config import BaseConfig, upgrade_config
 from kotonebot.config.base_config import UserConfig
 from kotonebot.client.host import (
     Mumu12Host, LeidianHost, Mumu12Instance,
@@ -36,6 +24,18 @@ from kotonebot.client.host.protocol import (
     RemoteWindowsHostConfig
 )
 from kotonebot.primitives.geometry import Size
+from kotonebot.client.device import Device, WindowsDevice
+from kotonebot.ui import user
+from kotonebot import KotoneBot
+
+from kaa.errors import WindowsOnlyError
+from ..util.paths import get_ahk_path
+from ..kaa_context import _set_instance
+if is_windows():
+    from .dmm_host import DmmHost, DmmInstance
+else:
+    DmmHost = DmmInstance = None
+from ..config import BaseConfig, upgrade_config
 
 # 初始化日志
 format = '[%(asctime)s][%(levelname)s][%(name)s:%(lineno)d] %(message)s'
@@ -269,25 +269,40 @@ class Kaa(KotoneBot):
         impl_name = user_config.backend.screenshot_impl
 
         if DmmInstance and isinstance(self.backend_instance, DmmInstance):
-            if impl_name == 'windows' or impl_name == 'windows_background':
+            d = WindowsDevice()
+            if impl_name == 'windows':
+                from kotonebot.client.implements.windows import WindowsImpl
                 ahk_path = get_ahk_path()
-                host_conf = WindowsHostConfig(
+                impl = WindowsImpl(
+                    device=d,
                     window_title='gakumas',
                     ahk_exe_path=ahk_path
                 )
+                touch = impl
+                screenshot = impl
             elif impl_name == 'remote_windows':
-                ahk_path = get_ahk_path()
-                host_conf = RemoteWindowsHostConfig(
-                    windows_host_config=WindowsHostConfig(
-                        window_title='gakumas',
-                        ahk_exe_path=ahk_path
-                    ),
+                from kotonebot.client.implements.remote_windows import RemoteWindowsImpl
+                impl = RemoteWindowsImpl(
+                    device=d,
                     host=user_config.backend.adb_ip,
                     port=user_config.backend.adb_port
                 )
+            elif impl_name == 'windows_background':
+                from kotonebot.client.implements.windows import WindowsImpl
+                from kotonebot.client.implements.windows.send_message import SendMessageImpl
+                from kotonebot.client.implements.windows.print_window import PrintWindowImpl
+                impl = WindowsImpl(
+                    device=d,
+                    window_title='gakumas',
+                    ahk_exe_path=''
+                )
+                screenshot = PrintWindowImpl(d, 'gakumas')
+                touch = SendMessageImpl(d, 'gakumas', wait_cursor_idle=user_config.backend.cursor_wait_speed)
             else:
                 raise ValueError(f"Impl of '{impl_name}' is not supported on DMM.")
-            return self.backend_instance.create_device(impl_name, host_conf)
+            d._screenshot = screenshot
+            d._touch = touch
+            return d
         # 统一处理所有基于 ADB 的后端
         elif isinstance(self.backend_instance, (CustomInstance, Mumu12Instance, LeidianInstance)):
             if impl_name == 'nemu_ipc' and isinstance(self.backend_instance, Mumu12Instance):
@@ -316,6 +331,5 @@ class Kaa(KotoneBot):
                 )
             else:
                 raise ValueError(f"{user_config.backend.type} backend does not support implementation '{impl_name}'")
-
         else:
             raise TypeError(f"Unknown instance type: {type(self.backend_instance)}")
