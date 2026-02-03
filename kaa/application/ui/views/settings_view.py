@@ -203,6 +203,7 @@ class SettingsView:
             # --- DMM ---
             with gr.Tab("DMM", id="dmm") as tab_dmm:
                 gr.Markdown("已选中 DMM")
+                gr.Button('重置游戏窗口位置', scale=0).click(self.facade.instance_service.reset_game_window)
             
             tab_dmm.select(
                 fn=lambda: ("dmm", None), 

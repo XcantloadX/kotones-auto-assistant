@@ -4,6 +4,7 @@ import zipfile
 from datetime import datetime
 from typing import Any, Dict, List, Tuple
 
+from kaa.application.services.instant_service import InstantService
 from kaa.main.kaa import Kaa
 from kaa.application.services.config_service import ConfigService, ConfigValidationError
 from kaa.application.services.produce_solution_service import ProduceSolutionService
@@ -32,6 +33,7 @@ class KaaFacade:
         # Other existing services
         self.update_service = UpdateService()
         self.feedback_service = FeedbackService()
+        self.instance_service = InstantService()
         self.idle_mgr = self._setup_idle_manager()
 
         self._kaa = kaa_instance
