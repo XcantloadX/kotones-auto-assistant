@@ -368,7 +368,7 @@ def make_classes(resources: list[Resource], ide: Literal['vscode', 'pycharm']) -
                     type='image',
                     name=sprite.name,
                     docstring=docstring,
-                    value=f'Image(path=sprite_path(r"{sprite.uuid}.png"), name="{sprite.display_name}")'
+                    value=f'Image(file_path=sprite_path(r"{sprite.uuid}.png"), name="{sprite.display_name}")'
                 )
                 current_class.attributes.append(img_attr)
             elif resource.type == 'hint-box':

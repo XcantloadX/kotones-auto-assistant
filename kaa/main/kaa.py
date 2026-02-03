@@ -35,6 +35,7 @@ from kotonebot.client.host.protocol import (
     Instance, AdbHostConfig, WindowsHostConfig,
     RemoteWindowsHostConfig
 )
+from kotonebot.primitives.geometry import Size
 
 # 初始化日志
 format = '[%(asctime)s][%(levelname)s][%(name)s:%(lineno)d] %(message)s'
@@ -136,6 +137,11 @@ class Kaa(KotoneBot):
         config = load_config(self.config_path, type=self.config_type)
         user_config = config.user_configs[0]  # HACK: 硬编码
         target_screenshot_interval = user_config.backend.target_screenshot_interval
+
+        from kotonebot.config.config import conf
+        from kotonebot.client.scaler import PortraitGameScaler
+        conf().device.default_scaler_factory = lambda: PortraitGameScaler()
+        conf().device.default_logic_resolution = Size(720, 1280)
 
         d = self._on_create_device()
         init_context(
@@ -263,7 +269,7 @@ class Kaa(KotoneBot):
         impl_name = user_config.backend.screenshot_impl
 
         if DmmInstance and isinstance(self.backend_instance, DmmInstance):
-            if impl_name == 'windows':
+            if impl_name == 'windows' or impl_name == 'windows_background':
                 ahk_path = get_ahk_path()
                 host_conf = WindowsHostConfig(
                     window_title='gakumas',

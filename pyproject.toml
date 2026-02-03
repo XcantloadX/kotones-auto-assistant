@@ -15,21 +15,27 @@ dependencies = [
     "av==14.0.1",
     "scikit-image~=0.25",
     "thefuzz~=0.22",
+
     # Adb Control
     "adbutils~=2.8",
     "uiautomator2~=3.2",
+
     # Visual Debugger
     "fastapi~=0.115.6",
     "uvicorn~=0.34.0",
     "python-multipart~=0.0.20",
     "websockets~=14.1",
     "psutil~=6.1",
+
     # GUI
     "gradio~=6.0",
+
     # Configuration
     "pydantic~=2.10",
+
     # Resource
     "ksaa-res==0.2.0",
+
     # Other
     "typing-extensions~=4.12",
     "python-dotenv~=1.0.1",
@@ -37,8 +43,8 @@ dependencies = [
     "onnxruntime~=1.14.0",
     # A module that was compiled using NumPy 1.x cannot be run in NumPy 2.0.0 as it may crash.
     "numpy<2.0",
+
     # For DMM version
-    # TODO: move these dependencies to optional-dependencies
     "pywin32==310; sys_platform == 'win32'",
     "ahk~=1.8.3; sys_platform == 'win32'",
     "win11toast~=0.35; sys_platform == 'win32'",  # For Windows Toast Notification
