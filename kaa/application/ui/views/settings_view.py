@@ -229,9 +229,9 @@ class SettingsView:
                 ('adb - 模拟器通用', 'adb'),
                 ('adb_raw（已废弃勿选）', 'adb_raw'),
                 ('uiautomator2 - 模拟器通用', 'uiautomator2'),
-                ('windows - DMM 版可用', 'windows'),
-                ('remote_windows（调试专用）', 'remote_windows'),
-                ('windows_background - DMM 版后台', 'windows_background'),
+                ('windows - DMM 版前台挂机', 'windows'),
+                ('remote_windows（调试专用勿选）', 'remote_windows'),
+                ('windows_background - DMM 版后台挂机（实验性）', 'windows_background'),
                 ('nemu_ipc - MuMu 模拟器专属（推荐）', 'nemu_ipc')
             ],
             value=backend_config.screenshot_impl, label="截图方法", interactive=True
