@@ -1,15 +1,10 @@
-import io
+# ruff: noqa: E402
 import os
 import sys
-from typing import Any, Literal, cast
-import zipfile
 import logging
-import traceback
 import importlib.metadata
-from datetime import datetime
+from typing import Any, Literal, cast
 from typing_extensions import override
-
-import cv2
 
 from kotonebot.util import is_windows
 from kotonebot.client.host.mumu12_host import MuMu12HostConfig
@@ -18,10 +13,9 @@ from kotonebot.client.host import (
     Mumu12Host, LeidianHost, Mumu12Instance,
     LeidianInstance, CustomInstance
 )
-from kotonebot.client.host.mumu12_host import Mumu12V5Host, Mumu12V5Instance
+from kotonebot.client.host.mumu12_host import Mumu12V5Host
 from kotonebot.client.host.protocol import (
-    Instance, AdbHostConfig, WindowsHostConfig,
-    RemoteWindowsHostConfig
+    Instance, AdbHostConfig
 )
 from kotonebot.primitives.geometry import Size
 from kotonebot.client.device import Device, WindowsDevice
@@ -36,23 +30,6 @@ if is_windows():
 else:
     DmmHost = DmmInstance = None
 from ..config import BaseConfig, upgrade_config
-
-# 初始化日志
-format = '[%(asctime)s][%(levelname)s][%(name)s:%(lineno)d] %(message)s'
-log_formatter = logging.Formatter(format)
-logging.basicConfig(level=logging.INFO, format=format)
-
-log_stream = io.StringIO()
-memo_handler = logging.StreamHandler(log_stream)
-memo_handler.setFormatter(log_formatter)
-memo_handler.setLevel(logging.DEBUG)
-
-root_logger = logging.getLogger()
-root_logger.setLevel(logging.INFO)
-root_logger.addHandler(memo_handler)
-
-logging.getLogger("kotonebot").setLevel(logging.DEBUG)
-logging.getLogger("httpx").setLevel(logging.WARNING)
 
 logger = logging.getLogger(__name__)
 
@@ -71,14 +48,6 @@ class Kaa(KotoneBot):
         logger.info('Python Version: %s', sys.version)
         logger.info('Python Executable: %s', sys.executable)
 
-    def add_file_logger(self, log_path: str):
-        log_dir = os.path.abspath(os.path.dirname(log_path))
-        os.makedirs(log_dir, exist_ok=True)
-
-        file_handler = logging.FileHandler(log_path, encoding='utf-8')
-        file_handler.setFormatter(log_formatter)
-        root_logger.addHandler(file_handler)
-
     def set_log_level(self, level: int):
         handlers = logging.getLogger().handlers
         if len(handlers) == 0:
@@ -86,44 +55,6 @@ class Kaa(KotoneBot):
         else:
             # 第一个 handler 是默认的 StreamHandler
             handlers[0].setLevel(level)
-
-    def dump_error_report(
-        self,
-        exception: Exception,
-        *,
-        path: str | None = None
-    ) -> str:
-        """
-        保存错误报告
-
-        :param path: 保存的路径。若为 `None`，则保存到 `./reports/{YY-MM-DD HH-MM-SS}.zip`。
-        :return: 保存的路径
-        """
-        from kotonebot import device
-        from kotonebot.backend.context import current_callstack
-        try:
-            if path is None:
-                path = f'./reports/{datetime.now().strftime("%Y-%m-%d %H-%M-%S")}.zip'
-            exception_msg = '\n'.join(traceback.format_exception(exception))
-            task_callstack = '\n'.join(
-                [f'{i + 1}. name={task.name} priority={task.priority}' for i, task in enumerate(current_callstack)])
-            screenshot = device.screenshot()
-            logs = log_stream.getvalue()
-            with open(self.config_path, 'r', encoding='utf-8') as f:
-                config_content = f.read()
-
-            if not os.path.exists(os.path.dirname(path)):
-                os.makedirs(os.path.dirname(path))
-            with zipfile.ZipFile(path, 'w') as zipf:
-                zipf.writestr('exception.txt', exception_msg)
-                zipf.writestr('task_callstack.txt', task_callstack)
-                zipf.writestr('screenshot.png', cv2.imencode('.png', screenshot)[1].tobytes())
-                zipf.writestr('config.json', config_content)
-                zipf.writestr('logs.txt', logs)
-            return path
-        except Exception as e:
-            logger.exception('Failed to save error report:')
-            return ''
 
     @override
     def _on_init_context(self) -> None:

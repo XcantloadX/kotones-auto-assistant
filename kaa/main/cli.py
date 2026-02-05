@@ -61,8 +61,9 @@ def task_invoke() -> int:
     if log_level is None:
         raise ValueError(f'Invalid log level: {psr.parse_args().log_level}')
     kaa().set_log_level(log_level)
+    from kaa.util.logging import add_file_logger
     if psr.parse_args().log_path is not None:
-        kaa().add_file_logger(psr.parse_args().log_path)
+        add_file_logger(psr.parse_args().log_path)
     # 执行任务
     print(tasks_args)
     if '*' in tasks_args:
@@ -117,10 +118,16 @@ def main():
         sys.exit(remote_server())
     elif args.subcommands is None:
         log_filename = datetime.now().strftime('logs/%y-%m-%d-%H-%M-%S.log')
-        kaa().set_log_level(logging.DEBUG)
-        kaa().add_file_logger(log_filename)
+        from kaa.util.logging import setup, add_file_logger
+        setup()
+        add_file_logger(log_filename)
         from .gr import main as gr_main
-        gr_main(kaa(), psr.parse_args().start_immidiately)
+        from ..application.ui.facade import KaaFacade
+        facade = KaaFacade(kaa())
+        log_level_str = facade.config_service.get_options().misc.log_level
+        log_level = logging.DEBUG if log_level_str == 'verbose' else logging.INFO
+        kaa().set_log_level(log_level)
+        gr_main(facade, psr.parse_args().start_immidiately)
 
 if __name__ == '__main__':
     main()
