@@ -291,11 +291,6 @@ class Kaa(KotoneBot):
                 from kotonebot.client.implements.windows import WindowsImpl
                 from kotonebot.client.implements.windows.send_message import SendMessageImpl
                 from kotonebot.client.implements.windows.print_window import PrintWindowImpl
-                impl = WindowsImpl(
-                    device=d,
-                    window_title='gakumas',
-                    ahk_exe_path=''
-                )
                 screenshot = PrintWindowImpl(d, 'gakumas')
                 touch = SendMessageImpl(d, 'gakumas', wait_cursor_idle=user_config.backend.cursor_wait_speed)
             else:
