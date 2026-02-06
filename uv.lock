@@ -820,7 +820,7 @@ wheels = [
 
 [[package]]
 name = "kotonebot"
-version = "0.5.0"
+version = "0.7.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "ksaa-res" },
@@ -835,9 +835,9 @@ dependencies = [
     { name = "thefuzz" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/51/67/f7ea434f736de96e6049e8295756d4c0d3c8f0332f0203a0466141b575d6/kotonebot-0.5.0.tar.gz", hash = "sha256:d88e8c4892d2c8bf03d3b940ab6310c80ae36905bb0ff27abe529c545b36247c", size = 124338, upload-time = "2025-11-30T08:38:12.754Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/2c/5b/b6036a7ebb47ed521bb27e21169778639f2220b593d0d65eb7ab96754652/kotonebot-0.7.0.tar.gz", hash = "sha256:a34143ff5092604df97a3dee3b972c5f43190966a7414a440a21639712713bb0", size = 1016429, upload-time = "2026-02-03T08:43:32.423Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/30/e4/409ee912e5ff256f57eb69caf33f70d63f4c76c394c59a657b465810b40b/kotonebot-0.5.0-py3-none-any.whl", hash = "sha256:89bb05e7922daf97075b83d0174ffc1495494e978de4630a4bd33230a3aae7e5", size = 148365, upload-time = "2025-11-30T08:38:10.634Z" },
+    { url = "https://files.pythonhosted.org/packages/90/b3/6c833063cc03a9c16b9547eab919596778261e3a3ec01348dbf7f23345c7/kotonebot-0.7.0-py3-none-any.whl", hash = "sha256:3e7bd9cc6ff42963922eca6395f6e5f53b03ed171e48d92299b567be2f52a215", size = 1050887, upload-time = "2026-02-03T08:43:29.022Z" },
 ]
 
 [package.optional-dependencies]
@@ -854,7 +854,7 @@ windows = [
 
 [[package]]
 name = "ksaa"
-version = "2025.11.post4"
+version = "2026.2b1"
 source = { editable = "." }
 dependencies = [
     { name = "adbutils" },
@@ -921,8 +921,8 @@ requires-dist = [
     { name = "gradio", specifier = "~=6.0" },
     { name = "jinja2", marker = "extra == 'dev'", specifier = "==3.1.5" },
     { name = "keyboard", specifier = "~=0.13.5" },
-    { name = "kotonebot", extras = ["android"], specifier = "==0.5.0" },
-    { name = "kotonebot", extras = ["windows"], marker = "sys_platform == 'win32'", specifier = "==0.5.0" },
+    { name = "kotonebot", extras = ["android"], specifier = "==0.7.0" },
+    { name = "kotonebot", extras = ["windows"], marker = "sys_platform == 'win32'", specifier = "==0.7.0" },
     { name = "ksaa-res", specifier = "==0.2.0" },
     { name = "numpy", specifier = "<2.0" },
     { name = "onnxruntime", specifier = "~=1.14.0" },

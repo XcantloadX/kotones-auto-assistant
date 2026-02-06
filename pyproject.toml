@@ -3,7 +3,7 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-version = "v2026.2b1"
+version = "v2026.2b2"
 name = "ksaa"
 description = "Kotones Auto Assistant(kaa) is a script for game 'Gakuen Idol M@ster' that automates the dailies and produces."
 readme = "README.md"
