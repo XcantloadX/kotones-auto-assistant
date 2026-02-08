@@ -24,7 +24,7 @@ from kaa.tasks import R
 from kaa.config import conf
 from .p_drink import acquire_p_drink
 from kaa.tasks.actions.loading import loading
-from kaa.config.schema import produce_solution
+from kaa.kaa_context import produce_solution
 from kaa.tasks.start_game import wait_for_home
 from kaa.tasks.actions.commu import handle_unread_commu
 from kaa.game_ui import CommuEventButtonUI, dialog, badge

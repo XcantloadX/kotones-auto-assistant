@@ -15,7 +15,6 @@ from .schema import (
     EndGameConfig,
     MiscConfig,
     IdleModeConfig,
-    conf,
 )
 from .const import (
     ConfigEnum,
@@ -25,6 +24,7 @@ from .const import (
     ProduceAction,
     RecommendCardDetectionMode,
 )
+from ..kaa_context import conf
 
 # 配置升级逻辑
 from .upgrade import upgrade_config

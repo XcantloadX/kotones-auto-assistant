@@ -4,6 +4,7 @@ import logging
 import argparse
 
 from kaa.common import BaseConfig
+from kaa.main.kaa import KaaDeviceFactory
 
 
 def run_script(script_path: str) -> None:
@@ -24,9 +25,8 @@ def run_script(script_path: str) -> None:
     logging.getLogger('kotonebot').setLevel(logging.DEBUG)
     logging.getLogger('kaa').setLevel(logging.DEBUG)
     config_path = './config.json'
-    kaa_instance = Kaa(config_path)
-    init_context(config_type=BaseConfig, target_device=kaa_instance._on_create_device())
-    kaa_instance._on_after_init_context()
+    Kaa(config_path)
+    init_context(config_type=BaseConfig, target_device=KaaDeviceFactory()())
     manual_context().begin()
     runpy.run_module(module_name, run_name="__main__")
 

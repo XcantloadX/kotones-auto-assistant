@@ -5,7 +5,7 @@
 """
 from logging import getLogger
 
-from kaa.config.schema import produce_solution
+from kaa.kaa_context import produce_solution
 from kaa.game_ui import dialog
 
 from kaa.tasks import R
