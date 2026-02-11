@@ -820,7 +820,7 @@ wheels = [
 
 [[package]]
 name = "kotonebot"
-version = "0.7.0"
+version = "0.8.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "ksaa-res" },
@@ -835,9 +835,9 @@ dependencies = [
     { name = "thefuzz" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/2c/5b/b6036a7ebb47ed521bb27e21169778639f2220b593d0d65eb7ab96754652/kotonebot-0.7.0.tar.gz", hash = "sha256:a34143ff5092604df97a3dee3b972c5f43190966a7414a440a21639712713bb0", size = 1016429, upload-time = "2026-02-03T08:43:32.423Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/41/e9/23f425b8b71a5b63292dce3ca60f82b329c886e3ec4e5ec9eb6af2d04a29/kotonebot-0.8.0.tar.gz", hash = "sha256:def480e8b77d72b4b154e462d5fc7a5b9924d2a19cdeffa6eade6e0dc4d87806", size = 1016930, upload-time = "2026-02-05T04:17:51.116Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/90/b3/6c833063cc03a9c16b9547eab919596778261e3a3ec01348dbf7f23345c7/kotonebot-0.7.0-py3-none-any.whl", hash = "sha256:3e7bd9cc6ff42963922eca6395f6e5f53b03ed171e48d92299b567be2f52a215", size = 1050887, upload-time = "2026-02-03T08:43:29.022Z" },
+    { url = "https://files.pythonhosted.org/packages/92/89/5ca8fa44b5ed6e9b9157fc875b7778479dc963fc695ffb4698c07e0831df/kotonebot-0.8.0-py3-none-any.whl", hash = "sha256:655d7f2378dd81bd6aa2db30d9bfe9cbc345918b78e4b4d587fb04eae44e6e3c", size = 1051362, upload-time = "2026-02-05T04:17:48.983Z" },
 ]
 
 [package.optional-dependencies]
@@ -854,7 +854,7 @@ windows = [
 
 [[package]]
 name = "ksaa"
-version = "2026.2b1"
+version = "2026.2b2"
 source = { editable = "." }
 dependencies = [
     { name = "adbutils" },
@@ -876,6 +876,7 @@ dependencies = [
     { name = "pywin32", marker = "sys_platform == 'win32'" },
     { name = "rapidocr-onnxruntime" },
     { name = "scikit-image" },
+    { name = "sentry-sdk" },
     { name = "thefuzz" },
     { name = "typing-extensions" },
     { name = "uiautomator2" },
@@ -921,8 +922,8 @@ requires-dist = [
     { name = "gradio", specifier = "~=6.0" },
     { name = "jinja2", marker = "extra == 'dev'", specifier = "==3.1.5" },
     { name = "keyboard", specifier = "~=0.13.5" },
-    { name = "kotonebot", extras = ["android"], specifier = "==0.7.0" },
-    { name = "kotonebot", extras = ["windows"], marker = "sys_platform == 'win32'", specifier = "==0.7.0" },
+    { name = "kotonebot", extras = ["android"], specifier = "==0.8.0" },
+    { name = "kotonebot", extras = ["windows"], marker = "sys_platform == 'win32'", specifier = "==0.8.0" },
     { name = "ksaa-res", specifier = "==0.2.0" },
     { name = "numpy", specifier = "<2.0" },
     { name = "onnxruntime", specifier = "~=1.14.0" },
@@ -943,6 +944,7 @@ requires-dist = [
     { name = "requests", marker = "extra == 'dev'", specifier = "==2.32.5" },
     { name = "rich", marker = "extra == 'dev'", specifier = "==14.2.0" },
     { name = "scikit-image", specifier = "~=0.25" },
+    { name = "sentry-sdk", specifier = ">=2.52.0" },
     { name = "snakeviz", marker = "extra == 'dev'", specifier = "==2.2.2" },
     { name = "thefuzz", specifier = "~=0.22" },
     { name = "tqdm", marker = "extra == 'dev'", specifier = "==4.67.1" },
@@ -4077,6 +4079,19 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/7d/31/f2289ce78b9b473d582568c234e104d2a342fd658cc288a7553d83bb8595/semantic_version-2.10.0.tar.gz", hash = "sha256:bdabb6d336998cbb378d4b9db3a4b56a1e3235701dc05ea2690d9a997ed5041c", size = 52289, upload-time = "2022-05-26T13:35:23.454Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/6a/23/8146aad7d88f4fcb3a6218f41a60f6c2d4e3a72de72da1825dc7c8f7877c/semantic_version-2.10.0-py2.py3-none-any.whl", hash = "sha256:de78a3b8e0feda74cabc54aab2da702113e33ac9d9eb9d2389bcf1f58b7d9177", size = 15552, upload-time = "2022-05-26T13:35:21.206Z" },
+]
+
+[[package]]
+name = "sentry-sdk"
+version = "2.52.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "certifi" },
+    { name = "urllib3" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/59/eb/1b497650eb564701f9a7b8a95c51b2abe9347ed2c0b290ba78f027ebe4ea/sentry_sdk-2.52.0.tar.gz", hash = "sha256:fa0bec872cfec0302970b2996825723d67390cdd5f0229fb9efed93bd5384899", size = 410273, upload-time = "2026-02-04T15:03:54.706Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ca/63/2c6daf59d86b1c30600bff679d039f57fd1932af82c43c0bde1cbc55e8d4/sentry_sdk-2.52.0-py2.py3-none-any.whl", hash = "sha256:931c8f86169fc6f2752cb5c4e6480f0d516112e78750c312e081ababecbaf2ed", size = 435547, upload-time = "2026-02-04T15:03:51.567Z" },
 ]
 
 [[package]]

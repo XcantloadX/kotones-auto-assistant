@@ -15,6 +15,9 @@ def instance() -> Instance:
     return vars.get('instance')
 
 def conf() -> 'BaseConfig':
+    return raw_conf().options
+
+def raw_conf():
     """获取当前配置数据"""
     from kaa.config.context import ContextConfig
 
@@ -23,7 +26,7 @@ def conf() -> 'BaseConfig':
         config = ContextConfig(config_path='config.json')
         vars.set('config', config)        
     c = config.current
-    return c.options
+    return c
 
 def produce_solution() -> 'ProduceSolution':
     """获取当前培育方案"""

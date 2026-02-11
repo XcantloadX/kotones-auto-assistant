@@ -5,11 +5,10 @@ import logging
 import _thread
 import threading
 
-from kotonebot.backend.bot import PostTaskContext
 from kotonebot.ui import user
-from ..kaa_context import instance
+from ..kaa_context import instance, raw_conf
 from kaa.config import Priority, conf
-from kotonebot import task, action, config, device
+from kotonebot import task, action, device
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +36,7 @@ def windows_close():
     logger.info("Game closed successfully")
 
 @task('关闭游戏', priority=Priority.END_GAME, run_at='post')
-def end_game(ctx: PostTaskContext):
+def end_game():
     """
     游戏结束时执行的任务。
     """
@@ -58,7 +57,7 @@ def end_game(ctx: PostTaskContext):
 
     # 关闭模拟器
     if conf().end_game.kill_emulator:
-        if not config.current.backend.emulator_path:
+        if not raw_conf().backend.emulator_path:
             user.warning('未配置模拟器 exe 文件路径，无法关闭模拟器。跳过此次操作。')
         else:
             instance().stop()
@@ -102,4 +101,4 @@ if __name__ == '__main__':
     conf().end_game.kill_game = True
     conf().end_game.kill_dmm = True
     conf().end_game.kill_emulator = True
-    end_game(PostTaskContext(False, None))
+    end_game()
