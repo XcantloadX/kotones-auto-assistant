@@ -80,12 +80,6 @@ class TaskView:
                     if status == 'running':
                         status_msg = f"正在执行任务: {name}"
                         break
-            elif not tcs.run_status or not tcs.run_status.running:
-                 # Task finished, find final status
-                if tcs.run_status and tcs.run_status.tasks:
-                    final_status = tcs.run_status.tasks[0]
-                    status_map = {'finished': '已完成', 'error': '出错', 'cancelled': '已取消'}
-                    status_msg = f"任务 {final_status.task.name} {status_map.get(final_status.status, '已结束')}"
 
             btn_updates[task_result] = gr.Markdown(value=status_msg)
 

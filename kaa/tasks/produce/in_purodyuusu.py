@@ -2,7 +2,7 @@ import logging
 from typing_extensions import assert_never
 from typing import Literal
 
-from kaa.config.schema import conf, produce_solution
+from kaa.kaa_context import conf, produce_solution
 from kaa.game_ui.schedule import Schedule
 from kaa.tasks import R
 from kaa.tasks.common import skip

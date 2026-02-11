@@ -2,8 +2,8 @@ import logging
 from typing import Any
 
 from kaa.config.schema import BaseConfig
-from kotonebot.config.base_config import BackendConfig, UserConfig
-from kotonebot.config.manager import load_config, save_config, RootConfig
+from kaa.config.base_config import BackendConfig, UserConfig
+from kaa.config.manager import load_config, save_config, RootConfig
 
 logger = logging.getLogger(__name__)
 

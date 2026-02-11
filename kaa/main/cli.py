@@ -5,6 +5,12 @@ import argparse
 import importlib.metadata
 from datetime import datetime
 
+try:
+    from ..util.telemetry import setup # noqa: F401
+    setup()
+except Exception as e:
+    print(f'Failed to set up telemetry: {e}')
+
 from .kaa import Kaa
 from ..util.paths import get_ahk_path
 from kotonebot.client.implements.windows import WindowsImplConfig
@@ -47,7 +53,7 @@ def kaa() -> Kaa:
     global _kaa
     if _kaa is None:
         _kaa = Kaa(psr.parse_args().config)
-        _kaa.initialize()
+        # _kaa.initialize()
     return _kaa
 
 def task_invoke() -> int:

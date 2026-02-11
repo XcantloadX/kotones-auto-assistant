@@ -2,7 +2,7 @@ import logging
 from typing import Optional, Literal
 from typing_extensions import assert_never
 
-from kaa.config.schema import produce_solution
+from kaa.kaa_context import produce_solution
 from kaa.tasks.produce.common import resume_produce_pre
 from kotonebot.ui import user
 from kaa.tasks import R

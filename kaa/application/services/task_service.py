@@ -3,8 +3,8 @@ from datetime import datetime, timedelta
 from typing import List, Tuple, Optional
 
 from kaa.main.kaa import Kaa
+from kaa.tasks import TASK_REGISTRY
 from kotonebot.backend.context import task_registry, vars as context_vars
-from kotonebot.backend.bot import RunStatus
 from kotonebot.errors import ContextNotInitializedError
 
 logger = logging.getLogger(__name__)
@@ -18,11 +18,25 @@ class TaskService:
 
     def __init__(self, kaa_instance: Kaa):
         self._kaa = kaa_instance
-        self.run_status: RunStatus | None = None
         self.is_running_all: bool = False
         self.is_running_single: bool = False
         self.is_stopping: bool = False
         self.task_start_time: Optional[datetime] = None
+
+        self._task_status = {task.task: "pending" for task in TASK_REGISTRY.values()}
+
+        def _on_started():
+            pass
+        def _on_stopped(reason: str, exception: Exception | None):
+            self.is_running_all = False
+            self.is_running_single = False
+            self.is_stopping = False
+            self.task_start_time = None
+        def _on_task_status_changed(task, status: str):
+            self._task_status[task] = status
+        self._kaa.events.started += _on_started
+        self._kaa.events.stopped += _on_stopped
+        self._kaa.events.task_status_changed += _on_task_status_changed
 
     def is_running(self) -> bool:
         """Checks if any task (either all or single) is currently running."""
@@ -38,7 +52,7 @@ class TaskService:
         self.is_running_all = True
         self.is_stopping = False
         self.task_start_time = datetime.now()
-        self.run_status = self._kaa.start_all()
+        self._kaa.start_all()
 
     def start_single_task(self, task_name: str) -> None:
         """
@@ -59,7 +73,7 @@ class TaskService:
         self.is_running_single = True
         self.is_stopping = False
         self.task_start_time = datetime.now()
-        self.run_status = self._kaa.start([task])
+        self._kaa.start([task])
 
     def stop_tasks(self) -> None:
         """Stops the currently running tasks."""
@@ -69,15 +83,7 @@ class TaskService:
 
         logger.info("Stopping tasks...")
         self.is_stopping = True
-        try:
-            if context_vars.flow.is_paused:
-                logger.info("Tasks are paused, resuming before stopping.")
-                context_vars.flow.request_resume()
-        except ContextNotInitializedError:
-            pass # Context might not be ready if stopping very early
-
-        if self.run_status:
-            self.run_status.interrupt()
+        self._kaa.stop()
 
     def get_task_statuses(self) -> List[Tuple[str, str]]:
         """
@@ -85,20 +91,7 @@ class TaskService:
 
         :return: A list of tuples, where each tuple contains the task name and its status.
         """
-        if not self.run_status:
-            return [(task.name, "pending") for task in task_registry.values()]
-
-        # Reset running flags if the underlying run_status is no longer running
-        if not self.run_status.running:
-            self.is_running_all = False
-            self.is_running_single = False
-            self.is_stopping = False
-            self.task_start_time = None
-
-        status_list: List[Tuple[str, str]] = []
-        for task_status in self.run_status.tasks:
-            status_list.append((task_status.task.name, task_status.status))
-        return status_list
+        return [(task.name, status) for task, status in self._task_status.items()]
 
     def toggle_pause(self) -> bool | None:
         """
