@@ -3,6 +3,7 @@ import logging
 import argparse
 
 from kaa.main.kaa import KaaDeviceFactory
+from kotonebot.primitives.geometry import Size
 
 
 def run_script(script_path: str) -> None:
@@ -14,11 +15,13 @@ def run_script(script_path: str) -> None:
     """
     logging.basicConfig(level=logging.INFO, format='[%(asctime)s] [%(levelname)s] [%(name)s] [%(funcName)s] [%(lineno)d] %(message)s')
     # 获取模块名
-    module_name = script_path.strip('.py').lstrip('projects/').replace('\\', '/').strip('/').replace('/', '.')
+    module_name = script_path.strip('.py').replace('\\', '/').strip('/').replace('/', '.')
 
     print(f"正在运行脚本: {script_path}")
     # 运行脚本
     from kotonebot.backend.context import init_context, manual_context
+    from kotonebot.config.config import conf
+    conf().device.default_logic_resolution = Size(720, 1280)
     logging.getLogger('kotonebot').setLevel(logging.DEBUG)
     logging.getLogger('kaa').setLevel(logging.DEBUG)
     init_context(target_device=KaaDeviceFactory()())

@@ -30,6 +30,8 @@ if is_windows():
     from .dmm_host import DmmHost, DmmInstance
 else:
     DmmHost = DmmInstance = None
+from kotonebot.primitives.geometry import Size
+
 
 logger = logging.getLogger(__name__)
 
@@ -77,6 +79,11 @@ class KaaDeviceFactory:
         config = load_config(self.config_path, type=BaseConfig)
         user_config = config.user_configs[0]
         self.target_screenshot_interval = user_config.backend.target_screenshot_interval
+
+        from kotonebot.config.config import conf
+        from kotonebot.client.scaler import PortraitGameScaler
+        conf().device.default_scaler_factory = lambda: PortraitGameScaler()
+        conf().device.default_logic_resolution = Size(720, 1280)
         self._setup_global_device_conf()
         self.backend_instance = self._get_backend_instance(user_config)
         self._ensure_instance_running(self.backend_instance, user_config)
@@ -305,3 +312,4 @@ class Kaa(KotoneBot):
             flow.request_interrupt()
         except ContextNotInitializedError:
             pass # Context might not be ready if stopping very early
+

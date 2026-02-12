@@ -1,23 +1,21 @@
 {
+  "version": 2,
   "definitions": {
     "44097699-487f-4932-846a-095a427f4ed8": {
       "name": "Produce.SwitchEventModeOn",
       "displayName": "イベントモード 切换开关 ON",
-      "type": "template",
-      "annotationId": "44097699-487f-4932-846a-095a427f4ed8",
-      "useHintRect": false
+      "type": "prefab",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 271,
+          "y1": 747,
+          "x2": 503,
+          "y2": 779
+        },
+        "fixed": true
+      },
+      "prefab_id": "TemplateMatchPrefab"
     }
-  },
-  "annotations": [
-    {
-      "id": "44097699-487f-4932-846a-095a427f4ed8",
-      "type": "rect",
-      "data": {
-        "x1": 271,
-        "y1": 747,
-        "x2": 503,
-        "y2": 779
-      }
-    }
-  ]
+  }
 }

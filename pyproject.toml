@@ -12,6 +12,7 @@ dependencies = [
     # Image Processing & OCR
     "opencv-python~=4.10",
     "rapidocr_onnxruntime~=1.4",
+    "ddddocr",
     "av==14.0.1",
     "scikit-image~=0.25",
     "thefuzz~=0.22",
@@ -91,3 +92,7 @@ version = {file = "./version"}
 
 [tool.basedpyright]
 typeCheckingMode = "basic"
+
+[tool.kotonebot.editor]
+prefabs_module = "kaa.game_ui.elements"
+resource_path = "kotonebot-resource/sprites/jp"

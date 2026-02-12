@@ -1,23 +1,20 @@
 {
+  "version": 2,
   "definitions": {
     "3f637e86-6b74-4693-9131-1fe411fc21e5": {
       "name": "InPurodyuusu.TextSkillCardSelectGuideDialogTitle",
       "displayName": "獲得ガイド表示設定",
-      "type": "template",
-      "annotationId": "3f637e86-6b74-4693-9131-1fe411fc21e5",
-      "useHintRect": false
+      "type": "prefab",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 51,
+          "y1": 698,
+          "x2": 354,
+          "y2": 740
+        }
+      },
+      "prefab_id": "TemplateMatchPrefab"
     }
-  },
-  "annotations": [
-    {
-      "id": "3f637e86-6b74-4693-9131-1fe411fc21e5",
-      "type": "rect",
-      "data": {
-        "x1": 51,
-        "y1": 698,
-        "x2": 354,
-        "y2": 740
-      }
-    }
-  ]
+  }
 }

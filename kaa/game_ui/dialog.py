@@ -14,7 +14,7 @@ def expect_yes(*, msg: str | None = None):
 
     :param msg: 成功点击后输出的日志信息。信息中的动词建议使用过去式。
     """
-    device.click(image.expect(R.Common.IconButtonCheck))
+    R.Common.IconButtonCheck.click()
     if msg is not None:
         logger.debug(msg)
 
@@ -27,8 +27,7 @@ def yes(*, msg: str | None = None) -> bool:
 
     :param msg: 成功点击后输出的日志信息。信息中的动词建议使用过去式。
     """
-    if image.find(R.Common.IconButtonCheck):
-        device.click()
+    if R.Common.IconButtonCheck.try_click():
         if msg is not None:
             logger.debug(msg)
         return True
@@ -43,7 +42,7 @@ def expect_no(*, msg: str | None = None):
 
     :param msg: 成功点击后输出的日志信息。信息中的动词建议使用过去式。
     """
-    device.click(image.expect(R.Common.IconButtonCross))
+    R.Common.IconButtonCross.click()
     if msg is not None:
         logger.debug(msg)
 
@@ -56,8 +55,7 @@ def no(*, msg: str | None = None):
 
     :param msg: 成功点击后输出的日志信息。信息中的动词建议使用过去式。
     """
-    if image.find(R.Common.IconButtonCross):
-        device.click()
+    if R.Common.IconButtonCross.try_click():
         if msg is not None:
             logger.debug(msg)
         return True

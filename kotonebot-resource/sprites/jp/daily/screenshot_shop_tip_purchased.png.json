@@ -1,23 +1,21 @@
 {
+  "version": 2,
   "definitions": {
     "5d36b880-7b3f-49b1-a018-7de59867d376": {
       "name": "Daily.TextShopItemPurchased",
       "displayName": "交換しました",
-      "type": "template",
-      "annotationId": "5d36b880-7b3f-49b1-a018-7de59867d376",
-      "useHintRect": false
+      "type": "prefab",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 275,
+          "y1": 626,
+          "x2": 432,
+          "y2": 655
+        },
+        "fixed": true
+      },
+      "prefab_id": "TemplateMatchPrefab"
     }
-  },
-  "annotations": [
-    {
-      "id": "5d36b880-7b3f-49b1-a018-7de59867d376",
-      "type": "rect",
-      "data": {
-        "x1": 275,
-        "y1": 626,
-        "x2": 432,
-        "y2": 655
-      }
-    }
-  ]
+  }
 }

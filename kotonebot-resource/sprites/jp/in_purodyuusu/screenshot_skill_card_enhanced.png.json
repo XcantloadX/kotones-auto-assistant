@@ -1,24 +1,21 @@
 {
+  "version": 2,
   "definitions": {
     "6b58d90d-2e5e-4b7f-bc01-941f2633de89": {
       "name": "InPurodyuusu.IconSkillCardEventBubble",
       "displayName": "技能卡事件气泡框图标",
-      "type": "template",
-      "annotationId": "6b58d90d-2e5e-4b7f-bc01-941f2633de89",
-      "useHintRect": false,
-      "description": "背景上左右两边的星星"
+      "type": "prefab",
+      "description": "背景上左右两边的星星",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 46,
+          "y1": 1007,
+          "x2": 79,
+          "y2": 1047
+        }
+      },
+      "prefab_id": "TemplateMatchPrefab"
     }
-  },
-  "annotations": [
-    {
-      "id": "6b58d90d-2e5e-4b7f-bc01-941f2633de89",
-      "type": "rect",
-      "data": {
-        "x1": 46,
-        "y1": 1007,
-        "x2": 79,
-        "y2": 1047
-      }
-    }
-  ]
+  }
 }

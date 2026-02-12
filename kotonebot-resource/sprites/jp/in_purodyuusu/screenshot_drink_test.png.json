@@ -1,0 +1,21 @@
+{
+  "version": 2,
+  "definitions": {
+    "2d10f3c4-00cc-48c8-abd2-01d45bd659c7": {
+      "type": "prefab",
+      "prefab_id": "TemplateMatchPrefab",
+      "name": "InPurodyuusu.TextExamRankLargeFirst",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 225.00959232475202,
+          "y1": 10.46585619851416,
+          "x2": 293.58617721558284,
+          "y2": 49.17515207488354
+        },
+        "fixed": true
+      },
+      "displayName": "考试顶部 1st（大）"
+    }
+  }
+}

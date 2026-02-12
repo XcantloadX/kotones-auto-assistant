@@ -1,57 +1,50 @@
 {
+  "version": 2,
   "definitions": {
     "c78c38cc-7b61-4dc4-820d-0a5b684ef52e": {
       "name": "InPurodyuusu.TextSelfStudyVocal",
       "displayName": "文化课事件 自习 声乐",
-      "type": "template",
-      "annotationId": "c78c38cc-7b61-4dc4-820d-0a5b684ef52e",
-      "useHintRect": false
+      "type": "prefab",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 86,
+          "y1": 676,
+          "x2": 359,
+          "y2": 721
+        }
+      },
+      "prefab_id": "TemplateMatchPrefab"
     },
     "83d0a033-466c-463a-bb8c-be0f2953e9b2": {
       "name": "InPurodyuusu.TextSelfStudyDance",
       "displayName": "文化课事件 自习 舞蹈",
-      "type": "template",
-      "annotationId": "83d0a033-466c-463a-bb8c-be0f2953e9b2",
-      "useHintRect": false
+      "type": "prefab",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 88,
+          "y1": 778,
+          "x2": 331,
+          "y2": 823
+        }
+      },
+      "prefab_id": "TemplateMatchPrefab"
     },
     "4695f96b-c4f5-4bb6-a021-a13b6ceb2883": {
       "name": "InPurodyuusu.TextSelfStudyVisual",
       "displayName": "文化课事件 自习 形象",
-      "type": "template",
-      "annotationId": "4695f96b-c4f5-4bb6-a021-a13b6ceb2883",
-      "useHintRect": false
+      "type": "prefab",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 90,
+          "y1": 879,
+          "x2": 388,
+          "y2": 925
+        }
+      },
+      "prefab_id": "TemplateMatchPrefab"
     }
-  },
-  "annotations": [
-    {
-      "id": "c78c38cc-7b61-4dc4-820d-0a5b684ef52e",
-      "type": "rect",
-      "data": {
-        "x1": 86,
-        "y1": 676,
-        "x2": 359,
-        "y2": 721
-      }
-    },
-    {
-      "id": "83d0a033-466c-463a-bb8c-be0f2953e9b2",
-      "type": "rect",
-      "data": {
-        "x1": 88,
-        "y1": 778,
-        "x2": 331,
-        "y2": 823
-      }
-    },
-    {
-      "id": "4695f96b-c4f5-4bb6-a021-a13b6ceb2883",
-      "type": "rect",
-      "data": {
-        "x1": 90,
-        "y1": 879,
-        "x2": 388,
-        "y2": 925
-      }
-    }
-  ]
+  }
 }

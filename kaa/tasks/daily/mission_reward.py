@@ -21,7 +21,7 @@ def check_and_goto_mission() -> bool:
     
     :return: 是否需要领取任务奖励
     """
-    rect = image.expect_wait(R.Daily.ButtonMission, timeout=1).rect
+    rect = R.Daily.ButtonMission.wait(timeout=1).rect
     # 向上、向右扩展 50px
     color_rect = rect_expand(rect, top=50, right=50)
     if not color.find('#ff1249', rect=color_rect):
@@ -39,16 +39,14 @@ def check_and_goto_mission() -> bool:
 def claim_mission_reward(name: str):
     """领取任务奖励"""
     # [screenshots/mission/daily.png]
-    image.expect_wait(R.Common.ButtonIconArrowShort)
-    if image.find(R.Common.ButtonIconArrowShort, colored=True):
+    R.Common.ButtonIconArrowShort.wait()
+    if R.Common.ButtonIconArrowShort(enabled=True).try_click():
         logger.info(f'Claiming {name} mission reward.')
-        device.click()
         sleep(0.5)
         for _ in Loop(interval=0.5):
-            if not image.find(R.Common.ButtonIconArrowShortDisabled, colored=True):
-                if image.find(R.Common.ButtonIconClose):
-                    logger.debug('Closing popup dialog.')
-                    device.click()
+            if not R.Common.ButtonIconArrowShort(enabled=False).exists():
+                if R.Common.ButtonIconClose.try_click():
+                    logger.debug('Closed popup dialog.')
                     sleep(1)
             else:
                 break
@@ -73,7 +71,7 @@ def claim_mission_rewards():
 def claim_pass_reward():
     """领取通行证奖励"""
     # [screenshots/mission/daily.png]
-    pass_rect = image.expect_wait(R.Daily.ButtonIconPass, timeout=1).rect
+    pass_rect = R.Daily.ButtonIconPass.wait(timeout=1).rect
     # 向右扩展 150px，向上扩展 35px
     color_rect = (pass_rect.x1, pass_rect.y1 - 35, pass_rect.w + 150, pass_rect.h + 35)
     if not color.find('#ff1249', rect=Rect(xywh=color_rect)):
@@ -85,20 +83,19 @@ def claim_pass_reward():
     # [screenshots/mission/pass.png]
     # 对话框 [screenshots/mission/pass_dialog.png]
     for _ in Loop(interval=0.2):
-        if image.find(R.Common.ButtonIconClose):
-            logger.debug('Closing popup dialog.')
-            device.click()
-        elif image.find(R.Daily.IconTitlePass):
+        if R.Common.ButtonIconClose.try_click():
+            logger.debug('Closed popup dialog.')
+        elif R.Daily.IconTitlePass.exists():
             break
     logger.debug('Pass screen loaded.')
     for _ in Loop():
-        if image.find(R.Common.ButtonIconClose):
-            logger.debug('Closing popup dialog.')
-            device.click()
-        elif image.find(R.Daily.ButtonPassClaim, colored=True):
+        claim_btn = R.Daily.ButtonPassClaim.find()
+        if R.Common.ButtonIconClose.try_click():
+            logger.debug('Closed popup dialog.')
+        elif claim_btn and claim_btn.enabled:
             logger.debug('Clicking 受取 button.')
-            device.click()
-        elif not image.find(R.Daily.ButtonPassClaim, colored=True) and image.find(R.Daily.IconTitlePass):
+            device.click(claim_btn)
+        elif (claim_btn and claim_btn.disabled) and R.Daily.IconTitlePass.exists():
             break
     logger.info('All pass rewards claimed.')
 
@@ -123,7 +120,7 @@ def mission_reward():
     # PASS 的领取需要另外判断
     if not check_and_goto_mission():
         return
-    image.expect_wait(R.Daily.ButtonIconPass)
+    R.Daily.ButtonIconPass.wait()
     claim_mission_rewards()
     sleep(0.5)
     claim_pass_reward()

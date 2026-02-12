@@ -1,40 +1,37 @@
 {
+  "version": 2,
   "definitions": {
     "79abd239-5eed-4195-9fa8-d729daa874ca": {
       "name": "InPurodyuusu.IconTitleSkillCardEnhance",
       "displayName": "技能卡强化 标题 图标",
-      "type": "template",
-      "annotationId": "79abd239-5eed-4195-9fa8-d729daa874ca",
-      "useHintRect": false
+      "type": "prefab",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 25,
+          "y1": 37,
+          "x2": 57,
+          "y2": 72
+        },
+        "fixed": true
+      },
+      "prefab_id": "TemplateMatchPrefab"
     },
     "da439e8c-3b74-4371-9657-0736d826c7d1": {
       "name": "InPurodyuusu.ButtonEnhance",
       "displayName": "技能卡 强化按钮",
-      "type": "template",
-      "annotationId": "da439e8c-3b74-4371-9657-0736d826c7d1",
-      "useHintRect": false
+      "type": "prefab",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 255,
+          "y1": 1138,
+          "x2": 414,
+          "y2": 1182
+        },
+        "fixed": true
+      },
+      "prefab_id": "GakumasPrimaryButtonPrefab"
     }
-  },
-  "annotations": [
-    {
-      "id": "79abd239-5eed-4195-9fa8-d729daa874ca",
-      "type": "rect",
-      "data": {
-        "x1": 25,
-        "y1": 37,
-        "x2": 57,
-        "y2": 72
-      }
-    },
-    {
-      "id": "da439e8c-3b74-4371-9657-0736d826c7d1",
-      "type": "rect",
-      "data": {
-        "x1": 255,
-        "y1": 1138,
-        "x2": 414,
-        "y2": 1182
-      }
-    }
-  ]
+  }
 }

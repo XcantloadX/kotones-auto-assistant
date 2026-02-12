@@ -1,23 +1,20 @@
 {
+  "version": 2,
   "definitions": {
     "1652f06a-5417-49ef-8949-4854772d9ab7": {
       "name": "Daily.ButtonAssignmentShortenTime",
       "displayName": "工作页面 短缩 时间",
-      "type": "template",
-      "annotationId": "1652f06a-5417-49ef-8949-4854772d9ab7",
-      "useHintRect": false
+      "type": "prefab",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 461,
+          "y1": 1025,
+          "x2": 582,
+          "y2": 1060
+        }
+      },
+      "prefab_id": "TemplateMatchPrefab"
     }
-  },
-  "annotations": [
-    {
-      "id": "1652f06a-5417-49ef-8949-4854772d9ab7",
-      "type": "rect",
-      "data": {
-        "x1": 461,
-        "y1": 1025,
-        "x2": 582,
-        "y2": 1060
-      }
-    }
-  ]
+  }
 }

@@ -1,57 +1,50 @@
 {
+  "version": 2,
   "definitions": {
     "8ded6c98-85ea-4858-a66d-4fc8caecb7c5": {
       "name": "InPurodyuusu.ButtonIconOuting",
       "displayName": "行动按钮图标 外出（おでかけ）",
-      "type": "template",
-      "annotationId": "8ded6c98-85ea-4858-a66d-4fc8caecb7c5",
-      "useHintRect": false
+      "type": "prefab",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 233,
+          "y1": 962,
+          "x2": 316,
+          "y2": 1037
+        }
+      },
+      "prefab_id": "TemplateMatchPrefab"
     },
     "d83f338d-dde3-494b-9bea-cae511e3517c": {
       "name": "InPurodyuusu.ButtonIconConsult",
       "displayName": "行动按钮图标 咨询（相談）",
-      "type": "template",
-      "annotationId": "d83f338d-dde3-494b-9bea-cae511e3517c",
-      "useHintRect": false
+      "type": "prefab",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 405,
+          "y1": 963,
+          "x2": 488,
+          "y2": 1043
+        }
+      },
+      "prefab_id": "TemplateMatchPrefab"
     },
     "ce20a856-5629-4f8e-a8e1-d1bd14e18e4f": {
       "name": "InPurodyuusu.TextMidExamRemaining",
       "displayName": "中間まで",
-      "type": "template",
-      "annotationId": "ce20a856-5629-4f8e-a8e1-d1bd14e18e4f",
-      "useHintRect": false
+      "type": "prefab",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 67,
+          "y1": 48,
+          "x2": 156,
+          "y2": 77
+        }
+      },
+      "prefab_id": "TemplateMatchPrefab"
     }
-  },
-  "annotations": [
-    {
-      "id": "8ded6c98-85ea-4858-a66d-4fc8caecb7c5",
-      "type": "rect",
-      "data": {
-        "x1": 233,
-        "y1": 962,
-        "x2": 316,
-        "y2": 1037
-      }
-    },
-    {
-      "id": "d83f338d-dde3-494b-9bea-cae511e3517c",
-      "type": "rect",
-      "data": {
-        "x1": 405,
-        "y1": 963,
-        "x2": 488,
-        "y2": 1043
-      }
-    },
-    {
-      "id": "ce20a856-5629-4f8e-a8e1-d1bd14e18e4f",
-      "type": "rect",
-      "data": {
-        "x1": 67,
-        "y1": 48,
-        "x2": 156,
-        "y2": 77
-      }
-    }
-  ]
+  }
 }

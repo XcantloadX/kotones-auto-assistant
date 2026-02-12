@@ -25,7 +25,7 @@
 1. 进入“扩展 Extension”，搜索 `@recommended` ，然后安装里面的所有插件。
 2. 打开 VSCode 设置，搜索 `python.analysis.supportRestructuredText` 并勾选。
 3. 打开 VSCode 设置，搜索 `imageComments.pathMode` 并设置为 `relativeToWorkspace`。
-4. 在 VSCode 中选择“Terminal” -> “Run Task” -> “Make R.py”并执行。
+4. 在 VSCode 中选择“Terminal” -> “Run Task” -> “Make Resource”并执行。
 
 ## PyCharm
 1. 设置 Docstring 渲染

@@ -4,6 +4,7 @@ from typing_extensions import assert_never
 
 from kaa.kaa_context import produce_solution
 from kaa.tasks.produce.common import resume_produce_pre
+from kaa.tasks.produce.controller import ProduceController
 from kotonebot.ui import user
 from kaa.tasks import R
 from kaa.config import conf
@@ -11,11 +12,8 @@ from kaa.game_ui import dialog
 from ..actions.scenes import at_home, goto_home
 from kotonebot.backend.loop import Loop, StatedLoop
 from kotonebot.util import Countdown, Throttler
-from kaa.game_ui.primary_button import find_button
 from kaa.game_ui.idols_overview import locate_idol, match_idol
-from ..produce.in_purodyuusu import hajime_pro, hajime_regular, hajime_master, resume_pro_produce, resume_regular_produce, \
-    resume_master_produce
-from kotonebot import device, image, ocr, task, action, sleep, contains, regex
+from kotonebot import device, ocr, task, action, sleep
 from kaa.errors import IdolCardNotFoundError
 
 logger = logging.getLogger(__name__)
@@ -52,9 +50,8 @@ def select_idol(skin_id: str):
     # 进入总览
     device.screenshot()
     for _ in Loop():
-        if not image.find(R.Common.ButtonConfirmNoIcon):
-            if image.find(R.Produce.ButtonPIdolOverview):
-                device.click()
+        if not R.Common.ButtonConfirmNoIcon.exists():
+            R.Produce.ButtonPIdolOverview.try_click()
         else:
             break
     # 选择偶像
@@ -63,10 +60,10 @@ def select_idol(skin_id: str):
         raise IdolCardNotFoundError(skin_id)
     # 确认
     for _ in Loop():
-        if btn_confirm := image.find(R.Common.ButtonConfirmNoIcon):
+        if btn_confirm := R.Common.ButtonConfirmNoIcon.find():
             device.click(pos)
             sleep(0.3)
-            device.click(btn_confirm)
+            btn_confirm.click()
         else:
             break
 
@@ -119,32 +116,6 @@ def select_set(index: int):
             logger.warning(f'Failed to navigate to set #{index}. Current set is #{final_current}. Retrying... ({retry_count}/{max_retries})')
     
     logger.error(f'Failed to navigate to set #{index} after {max_retries} retries.')
-
-@action('继续当前培育.继续培育', screenshot_mode='manual-inherit')
-def resume_produce_lst(
-    mode: Literal['regular', 'pro', 'master'],
-    current_week: int
-):
-    """
-    继续当前培育.继续培育\n
-    该函数正常情况不应该被单独调用。
-
-    前置条件：培育中的任意一个页面\n
-    结束状态：游戏首页
-
-    :param mode: 培育模式
-    :param current_week: 培育的周数
-    """
-
-    match mode:
-        case 'regular':
-            resume_regular_produce(current_week)
-        case 'pro':
-            resume_pro_produce(current_week)
-        case 'master':
-            resume_master_produce(current_week)
-        case _:
-            assert_never(mode)
     
 @action('继续当前培育', screenshot_mode='manual-inherit')
 def resume_produce():
@@ -157,7 +128,7 @@ def resume_produce():
 
     mode, current_week = resume_produce_pre()
 
-    resume_produce_lst(mode, current_week)
+    ProduceController(mode=mode).run()
 
 @action('执行培育', screenshot_mode='manual-inherit')
 def do_produce(
@@ -186,14 +157,14 @@ def do_produce(
     device.screenshot()
     # 点击培育按钮，然后判断是新开还是再开培育
     for _ in Loop(interval=0.6):
-        if image.find(R.Produce.LogoHajime): # Hajime培育界面
+        if R.Produce.LogoHajime.exists(): # Hajime培育界面
             # 新开
             break
-        elif image.find(R.Produce.LogoNia): # NIA培育界面
+        elif R.Produce.LogoNia.exists(): # NIA培育界面
             device.click(R.Produce.PointNiaToHajime)
             sleep(0.5)
             continue
-        elif image.find(R.Produce.ButtonResume):
+        elif R.Produce.ButtonResume.exists():
             # 再开
             resume_produce()
             return True
@@ -215,25 +186,26 @@ def do_produce(
             target_buttons = [R.Produce.ButtonHajime1Master]
         case _:
             assert_never(mode)
+    find_target_button = lambda: next((b for b in target_buttons if b.find()), None)  # noqa: E731
     result = None
     for _ in Loop():
-        if image.find(R.Produce.ButtonProduce):
-            device.click()
+        if R.Produce.ButtonProduce.try_click():
+            pass
         # 强化月间处理
-        elif conf().produce.enable_fever_month == 'on' and image.find(R.Produce.SwitchEventModeOff):
+        elif conf().produce.enable_fever_month == 'on' and R.Produce.SwitchEventModeOff.exists():
             logger.info('Fever month checked on.')
             device.click()
             sleep(0.5)
-        elif conf().produce.enable_fever_month == 'off' and image.find(R.Produce.SwitchEventModeOn):
+        elif conf().produce.enable_fever_month == 'off' and R.Produce.SwitchEventModeOn.exists():
             logger.info('Fever month checked off.')
             device.click()
             sleep(0.5)
-        elif image.find_multi(target_buttons):
-            device.click()
-        elif image.find(R.Produce.ButtonPIdolOverview):
+        elif btn := find_target_button():
+            btn.click()
+        elif R.Produce.ButtonPIdolOverview.exists():
             result = True
             break
-        elif image.find(R.Produce.TextAPInsufficient):
+        elif R.Produce.TextAPInsufficient.exists():
             result = False
             break
     if not result:
@@ -243,18 +215,17 @@ def do_produce(
             # [kotonebot-resource\sprites\jp\produce\screenshot_no_enough_ap_3.png]
             logger.info('AP insufficient. Try to use AP drink.')
             for _ in Loop(interval=1):
-                # HACK: 这里设置 interval 是 #91 的临时 workaround
-                if image.find(R.Produce.ButtonUse, colored=True):
-                    device.click()
-                elif image.find(R.Produce.ButtonRefillAP):
-                    device.click()
-                elif image.find_multi(target_buttons):
-                    device.click()
-                elif image.find(R.Produce.ButtonPIdolOverview):
+                if R.Produce.ButtonUse(enabled=True).try_click():
+                    pass
+                elif R.Produce.ButtonRefillAP.try_click():
+                    pass
+                elif btn := find_target_button():
+                    btn.click()
+                elif R.Produce.ButtonPIdolOverview.exists():
                     break
         else:
             logger.info('AP insufficient. Exiting produce.')
-            device.click(image.expect_wait(R.InPurodyuusu.ButtonCancel))
+            R.InPurodyuusu.ButtonCancel.wait().click()
             return False
 
     idol_located = False
@@ -262,18 +233,19 @@ def do_produce(
     support_auto_set_done = False
     next_throttler = Throttler(interval=4)
     for lp in StatedLoop[Literal[0, 1, 2, 3]]():
-        if image.find(R.Produce.TextStepIndicator1):
+        if R.Produce.TextStepIndicator1.exists():
             lp.state = 1
 
         if lp.state == 0:
             pass
         # 1. 选择 PIdol [screenshots/produce/screenshot_produce_start_1_p_idol.png]
         if lp.state == 1:
-            if image.find(R.Produce.TextStepIndicator2):
+            if R.Produce.TextStepIndicator2.exists():
                 lp.state = 2
                 continue
-            if lp.when(R.Produce.TextAnotherIdolAvailableDialog):
+            if R.Produce.TextAnotherIdolAvailableDialog.exists():
                 dialog.no(msg='Closed another idol available dialog.')
+                continue
             # 首先判断是否已选中目标偶像
             img = lp.screenshot
             x, y, w, h = R.Produce.BoxSelectedIdol.xywh
@@ -286,58 +258,61 @@ def do_produce(
                 idol_located = True
 
             # 下一步「次へ」
-            if idol_located and find_button(R.Common.ButtonNextNoIcon, True) and next_throttler.request():
-                device.click()
+            if (
+                idol_located and
+                R.Common.ButtonNextNoIcon(enabled=True).try_click() and
+                next_throttler.request()
+            ):
+                pass
         # 2. 选择支援卡 自动编成 [screenshots/produce/screenshot_produce_start_2_support_card.png]
         elif lp.state == 2:
-            if image.find(R.Produce.TextStepIndicator3):
+            if R.Produce.TextStepIndicator3.exists():
                 lp.state = 3
                 continue
 
             # 下一步「次へ」
-            if find_button(R.Common.ButtonNextNoIcon, True) and next_throttler.request():
-                device.click()
+            if R.Common.ButtonNextNoIcon(enabled=True).try_click() and next_throttler.request():
+                pass
             # 今天仍然有租用回忆次数提示（第三步的提示）
             # （第二步选完之后点「次へ」大概率会卡几秒钟，这个时候脚本很可能会重复点击，
             # 卡住时候的点击就会在第三步生效，出现这个提示。而此时脚本仍然处于第二步，
             # 这样就会报错，或者出现误自动编成。因此需要在第二步里处理掉这个对话框。
             # 理论上应该避免这种情况，但是没找到办法，只能这样 workaround 了。）
-            elif image.find(R.Produce.TextRentAvailable):
+            elif R.Produce.TextRentAvailable.exists():
                 dialog.no(msg='Closed rent available dialog. (Step 2)')
             # 确认自动编成提示
-            elif image.find(R.Produce.TextAutoSet):
+            elif R.Produce.TextAutoSet.exists():
                 dialog.yes(msg='Confirmed auto set.')
                 sleep(1) # 等对话框消失
-            elif not support_auto_set_done and image.find(R.Produce.ButtonAutoSet):
+            elif not support_auto_set_done and R.Produce.ButtonAutoSet.exists():
                 device.click()
                 support_auto_set_done = True
                 sleep(1)
         # 3. 选择回忆 自动编成 [screenshots/produce/screenshot_produce_start_3_memory.png]
         elif lp.state == 3:
-            if image.find(R.Produce.TextStepIndicator4):
+            if R.Produce.TextStepIndicator4.exists():
                 break
 
             # 确认自动编成提示
-            if image.find(R.Produce.TextAutoSet):
+            if R.Produce.TextAutoSet.exists():
                 dialog.yes(msg='Confirmed auto set.')
                 continue
             # 今天仍然有租用回忆次数提示
-            elif image.find(R.Produce.TextRentAvailable):
+            elif R.Produce.TextRentAvailable.exists():
                 dialog.yes(msg='Confirmed rent available. (Step 3)')
                 continue
 
             if not memory_set_selected:
                 # 自动编成
                 if memory_set_index is None:
-                    lp.click_if(R.Produce.ButtonAutoSet)
+                    R.Produce.ButtonAutoSet.try_click()
                 # 指定编号
                 else:
                     # dialog.no() # TODO: 这是什么？
                     select_set(memory_set_index)
                 memory_set_selected = True
             # 下一步「次へ」
-            if find_button(R.Common.ButtonNextNoIcon, True) and next_throttler.request():
-                device.click()
+            if R.Common.ButtonNextNoIcon(enabled=True).try_click() and next_throttler.request():
                 continue
         else:
             assert False, f'Invalid state of {lp.state}.'
@@ -345,33 +320,26 @@ def do_produce(
     # 4. 选择道具 [screenshots/produce/screenshot_produce_start_4_end.png]
     # TODO: 如果道具不足，这里加入推送提醒
     if produce_solution().data.use_note_boost:
-        if image.find(R.Produce.CheckboxIconNoteBoost):
+        if R.Produce.CheckboxIconNoteBoost.exists():
             device.click()
             sleep(0.1)
     if produce_solution().data.use_pt_boost:
-        if image.find(R.Produce.CheckboxIconSupportPtBoost):
+        if R.Produce.CheckboxIconSupportPtBoost.exists():
             device.click()
             sleep(0.1)
-    device.click(image.expect_wait(R.Produce.ButtonProduceStart))
+    R.Produce.ButtonProduceStart.wait().click()
     # 5. 相关设置弹窗 [screenshots/produce/skip_commu.png]
     cd = Countdown(5).start()
     for _ in Loop():
         if cd.expired():
             break
         device.screenshot()
-        if image.find(R.Produce.RadioTextSkipCommu):
-            device.click()
-        if image.find(R.Common.ButtonConfirmNoIcon):
-            device.click()
-    match mode:
-        case 'regular':
-            hajime_regular()
-        case 'pro':
-            hajime_pro()
-        case 'master':
-            hajime_master()
-        case _:
-            assert_never(mode)
+        if R.Produce.RadioTextSkipCommu.try_click():
+            pass
+        if R.Common.ButtonConfirmNoIcon.try_click():
+            pass
+    c = ProduceController(mode=mode)
+    c.run()
     return True
 
 @task('培育')
@@ -427,12 +395,12 @@ if __name__ == '__main__':
     from kaa.main import Kaa
 
     conf().produce.enabled = True
-    conf().produce.produce_count = 1
+    conf().produce.produce_count = 3
     conf().produce.enable_fever_month = 'ignore'
     produce_solution().data.mode = 'pro'
     # produce_solution().data.idol = 'i_card-skin-hski-3-002'
-    produce_solution().data.memory_set = 1
-    produce_solution().data.auto_set_memory = False
+    # produce_solution().data.memory_set = 1
+    # produce_solution().data.auto_set_memory = True
     # do_produce(PIdol.月村手毬_初声, 'pro', 5)
     produce()
     # a()

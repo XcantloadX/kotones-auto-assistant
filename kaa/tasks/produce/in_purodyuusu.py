@@ -17,6 +17,7 @@ from kotonebot.backend.loop import Loop
 from kaa.config import ProduceAction, RecommendCardDetectionMode
 from ..produce.common import until_acquisition_clear, commu_event, ProduceInterrupt
 from kotonebot import ocr, device, contains, image, regex, action, sleep, wait
+from kotonebot.core import AnyOf
 from ..produce.non_lesson_actions import (
     enter_allowance, allowance_available,
     study_available, enter_study,
@@ -73,7 +74,7 @@ def handle_recommended_action(final_week: bool = False) -> ProduceAction | None:
     # 获取课程
     logger.debug("Getting recommended lesson...")
     device.screenshot()
-    if not image.find(R.InPurodyuusu.IconAsariSenseiAvatar):
+    if not R.InPurodyuusu.IconAsariSenseiAvatar.exists():
         return None
     cd = Countdown(sec=5).start()
     result = None
@@ -82,13 +83,13 @@ def handle_recommended_action(final_week: bool = False) -> ProduceAction | None:
             break
         logger.debug('Retrieving recommended lesson...')
         with cropped(device, y1=0.00, y2=0.30):
-            if result := image.find_multi([
+            if result := AnyOf[
                 R.InPurodyuusu.TextSenseiTipDance,
                 R.InPurodyuusu.TextSenseiTipVocal,
                 R.InPurodyuusu.TextSenseiTipVisual,
                 R.InPurodyuusu.TextSenseiTipRest,
                 R.InPurodyuusu.TextSenseiTipConsult,
-            ]):
+            ].find():
                 break
 
     logger.debug("image.find_multi: %s", result)
@@ -98,46 +99,46 @@ def handle_recommended_action(final_week: bool = False) -> ProduceAction | None:
     recommended = None
     # 普通周
     if not final_week:
-        if result.index == 0:
+        if result.prefab == R.InPurodyuusu.TextSenseiTipDance:
             template = R.InPurodyuusu.ButtonPracticeDance
             recommended = ProduceAction.DANCE
             logger.info("Recommend lesson is dance.")
-        elif result.index == 1:
+        elif result.prefab == R.InPurodyuusu.TextSenseiTipVocal:
             template = R.InPurodyuusu.ButtonPracticeVocal
             recommended = ProduceAction.VOCAL
             logger.info("Recommend lesson is vocal.")
-        elif result.index == 2:
+        elif result.prefab == R.InPurodyuusu.TextSenseiTipVisual:
             template = R.InPurodyuusu.ButtonPracticeVisual
             recommended = ProduceAction.VISUAL
             logger.info("Recommend lesson is visual.")
-        elif result.index == 3:
+        elif result.prefab == R.InPurodyuusu.TextSenseiTipRest:
             rest()
             return ProduceAction.REST
-        elif result.index == 4:
+        elif result.prefab == R.InPurodyuusu.TextSenseiTipConsult:
             enter_consult()
             return ProduceAction.CONSULT
         else:
             return None
         # 点击课程
         logger.debug("Try clicking lesson...")
-        x, y = image.expect_wait(template).rect.center
+        x, y = template.wait().rect.center
         triple_click(x, y)
         return recommended
     # 冲刺周
     else:
-        if result.index == 0:
+        if result.prefab == R.InPurodyuusu.TextSenseiTipDance:
             template = R.InPurodyuusu.ButtonFinalPracticeDance
             recommended = ProduceAction.DANCE
-        elif result.index == 1:
+        elif result.prefab == R.InPurodyuusu.TextSenseiTipVocal:
             template = R.InPurodyuusu.ButtonFinalPracticeVocal
             recommended = ProduceAction.VOCAL
-        elif result.index == 2:
+        elif result.prefab == R.InPurodyuusu.TextSenseiTipVisual:
             template = R.InPurodyuusu.ButtonFinalPracticeVisual
             recommended = ProduceAction.VISUAL
         else:
             return None
         logger.debug("Try clicking lesson...")
-        x, y = image.expect(template).rect.center
+        x, y = template.require().rect.center
         triple_click(x, y)
         return recommended
 
@@ -147,10 +148,10 @@ def until_action_scene(week_first: bool = False):
     """等待进入行动场景"""
     pi = ProduceInterrupt()
     for _ in Loop(interval=0.2):
-        if not image.find_multi([
+        if not AnyOf[
             R.InPurodyuusu.TextPDiary, # 普通周
             R.InPurodyuusu.ButtonFinalPracticeDance # 离考试剩余一周
-        ]):
+        ].exists():
             logger.info("Action scene not detected. Retry...")
             # commu_event 和 acquisitions 顺序不能颠倒。
             # 在 PRO 培育初始饮料、技能卡二选一事件时，右下方的
@@ -164,13 +165,13 @@ def until_action_scene(week_first: bool = False):
                 continue
         else:
             logger.info("Now at action scene.")
-            return 
+            return
 
 @action('等待进入练习场景', screenshot_mode='manual')
 def until_practice_scene():
     """等待进入练习场景"""
     for _ in Loop():
-        if image.find(R.InPurodyuusu.TextClearUntil) is None:
+        if not R.InPurodyuusu.TextClearUntil.exists():
             until_acquisition_clear()
         else:
             break
@@ -191,7 +192,7 @@ def until_exam_scene():
 def practice():
     """
     执行练习
-    
+
     前置条件：位于练习场景\n
     结束状态：各种奖励领取弹窗、加载画面等
     """
@@ -212,10 +213,10 @@ def practice():
         # 提高平均阈值，且同时要求至少有 3 边达到阈值。
 
     def end_predicate():
-        return not image.find_multi([
+        return not AnyOf[
             R.InPurodyuusu.TextClearUntil,
             R.InPurodyuusu.TextPerfectUntil
-        ])
+        ].exists()
 
     do_cards(False, threshold_predicate, end_predicate)
     logger.info("CLEAR/PERFECT not found. Practice finished.")
@@ -224,7 +225,7 @@ def practice():
 def exam(type: Literal['mid', 'final']) -> bool:
     """
     执行考试
-    
+
     前置条件：考试进行中场景（手牌可见）\n
     结束状态：考试结束交流/对话（TODO：截图）
 
@@ -235,7 +236,7 @@ def exam(type: Literal['mid', 'final']) -> bool:
 
     def threshold_predicate(card_count: int, result: CardDetectResult):
         is_strict_mode = produce_solution().data.recommend_card_detection_mode == RecommendCardDetectionMode.STRICT
-        total = lambda t: result.score >= t
+        total = lambda t: result.score >= t  # noqa: E731
         def borders(t):
             # 卡片数量小于三时无遮挡，以及最后一张卡片也总是无遮挡
             if card_count <= 3 or (result.type == card_count - 1):
@@ -278,7 +279,7 @@ def exam(type: Literal['mid', 'final']) -> bool:
         # 解决方法是提高平均阈值的同时，为每一边都设置阈值。
         # 这样可以筛选出只有四边都包含黄色的发光卡片，
         # 而由夕阳背景造成的假发光卡片通常不会四边都包含黄色。
-        
+
         # 为什么需要严格模式：
         # 严格模式主要用于琴音。琴音的服饰上有大量黄色元素，
         # 很容易干扰检测，因此需要针对琴音专门调整阈值。
@@ -287,19 +288,19 @@ def exam(type: Literal['mid', 'final']) -> bool:
     def end_predicate():
         return bool(
             not ocr.find(contains('残りターン'), rect=R.InPurodyuusu.BoxExamTop)
-            and image.find(R.Common.ButtonNext)
+            and R.Common.ButtonNext.find()
         )
 
     do_cards(True, threshold_predicate, end_predicate)
-    device.click(image.expect_wait(R.Common.ButtonNext))
+    R.Common.ButtonNext.wait().click()
 
     is_exam_passed = True
 
     # 如果考试失败
     sleep(1) # 避免在动画未播放完毕时点击
-    if image.wait_for(R.InPurodyuusu.TextRechallengeEndProduce, timeout=3):
+    if btn := R.InPurodyuusu.TextRechallengeEndProduce.try_wait(timeout=3):
         logger.info('Exam failed, end produce.')
-        device.click()
+        device.click(btn)
         is_exam_passed = False
 
     if type == 'final':
@@ -308,7 +309,7 @@ def exam(type: Literal['mid', 'final']) -> bool:
                 device.click_center()
             else:
                 break
-    
+
     return is_exam_passed
 
 # TODO: 将这个函数改为手动截图模式
@@ -316,7 +317,7 @@ def exam(type: Literal['mid', 'final']) -> bool:
 def produce_end(has_live: bool = True):
     """
     执行考试结束流程
-    
+
     :param has_live: 培育结束后是否存在live；当培育在期中考时失败的话，就没有live
     """
     # 1. 考试结束交流 [screenshots/produce/in_produce/final_exam_end_commu.png]
@@ -330,20 +331,20 @@ def produce_end(has_live: bool = True):
     logger.info("Waiting for select cover screen...")
     if has_live: # 只有在合格时，才会进行演出
         for _ in Loop():
-            if not image.find(R.InPurodyuusu.ButtonNextNoIcon):
+            if not R.InPurodyuusu.ButtonNextNoIcon.exists():
                 # device.screenshot()
                 # 未读交流
                 if handle_unread_commu():
                     logger.info("Skipping unread commu")
                 # 跳过演出
                 # [kotonebot-resource\sprites\jp\produce\screenshot_produce_end.png]
-                elif image.find(R.Produce.ButtonSkipLive, preprocessors=[WhiteFilter()]):
+                elif image.find(R.Produce.ButtonSkipLive.template, preprocessors=[WhiteFilter()]):
                     logger.info("Skipping live.")
                     device.click()
                 # [kotonebot-resource\sprites\jp\produce\screenshot_produce_end_skip.png]
-                elif image.find(R.Produce.TextSkipLiveDialogTitle):
+                elif R.Produce.TextSkipLiveDialogTitle.exists():
                     logger.info("Confirming skip live.")
-                    device.click(image.expect_wait(R.Common.IconButtonCheck))
+                    R.Common.IconButtonCheck.wait().click()
                 skip()
             else:
                 break
@@ -351,34 +352,34 @@ def produce_end(has_live: bool = True):
         logger.info("Use default cover.")
         sleep(3)
         logger.debug("Click next")
-        device.click(image.expect_wait(R.InPurodyuusu.ButtonNextNoIcon))
+        R.InPurodyuusu.ButtonNextNoIcon.wait().click()
         sleep(1)
         # 确认对话框 [screenshots/produce_end/select_cover_confirm.jpg]
         # 決定
         logger.debug("Click Confirm")
-        device.click(image.expect_wait(R.Common.ButtonConfirm, threshold=0.8))
+        R.Common.ButtonConfirm.wait(threshold=0.8).click()
         sleep(1)
         # 上传图片，等待“生成”按钮
         # 注意网络可能会很慢，可能出现上传失败对话框
         logger.info("Waiting for cover uploading...")
-    
+
     retry_count = 0
     MAX_RETRY_COUNT = 5
     while True:
         img = device.screenshot()
         # 处理上传失败
-        if image.raw().find(img, R.InPurodyuusu.ButtonRetry):
+        if image.raw().find(img, R.InPurodyuusu.ButtonRetry.template):
             logger.info("Upload failed. Retry...")
             retry_count += 1
             if retry_count >= MAX_RETRY_COUNT:
                 logger.info("Upload failed. Max retry count reached.")
                 logger.info("Cancel upload.")
-                device.click(image.expect_wait(R.InPurodyuusu.ButtonCancel))
+                R.InPurodyuusu.ButtonCancel.wait().click()
                 sleep(2)
                 continue
             device.click()
         # 记忆封面保存失败提示
-        elif image.raw().find(img, R.Common.ButtonClose):
+        elif image.raw().find(img, R.Common.ButtonClose.template):
             logger.info("Memory cover save failed. Click to close.")
             device.click()
         elif gen_btn := ocr.raw().find(img, contains("生成")):
@@ -392,11 +393,11 @@ def produce_end(has_live: bool = True):
     # 后续动画
     logger.info("Waiting for memory generation animation completed...")
     for _ in Loop(interval=1):
-        if not image.find(R.InPurodyuusu.ButtonNextNoIcon):
+        if not R.InPurodyuusu.ButtonNextNoIcon.exists():
             device.click_center()
         else:
             break
-    
+
     # 结算完毕
     # logger.info("Finalize")
     # # [screenshots/produce_end/end_next_1.jpg]
@@ -422,14 +423,14 @@ def produce_end(has_live: bool = True):
         # [screenshots/produce_end/end_next_1.jpg]
         # [screenshots/produce_end/end_next_2.png]
         # [screenshots/produce_end/end_next_3.png]
-        if image.find(R.InPurodyuusu.ButtonNextNoIcon):
+        if R.InPurodyuusu.ButtonNextNoIcon.exists():
             logger.debug("Click next")
             device.click()
             wait(0.5, before='screenshot')
         # [screenshots/produce_end/end_complete.png]
-        elif image.find(R.InPurodyuusu.ButtonComplete):
+        elif R.InPurodyuusu.ButtonComplete.exists():
             logger.debug("Click complete")
-            device.click(image.expect_wait(R.InPurodyuusu.ButtonComplete))
+            R.InPurodyuusu.ButtonComplete.wait().click()
             wait(0.5, before='screenshot')
             break
         # 1. P任务解锁提示
@@ -445,27 +446,25 @@ def produce_end(has_live: bool = True):
             # [screenshots/produce_end/end_activity1.png]
             # 制作人 升级
             # [screenshots/produce_end/end_level_up.png]
-            if image.find(R.Common.ButtonIconClose):
-                logger.info("Activity award claim dialog found. Click to close.")
-                device.click()
+            if R.Common.ButtonIconClose.try_click():
+                logger.info("Activity award claim dialog found. Clicked to close.")
             # 活动积分进度
             # [screenshots/produce_end/end_activity.png]
-            elif image.find(R.Common.ButtonNextNoIcon, colored=True):
-                logger.debug("Click next")
-                device.click()
+            elif R.Common.ButtonNextNoIcon(enabled=True).try_click():
+                logger.debug("Clicked next")
             # 关注制作人
             # [screenshots/produce_end/end_follow.png]
-            elif image.find(R.InPurodyuusu.ButtonCancel):
+            elif R.InPurodyuusu.ButtonCancel.exists():
                 logger.info("Follow producer dialog found. Click to close.")
                 if produce_solution().data.follow_producer:
                     logger.info("Follow producer")
-                    device.click(image.expect_wait(R.InPurodyuusu.ButtonFollowNoIcon))
+                    R.InPurodyuusu.ButtonFollowNoIcon.wait().click()
                 else:
                     logger.info("Skip follow producer")
                     device.click()
             # 偶像强化月 新纪录达成
             # [kotonebot-resource/sprites/jp/in_purodyuusu/screenshot_new_record.png]
-            elif image.find(R.Common.ButtonOK):
+            elif R.Common.ButtonOK.exists():
                 logger.info("OK button found. Click to close.")
                 device.click()
             else:
@@ -493,21 +492,21 @@ def handle_action(action: ProduceAction, final_week: bool = False) -> ProduceAct
         case ProduceAction.DANCE:
             # TODO: 这两个模板的名称要统一一下
             templ = R.InPurodyuusu.TextActionVisual if not final_week else R.InPurodyuusu.ButtonFinalPracticeVisual
-            if button := image.find(templ):
+            if button := templ.find():
                 triple_click(*button.rect.center)
                 return ProduceAction.DANCE
             else:
                 return None
         case ProduceAction.VOCAL:
             templ = R.InPurodyuusu.TextActionVocal if not final_week else R.InPurodyuusu.ButtonFinalPracticeVocal
-            if button := image.find(templ):
+            if button := templ.find():
                 triple_click(*button.rect.center)
                 return ProduceAction.VOCAL
             else:
                 return None
         case ProduceAction.VISUAL:
             templ = R.InPurodyuusu.TextActionDance if not final_week else R.InPurodyuusu.ButtonFinalPracticeDance
-            if button := image.find(templ):
+            if button := templ.find():
                 triple_click(*button.rect.center)
                 return ProduceAction.VISUAL
             else:
@@ -601,7 +600,7 @@ def week_final_lesson() -> bool:
             raise ValueError("Action is None.")
         case _:
             assert_never(action)
-            
+
     return True # 继续执行下一周
 
 def week_mid_and_final_exam_common():
@@ -617,7 +616,7 @@ def week_mid_exam() -> bool:
     logger.info("Week mid exam started.")
 
     week_mid_and_final_exam_common()
-    
+
     if exam('mid'):
         until_action_scene() # 考试通过
         return True
@@ -631,7 +630,7 @@ def week_final_exam() -> bool:
     week_mid_and_final_exam_common()
 
     exam('final')
-    
+
     produce_end()
     return False
 
@@ -710,7 +709,7 @@ def hajime_pro(week: int = -1, start_from: int = 1):
 def hajime_master(week: int = -1, start_from: int = 1):
     """
     「初」 MASTER 模式
-    
+
     :param week: 第几周，从1开始，-1表示全部
     :param start_from: 从第几周开始，从1开始。
     """
@@ -773,10 +772,10 @@ def detect_produce_scene() -> ProduceStage:
         # 行动场景
         texts = ocr.ocr()
         if (
-            image.find_multi([
+            AnyOf[
                 R.InPurodyuusu.TextPDiary, # 普通周
                 R.InPurodyuusu.ButtonFinalPracticeDance # 离考试剩余一周
-            ])
+            ].exists()
         ):
             logger.info("Detection result: At action scene.")
             return 'action'
@@ -824,10 +823,10 @@ def hajime_from_stage(stage: ProduceStage, type: Literal['regular', 'pro', 'mast
                 function = hajime_master
             case _:
                 assert_never(type)
-        if image.find(R.InPurodyuusu.TextMidExamRemaining):
+        if R.InPurodyuusu.TextMidExamRemaining.exists():
             week = MID_WEEK - remaining_week[0]
             function(start_from=week)
-        elif image.find(R.InPurodyuusu.TextFinalExamRemaining):
+        elif R.InPurodyuusu.TextFinalExamRemaining.exists():
             week = FINAL_WEEK - remaining_week[0]
             function(start_from=week)
         else:
@@ -835,7 +834,7 @@ def hajime_from_stage(stage: ProduceStage, type: Literal['regular', 'pro', 'mast
     elif stage == 'exam-ongoing':
         # TODO: 应该直接调用 week_final_exam 而不是再写一次
         logger.info("Exam ongoing. Start exam.")
-        
+
         mid_exam_week = 6
         match type:
             case 'regular':
@@ -869,7 +868,7 @@ def hajime_from_stage(stage: ProduceStage, type: Literal['regular', 'pro', 'mast
 def resume_regular_produce(week: int):
     """
     继续 Regular 培育。
-    
+
     :param week: 当前周数。
     """
     hajime_from_stage(detect_produce_scene(), 'regular', week)
@@ -878,7 +877,7 @@ def resume_regular_produce(week: int):
 def resume_pro_produce(week: int):
     """
     继续 PRO 培育。
-    
+
     :param week: 当前周数。
     """
     hajime_from_stage(detect_produce_scene(), 'pro', week)
@@ -887,7 +886,7 @@ def resume_pro_produce(week: int):
 def resume_master_produce(week: int):
     """
     继续 MASTER 培育。
-    
+
     :param week: 当前周数。
     """
     hajime_from_stage(detect_produce_scene(), 'master', week)

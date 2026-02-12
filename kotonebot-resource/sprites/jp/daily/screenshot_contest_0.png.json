@@ -1,38 +1,32 @@
 {
+  "version": 2,
   "definitions": {
     "4503db6b-7224-4b81-9971-e7cfa56e10f2": {
       "name": "Daily.TextRoadToIdol",
       "displayName": "文字「アイドルへの道」",
-      "type": "template",
-      "annotationId": "4503db6b-7224-4b81-9971-e7cfa56e10f2",
-      "useHintRect": false
+      "type": "prefab",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 84,
+          "y1": 894,
+          "x2": 204,
+          "y2": 959
+        }
+      },
+      "prefab_id": "TemplateMatchPrefab"
     },
     "060da12a-2ed2-488d-8d3a-bbe5d171b5d2": {
       "name": "Daily.PointContest",
       "displayName": "进入竞赛的按钮",
       "type": "hint-point",
-      "annotationId": "060da12a-2ed2-488d-8d3a-bbe5d171b5d2",
-      "useHintRect": false
-    }
-  },
-  "annotations": [
-    {
-      "id": "4503db6b-7224-4b81-9971-e7cfa56e10f2",
-      "type": "rect",
-      "data": {
-        "x1": 84,
-        "y1": 894,
-        "x2": 204,
-        "y2": 959
-      }
-    },
-    {
-      "id": "060da12a-2ed2-488d-8d3a-bbe5d171b5d2",
-      "type": "point",
-      "data": {
-        "x": 492,
-        "y": 878
+      "props": {
+        "point": {
+          "kind": "point",
+          "x": 492,
+          "y": 878
+        }
       }
     }
-  ]
+  }
 }

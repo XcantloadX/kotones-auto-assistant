@@ -1,23 +1,19 @@
 {
+  "version": 2,
   "definitions": {
     "6939bad1-8055-4fbe-97a4-59a3ce5be4e0": {
       "name": "InPurodyuusu.BoxSkillCardAcquired",
       "displayName": "スキルカード獲得",
       "type": "hint-box",
-      "annotationId": "6939bad1-8055-4fbe-97a4-59a3ce5be4e0",
-      "useHintRect": false
-    }
-  },
-  "annotations": [
-    {
-      "id": "6939bad1-8055-4fbe-97a4-59a3ce5be4e0",
-      "type": "rect",
-      "data": {
-        "x1": 194,
-        "y1": 712,
-        "x2": 528,
-        "y2": 765
+      "props": {
+        "image": {
+          "kind": "rect",
+          "x1": 194,
+          "y1": 712,
+          "x2": 528,
+          "y2": 765
+        }
       }
     }
-  ]
+  }
 }
