@@ -571,8 +571,8 @@ class ExamContext(Context):
         roi = R.InPurodyuusu.BoxDetectExamType
         roi_img = img[roi.y1:roi.y2, roi.x1:roi.x2]
         # L: 亮度, a: 绿-红, b: 蓝-黄
-        cv2.imshow('roi', roi_img)
-        cv2.waitKey(1)
+        # cv2.imshow('roi', roi_img)
+        # cv2.waitKey(1)
         lab = cv2.cvtColor(roi_img, cv2.COLOR_BGR2Lab)
         _, a, b = cv2.split(lab)
         # 3. 计算 b 通道（黄蓝色轴）和 a 通道（红绿色轴）的平均值
