@@ -48,6 +48,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
+    "kotonebot[dev]",
     # Packaging
     "pyinstaller==6.11.1",
     "twine==6.1.0",
