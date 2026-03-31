@@ -9,6 +9,7 @@ from kaa.application.ui.components.alert import Alert
 from kaa.application.ui.facade import KaaFacade, ConfigValidationError
 from kaa.application.ui.common import GradioComponents, GradioInput
 from kaa.config.const import DailyMoneyShopItems, APShopItems
+from kaa.util import telemetry
 from kaa.util.reactive import Ref, getter, setter, of, ref
 
 logger = logging.getLogger(__name__)
@@ -536,6 +537,38 @@ class SettingsView:
             
             c5 = gr.Radio(label="日志等级", choices=[("普通", "debug"), ("详细", "verbose")], value=opts.misc.log_level, interactive=True)
             self._bind(c5, ref(of(opts).misc.log_level))
+
+            gr.Markdown("#### 匿名数据收集")
+            gr.Markdown("""目前收集的数据包含：
+* 发生错误时的错误类型和堆栈信息
+                        
+**收集的数据将仅用于分析和改进 kaa。你可以随时在下面启用或禁用数据收集**。
+            """)
+            telemetry_status = gr.Markdown(
+                f"当前状态：{'已启用' if telemetry.is_enabled() else '已禁用'}"
+            )
+
+            def disable_telemetry() -> str:
+                try:
+                    telemetry.disable()
+                    gr.Info("禁用成功，重启 kaa 后生效")
+                except Exception as e:
+                    logger.exception("Failed to disable telemetry")
+                    gr.Warning(f"禁用失败: {e}")
+                return f"当前状态：{'已启用' if telemetry.is_enabled() else '已禁用'}"
+
+            def enable_telemetry() -> str:
+                try:
+                    telemetry.enable()
+                    gr.Info("启用成功，重启 kaa 后生效")
+                except Exception as e:
+                    logger.exception("Failed to enable telemetry")
+                    gr.Warning(f"启用失败: {e}")
+                return f"当前状态：{'已启用' if telemetry.is_enabled() else '已禁用'}"
+
+            with gr.Row():
+                gr.Button("禁用", scale=1).click(fn=disable_telemetry, outputs=telemetry_status)
+                gr.Button("启用", scale=1).click(fn=enable_telemetry, outputs=telemetry_status)
 
     def _create_idle_settings(self):
         with gr.Column():
