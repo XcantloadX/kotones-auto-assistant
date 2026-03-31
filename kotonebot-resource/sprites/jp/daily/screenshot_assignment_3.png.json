@@ -1,0 +1,50 @@
+{
+  "version": 3,
+  "definitions": {
+    "f6f3eb70-25eb-4178-8c18-fddeb0cdb68c": {
+      "type": "prefab",
+      "prefab_id": "TemplateMatchPrefab",
+      "name": "Daily.Assignment.Button4Hours",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 80.35726125993915,
+          "y1": 901.055860451673,
+          "x2": 191.339490834623,
+          "y2": 960.0028611886719
+        },
+        "fixed": true
+      }
+    },
+    "52aaaa2d-7529-41b2-aa61-6d4445b6a996": {
+      "type": "prefab",
+      "prefab_id": "TemplateMatchPrefab",
+      "name": "Daily.Assignment.Button8Hours",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 304.32140022146325,
+          "y1": 902.0549621590798,
+          "x2": 415.3036297961471,
+          "y2": 961.0019628960787
+        },
+        "fixed": true
+      }
+    },
+    "31b24b9d-2d77-447e-a3b5-edece6e451a7": {
+      "type": "prefab",
+      "prefab_id": "TemplateMatchPrefab",
+      "name": "Daily.Assignment.Button12Hours",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 513.2879405918139,
+          "y1": 899.0576570368596,
+          "x2": 651.26584763061,
+          "y2": 958.0046577738585
+        },
+        "fixed": true
+      }
+    }
+  }
+}

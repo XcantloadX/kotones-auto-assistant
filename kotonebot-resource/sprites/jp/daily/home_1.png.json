@@ -70,6 +70,22 @@
           "y2": 633
         }
       }
+    },
+    "98c3720d-5976-47d3-9ae0-ef709c960284": {
+      "type": "prefab",
+      "prefab_id": "TemplateMatchPrefab",
+      "name": "Daily.ButtonAssignmentPartial",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 44.17989592843688,
+          "y1": 677.6292268273946,
+          "x2": 94.20482427727912,
+          "y2": 691.8363409400961
+        },
+        "fixed": true
+      },
+      "displayName": "お仕事 按钮"
     }
   }
 }

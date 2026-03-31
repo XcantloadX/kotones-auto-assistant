@@ -1,0 +1,52 @@
+{
+  "version": 3,
+  "definitions": {
+    "40655be4-0d69-42cc-aabe-ca553d8f85e9": {
+      "type": "prefab",
+      "prefab_id": "TemplateMatchPrefab",
+      "name": "Daily.IconAssignMiniLive",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 96.35469975719087,
+          "y1": 381.16365556286155,
+          "x2": 267.32732369656867,
+          "y2": 545.0163355775703
+        },
+        "fixed": true
+      },
+      "displayName": "MiniLive 图标"
+    },
+    "2b3c398a-edb6-4510-9273-6b0e4bab3d27": {
+      "type": "prefab",
+      "prefab_id": "TemplateMatchPrefab",
+      "name": "Daily.IconAssignOnlineLive",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 442.2993072602594,
+          "y1": 404.2328240925409,
+          "x2": 618.2711307300283,
+          "y2": 521.127723859132
+        },
+        "fixed": true
+      },
+      "displayName": "Live直播 图标"
+    },
+    "f7ef6d4f-dd78-457d-9b7f-c519f3563fe4": {
+      "type": "prefab",
+      "prefab_id": "TemplateMatchPrefab",
+      "name": "Daily.IconTitleAssign",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 11.685650064688048,
+          "y1": 34.49505993878463,
+          "x2": 60.427866714519894,
+          "y2": 78.07431786676948
+        },
+        "fixed": true
+      }
+    }
+  }
+}
