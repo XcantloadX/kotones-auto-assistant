@@ -227,7 +227,6 @@ class SettingsView:
         comps['screenshot'] = gr.Dropdown(
             choices=[
                 ('adb - 模拟器通用', 'adb'),
-                ('adb_raw（已废弃勿选）', 'adb_raw'),
                 ('uiautomator2 - 模拟器通用', 'uiautomator2'),
                 ('windows - DMM 版前台挂机', 'windows'),
                 ('remote_windows（调试专用勿选）', 'remote_windows'),
@@ -263,7 +262,7 @@ class SettingsView:
                         variant="warning",
                         show_close=False
                     )
-                elif is_mumu and impl in ['adb', 'adb_raw', 'uiautomator2']:
+                elif is_mumu and impl in ['adb', 'uiautomator2']:
                     Alert(
                         title="提示",
                         value="MuMu 模拟器推荐使用 `nemu_ipc` 截图方式，性能更佳且更稳定",

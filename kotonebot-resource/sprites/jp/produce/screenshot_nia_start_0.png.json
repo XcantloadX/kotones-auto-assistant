@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "definitions": {
     "a0bd6a5f-784d-4f0a-9d66-10f4b80c8d3e": {
       "name": "Produce.LogoNia",
@@ -15,7 +15,8 @@
         },
         "fixed": true
       },
-      "prefab_id": "TemplateMatchPrefab"
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {}
     },
     "48a458a9-b6cf-4199-850e-78f679f4f337": {
       "name": "Produce.PointNiaToHajime",

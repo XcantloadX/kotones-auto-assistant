@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "definitions": {
     "c954e153-d3e9-4488-869f-d00cfdfac5ee": {
       "name": "Produce.ResumeDialogPro",
@@ -14,7 +14,8 @@
           "y2": 533
         }
       },
-      "prefab_id": "TemplateMatchPrefab"
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {}
     }
   }
 }

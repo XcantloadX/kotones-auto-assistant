@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "definitions": {
     "6b58d90d-2e5e-4b7f-bc01-941f2633de89": {
       "name": "InPurodyuusu.IconSkillCardEventBubble",
@@ -15,7 +15,8 @@
           "y2": 1047
         }
       },
-      "prefab_id": "TemplateMatchPrefab"
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {}
     }
   }
 }

@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "definitions": {
     "db7d3f03-1f7f-43bf-8125-f7c2d345fca2": {
       "name": "InPurodyuusu.IconTitleSkillCardMove",
@@ -14,7 +14,8 @@
           "y2": 78
         }
       },
-      "prefab_id": "TemplateMatchPrefab"
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {}
     },
     "a267e094-d8be-4add-9b00-1037d47763e0": {
       "name": "InPurodyuusu.BoxSkillCardMoveButtonCount",

@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "definitions": {
     "a3736105-b3e6-467b-888a-f93b8f4d37be": {
       "name": "InPurodyuusu.ButtonUse",
@@ -15,7 +15,8 @@
         },
         "fixed": true
       },
-      "prefab_id": "TemplateMatchPrefab"
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {}
     }
   }
 }

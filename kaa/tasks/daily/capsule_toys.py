@@ -37,7 +37,7 @@ def draw_capsule_toys(button: GameObject, times: int):
         add_button.click()
     sleep(0.5)
 
-    confirm_button = R.Common.ButtonConfirm(enabled=True).find()
+    confirm_button = R.Common.ButtonConfirm.q(enabled=True).find()
     if confirm_button is None:
         # 硬币不足
         logger.info('Not enough coins.')

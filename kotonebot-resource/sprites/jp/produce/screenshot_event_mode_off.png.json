@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "definitions": {
     "c5356ad6-0f1e-42be-b090-059f33ea7cee": {
       "name": "Produce.SwitchEventModeOff",
@@ -15,7 +15,8 @@
         },
         "fixed": true
       },
-      "prefab_id": "TemplateMatchPrefab"
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {}
     }
   }
 }

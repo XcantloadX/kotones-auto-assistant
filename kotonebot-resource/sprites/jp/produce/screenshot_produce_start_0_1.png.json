@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "definitions": {
     "3b473fe6-e147-477f-b088-9b8fb042a4f6": {
       "name": "Produce.ButtonHajime1Regular",
@@ -14,7 +14,8 @@
           "y2": 950
         }
       },
-      "prefab_id": "TemplateMatchPrefab"
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {}
     },
     "2ededcf5-1d80-4e2a-9c83-2a31998331ce": {
       "name": "Produce.ButtonHajime1Pro",
@@ -29,7 +30,8 @@
           "y2": 952
         }
       },
-      "prefab_id": "TemplateMatchPrefab"
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {}
     },
     "24e99232-9434-457f-a9a0-69dd7ecf675f": {
       "name": "Produce.ButtonHajime1Master",
@@ -44,7 +46,8 @@
           "y2": 951
         }
       },
-      "prefab_id": "TemplateMatchPrefab"
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {}
     },
     "aca9e953-1955-46eb-920c-77b1750bcb34": {
       "name": "Produce.PointHajimeToNia",
@@ -71,7 +74,8 @@
           "y2": 212
         }
       },
-      "prefab_id": "TemplateMatchPrefab"
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {}
     }
   }
 }

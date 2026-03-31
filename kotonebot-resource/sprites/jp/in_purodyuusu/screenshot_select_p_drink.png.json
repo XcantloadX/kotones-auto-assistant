@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "definitions": {
     "8c179a21-be6f-4db8-a9b0-9afeb5c36b1c": {
       "name": "InPurodyuusu.TextPDrink",
@@ -16,7 +16,8 @@
         },
         "fixed": true
       },
-      "prefab_id": "TemplateMatchPrefab"
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {}
     }
   }
 }

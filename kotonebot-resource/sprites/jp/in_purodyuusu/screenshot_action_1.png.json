@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "definitions": {
     "be6836bd-ee42-432b-9166-469c74f32f0b": {
       "name": "InPurodyuusu.BoxWeeksUntilExam",
@@ -30,7 +30,8 @@
           "y2": 1097
         }
       },
-      "prefab_id": "TemplateMatchPrefab"
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {}
     },
     "303cccc1-c674-4d3a-8c89-19ea729fdbef": {
       "name": "InPurodyuusu.TextActionDance",
@@ -46,7 +47,8 @@
           "y2": 1096
         }
       },
-      "prefab_id": "TemplateMatchPrefab"
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {}
     },
     "cc8a495d-330d-447d-8a80-a8a6ecc409c5": {
       "name": "InPurodyuusu.TextActionVisual",
@@ -62,7 +64,8 @@
           "y2": 1096
         }
       },
-      "prefab_id": "TemplateMatchPrefab"
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {}
     },
     "d7667903-7149-4f2f-9c15-d8a4b5f4d347": {
       "name": "InPurodyuusu.IconAsariSenseiAvatar",
@@ -78,7 +81,8 @@
           "y2": 220
         }
       },
-      "prefab_id": "TemplateMatchPrefab"
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {}
     },
     "75fdc1b6-5690-44d1-989e-95b6ab78e1dc": {
       "name": "InPurodyuusu.BoxAsariSenseiTip",
@@ -107,7 +111,8 @@
           "y2": 1038
         }
       },
-      "prefab_id": "TemplateMatchPrefab"
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {}
     },
     "b2e1bf3c-2c36-4fb5-9db7-c10a29563a37": {
       "name": "InPurodyuusu.ButtonPracticeDance",
@@ -123,7 +128,8 @@
           "y2": 1030
         }
       },
-      "prefab_id": "TemplateMatchPrefab"
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {}
     },
     "adc533a7-970b-4c5b-a037-2181531a35d6": {
       "name": "InPurodyuusu.ButtonPracticeVisual",
@@ -138,7 +144,8 @@
           "y2": 1031
         }
       },
-      "prefab_id": "TemplateMatchPrefab"
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {}
     },
     "70898bf8-56c5-4f84-becb-629c9ab6a7da": {
       "name": "InPurodyuusu.TextFinalExamRemaining",
@@ -153,7 +160,8 @@
           "y2": 64
         }
       },
-      "prefab_id": "TemplateMatchPrefab"
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {}
     },
     "aa827983-7f27-4763-bcd6-4316e1b8e459": {
       "type": "prefab",
@@ -168,9 +176,10 @@
           "y2": 62.78861016191536
         }
       },
-      "displayName": "審査基準"
-    }
-    ,"3b9c9e2d-1a64-4a3d-9f2f-0b9d5d2a1c11": {
+      "displayName": "審査基準",
+      "variant_policy": {}
+    },
+    "3b9c9e2d-1a64-4a3d-9f2f-0b9d5d2a1c11": {
       "name": "InPurodyuusu.CurVoValue",
       "displayName": "行动页 当前 Vo 值",
       "type": "hint-box",

@@ -12,8 +12,8 @@ from typing import Dict, Any, TypedDict, Literal, List
 from terminal import print_status
 
 class BackendConfig(TypedDict, total=False):
-    type: Literal['custom', 'mumu12', 'leidian', 'dmm']
-    screenshot_impl: Literal['adb', 'adb_raw', 'uiautomator2', 'windows', 'remote_windows', 'nemu_ipc']
+    type: Literal['custom', 'mumu12', 'mumu12v5', 'leidian', 'dmm']
+    screenshot_impl: Literal['adb', 'uiautomator2', 'windows', 'remote_windows', 'nemu_ipc', 'windows_background']
 
 
 class MiscConfig(TypedDict, total=False):

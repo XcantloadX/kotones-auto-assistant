@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "definitions": {
     "3f637e86-6b74-4693-9131-1fe411fc21e5": {
       "name": "InPurodyuusu.TextSkillCardSelectGuideDialogTitle",
@@ -14,7 +14,8 @@
           "y2": 740
         }
       },
-      "prefab_id": "TemplateMatchPrefab"
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {}
     }
   }
 }

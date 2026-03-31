@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "definitions": {
     "ccbcb114-7f73-43d1-904a-3a7ae660c531": {
       "name": "Produce.ButtonResume",
@@ -14,7 +14,8 @@
           "y2": 1181
         }
       },
-      "prefab_id": "TemplateMatchPrefab"
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {}
     },
     "daf3d823-b7f1-4584-acf3-90b9d880332c": {
       "name": "Produce.ResumeDialogRegular",
@@ -29,7 +30,8 @@
           "y2": 532
         }
       },
-      "prefab_id": "TemplateMatchPrefab"
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {}
     },
     "deb35d68-bbac-4636-a93a-1b039c5d4fb1": {
       "name": "Produce.BoxResumeDialogWeeks",

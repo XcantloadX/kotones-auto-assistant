@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "definitions": {
     "f43c313b-8a7b-467b-8442-fc5bcb8b4388": {
       "name": "Produce.TextStepIndicator3",
@@ -14,7 +14,8 @@
           "y2": 61
         }
       },
-      "prefab_id": "TemplateMatchPrefab"
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {}
     }
   }
 }

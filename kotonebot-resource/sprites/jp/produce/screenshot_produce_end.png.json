@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "definitions": {
     "e5e84f9e-28da-4cf4-bcba-c9145fe39b07": {
       "name": "Produce.ButtonSkipLive",
@@ -14,7 +14,8 @@
           "y2": 106
         }
       },
-      "prefab_id": "TemplateMatchPrefab"
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {}
     }
   }
 }

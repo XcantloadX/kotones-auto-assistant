@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "definitions": {
     "ae4742aa-acda-442d-bf73-b3fe7b66e85c": {
       "name": "Daily.WeeklyFreePack",
@@ -15,7 +15,8 @@
         },
         "fixed": true
       },
-      "prefab_id": "TemplateMatchPrefab"
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {}
     }
   }
 }

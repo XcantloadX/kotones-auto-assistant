@@ -4,7 +4,7 @@ from typing import Any, Callable, Literal, TypeVar, ParamSpec, cast, TYPE_CHECKI
 import cv2
 import numpy as np
 from kotonebot.primitives import Rect
-from kotonebot.core import GameObject, AnyOf, Prefab
+from kotonebot.core import BoundPrefab, GameObject, AnyOf, Prefab
 from kotonebot.errors import UnrecoverableError
 from kotonebot import logging, device, sleep, Countdown, Loop, cropped, ocr
 
@@ -374,9 +374,9 @@ class ActionSelectContext(Context):
                 ProduceAction.VOCAL,
                 ProduceAction.VISUAL,
             ], [
-                R.InPurodyuusu.ButtonFinalPracticeDance.require(threshold=0.6),
-                R.InPurodyuusu.ButtonFinalPracticeVocal.require(threshold=0.6),
-                R.InPurodyuusu.ButtonFinalPracticeVisual.require(threshold=0.6),
+                R.InPurodyuusu.ButtonFinalPracticeDance.q(threshold=0.6).require(),
+                R.InPurodyuusu.ButtonFinalPracticeVocal.q(threshold=0.6).require(),
+                R.InPurodyuusu.ButtonFinalPracticeVisual.q(threshold=0.6).require(),
             ]
         else:
             # 否则逐个检测
@@ -701,7 +701,7 @@ class _ConsultFlow(Flow):
                 return False
 
             # 点击购买按钮
-            if R.InPurodyuusu.ButtonIconExchange(enabled=True).try_click():
+            if R.InPurodyuusu.ButtonIconExchange.q(enabled=True).try_click():
                 self._purchase_clicked = True
                 return False
 
@@ -770,7 +770,12 @@ class DateChangeContext(Context):
 
 
 class SkillFullScreenDialogContext(Context):
-    def __init__(self, page: 'ProducePage', controller: 'ProduceController', confirm_btn: type[Prefab[Any]]) -> None:
+    def __init__(
+        self,
+        page: 'ProducePage',
+        controller: 'ProduceController',
+        confirm_btn: type[Prefab[Any]] | BoundPrefab[Any, Any],
+    ) -> None:
         super().__init__(page, controller)
         self.confirm_btn = confirm_btn
 
@@ -791,7 +796,7 @@ class SkillFullScreenDialogContext(Context):
 
 class SkillCardEnhanceContext(SkillFullScreenDialogContext):
     def __init__(self, page: 'ProducePage', controller: 'ProduceController') -> None:
-        super().__init__(page, controller, R.InPurodyuusu.ButtonEnhance(enabled=True))
+        super().__init__(page, controller, R.InPurodyuusu.ButtonEnhance.q(enabled=True))
 
     @eval_once
     def fetch_required_count(self) -> int:
@@ -812,7 +817,7 @@ class SkillCardEnhanceContext(SkillFullScreenDialogContext):
             device.click(card)
             sleep(0.5)
             device.screenshot()
-            if R.InPurodyuusu.ButtonEnhance(enabled=True).try_click(threshold=0.7):
+            if R.InPurodyuusu.ButtonEnhance.q(enabled=True, threshold=0.7).try_click():
                 sleep(0.5)
                 logger.debug("Enhance button clicked for a card.")
                 break

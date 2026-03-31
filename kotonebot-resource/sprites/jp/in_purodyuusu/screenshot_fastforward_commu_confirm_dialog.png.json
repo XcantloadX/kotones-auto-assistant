@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "definitions": {
     "50e23c8a-7ba2-4c9c-9cfb-196c260fa1d5": {
       "name": "Common.TextFastforwardCommuDialogTitle",
@@ -15,7 +15,8 @@
           "y2": 958
         }
       },
-      "prefab_id": "TemplateMatchPrefab"
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {}
     }
   }
 }

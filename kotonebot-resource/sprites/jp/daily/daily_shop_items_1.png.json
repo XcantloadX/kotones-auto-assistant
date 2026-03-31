@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "definitions": {
     "0949c622-9067-4f0d-bac2-3f938a1d2ed2": {
       "name": "Shop.ItemLessonNote",
@@ -14,7 +14,8 @@
           "y2": 441
         }
       },
-      "prefab_id": "TemplateMatchPrefab"
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {}
     },
     "b2af59e9-60e3-4d97-8c72-c7ba092113a3": {
       "name": "Shop.ItemVeteranNote",
@@ -29,7 +30,8 @@
           "y2": 441
         }
       },
-      "prefab_id": "TemplateMatchPrefab"
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {}
     },
     "835489e2-b29b-426c-b4c9-3bb9f8eb6195": {
       "name": "Shop.ItemSupportEnhancementPt",
@@ -44,7 +46,8 @@
           "y2": 438
         }
       },
-      "prefab_id": "TemplateMatchPrefab"
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {}
     },
     "c5b7d67e-7260-4f08-a0e9-4d31ce9bbecf": {
       "name": "Shop.ItemSenseNoteVocal",
@@ -59,7 +62,8 @@
           "y2": 667
         }
       },
-      "prefab_id": "TemplateMatchPrefab"
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {}
     },
     "0f7d581d-cea3-4039-9205-732e4cd29293": {
       "name": "Shop.ItemSenseNoteDance",
@@ -74,7 +78,8 @@
           "y2": 667
         }
       },
-      "prefab_id": "TemplateMatchPrefab"
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {}
     },
     "d3cc3323-51af-4882-ae12-49e7384b746d": {
       "name": "Shop.ItemSenseNoteVisual",
@@ -89,7 +94,8 @@
           "y2": 668
         }
       },
-      "prefab_id": "TemplateMatchPrefab"
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {}
     },
     "a1df3af1-a3e7-4521-a085-e4dc3cd1cc57": {
       "name": "Shop.ItemLogicNoteVocal",
@@ -104,7 +110,8 @@
           "y2": 669
         }
       },
-      "prefab_id": "TemplateMatchPrefab"
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {}
     },
     "a9fcaf04-0c1f-4b0f-bb5b-ede9da96180f": {
       "name": "Shop.ItemLogicNoteDance",
@@ -119,7 +126,8 @@
           "y2": 899
         }
       },
-      "prefab_id": "TemplateMatchPrefab"
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {}
     },
     "c3f536d6-a04a-4651-b3f9-dd2c22593f7f": {
       "name": "Shop.ItemLogicNoteVisual",
@@ -134,7 +142,8 @@
           "y2": 898
         }
       },
-      "prefab_id": "TemplateMatchPrefab"
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {}
     },
     "eef25cf9-afd0-43b1-b9c5-fbd997bd5fe0": {
       "name": "Shop.ItemAnomalyNoteVocal",
@@ -149,7 +158,8 @@
           "y2": 897
         }
       },
-      "prefab_id": "TemplateMatchPrefab"
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {}
     },
     "df991b42-ed8e-4f2c-bf0c-aa7522f147b6": {
       "name": "Shop.ItemAnomalyNoteDance",
@@ -164,7 +174,8 @@
           "y2": 900
         }
       },
-      "prefab_id": "TemplateMatchPrefab"
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {}
     },
     "81c97cd3-df53-44d3-bf3d-1eb4dc67b62a": {
       "name": "Daily.ButtonRefreshMoneyShop",
@@ -179,7 +190,8 @@
           "y2": 179
         }
       },
-      "prefab_id": "TemplateMatchPrefab"
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {}
     }
   }
 }

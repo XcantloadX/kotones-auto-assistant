@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "definitions": {
     "5d36b880-7b3f-49b1-a018-7de59867d376": {
       "name": "Daily.TextShopItemPurchased",
@@ -15,7 +15,8 @@
         },
         "fixed": true
       },
-      "prefab_id": "TemplateMatchPrefab"
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {}
     }
   }
 }

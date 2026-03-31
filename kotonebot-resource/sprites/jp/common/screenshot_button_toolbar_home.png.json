@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "definitions": {
     "5c49d3b3-656e-4c8c-ae1a-9b0209b9dcc3": {
       "name": "Common.ShopPackButton",
@@ -15,7 +15,8 @@
         },
         "fixed": true
       },
-      "prefab_id": "TemplateMatchPrefab"
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {}
     },
     "f50150b4-211b-425b-8a36-142df62f6621": {
       "name": "Common.ShopPackRedDot",
@@ -44,7 +45,8 @@
           "y2": 1237
         }
       },
-      "prefab_id": "TemplateMatchPrefab"
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {}
     },
     "41904062-e218-4b28-972a-b5cfcd058d2c": {
       "name": "Common.ButtonToolbarBack",
@@ -59,7 +61,8 @@
           "y2": 1238
         }
       },
-      "prefab_id": "TemplateMatchPrefab"
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {}
     }
   }
 }

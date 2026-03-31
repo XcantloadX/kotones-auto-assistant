@@ -23,7 +23,7 @@ resource:
     python tools/make_resources.py
 
 devtool:
-    cd kotonebot-devtool; npm run dev
+    kbot devtools
 
 # Check and create virtual environment
 env: fetch-submodule extract-game-data

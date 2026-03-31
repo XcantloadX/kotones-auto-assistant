@@ -96,7 +96,7 @@ class UserConfig(ConfigBaseModel, Generic[T]):
 
 
 class RootConfig(ConfigBaseModel, Generic[T]):
-    version: int = 5
+    version: int = 7
     """配置版本。"""
     user_configs: list[UserConfig[T]] = []
     """用户配置。"""

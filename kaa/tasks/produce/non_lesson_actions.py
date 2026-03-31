@@ -189,7 +189,7 @@ def enter_consult():
                 continue
             elif exit_clicked:
                 break
-        if R.InPurodyuusu.ButtonIconExchange(enabled=True).try_click():
+        if R.InPurodyuusu.ButtonIconExchange.q(enabled=True).try_click():
             purchase_clicked = True
             continue
         if purchase_confirmed and R.InPurodyuusu.ButtonEndConsult.try_click():

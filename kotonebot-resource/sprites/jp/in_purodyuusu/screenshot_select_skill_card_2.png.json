@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "definitions": {
     "b0283997-7931-476d-a92f-d7569f6ea34c": {
       "name": "InPurodyuusu.TextRecommend",
@@ -15,7 +15,8 @@
           "y2": 982
         }
       },
-      "prefab_id": "TemplateMatchPrefab"
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {}
     }
   }
 }

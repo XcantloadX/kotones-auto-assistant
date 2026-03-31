@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "definitions": {
     "447d0e44-5d87-4b7c-8e60-edb111fe1639": {
       "name": "InPurodyuusu.ButtonDontClaim",
@@ -15,7 +15,8 @@
           "y2": 1121
         }
       },
-      "prefab_id": "TemplateMatchPrefab"
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {}
     }
   }
 }

@@ -3,6 +3,9 @@ import logging
 from typing import Literal
 from datetime import timedelta
 
+import cv2
+from cv2.typing import MatLike
+
 from kaa.tasks import R
 from kaa.config import conf
 from ..actions.scenes import at_home, goto_home
@@ -10,6 +13,23 @@ from kotonebot import task, device, image, action, ocr, contains, cropped, color
 from kotonebot.core import AnyOf
 
 logger = logging.getLogger(__name__)
+
+def similar(
+    image1: MatLike,
+    image2: MatLike,
+    threshold: float = 0.9
+) -> bool:
+    """
+    判断两张图像是否相似（灰度）。输入的两张图片必须为相同尺寸。
+    """
+    from skimage.metrics import structural_similarity
+    if image1.shape != image2.shape:
+        raise ValueError('Expected two images with the same size.')
+    image1 = cv2.cvtColor(image1, cv2.COLOR_BGR2GRAY)
+    image2 = cv2.cvtColor(image2, cv2.COLOR_BGR2GRAY)
+    result = structural_similarity(image1, image2, multichannel=True)
+    return result >= threshold
+
 
 @action('领取工作奖励')
 def handle_claim_assignment():
@@ -78,7 +98,7 @@ def assign(type: Literal['mini', 'online']) -> bool:
                 device.click(target)
                 sleep(1)
                 img2 = device.screenshot()
-                if image.raw().similar(img1, img2, 0.97):
+                if similar(img1, img2, 0.97):
                     logger.info(f'Idol #{target} already assigned. Trying next.')
                     continue
                 selected = True

@@ -38,7 +38,7 @@ def money_items2(items: Optional[list[DailyMoneyShopItems]] = None):
     scroll = 0
     while items:
         for item in items:
-            if ret := item.to_resource().find(colored=True):
+            if ret := item.to_resource().q(colored=True).find():
                 logger.info(f'Purchasing {item.to_ui_text(item)}...')
                 confirm_purchase(ret.rect.top_left)
                 finished.append(item)
@@ -119,7 +119,7 @@ def confirm_purchase(target_item_pos: Point | None = None):
         device.screenshot()
         # TODO: 这下面这段代码是干什么的？为什么上面和下面都点击了 Confirm？
         for _ in Loop(interval=0.2):
-            if R.Daily.ButtonShopCountAdd.try_click(colored=True):
+            if R.Daily.ButtonShopCountAdd.q(colored=True).try_click():
                 logger.debug('Adjusted quantity(+1)...')
             else:
                 break
@@ -137,7 +137,7 @@ def ap_items():
     """
     # [screenshots\shop\ap1.png]
     logger.info(f'Purchasing AP items.')
-    results = R.Daily.IconShopAp.find_all(threshold=0.7)
+    results = R.Daily.IconShopAp.q(threshold=0.7).find_all()
     sleep(1)
     # 按 X, Y 坐标排序从小到大
     results = sorted(results, key=lambda x: x.rect.top_left)
@@ -153,7 +153,7 @@ def ap_items():
             if purchased is not None:
                 logger.info(f'AP item #{index} already purchased.')
                 continue
-            comfirm = R.Common.ButtonConfirm.wait(colored=True, timeout=2)
+            comfirm = R.Common.ButtonConfirm.q(colored=True).wait(timeout=2)
             # 如果体力不足
             if comfirm is None:
                 logger.info(f'Not enough AP for item #{index}. Skipping all AP items.')
@@ -161,7 +161,7 @@ def ap_items():
                 break
             # 如果数量不是最大,调到最大
             for _ in Loop(interval=0.3):
-                if R.Daily.ButtonShopCountAdd.try_click(colored=True):
+                if R.Daily.ButtonShopCountAdd.q(colored=True).try_click():
                     logger.debug('Adjusted quantity(+1)...')
                 else:
                     break
@@ -184,7 +184,7 @@ def weekly_free_pack():
     sleep(1.0) # 动画加载完毕，但是按钮不可点击
     device.click(R.Common.ShopPackButton.wait())
 
-    if R.Daily.WeeklyFreePack.wait(colored=True, timeout=1):
+    if R.Daily.WeeklyFreePack.q(colored=True).wait(timeout=1):
         device.click()
         device.click(R.Common.ButtonConfirmNoIcon.wait())
         logger.info('Confirming purchase of weekly free pack.')
@@ -229,7 +229,7 @@ def purchase():
         # 点击 AP 选项卡
         device.click(ap_tab)
         # 等待 AP 选项卡加载完成
-        R.Daily.IconShopAp.wait(threshold=0.7)
+        R.Daily.IconShopAp.q(threshold=0.7).wait()
         ap_items()
         sleep(0.5)
     else:

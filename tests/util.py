@@ -1,73 +1,56 @@
 import unittest
-from typing import Sequence, overload
-from typing_extensions import override
+from typing import Literal
 
 import cv2
 from cv2.typing import MatLike
 
 from kotonebot.client import Device
-from kotonebot.client.protocol import ClickableObjectProtocol
+from kotonebot.client.protocol import Screenshotable, SimpleInputDriver, Touchable
+
+
+class _MockDeviceAdapter(Screenshotable, Touchable, SimpleInputDriver):
+    def __init__(self, device: 'MockDevice'):
+        self.device = device
+
+    @property
+    def screen_size(self) -> tuple[int, int]:
+        image = self.device._load_image()
+        return image.shape[1], image.shape[0]
+
+    def detect_orientation(self) -> Literal['portrait', 'landscape'] | None:
+        width, height = self.screen_size
+        return 'portrait' if height >= width else 'landscape'
+
+    def screenshot(self) -> MatLike:
+        return self.device._load_image().copy()
+
+    def click(self, x: int, y: int) -> None:
+        self.device.last_click = (x, y)
+
+    def swipe(self, x1: int, y1: int, x2: int, y2: int, duration: float | None = None) -> None:
+        self.device.last_swipe = (x1, y1, x2, y2)
+
 
 class MockDevice(Device):
     def __init__(
         self,
         screenshot_path: str = '',
     ):
+        super().__init__()
         self.screenshot_path = screenshot_path
         self.last_click: tuple[int, int] | None = None
-        self.screenshot_hook_after = None
- 
+        self.last_swipe: tuple[int, int, int, int] | None = None
+        self._adapter = _MockDeviceAdapter(self)
+        self.setup(screenshot=self._adapter, touch=self._adapter)
+
     def inject_image(self, path: str):
         self.screenshot_path = path
 
-    @override
-    def screenshot(self) -> MatLike:
+    def _load_image(self) -> MatLike:
         img = cv2.imread(self.screenshot_path)
-        if self.screenshot_hook_after is not None:
-            img = self.screenshot_hook_after(img)
+        if img is None:
+            raise RuntimeError(f'Failed to load screenshot: {self.screenshot_path}')
         return img
-
-    @staticmethod
-    def list_devices() -> list[str]:
-        raise NotImplementedError
-
-    def launch_app(self, package_name: str) -> None:
-        raise NotImplementedError
-
-    @overload
-    def click(self, x: int, y: int) -> None:
-        ...
-
-    @overload
-    def click(self, rect: Sequence[int]) -> None:
-        ...
-
-    def click(self, *args, **kwargs):
-        if len(args) == 0:
-            if isinstance(self.last_find, ClickableObjectProtocol):
-                self.last_click = self.last_find.rect.center.xy
-            elif isinstance(self.last_find, tuple) and len(self.last_find) == 2:
-                self.last_click = self.last_find
-            else:
-                self.last_click = None
-        elif len(args) == 2:
-            x, y = args
-            assert isinstance(x, int) and isinstance(y, int)
-            self.last_click = (x, y)
-        elif len(args) == 1:
-            assert isinstance(args[0], ClickableObjectProtocol)
-            self.last_click = args[0].rect.center.xy
-        else:
-            raise ValueError("Invalid arguments")
-            
-        return super().click(*args, **kwargs)
-
-    def swipe(self, x1: int, y1: int, x2: int, y2: int) -> None:
-        raise NotImplementedError
-
-    @property
-    def screen_size(self) -> tuple[int, int]:
-        raise NotImplementedError
 
 
 class BaseTestCase(unittest.TestCase):
@@ -76,12 +59,11 @@ class BaseTestCase(unittest.TestCase):
         cls.device = MockDevice()
         from kotonebot.backend.debug.server import start_server
         from kotonebot.backend.debug import debug
-        from kaa.common import BaseConfig
         debug.enabled = True
         # debug.wait_for_message_sent = True
         start_server()
         from kotonebot.backend.context import init_context, inject_context
-        init_context(config_type=BaseConfig)
+        init_context(target_device=cls.device, force=True)
         inject_context(device=cls.device)
 
     def assertPointInRect(

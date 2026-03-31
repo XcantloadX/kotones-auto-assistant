@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "definitions": {
     "4503db6b-7224-4b81-9971-e7cfa56e10f2": {
       "name": "Daily.TextRoadToIdol",
@@ -14,7 +14,8 @@
           "y2": 959
         }
       },
-      "prefab_id": "TemplateMatchPrefab"
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {}
     },
     "060da12a-2ed2-488d-8d3a-bbe5d171b5d2": {
       "name": "Daily.PointContest",

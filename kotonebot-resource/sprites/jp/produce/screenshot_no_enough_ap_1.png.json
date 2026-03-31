@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "definitions": {
     "4883c564-f950-4a29-9f5f-6f924123cd22": {
       "name": "Produce.TextAPInsufficient",
@@ -15,7 +15,8 @@
         },
         "fixed": true
       },
-      "prefab_id": "TemplateMatchPrefab"
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {}
     },
     "eaba6ebe-f0df-4918-aee5-ef4e3ffedcf0": {
       "name": "Produce.ButtonRefillAP",
@@ -31,7 +32,8 @@
         },
         "fixed": true
       },
-      "prefab_id": "TemplateMatchPrefab"
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {}
     }
   }
 }

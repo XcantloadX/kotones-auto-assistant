@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "definitions": {
     "eaad330d-4e50-4b55-be2c-8da0f72764d9": {
       "name": "Daily.TextDateChangeDialogConfirmButton",
@@ -15,7 +15,8 @@
         },
         "fixed": true
       },
-      "prefab_id": "TemplateMatchPrefab"
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {}
     },
     "9483fae5-3a72-4684-9403-d25d2c602d3d": {
       "name": "Daily.TextDateChangeDialog",
@@ -31,7 +32,8 @@
         },
         "fixed": true
       },
-      "prefab_id": "TemplateMatchPrefab"
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {}
     }
   }
 }

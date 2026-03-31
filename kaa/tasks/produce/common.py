@@ -132,7 +132,7 @@ def handle_skill_card_enhance():
         device.click(card)
         it.wait()
         device.screenshot()
-        if R.InPurodyuusu.ButtonEnhance(enabled=True).try_click():
+        if R.InPurodyuusu.ButtonEnhance.q(enabled=True).try_click():
             logger.debug("Enhance button clicked")
             it.wait()
             break
@@ -306,13 +306,13 @@ class ProduceInterrupt:
                 # 有对话框标题，但是没找到确认按钮
                 # 可能是需要勾选一个饮料
                 # 也有可能是对话框正在往下退出
-                if not R.InPurodyuusu.ButtonLeave(enabled=True).find():
+                if not R.InPurodyuusu.ButtonLeave.q(enabled=True).find():
                     logger.info("No leave button found, click checkbox")
-                    if chk := R.Common.CheckboxUnchecked.find(colored=True):
+                    if chk := R.Common.CheckboxUnchecked.q(colored=True).find():
                         device.click(chk)
                         sleep(0.2)
                         device.screenshot()
-                if R.InPurodyuusu.ButtonLeave(enabled=True).try_click():
+                if R.InPurodyuusu.ButtonLeave.q(enabled=True).try_click():
                     logger.info("Leave button clicked")
                     return "PDrinkMax"
         return None

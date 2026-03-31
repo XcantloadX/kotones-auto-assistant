@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "definitions": {
     "f5c16d2f-ebc5-4617-9b96-971696af7c52": {
       "name": "Produce.TextAutoSet",
@@ -14,7 +14,8 @@
           "y2": 957
         }
       },
-      "prefab_id": "TemplateMatchPrefab"
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {}
     }
   }
 }

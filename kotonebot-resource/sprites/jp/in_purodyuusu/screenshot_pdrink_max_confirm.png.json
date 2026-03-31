@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "definitions": {
     "582d36c0-0916-4706-9833-4fbc026701f5": {
       "name": "InPurodyuusu.TextPDrinkMaxConfirmTitle",
@@ -14,7 +14,8 @@
           "y2": 876
         }
       },
-      "prefab_id": "TemplateMatchPrefab"
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {}
     }
   }
 }

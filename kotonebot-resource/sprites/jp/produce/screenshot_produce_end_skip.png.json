@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "definitions": {
     "b6b94f21-ef4b-4425-9c7e-ca2b574b0add": {
       "name": "Produce.TextSkipLiveDialogTitle",
@@ -14,7 +14,8 @@
           "y2": 399
         }
       },
-      "prefab_id": "TemplateMatchPrefab"
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {}
     },
     "fad5eec2-5fd5-412f-9abb-987a3087dc54": {
       "name": "Common.IconButtonCheck",
@@ -30,7 +31,8 @@
           "y2": 624
         }
       },
-      "prefab_id": "TemplateMatchPrefab"
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {}
     },
     "bc7155ac-18c9-4335-9ec2-c8762d37a057": {
       "name": "Common.IconButtonCross",
@@ -46,7 +48,8 @@
           "y2": 624
         }
       },
-      "prefab_id": "TemplateMatchPrefab"
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {}
     }
   }
 }

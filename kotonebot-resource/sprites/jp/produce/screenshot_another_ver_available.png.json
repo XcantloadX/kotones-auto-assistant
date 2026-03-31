@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "definitions": {
     "cbf4ce9c-f8d8-4fb7-a197-15bb9847df04": {
       "name": "Produce.TextAnotherIdolAvailableDialog",
@@ -14,7 +14,8 @@
           "y2": 615
         }
       },
-      "prefab_id": "TemplateMatchPrefab"
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {}
     }
   }
 }

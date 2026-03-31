@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "definitions": {
     "23d88465-65d9-4718-8725-8dbf0a98a5a4": {
       "name": "InPurodyuusu.IconTitleConsult",
@@ -14,7 +14,8 @@
           "y2": 145
         }
       },
-      "prefab_id": "TemplateMatchPrefab"
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {}
     },
     "1fb9bd7a-52f6-43c6-9b13-a05b66ecae42": {
       "name": "InPurodyuusu.PointConsultFirstItem",
@@ -41,7 +42,8 @@
           "y2": 1109
         }
       },
-      "prefab_id": "TemplateMatchPrefab"
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {}
     }
   }
 }

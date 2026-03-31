@@ -215,7 +215,7 @@ def do_produce(
             # [kotonebot-resource\sprites\jp\produce\screenshot_no_enough_ap_3.png]
             logger.info('AP insufficient. Try to use AP drink.')
             for _ in Loop(interval=1):
-                if R.Produce.ButtonUse(enabled=True).try_click():
+                if R.Produce.ButtonUse.q(enabled=True).try_click():
                     pass
                 elif R.Produce.ButtonRefillAP.try_click():
                     pass
@@ -260,7 +260,7 @@ def do_produce(
             # 下一步「次へ」
             if (
                 idol_located and
-                R.Common.ButtonNextNoIcon(enabled=True).try_click() and
+                R.Common.ButtonNextNoIcon.q(enabled=True).try_click() and
                 next_throttler.request()
             ):
                 pass
@@ -271,7 +271,7 @@ def do_produce(
                 continue
 
             # 下一步「次へ」
-            if R.Common.ButtonNextNoIcon(enabled=True).try_click() and next_throttler.request():
+            if R.Common.ButtonNextNoIcon.q(enabled=True).try_click() and next_throttler.request():
                 pass
             # 今天仍然有租用回忆次数提示（第三步的提示）
             # （第二步选完之后点「次へ」大概率会卡几秒钟，这个时候脚本很可能会重复点击，
@@ -312,7 +312,7 @@ def do_produce(
                     select_set(memory_set_index)
                 memory_set_selected = True
             # 下一步「次へ」
-            if R.Common.ButtonNextNoIcon(enabled=True).try_click() and next_throttler.request():
+            if R.Common.ButtonNextNoIcon.q(enabled=True).try_click() and next_throttler.request():
                 continue
         else:
             assert False, f'Invalid state of {lp.state}.'

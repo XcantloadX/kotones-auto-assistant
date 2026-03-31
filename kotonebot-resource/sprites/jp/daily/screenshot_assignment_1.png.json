@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "definitions": {
     "1652f06a-5417-49ef-8949-4854772d9ab7": {
       "name": "Daily.ButtonAssignmentShortenTime",
@@ -14,7 +14,8 @@
           "y2": 1060
         }
       },
-      "prefab_id": "TemplateMatchPrefab"
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {}
     }
   }
 }

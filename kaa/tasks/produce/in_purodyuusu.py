@@ -357,7 +357,7 @@ def produce_end(has_live: bool = True):
         # 确认对话框 [screenshots/produce_end/select_cover_confirm.jpg]
         # 決定
         logger.debug("Click Confirm")
-        R.Common.ButtonConfirm.wait(threshold=0.8).click()
+        R.Common.ButtonConfirm.q(threshold=0.8).wait().click()
         sleep(1)
         # 上传图片，等待“生成”按钮
         # 注意网络可能会很慢，可能出现上传失败对话框
@@ -450,7 +450,7 @@ def produce_end(has_live: bool = True):
                 logger.info("Activity award claim dialog found. Clicked to close.")
             # 活动积分进度
             # [screenshots/produce_end/end_activity.png]
-            elif R.Common.ButtonNextNoIcon(enabled=True).try_click():
+            elif R.Common.ButtonNextNoIcon.q(enabled=True).try_click():
                 logger.debug("Clicked next")
             # 关注制作人
             # [screenshots/produce_end/end_follow.png]

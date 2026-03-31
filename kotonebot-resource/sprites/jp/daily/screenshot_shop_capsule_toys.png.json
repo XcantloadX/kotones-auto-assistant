@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "definitions": {
     "26ce71b2-59dc-4237-b50f-41690d7b8ecf": {
       "name": "Daily.CapsuleToys.NextPageStartPoint",
@@ -40,7 +40,8 @@
           "y2": 78
         }
       },
-      "prefab_id": "TemplateMatchPrefab"
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {}
     }
   }
 }

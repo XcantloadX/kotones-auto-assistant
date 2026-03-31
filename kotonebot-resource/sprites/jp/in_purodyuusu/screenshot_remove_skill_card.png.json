@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "definitions": {
     "bab6c393-692c-4681-ac0d-76c0d9dabea6": {
       "name": "InPurodyuusu.IconTitleSkillCardRemoval",
@@ -14,7 +14,8 @@
           "y2": 79
         }
       },
-      "prefab_id": "TemplateMatchPrefab"
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {}
     },
     "00551158-fee9-483f-b034-549139a96f58": {
       "name": "InPurodyuusu.ButtonRemove",
@@ -30,7 +31,8 @@
           "y2": 1185
         }
       },
-      "prefab_id": "TemplateMatchPrefab"
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {}
     }
   }
 }

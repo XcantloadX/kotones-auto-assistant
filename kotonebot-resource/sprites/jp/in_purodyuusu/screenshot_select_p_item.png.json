@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "definitions": {
     "b3c9e526-de47-44c2-9bda-e9a8a79fdb5a": {
       "name": "InPurodyuusu.BoxSelectPStuffComfirm",
@@ -29,7 +29,8 @@
           "y2": 647
         }
       },
-      "prefab_id": "TemplateMatchPrefab"
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {}
     },
     "0c0627be-4a09-4450-a078-1858d3ace532": {
       "name": "InPurodyuusu.TextPItem",
@@ -45,7 +46,8 @@
           "y2": 645
         }
       },
-      "prefab_id": "TemplateMatchPrefab"
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {}
     }
   }
 }

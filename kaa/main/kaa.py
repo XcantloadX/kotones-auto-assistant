@@ -57,7 +57,7 @@ def windows_gui_error_middleware(ctx: BotContext, task: Task, next_handler: Next
                 )
                 res, _, _ = dialog.show()
                 e.invoke(res)
-            except ImportError:
+            except (ImportError, NotImplementedError):
                 pass
             ctx.stop()
     
@@ -190,18 +190,18 @@ class KaaDeviceFactory:
                 from kotonebot.client.implements.windows import WindowsImpl
                 ahk_path = get_ahk_path()
                 impl = WindowsImpl(device=d, window_title='gakumas', ahk_exe_path=ahk_path)
-                d._screenshot = impl
-                d._touch = impl
+                d.setup(screenshot=impl, touch=impl)
             elif impl_name == 'remote_windows':
                 from kotonebot.client.implements.remote_windows import RemoteWindowsImpl
                 impl = RemoteWindowsImpl(device=d, host=config.backend.adb_ip, port=config.backend.adb_port)
-                d._screenshot = impl
-                d._touch = impl
+                d.setup(screenshot=impl, touch=impl)
             elif impl_name == 'windows_background':
                 from kotonebot.client.implements.windows.send_message import SendMessageImpl
                 from kotonebot.client.implements.windows.print_window import PrintWindowImpl
-                d._screenshot = PrintWindowImpl(d, 'gakumas')
-                d._touch = SendMessageImpl(d, 'gakumas', wait_cursor_idle=config.backend.cursor_wait_speed)
+                d.setup(
+                    screenshot=PrintWindowImpl(d, 'gakumas'),
+                    touch=SendMessageImpl(d, 'gakumas', wait_cursor_idle=config.backend.cursor_wait_speed),
+                )
             else:
                 raise ValueError(f"Impl of '{impl_name}' is not supported on DMM.")
             return d
@@ -220,7 +220,7 @@ class KaaDeviceFactory:
                 host_conf = MuMu12HostConfig(timeout=timeout, **args)
                 return instance.create_device(cast(Any, impl_name), host_conf)
             
-            elif impl_name in ['adb', 'adb_raw', 'uiautomator2']:
+            elif impl_name in ['adb', 'uiautomator2']:
                 host_conf = AdbHostConfig(timeout=180)
                 return instance.create_device(cast(Any, impl_name), host_conf)
             else:

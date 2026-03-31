@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "definitions": {
     "7e3e3a94-e05c-477e-bd92-0afc172bdb94": {
       "name": "Produce.BoxSetCountIndicator",
@@ -52,7 +52,8 @@
           "y2": 64
         }
       },
-      "prefab_id": "TemplateMatchPrefab"
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {}
     }
   }
 }

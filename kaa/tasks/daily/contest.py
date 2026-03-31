@@ -65,7 +65,7 @@ def handle_challenge() -> bool:
     :return: 是否命中任何处理
     """
     # 挑战开始 [screenshots/contest/start1.png]
-    if R.Daily.ButtonContestStart.try_click(threshold=0.75): # TODO: 为什么默认阈值找不到？
+    if R.Daily.ButtonContestStart.q(threshold=0.75).try_click(): # TODO: 为什么默认阈值找不到？
         logger.debug('Clicked on start button.')
 
     # 记忆未编成 [screenshots/contest/no_memo.png]
@@ -105,7 +105,7 @@ def handle_challenge() -> bool:
 
     # 勾选跳过所有
     # [screenshots/contest/contest2.png]
-    if image.find(R.Common.CheckboxUnchecked, colored=True):
+    if R.Common.CheckboxUnchecked.q(colored=True).find():
         logger.debug('Checking skip all.')
         device.click()
         return True

@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "definitions": {
     "30a6f399-6999-4f04-bb77-651e0214112f": {
       "name": "Produce.IconPIdolLevel",
@@ -14,7 +14,8 @@
           "y2": 753
         }
       },
-      "prefab_id": "TemplateMatchPrefab"
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {}
     },
     "b71165dd-7285-45a7-bb8c-d4fccee2b0ba": {
       "name": "Produce.KbIdolOverviewName",

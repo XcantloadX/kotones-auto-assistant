@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "definitions": {
     "1fbb6008-7112-46ce-b6aa-413648acc5e5": {
       "name": "InPurodyuusu.BoxExamTop",
@@ -99,7 +99,8 @@
         },
         "fixed": true
       },
-      "displayName": "考试顶部 1st（小）"
+      "displayName": "考试顶部 1st（小）",
+      "variant_policy": {}
     },
     "a1b2c3d4-e5f6-7890-abcd-ef1234567890": {
       "name": "InPurodyuusu.BoxDetectExamType",

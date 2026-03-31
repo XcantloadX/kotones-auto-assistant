@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "definitions": {
     "74ec3510-583d-4a76-ac69-38480fbf1387": {
       "name": "Produce.TextRentAvailable",
@@ -14,7 +14,8 @@
           "y2": 887
         }
       },
-      "prefab_id": "TemplateMatchPrefab"
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {}
     }
   }
 }

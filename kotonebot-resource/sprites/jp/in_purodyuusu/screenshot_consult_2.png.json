@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "definitions": {
     "4096cffa-a889-4622-852e-760fc7022d93": {
       "name": "InPurodyuusu.ButtonIconExchange",
@@ -14,7 +14,8 @@
           "y2": 1108
         }
       },
-      "prefab_id": "GakumasPrimaryButtonPrefab"
+      "prefab_id": "GakumasPrimaryButtonPrefab",
+      "variant_policy": {}
     }
   }
 }

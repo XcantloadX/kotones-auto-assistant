@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "definitions": {
     "8ded6c98-85ea-4858-a66d-4fc8caecb7c5": {
       "name": "InPurodyuusu.ButtonIconOuting",
@@ -14,7 +14,8 @@
           "y2": 1037
         }
       },
-      "prefab_id": "TemplateMatchPrefab"
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {}
     },
     "d83f338d-dde3-494b-9bea-cae511e3517c": {
       "name": "InPurodyuusu.ButtonIconConsult",
@@ -29,7 +30,8 @@
           "y2": 1043
         }
       },
-      "prefab_id": "TemplateMatchPrefab"
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {}
     },
     "ce20a856-5629-4f8e-a8e1-d1bd14e18e4f": {
       "name": "InPurodyuusu.TextMidExamRemaining",
@@ -44,7 +46,8 @@
           "y2": 77
         }
       },
-      "prefab_id": "TemplateMatchPrefab"
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {}
     }
   }
 }

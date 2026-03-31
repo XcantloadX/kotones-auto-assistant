@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "definitions": {
     "2d10f3c4-00cc-48c8-abd2-01d45bd659c7": {
       "type": "prefab",
@@ -15,7 +15,8 @@
         },
         "fixed": true
       },
-      "displayName": "考试顶部 1st（大）"
+      "displayName": "考试顶部 1st（大）",
+      "variant_policy": {}
     }
   }
 }

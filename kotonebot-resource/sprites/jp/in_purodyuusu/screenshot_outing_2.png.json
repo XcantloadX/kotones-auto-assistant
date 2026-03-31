@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "definitions": {
     "5ebcde3b-f0fd-4e5d-b3de-ada8f0b5e03b": {
       "name": "Common.ButtonSelect2",
@@ -14,7 +14,8 @@
           "y2": 1176
         }
       },
-      "prefab_id": "TemplateMatchPrefab"
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {}
     }
   }
 }

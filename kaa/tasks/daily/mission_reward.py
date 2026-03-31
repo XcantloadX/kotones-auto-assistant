@@ -40,11 +40,11 @@ def claim_mission_reward(name: str):
     """领取任务奖励"""
     # [screenshots/mission/daily.png]
     R.Common.ButtonIconArrowShort.wait()
-    if R.Common.ButtonIconArrowShort(enabled=True).try_click():
+    if R.Common.ButtonIconArrowShort.q(enabled=True).try_click():
         logger.info(f'Claiming {name} mission reward.')
         sleep(0.5)
         for _ in Loop(interval=0.5):
-            if not R.Common.ButtonIconArrowShort(enabled=False).exists():
+            if not R.Common.ButtonIconArrowShort.q(enabled=False).exists():
                 if R.Common.ButtonIconClose.try_click():
                     logger.debug('Closed popup dialog.')
                     sleep(1)

@@ -1,12 +1,12 @@
-from typing import cast, Optional
-from typing_extensions import Self, override
+from dataclasses import dataclass, replace
+from typing import Optional
+from typing_extensions import override
 
 import cv2
 import numpy as np
 from cv2.typing import MatLike
-from kotonebot.devtools import EditorMetadata
 from kotonebot.backend.context.context import vars
-from kotonebot.core import TemplateMatchPrefab, GameObject
+from kotonebot.core import BoundPrefab, GameObject, TemplateMatchPrefab, TemplateMatchQuery
 
 def primary_button_state(img: MatLike | None) -> Optional[bool]:
     """
@@ -55,31 +55,53 @@ class GakumasPrimaryButtonObject(GameObject):
             return not _enabled
 
 
+@dataclass(frozen=True, slots=True)
+class GakumasPrimaryButtonQuery(TemplateMatchQuery[GakumasPrimaryButtonObject]):
+    enabled: bool | None = None
+
+
 class GakumasPrimaryButtonPrefab(TemplateMatchPrefab[GakumasPrimaryButtonObject]):
     """Primary 按钮（橙色按钮）"""
-    _arg_enabled: bool | None = None
+    Query = GakumasPrimaryButtonQuery
 
     class _Editor(TemplateMatchPrefab._Editor):
         icon = "widget-button"
         name = "主按钮"
         description = "游戏界面中的主按钮，通常为橙色，用于确认操作等。"
 
+    @classmethod
+    def _normalize_query(cls, query: GakumasPrimaryButtonQuery) -> GakumasPrimaryButtonQuery:
+        if query.enabled is None:
+            return query
+
+        predicate = query.predicate
+
+        def enabled_predicate(obj: GakumasPrimaryButtonObject) -> bool:
+            if obj.enabled != query.enabled:
+                return False
+            return predicate(obj) if predicate is not None else True
+
+        return replace(query, predicate=enabled_predicate)
+
     @override
     @classmethod
-    def find(cls, **kwargs):
-        res = super().find(**kwargs)
-        if res is not None and cls._arg_enabled is not None:
-            if res.enabled != cls._arg_enabled:
-                return None
-        return res
-
-    def __new__(cls, *, enabled: bool | None):
-        new_cls = type(
-            f'{cls.__name__}_EnabledIs{enabled}',
-            (cls,),
-            { '_arg_enabled': enabled }
-        )
-        return new_cls
+    def q(
+        cls,
+        query: GakumasPrimaryButtonQuery | None = None,
+        *,
+        threshold: float | None = None,
+        colored: bool | None = None,
+        region=None,
+        enabled: bool | None = None,
+    ) -> BoundPrefab[GakumasPrimaryButtonObject, GakumasPrimaryButtonQuery]:
+        if query is None:
+            query = GakumasPrimaryButtonQuery(
+                threshold=threshold,
+                colored=colored,
+                region=region,
+                enabled=enabled,
+            )
+        return BoundPrefab(cls, cls._normalize_query(query))
 
 class GakumasSecondaryButtonObject(GameObject):
     @property
@@ -97,30 +119,53 @@ class GakumasSecondaryButtonObject(GameObject):
         else:
             return not _enabled
 
+
+@dataclass(frozen=True, slots=True)
+class GakumasSecondaryButtonQuery(TemplateMatchQuery[GakumasSecondaryButtonObject]):
+    enabled: bool | None = None
+
+
 class GakumasSecondaryButtonPrefab(TemplateMatchPrefab[GakumasSecondaryButtonObject]):
     """Secondary 按钮（白色按钮）"""
-    _arg_enabled: bool | None = None
+    Query = GakumasSecondaryButtonQuery
 
     class _Editor(TemplateMatchPrefab._Editor):
         name = "次按钮"
         description = "游戏界面中的次按钮，通常为白色，用于取消操作等。"
 
+    @classmethod
+    def _normalize_query(cls, query: GakumasSecondaryButtonQuery) -> GakumasSecondaryButtonQuery:
+        if query.enabled is None:
+            return query
+
+        predicate = query.predicate
+
+        def enabled_predicate(obj: GakumasSecondaryButtonObject) -> bool:
+            if obj.enabled != query.enabled:
+                return False
+            return predicate(obj) if predicate is not None else True
+
+        return replace(query, predicate=enabled_predicate)
+
     @override
     @classmethod
-    def find(cls, **kwargs):
-        res = super().find(**kwargs)
-        if res is not None and cls._arg_enabled is not None:
-            if res.enabled != cls._arg_enabled:
-                return None
-        return res
-
-    def __new__(cls, *, enabled: bool | None):
-        new_cls = type(
-            f'{cls.__name__}_EnabledIs{enabled}',
-            (cls,),
-            { '_arg_enabled': enabled }
-        )
-        return new_cls
+    def q(
+        cls,
+        query: GakumasSecondaryButtonQuery | None = None,
+        *,
+        threshold: float | None = None,
+        colored: bool | None = None,
+        region=None,
+        enabled: bool | None = None,
+    ) -> BoundPrefab[GakumasSecondaryButtonObject, GakumasSecondaryButtonQuery]:
+        if query is None:
+            query = GakumasSecondaryButtonQuery(
+                threshold=threshold,
+                colored=colored,
+                region=region,
+                enabled=enabled,
+            )
+        return BoundPrefab(cls, cls._normalize_query(query))
 
 class GakumasCheckboxPrefab(TemplateMatchPrefab):
     """复选框按钮"""

@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "definitions": {
     "d3424d31-0502-4623-996e-f0194e5085ce": {
       "name": "Produce.EmptySupportCardSlot",
@@ -14,7 +14,8 @@
           "y2": 962
         }
       },
-      "prefab_id": "TemplateMatchPrefab"
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {}
     }
   }
 }
