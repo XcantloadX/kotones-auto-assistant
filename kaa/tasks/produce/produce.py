@@ -157,6 +157,12 @@ def do_produce(
     device.screenshot()
     # 点击培育按钮，然后判断是新开还是再开培育
     for _ in Loop(interval=0.6):
+        # 跨端破坏培育提示
+        if R.Produce.BreakProduceDialog.Title.exists():
+            if R.Produce.BreakProduceDialog.ButtonConfirm.try_click():
+                logger.info('Confirmed break produce dialog.')
+                continue
+            
         if R.Produce.LogoHajime.exists(): # Hajime培育界面
             # 新开
             break

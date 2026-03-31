@@ -1,0 +1,36 @@
+{
+  "version": 3,
+  "definitions": {
+    "02143f85-fb0c-44a1-8ac6-050c127efeac": {
+      "type": "prefab",
+      "prefab_id": "TemplateMatchPrefab",
+      "name": "Produce.BreakProduceDialog.Title",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 46.362704453279264,
+          "y1": 409.14211806303496,
+          "x2": 446.2986668845723,
+          "y2": 458.0923311729644
+        },
+        "fixed": true
+      },
+      "displayName": ""
+    },
+    "631a8a70-b5b2-400a-a56c-e9413a5f32cb": {
+      "type": "prefab",
+      "prefab_id": "TemplateMatchPrefab",
+      "name": "Produce.BreakProduceDialog.ButtonConfirm",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 387.30811242595655,
+          "y1": 1134.048674110927,
+          "x2": 579.2773743929772,
+          "y2": 1189.9983697257057
+        },
+        "fixed": true
+      }
+    }
+  }
+}
