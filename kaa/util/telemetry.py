@@ -81,6 +81,8 @@ def setup():
         traces_sample_rate=0,
         send_client_reports=False,
         auto_session_tracking=False,
+        # User-initiated termination should not be reported as crash.
+        ignore_errors=[KeyboardInterrupt],
     )
     logger.info('Telemetry initialized.')
 
