@@ -42,6 +42,16 @@ class ProduceView:
             
             produce_mode = gr.Dropdown(choices=["regular", "pro", "master"], label="培育模式", interactive=True)
             self.components.produce_mode = produce_mode
+
+            produce_battle_strategy = gr.Dropdown(
+                choices=[
+                    ("游戏 AI", "bandai"),
+                    ("脚本简单 AI（实验性）", "expert"),
+                ],
+                label="打牌策略",
+                interactive=True,
+            )
+            self.components.produce_battle_strategy = produce_battle_strategy
             
             idol_choices = [(f'{idol.name}{f" 「{idol.another_name}」" if idol.is_another and idol.another_name else ""}', idol.skin_id) for idol in IdolCard.all()]
             produce_idols = gr.Dropdown(choices=idol_choices, label="选择要培育的偶像", multiselect=False, interactive=True)
@@ -99,7 +109,8 @@ class ProduceView:
             self.components.produce_skip_commu = skip_commu
             @gr.render([skip_commu])
             def _tip(skip):
-                if not skip: return
+                if not skip:
+                    return
                 Alert(
                     variant="warning",
                     value="建议关闭此处设置，转而开启游戏内快进所有交流，效果更佳。",
@@ -110,7 +121,7 @@ class ProduceView:
         # --- Event Handlers ---
         
         all_detail_components = [
-            solution_settings_group, solution_name, solution_description, produce_mode, produce_idols,
+            solution_settings_group, solution_name, solution_description, produce_mode, produce_battle_strategy, produce_idols,
             auto_set_memory, memory_sets_group, memory_sets, auto_set_support, support_card_sets_group,
             support_card_sets, use_pt_boost, use_note_boost, follow_producer, self_study_lesson,
             prefer_lesson_ap, actions_order, recommend_card_detection_mode, use_ap_drink, skip_commu
@@ -146,13 +157,13 @@ class ProduceView:
                 gr.Error(f"删除失败: {e}")
                 return gr.update()
         
-        def on_save_solution(solution_id, name, desc, mode, idol, auto_mem, mem_set, auto_sup, sup_set, pt_boost, note_boost, follow, study, pref_ap, actions, detect_mode, ap_drink, skip):
+        def on_save_solution(solution_id, name, desc, mode, battle_strategy, idol, auto_mem, mem_set, auto_sup, sup_set, pt_boost, note_boost, follow, study, pref_ap, actions, detect_mode, ap_drink, skip):
             if not solution_id:
                 gr.Warning("没有选择要保存的方案")
                 return gr.update()
             try:
                 produce_data = ProduceData(
-                    mode=mode, idol=idol,
+                    mode=mode, battle_strategy=battle_strategy, idol=idol,
                     auto_set_memory=auto_mem, memory_set=int(mem_set) if mem_set else None,
                     auto_set_support_card=auto_sup, support_card_set=int(sup_set) if sup_set else None,
                     use_pt_boost=pt_boost, use_note_boost=note_boost, follow_producer=follow,
@@ -188,7 +199,7 @@ class ProduceView:
         delete_solution_btn.click(fn=on_delete_solution, inputs=[solution_dropdown], outputs=[solution_dropdown])
 
         save_inputs = [
-            solution_dropdown, solution_name, solution_description, produce_mode, produce_idols,
+            solution_dropdown, solution_name, solution_description, produce_mode, produce_battle_strategy, produce_idols,
             auto_set_memory, memory_sets, auto_set_support, support_card_sets,
             use_pt_boost, use_note_boost, follow_producer, self_study_lesson,
             prefer_lesson_ap, actions_order, recommend_card_detection_mode,
@@ -205,6 +216,7 @@ class ProduceView:
                 self.components.produce_solution_name: gr.Textbox(value=""),
                 self.components.produce_solution_description: gr.Textbox(value=""),
                 self.components.produce_mode: gr.Dropdown(value=None),
+                self.components.produce_battle_strategy: gr.Dropdown(value="expert"),
                 self.components.produce_idols: gr.Dropdown(value=None),
                 self.components.produce_auto_set_memory: gr.Checkbox(value=False),
                 self.components.produce_memory_sets_group: gr.Group(visible=True),
@@ -229,6 +241,7 @@ class ProduceView:
                 self.components.produce_solution_name: gr.Textbox(value=solution.name),
                 self.components.produce_solution_description: gr.Textbox(value=solution.description),
                 self.components.produce_mode: gr.Dropdown(value=solution.data.mode),
+                self.components.produce_battle_strategy: gr.Dropdown(value=solution.data.battle_strategy),
                 self.components.produce_idols: gr.Dropdown(value=solution.data.idol),
                 self.components.produce_auto_set_memory: gr.Checkbox(value=solution.data.auto_set_memory),
                 self.components.produce_memory_sets_group: gr.Group(visible=not solution.data.auto_set_memory),

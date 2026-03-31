@@ -14,7 +14,6 @@ from kaa.config.const import ProduceAction, RecommendCardDetectionMode
 from kaa.tasks.produce.common import ProduceInterrupt, acquisition_date_change_dialog
 from kaa.tasks.actions.commu import handle_unread_commu
 
-from .consts import Scene, SceneType
 if TYPE_CHECKING:
     from .page import (
         DrinkSelectContext, ActionSelectContext,
@@ -37,6 +36,16 @@ def _lesson_to_sp(lesson: ProduceAction | None) -> ProduceAction | None:
             return ProduceAction.DANCE_SP
         case _:
             return None
+
+
+def _build_battle_strategy(threshold_predicate):
+    battle_strategy = produce_solution().data.battle_strategy
+    logger.info('Battle strategy: %s.', battle_strategy)
+    if battle_strategy == 'bandai':
+        return BandaiStrategy(threshold_predicate)
+    if battle_strategy == 'expert':
+        return ExpertSystemStrategy()
+    raise UnrecoverableError(f'Unknown produce battle strategy: {battle_strategy}')
 
 class StandardStrategy:
     def __init__(self, controller: 'ProduceController') -> None:
@@ -195,8 +204,7 @@ class StandardStrategy:
                 R.InPurodyuusu.TextPerfectUntil
             ].exists()
     
-        # do_cards(False, threshold_predicate, end_predicate, battle_strategy=BandaiStrategy(threshold_predicate))
-        do_cards(False, threshold_predicate, end_predicate, battle_strategy=ExpertSystemStrategy())
+        do_cards(False, threshold_predicate, end_predicate, battle_strategy=_build_battle_strategy(threshold_predicate))
 
     def on_practice_exited(self):
         pass
@@ -273,8 +281,7 @@ class StandardStrategy:
                 and R.Common.ButtonNext.find()
             )
 
-        # do_cards(True, threshold_predicate, end_predicate, battle_strategy=BandaiStrategy(threshold_predicate))
-        do_cards(True, threshold_predicate, end_predicate, battle_strategy=ExpertSystemStrategy())
+        do_cards(True, threshold_predicate, end_predicate, battle_strategy=_build_battle_strategy(threshold_predicate))
 
         R.Common.ButtonNext.wait().click()
 
