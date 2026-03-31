@@ -8,7 +8,7 @@ import cv2
 import numpy as np
 from cv2.typing import MatLike
 
-from .descriptors import HistDescriptor
+from .descriptors import BaseDescriptor
 from kotonebot.backend.core import cv2_imread
 
 logger = logging.getLogger(__name__)
@@ -64,7 +64,7 @@ class ImageDatabase:
             self,
             source: DataSource,
             db_path: str,
-            descriptor: HistDescriptor,
+            descriptor: BaseDescriptor,
             *,
             name: str | None = None
         ):
@@ -188,6 +188,7 @@ class ImageDatabase:
 
 if __name__ == '__main__':
     from kaa.image_db.db import Db
+    from .descriptors import HistDescriptor
     logging.basicConfig(level=logging.DEBUG, format='[%(asctime)s] [%(levelname)s] [%(name)s] [%(funcName)s] [%(lineno)d] %(message)s')
     imgs_path = r'E:\GithubRepos\KotonesAutoAssistant.worktrees\dev\kotonebot\tasks\resources\idol_cards'
     needle_path = r'D:\05.png'

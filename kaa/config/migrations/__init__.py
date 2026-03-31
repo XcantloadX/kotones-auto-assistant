@@ -9,6 +9,7 @@ from . import _v2_to_v3
 from . import _v3_to_v4
 from . import _v4_to_v5
 from . import _v5_to_v6
+from . import _v6_to_v7
 
 # 注册表：键为旧版本号，值为迁移函数
 MIGRATION_REGISTRY: Dict[int, Migration] = {
@@ -17,10 +18,11 @@ MIGRATION_REGISTRY: Dict[int, Migration] = {
     3: _v3_to_v4.migrate,
     4: _v4_to_v5.migrate,
     5: _v5_to_v6.migrate,
+    6: _v6_to_v7.migrate,
 }
 
 # 当前最新配置版本
-LATEST_VERSION: int = 6
+LATEST_VERSION: int = 7
 
 __all__ = [
     "MIGRATION_REGISTRY",

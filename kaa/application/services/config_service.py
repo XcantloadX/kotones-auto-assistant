@@ -2,8 +2,8 @@ import logging
 from typing import Any
 
 from kaa.config.schema import BaseConfig
-from kotonebot.config.base_config import BackendConfig, UserConfig
-from kotonebot.config.manager import load_config, save_config, RootConfig
+from kaa.config.base_config import BackendConfig, UserConfig
+from kaa.config.manager import load_config, save_config, RootConfig
 
 logger = logging.getLogger(__name__)
 
@@ -88,11 +88,11 @@ class ConfigService:
         """
         # Rule 1: Validate screenshot method against the backend type
         valid_screenshot_methods = {
-            'mumu12': ['adb', 'adb_raw', 'uiautomator2', 'nemu_ipc'],
-            'mumu12v5': ['adb', 'adb_raw', 'uiautomator2', 'nemu_ipc'],
-            'leidian': ['adb', 'adb_raw', 'uiautomator2'],
-            'custom': ['adb', 'adb_raw', 'uiautomator2'],
-            'dmm': ['remote_windows', 'windows']
+            'mumu12': ['adb', 'uiautomator2', 'nemu_ipc'],
+            'mumu12v5': ['adb', 'uiautomator2', 'nemu_ipc'],
+            'leidian': ['adb', 'uiautomator2'],
+            'custom': ['adb', 'uiautomator2'],
+            'dmm': ['remote_windows', 'windows', 'windows_background'],
         }
         if backend_config.screenshot_impl not in valid_screenshot_methods.get(backend_config.type, []):
             raise ConfigValidationError(

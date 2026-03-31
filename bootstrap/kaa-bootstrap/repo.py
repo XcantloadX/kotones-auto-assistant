@@ -228,11 +228,13 @@ class PipPackage:
         package_name: str,
         *,
         server_url: str = DEFAULT_PIP_SERVER,
+        extra_index_urls: list[str] | None = None,
         trusted_host: list[str] | None = None,
         execute_command: ExecuteCommandFunc | None = None,
     ):
         self.package_name = package_name
         self.server_url = server_url
+        self.extra_index_urls = extra_index_urls or []
         self.trusted_hosts = trusted_host
         self.normalized_name = normalize_package_name(package_name)
         self.execute_command: ExecuteCommandFunc = execute_command or self.__exec_command
@@ -253,6 +255,8 @@ class PipPackage:
             f'{self.package_name}=={version}',
             '--index-url', self.server_url,
         ]
+        for url in self.extra_index_urls:
+            args += ['--extra-index-url', url]
         retcode, _ = self.call_pip(args)
         if retcode != 0:
             raise RuntimeError(f'安装失败，返回码: {retcode}')
@@ -296,10 +300,11 @@ class PipPackage:
             '--pre' if pre else '',
             '--index-url', self.server_url,
         ]
+        for url in self.extra_index_urls:
+            args += ['--extra-index-url', url]
         retcode, output = self.call_pip(args)
         if retcode != 0:
             raise RuntimeError(f'获取版本列表失败，返回码: {retcode}')
-            return []
         ret = json.loads(output)
         versions = ret['versions']
         return [PackageVersion(Version(version), '') for version in versions]
@@ -327,6 +332,8 @@ class PipPackage:
             file_path,
             '--index-url', self.server_url,
         ]
+        for url in self.extra_index_urls:
+            args += ['--extra-index-url', url]
         if upgrade:
             args.append('--upgrade')
         retcode, _ = self.call_pip(args)

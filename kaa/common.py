@@ -10,7 +10,6 @@ from pydantic import BaseModel, ConfigDict
 
 # TODO: from kotonebot import config (context) 会和 kotonebot.config 冲突
 from kotonebot import logging
-from kotonebot.backend.context import config
 from kaa.config.schema import BaseConfig
 
 logger = logging.getLogger(__name__)

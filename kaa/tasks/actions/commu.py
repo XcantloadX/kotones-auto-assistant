@@ -15,10 +15,10 @@ logger = logging.getLogger(__name__)
 def skip_button():
     device.screenshot()
     return image.find(
-        R.Common.ButtonCommuSkip,
+        R.Common.ButtonCommuSkip.template.pixels,
         threshold=0.6,
     ) or image.find(
-        R.Common.ButtonCommuSkip,
+        R.Common.ButtonCommuSkip.template.pixels,
         threshold=0.6,
         preprocessors=[WhiteFilter()]
     )
@@ -27,10 +27,10 @@ def skip_button():
 def fastforward_button():
     device.screenshot()
     return image.find(
-        R.Common.ButtonCommuFastforward,
+        R.Common.ButtonCommuFastforward.template.pixels,
         threshold=0.6,
     ) or image.find(
-        R.Common.ButtonCommuFastforward,
+        R.Common.ButtonCommuFastforward.template.pixels,
         threshold=0.6,
         preprocessors=[WhiteFilter()]
     )
@@ -69,10 +69,10 @@ def handle_unread_commu(img: MatLike | None = None) -> bool:
         # 即使点了跳过，画面上也有可能还有其他东西需要处理
         # 因此返回 False 而不是 True
         return False
-    if image.find_multi([
-        R.Common.TextSkipCommuComfirmation,
-        R.Common.TextFastforwardCommuDialogTitle
-    ]):
+    if (
+        R.Common.TextSkipCommuComfirmation.exists() or
+        R.Common.TextFastforwardCommuDialogTitle.exists()
+    ):
         logger.info('Unread commu found.')
         if dialog.yes():
             logger.debug('Clicked confirm button.')

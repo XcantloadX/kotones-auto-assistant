@@ -1,9 +1,7 @@
 from typing import TypeVar, Literal, Sequence
 from pydantic import BaseModel, ConfigDict
 
-from kotonebot import config
-from kaa.config.produce import ProduceSolution, ProduceSolutionManager
-from kaa.errors import NoProduceSolutionSelectedError
+
 from .const import (
     ConfigEnum,
     Priority,
@@ -262,17 +260,3 @@ class BaseConfig(ConfigBaseModel):
 
     idle: IdleModeConfig = IdleModeConfig()
     """闲置挂机配置"""
-
-
-def conf() -> BaseConfig:
-    """获取当前配置数据"""
-    c = config.to(BaseConfig).current
-    return c.options
-
-def produce_solution() -> ProduceSolution:
-    """获取当前培育方案"""
-    id = conf().produce.selected_solution_id
-    if id is None:
-        raise NoProduceSolutionSelectedError()
-    # TODO: 这里需要缓存，不能每次都从磁盘读取
-    return ProduceSolutionManager().read(id)

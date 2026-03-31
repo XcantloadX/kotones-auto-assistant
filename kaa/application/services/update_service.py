@@ -15,6 +15,9 @@ from kaa.errors import (
 
 logger = logging.getLogger(__name__)
 
+_PRIMARY_PIP_INDEX = ("https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple", "mirrors.tuna.tsinghua.edu.cn")
+_EXTRA_PIP_INDEX = ("https://pypi.1ichika.de/simple", "pypi.1ichika.de")
+
 class VersionInfo(BaseModel):
     """存储版本信息的 Pydantic 模型"""
     versions: List[str] = Field(default_factory=list)
@@ -117,11 +120,15 @@ class UpdateService:
         :return: 包含版本数据的 VersionInfo 对象。
         :raises UpdateFetchListError: 如果无法获取或解析版本列表。
         """
+        primary_url, primary_host = _PRIMARY_PIP_INDEX
+        extra_url, extra_host = _EXTRA_PIP_INDEX
         cmd = [
             sys.executable, "-m", "pip", "index", "versions", self.repo_name,
             "--json", "--pre",
-            "--index-url", "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple",
-            "--trusted-host", "mirrors.tuna.tsinghua.edu.cn"
+            "--index-url", primary_url,
+            "--extra-index-url", extra_url,
+            "--trusted-host", primary_host,
+            "--trusted-host", extra_host,
         ]
         logger.info(f"Executing: {' '.join(cmd)}")
 
@@ -135,7 +142,7 @@ class UpdateService:
             )
 
             if result.returncode != 0:
-                raise UpdateFetchListError(result.stderr)
+                raise UpdateFetchListError(result.stderr.strip() or f"pip exited with code {result.returncode}")
 
             data = json.loads(result.stdout)
             version_info = VersionInfo(

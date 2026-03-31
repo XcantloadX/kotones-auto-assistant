@@ -100,6 +100,7 @@ class GradioComponents:
     produce_solution_name: Optional[gr.Textbox] = None
     produce_solution_description: Optional[gr.Textbox] = None
     produce_mode: Optional[gr.Dropdown] = None
+    produce_battle_strategy: Optional[gr.Dropdown] = None
     produce_idols: Optional[gr.Dropdown] = None
     produce_auto_set_memory: Optional[gr.Checkbox] = None
     produce_memory_sets_group: Optional[gr.Group] = None

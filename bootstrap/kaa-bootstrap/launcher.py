@@ -28,7 +28,7 @@ from util import (
 
 # 获取当前Python解释器路径
 PYTHON_EXECUTABLE = sys.executable
-_TRUSTED_HOSTS = "pypi.org files.pythonhosted.org pypi.python.org mirrors.aliyun.com mirrors.cloud.tencent.com mirrors.tuna.tsinghua.edu.cn"
+_TRUSTED_HOSTS = "pypi.org files.pythonhosted.org pypi.python.org mirrors.aliyun.com mirrors.cloud.tencent.com mirrors.tuna.tsinghua.edu.cn pypi.1ichika.de"
 TRUSTED_HOSTS = [
     "pypi.org",
     "files.pythonhosted.org",
@@ -36,7 +36,9 @@ TRUSTED_HOSTS = [
     "mirrors.aliyun.com",
     "mirrors.cloud.tencent.com",
     "mirrors.tuna.tsinghua.edu.cn",
+    "pypi.1ichika.de"
 ]
+EXTRA_PIP_SERVER = "https://pypi.1ichika.de/simple"
 PIP_SERVERS = [
     "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple",
     "https://mirrors.aliyun.com/pypi/simple",
@@ -320,7 +322,10 @@ def install_pip_and_ksaa(pip_server: str, check_update: bool = True, install_upd
     # 升级pip
     if check_update:
         print_status("更新 pip", status='info')
-        upgrade_pip_command = f'"{PYTHON_EXECUTABLE}" -m pip install -i {pip_server} --trusted-host "{TRUSTED_HOSTS}" --upgrade pip'
+        upgrade_pip_command = (
+            f'"{PYTHON_EXECUTABLE}" -m pip install -i {pip_server} '
+            f'--extra-index-url {EXTRA_PIP_SERVER} --trusted-host "{TRUSTED_HOSTS}" --upgrade pip'
+        )
         if not run_command(upgrade_pip_command):
             return False
 
@@ -560,6 +565,8 @@ def main_launch():
             raise RuntimeError("没有找到可用的pip服务器，请检查网络连接。")
         pip_ksaa.server_url = pip_server
         pip_kotonebot.server_url = pip_server
+        pip_ksaa.extra_index_urls = [EXTRA_PIP_SERVER]
+        pip_kotonebot.extra_index_urls = [EXTRA_PIP_SERVER]
         pip_ksaa.trusted_hosts = TRUSTED_HOSTS
         pip_kotonebot.trusted_hosts = TRUSTED_HOSTS
 

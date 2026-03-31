@@ -1,8 +1,6 @@
-from functools import partial
 from typing import Callable, NamedTuple, Literal
 
 import cv2
-import numpy as np
 from cv2.typing import MatLike
 
 from kaa.db.drink import Drink
@@ -12,11 +10,12 @@ from kaa.tasks.common import skip
 from kaa.config import conf
 from kaa.game_ui import dialog
 from kaa.tasks.produce.common import acquisition_date_change_dialog
-from kaa.util.trace import trace
+from kaa.tasks.produce.play_cards.strategy import AbstractBattleStrategy
 from kotonebot.primitives import RectTuple, Rect
 from kotonebot import action, Interval, Countdown, device, image, sleep, ocr, contains, use_screenshot, color
 from kotonebot.backend.loop import Loop
 from kotonebot import logging
+from kotonebot.core import AnyOf
 
 class SkillCard(NamedTuple):
     available: bool
@@ -116,7 +115,9 @@ def calc_card_position(card_count: int):
 def do_cards(
         is_exam: bool,
         threshold_predicate: Callable[[int, CardDetectResult], bool],
-        end_predicate: Callable[[], bool]
+        end_predicate: Callable[[], bool],
+        *,
+        battle_strategy: AbstractBattleStrategy | None = None,
     ):
     """
     循环打出推荐卡，直到考试/练习结束
@@ -143,19 +144,31 @@ def do_cards(
     drink_retries = 0
     DRINK_MAX_RETRIES = 5
 
+    def try_battle_strategy() -> bool:
+        if battle_strategy is None:
+            return False
+        try:
+            from kaa.tasks.produce.play_cards.page import LessonBattleContext
+            ctx = LessonBattleContext()
+            handled = battle_strategy.on_action(ctx)
+            if handled is False:
+                return False
+            return True
+        except Exception:
+            logger.exception('Battle strategy execution failed, fallback to recommended card detection.')
+            return False
+
     for _ in Loop(interval=1/30):
         skip()
         img = device.screenshot()
 
         # 技能卡自选移动对话框
-        if image.find(R.InPurodyuusu.IconTitleSkillCardMove):
+        if R.InPurodyuusu.IconTitleSkillCardMove.exists():
             if handle_skill_card_move():
                 sleep(4)  # 等待卡片刷新
                 continue
         # 饮品详细对话框（需要在 ButtonIconCheckMark 之前，因为ButtonUse也是√）
-        if image.find(R.InPurodyuusu.ButtonUse):
-            # 任何情况下都点击（避免卡死）
-            device.click()
+        if R.InPurodyuusu.ButtonUse.try_click():
             if enable_drink and drinks_list is not None:
                 if drink_selected_idx < 0 or drink_selected_idx >= len(drinks_list):
                     logger.warning('`drink_selected_idx` dismatches, internal error!')
@@ -172,9 +185,8 @@ def do_cards(
                 logger.warning('Unexpected use drink dialog.')
             continue
         # 技能卡效果无法发动对话框
-        if image.find(R.Common.ButtonIconCheckMark):
+        if R.Common.ButtonIconCheckMark.try_click():
             logger.info("Confirmation dialog detected")
-            device.click()
             sleep(4)  # 等待卡片刷新
             continue
 
@@ -226,6 +238,12 @@ def do_cards(
                 no_card_cd.reset()
                 continue
         else:
+            if try_battle_strategy():
+                logger.info("Handle battle strategy success with %d tries", tries)
+                sleep(4.5)
+                tries = 0
+                timeout_cd.reset()
+                continue
             if handle_recommended_card(
                 card_count=card_count,
                 threshold_predicate=threshold_predicate,
@@ -275,11 +293,11 @@ def handle_skill_card_move():
     前置条件：技能卡移动对话框\n
     结束状态：对话框结束瞬间
     """
-    cards = image.find_all_multi([
+    cards = AnyOf[
         R.InPurodyuusu.A,
         R.InPurodyuusu.M,
         R.InPurodyuusu.T,
-    ])
+    ].find_all()
     if not cards:
         logger.info("No skill cards found")
         return False
@@ -288,7 +306,7 @@ def handle_skill_card_move():
     for _ in Loop():
         # 判断对话框是否关闭
         # 已关闭，开始计时
-        if not image.find(R.InPurodyuusu.IconTitleSkillCardMove):
+        if not R.InPurodyuusu.IconTitleSkillCardMove.exists():
             cd.start()
             if cd.expired():
                 logger.info("Skill card move dialog closed.")
@@ -298,11 +316,11 @@ def handle_skill_card_move():
             cd.reset()
             if not cards:
                 logger.info("No skill cards left. Retrying...")
-                cards = image.find_all_multi([
+                cards = AnyOf[
                     R.InPurodyuusu.A,
                     R.InPurodyuusu.M,
                     R.InPurodyuusu.T,
-                ])
+                ].find_all()
             card = cards.pop()
             device.double_click(card)
             sleep(1)
@@ -312,11 +330,11 @@ def handle_skill_card_move():
 @action('获取当前卡牌信息', screenshot_mode='manual-inherit')
 def obtain_cards(img: MatLike | None = None):
     img = use_screenshot(img)
-    cards_rects = image.find_all_multi([
+    cards_rects = AnyOf[
         R.InPurodyuusu.A,
         R.InPurodyuusu.M,
-        R.InPurodyuusu.T
-    ])
+        R.InPurodyuusu.T,
+    ].find_all()
     logger.info("Current cards: %s", len(cards_rects))
     cards = []
     for result in cards_rects:
@@ -331,7 +349,7 @@ def handle_recommended_card(
         *,
         img: MatLike | None = None,
     ):
-    result = detect_recommended_card(card_count, threshold_predicate, img=img)
+    result = detect_recommended_card(card_count, threshold_predicate, img=img, timeout=timeout)
     if result is not None:
         device.double_click(result)
         return result
@@ -344,9 +362,9 @@ def skill_card_count(img: MatLike | None = None):
     img = use_screenshot(img)
     x, y, w, h = R.InPurodyuusu.BoxCardLetter.xywh
     img = img[y:y+h, x:x+w]
-    count = image.raw().count(img, R.InPurodyuusu.A)
-    count += image.raw().count(img, R.InPurodyuusu.M)
-    count += image.raw().count(img, R.InPurodyuusu.T)
+    count = image.raw().count(img, R.InPurodyuusu.A.template)
+    count += image.raw().count(img, R.InPurodyuusu.M.template)
+    count += image.raw().count(img, R.InPurodyuusu.T.template)
     logger.info("Current skill card count: %d", count)
     return count
 
@@ -356,105 +374,30 @@ def detect_recommended_card(
         threshold_predicate: Callable[[int, CardDetectResult], bool],
         *,
         img: MatLike | None = None,
+        timeout: float = 0,
+        interval: float = 1 / 30,
     ):
-    """
-    识别推荐卡片
-
-    前置条件：练习或考试中\n
-    结束状态：-
-
-    :param card_count: 卡片数量(2-4)
-    :param threshold_predicate: 阈值判断函数
-    :return: 执行结果。若返回 None，表示未识别到推荐卡片。
-    """
-    YELLOW_LOWER = np.array([20, 100, 100])
-    YELLOW_UPPER = np.array([30, 255, 255])
-    GLOW_EXTENSION = 15
-
-    cards = calc_card_position(card_count)
-    cards.append(SKIP_CARD_BUTTON)
-
-    img = use_screenshot(img)
-    original_image = img.copy()
-    results: list[CardDetectResult] = []
-    for x, y, w, h, return_value in cards:
-        outer = (max(0, x - GLOW_EXTENSION), max(0, y - GLOW_EXTENSION))
-        # 裁剪出检测区域
-        glow_area = img[outer[1]:y + h + GLOW_EXTENSION, outer[0]:x + w + GLOW_EXTENSION]
-        area_h = glow_area.shape[0]
-        area_w = glow_area.shape[1]
-        glow_area[GLOW_EXTENSION:area_h-GLOW_EXTENSION, GLOW_EXTENSION:area_w-GLOW_EXTENSION] = 0
-
-        # 过滤出目标黄色
-        glow_area = cv2.cvtColor(glow_area, cv2.COLOR_BGR2HSV)
-        yellow_mask = cv2.inRange(glow_area, YELLOW_LOWER, YELLOW_UPPER)
-        
-        # 分割出每一边
-        left_border = yellow_mask[:, 0:GLOW_EXTENSION]
-        right_border = yellow_mask[:, area_w-GLOW_EXTENSION:area_w]
-        top_border = yellow_mask[0:GLOW_EXTENSION, :]
-        bottom_border = yellow_mask[area_h-GLOW_EXTENSION:area_h, :]
-        y_border_pixels = area_h * GLOW_EXTENSION
-        x_border_pixels = area_w * GLOW_EXTENSION
-
-        # 计算每一边的分数
-        left_score = np.count_nonzero(left_border) / y_border_pixels
-        right_score = np.count_nonzero(right_border) / y_border_pixels
-        top_score = np.count_nonzero(top_border) / x_border_pixels
-        bottom_score = np.count_nonzero(bottom_border) / x_border_pixels
-
-        result = (left_score + right_score + top_score + bottom_score) / 4
-        results.append(CardDetectResult(
-            return_value,
-            result,
-            left_score,
-            right_score,
-            top_score,
-            bottom_score,
-            Rect(x, y, w, h)
-        ))
-        img = original_image.copy()
-    #     cv2.imshow(f"card detect {return_value}", cv2.cvtColor(glow_area, cv2.COLOR_HSV2BGR))
-    #     cv2.namedWindow(f"card detect {return_value}", cv2.WINDOW_NORMAL)
-    #     cv2.moveWindow(f"card detect {return_value}", 100 + (return_value % 3) * 300, 100 + (return_value // 3) * 300)
-    # cv2.waitKey(1)
-    filtered_results = list(filter(partial(threshold_predicate, card_count), results))
-    if not filtered_results:
-        max_result = max(results, key=lambda x: x.score)
-        logger.verbose("Max card detect result (discarded): value=%d score=%.4f borders=(%.4f, %.4f, %.4f, %.4f)",
-            max_result.type,
-            max_result.score,
-            max_result.left_score,
-            max_result.right_score,
-            max_result.top_score,
-            max_result.bottom_score
-        )
-        return None
-    filtered_results.sort(key=lambda x: x.score, reverse=True)
-    logger.debug("Max card detect result: value=%d score=%.4f borders=(%.4f, %.4f, %.4f, %.4f)",
-        filtered_results[0].type,
-        filtered_results[0].score,
-        filtered_results[0].left_score,
-        filtered_results[0].right_score,
-        filtered_results[0].top_score,
-        filtered_results[0].bottom_score
+    from kaa.tasks.produce.play_cards.bandai_strategy import (
+        detect_recommended_card as _detect_recommended_card,
     )
-    # 跟踪检测结果
-    if conf().trace.recommend_card_detection:
-        x, y, w, h = filtered_results[0].rect.xywh
-        cv2.rectangle(original_image, (x, y), (x+w, y+h), (0, 0, 255), 3)
-        trace('rec-card', original_image, {
-            'card_count': card_count,
-            'type': filtered_results[0].type,
-            'score': filtered_results[0].score,
-            'borders': (
-                filtered_results[0].left_score,
-                filtered_results[0].right_score,
-                filtered_results[0].top_score,
-                filtered_results[0].bottom_score
-            )
-        })
-    return filtered_results[0]
+
+    if img is not None:
+        result = _detect_recommended_card(card_count, threshold_predicate, img=img)
+        if result is not None:
+            return result
+
+    if timeout <= 0:
+        return None
+
+    cd = Countdown(sec=timeout).start()
+    for _ in Loop(interval=interval):
+        if cd.expired():
+            break
+        frame = device.screenshot()
+        result = _detect_recommended_card(card_count, threshold_predicate, img=frame)
+        if result is not None:
+            return result
+    return None
 
 if __name__ == '__main__':
     img = cv2.imread(r'/kotonebot-resource/sprites/jp/in_purodyuusu/produce_exam_1.png')

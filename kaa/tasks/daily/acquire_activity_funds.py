@@ -5,7 +5,7 @@ from kotonebot.backend.loop import Loop
 from kaa.tasks import R
 from kaa.config import conf
 from ..actions.scenes import at_home, goto_home
-from kotonebot import task, device, image, color
+from kotonebot import task, device, color
 
 logger = logging.getLogger(__name__)
 
@@ -24,9 +24,8 @@ def acquire_activity_funds():
             and at_home()
         ): 
             break
-        elif image.find(R.Common.ButtonClose):
-            logger.info('Closing popup dialog.')
-            device.click()
+        elif R.Common.ButtonClose.try_click():
+            logger.info('Closed popup dialog.')
         else:
             device.click(R.Daily.BoxHomeActivelyFunds)
 

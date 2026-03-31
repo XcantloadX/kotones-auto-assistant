@@ -26,15 +26,14 @@ def club_reward():
     logger.info('Entering club UI')
     device.click(toolbar_menu(True))
     sleep(0.5) # 避免过早点击
-    device.click(image.expect_wait(R.Daily.IconMenuClub, timeout=5))
+    R.Daily.IconMenuClub.wait(timeout=5).click()
     sleep(3)
 
     # 如果笔记请求尚未结束，则不进行任何笔记请求有关操作（领取奖励 & 发起新的笔记请求）
 
     # 如果笔记请求已经结束，且存在奖励提示，学偶UI应该会直接弹出面板，那么直接点击关闭按钮即可；
     logger.info('Prepare to collect note request reward')
-    if image.find(R.Common.ButtonClose):
-        device.click()
+    if R.Common.ButtonClose.try_click():
         logger.info('Collected note request reward')
     sleep(1)
 
@@ -48,15 +47,21 @@ def club_reward():
     # 应该进入的情况，识别结果为：[OcrResult(text="リクエスト", rect=(244, 297, 141, 35), confidence=0.9993334531784057)]
     if texts and texts[0].text == 'リクエスト':
         # 经测验，threshold=0.999时也可以正确识别，所以这里保留这个阈值
-        device.click(image.expect_wait(R.Daily.ButtonClubCollectReward, threshold=0.99))
+        device.click(image.expect_wait(R.Daily.ButtonClubCollectReward.template, threshold=0.99))
         sleep(0.5)
         # 找到配置中选择的书籍
-        device.click(image.expect_wait(conf().club_reward.selected_note.to_resource(), timeout=5))
+        (
+            conf()
+                .club_reward.selected_note
+                .to_resource()
+                .wait(timeout=5)
+                .click()
+        )
         sleep(0.5)
         # 确认键
-        device.click(image.expect_wait(R.Common.ButtonConfirm, timeout=5))
+        R.Common.ButtonConfirm.wait(timeout=5).click()
         sleep(0.5)
-        device.click(image.expect_wait(R.Common.ButtonConfirm, timeout=5))
+        R.Common.ButtonConfirm.wait(timeout=5).click()
         sleep(1)
         logger.info('Started new note request')
     else:
@@ -66,12 +71,10 @@ def club_reward():
     logger.info('Sending gifts')
     for _ in range(5): # 默认循环5次
         # 送礼物
-        if image.find(R.Daily.ButtonClubSendGift):
-            device.click()
+        if R.Daily.ButtonClubSendGift.try_click():
             sleep(0.5)
         # 下个人
-        if image.find(R.Daily.ButtonClubSendGiftNext):
-            device.click()
+        if R.Daily.ButtonClubSendGiftNext.try_click():
             sleep(0.5)
         else:
             # 找不到下个人就break

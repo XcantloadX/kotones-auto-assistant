@@ -4,7 +4,7 @@ from logging import getLogger
 import cv2
 import numpy as np
 
-from kotonebot import image, device, action, sleep
+from kotonebot import device, action, sleep
 from kotonebot.backend.debug import result
 from kaa.tasks import R
 
@@ -45,8 +45,8 @@ def wait_loading_end(timeout: float = 60):
         if time.time() - start_time > timeout:
             raise TimeoutError('加载超时')
         # 检查网络错误
-        if image.find(R.Common.TextNetworkError):
-            device.click(image.expect(R.Common.ButtonRetry))
+        if R.Common.TextNetworkError.exists():
+            R.Common.ButtonRetry.click()
         logger.debug('Loading...')
         sleep(1)
 

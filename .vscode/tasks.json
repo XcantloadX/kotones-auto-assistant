@@ -9,9 +9,9 @@
             "command": "powershell \"rm -r tests/output_images\""
         },
         {
-            "label": "Make R.py",
+            "label": "Make Resources",
             "type": "shell",
-            "command": "python ./tools/make_resources.py"
+            "command": "${command:python.interpreterPath} ./tools/make_resources.py"
         }
     ]
 }

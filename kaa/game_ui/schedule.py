@@ -5,6 +5,7 @@ from cv2.typing import MatLike
 
 from kotonebot.primitives import Rect
 from kotonebot import ocr, device, image, action
+from kotonebot.core import AnyOf
 from kotonebot.backend.core import HintBox
 from kaa.config import ProduceAction
 from kaa.tasks import R
@@ -50,11 +51,11 @@ class Schedule:
         TODO: NIA 课程的名字的图片没放到这里，后续若要支持NIA需要添加对应的图片
         """
         device.screenshot()
-        result = image.find_multi([
+        result = AnyOf[
             R.InPurodyuusu.TextActionVocal,
             R.InPurodyuusu.TextActionDance,
             R.InPurodyuusu.TextActionVisual,
-        ])
+        ].find()
         return result is not None
 
     @action('识别日程，课程抉择，', screenshot_mode='manual-inherit')
@@ -96,17 +97,18 @@ class Schedule:
         :return: 课程数据列表
         """
         img = device.screenshot()
-        sp_list = image.find_all(R.InPurodyuusu.IconSp)
+        sp_list = R.InPurodyuusu.IconSp.find_all()
         vo_sp = da_sp = vi_sp = False
-        vo = image.expect(R.InPurodyuusu.ButtonPracticeVocal)
-        da = image.expect(R.InPurodyuusu.ButtonPracticeDance)
-        vi = image.expect(R.InPurodyuusu.ButtonPracticeVisual)
+        # 等待课程按钮模板出现，使用 rect.center[0] 作为水平位置比较
+        vo = R.InPurodyuusu.ButtonPracticeVocal.wait()
+        da = R.InPurodyuusu.ButtonPracticeDance.wait()
+        vi = R.InPurodyuusu.ButtonPracticeVisual.wait()
         for cur_sp in sp_list:
-            if cur_sp.position[0] < vo.position[0]:
+            if cur_sp.rect.center[0] < vo.rect.center[0]:
                 vo_sp = True
-            elif vo.position[0] < cur_sp.position[0] < da.position[0]:
+            elif vo.rect.center[0] < cur_sp.rect.center[0] < da.rect.center[0]:
                 da_sp = True
-            elif da.position[0] < cur_sp.position[0] < vi.position[0]:
+            elif da.rect.center[0] < cur_sp.rect.center[0] < vi.rect.center[0]:
                 vi_sp = True
         max_value = self.read_number(img, MaxDaValue)
         lesson_data = [
@@ -125,27 +127,26 @@ class Schedule:
         :return: 当前推荐行动，如果没推荐行动，返回 RECOMMENDED
         """
         device.screenshot()
-        if image.find(R.InPurodyuusu.IconAsariSenseiAvatar):
+        if R.InPurodyuusu.IconAsariSenseiAvatar.exists():
             logger.debug('Retrieving recommended lesson...')
-            result = image.find_multi([
+            result = AnyOf[
                 R.InPurodyuusu.TextSenseiTipVocal,
                 R.InPurodyuusu.TextSenseiTipDance,
                 R.InPurodyuusu.TextSenseiTipVisual,
                 R.InPurodyuusu.TextSenseiTipRest,
                 R.InPurodyuusu.TextSenseiTipConsult,
-            ])
+            ].find()
             if result:
-                match result.index:
-                    case 0:
-                        return ProduceAction.VOCAL
-                    case 1:
-                        return ProduceAction.DANCE
-                    case 2:
-                        return ProduceAction.VISUAL
-                    case 3:
-                        return ProduceAction.REST
-                    case 4:
-                        return ProduceAction.CONSULT
+                if result.prefab == R.InPurodyuusu.TextSenseiTipVocal:
+                    return ProduceAction.VOCAL
+                if result.prefab == R.InPurodyuusu.TextSenseiTipDance:
+                    return ProduceAction.DANCE
+                if result.prefab == R.InPurodyuusu.TextSenseiTipVisual:
+                    return ProduceAction.VISUAL
+                if result.prefab == R.InPurodyuusu.TextSenseiTipRest:
+                    return ProduceAction.REST
+                if result.prefab == R.InPurodyuusu.TextSenseiTipConsult:
+                    return ProduceAction.CONSULT
         return ProduceAction.RECOMMENDED
 
     def read_number(self, img: MatLike, box: HintBox) -> int:

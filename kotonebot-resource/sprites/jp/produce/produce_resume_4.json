@@ -1,57 +1,48 @@
 {
+  "version": 2,
   "definitions": {
     "ccbcb114-7f73-43d1-904a-3a7ae660c531": {
       "name": "Produce.ButtonResume",
       "displayName": "再開する",
-      "type": "template",
-      "annotationId": "ccbcb114-7f73-43d1-904a-3a7ae660c531",
-      "useHintRect": false
+      "type": "prefab",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 390,
+          "y1": 1141,
+          "x2": 580,
+          "y2": 1181
+        }
+      },
+      "prefab_id": "TemplateMatchPrefab"
     },
     "deb35d68-bbac-4636-a93a-1b039c5d4fb1": {
       "name": "Produce.BoxResumeDialogWeeks",
       "displayName": "再开培育对话框 当前周数区域",
       "type": "hint-box",
-      "annotationId": "deb35d68-bbac-4636-a93a-1b039c5d4fb1",
-      "useHintRect": false
+      "props": {
+        "image": {
+          "kind": "rect",
+          "x1": 499,
+          "y1": 377,
+          "x2": 638,
+          "y2": 413
+        }
+      }
     },
     "d5335ad3-8859-4f4f-99b3-c88d2cd2b966": {
       "name": "Produce.BoxResumeDialogIdolCard",
       "displayName": "再开培育对话框 偶像卡区域",
       "type": "hint-box",
-      "annotationId": "d5335ad3-8859-4f4f-99b3-c88d2cd2b966",
-      "useHintRect": false
-    }
-  },
-  "annotations": [
-    {
-      "id": "ccbcb114-7f73-43d1-904a-3a7ae660c531",
-      "type": "rect",
-      "data": {
-        "x1": 390,
-        "y1": 1141,
-        "x2": 580,
-        "y2": 1181
-      }
-    },
-    {
-      "id": "deb35d68-bbac-4636-a93a-1b039c5d4fb1",
-      "type": "rect",
-      "data": {
-        "x1": 499,
-        "y1": 377,
-        "x2": 638,
-        "y2": 413
-      }
-    },
-    {
-      "id": "d5335ad3-8859-4f4f-99b3-c88d2cd2b966",
-      "type": "rect",
-      "data": {
-        "x1": 54,
-        "y1": 674,
-        "x2": 197,
-        "y2": 867
+      "props": {
+        "image": {
+          "kind": "rect",
+          "x1": 54,
+          "y1": 674,
+          "x2": 197,
+          "y2": 867
+        }
       }
     }
-  ]
+  }
 }

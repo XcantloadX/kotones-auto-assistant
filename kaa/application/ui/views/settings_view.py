@@ -9,6 +9,7 @@ from kaa.application.ui.components.alert import Alert
 from kaa.application.ui.facade import KaaFacade, ConfigValidationError
 from kaa.application.ui.common import GradioComponents, GradioInput
 from kaa.config.const import DailyMoneyShopItems, APShopItems
+from kaa.util import telemetry
 from kaa.util.reactive import Ref, getter, setter, of, ref
 
 logger = logging.getLogger(__name__)
@@ -203,6 +204,20 @@ class SettingsView:
             # --- DMM ---
             with gr.Tab("DMM", id="dmm") as tab_dmm:
                 gr.Markdown("已选中 DMM")
+                wait_cursor_speed = gr.Number(
+                    value=user_config.backend.cursor_wait_speed,
+                    label="后台挂机时光标最大速度（像素/秒）",
+                    info="""使用 DMM 版后台挂机功能时，在点击前会尝试等待光标静止，以避免发生点击偏移。
+此项规定了速度小于多少时认为光标静止，单位为像素/秒。
+
+-1 表示使用内置默认值，0 表示禁用该功能。
+值越大，等待时间越短，脚本响应越快，但点击偏移风险上升，可能导致误点击而卡住。
+值越小，等待时间越长，脚本响应越慢，但点击偏移风险下降，稳定性更好。
+""",
+                    minimum=-1, step=0.1, interactive=True
+                )
+                self._bind(wait_cursor_speed, ref(of(user_config.backend).cursor_wait_speed))
+                gr.Button('重置游戏窗口位置', scale=1).click(self.facade.instance_service.reset_game_window)
             
             tab_dmm.select(
                 fn=lambda: ("dmm", None), 
@@ -211,7 +226,14 @@ class SettingsView:
 
         # 通用设置
         comps['screenshot'] = gr.Dropdown(
-            choices=['adb', 'adb_raw', 'uiautomator2', 'windows', 'remote_windows', 'nemu_ipc'],
+            choices=[
+                ('adb - 模拟器通用', 'adb'),
+                ('uiautomator2 - 模拟器通用', 'uiautomator2'),
+                ('windows - DMM 版前台挂机', 'windows'),
+                ('remote_windows（调试专用勿选）', 'remote_windows'),
+                ('windows_background - DMM 版后台挂机（实验性）', 'windows_background'),
+                ('nemu_ipc - MuMu 模拟器专属（推荐）', 'nemu_ipc')
+            ],
             value=backend_config.screenshot_impl, label="截图方法", interactive=True
         )
         self._bind(comps['screenshot'], ref(of(backend_config).screenshot_impl))
@@ -224,10 +246,10 @@ class SettingsView:
             is_mumu = 'mumu' in backend_type
             # 1. 检查 DMM 兼容性
             if backend_type == 'dmm':
-                if impl != 'windows' and impl != 'remote_windows':
+                if impl != 'windows' and impl != 'remote_windows' and impl != 'windows_background':
                     Alert(
                         title="提示", 
-                        value="DMM 版本仅支持 `windows` 截图方式",
+                        value="DMM 版本仅支持 `windows` 或 `windows_background` 截图方式",
                         variant="warning",
                         show_close=False
                     )
@@ -241,14 +263,14 @@ class SettingsView:
                         variant="warning",
                         show_close=False
                     )
-                elif is_mumu and impl in ['adb', 'adb_raw', 'uiautomator2']:
+                elif is_mumu and impl in ['adb', 'uiautomator2']:
                     Alert(
                         title="提示",
                         value="MuMu 模拟器推荐使用 `nemu_ipc` 截图方式，性能更佳且更稳定",
                         variant="info",
                         show_close=False
                     )
-                elif impl in ['windows', 'remote_windows']:
+                elif impl in ['windows', 'remote_windows', 'windows_background']:
                     Alert(
                         title="提示",
                         value="模拟器不支持 `windows` 截图方式，建议使用 `adb` 或 `nemu_ipc`",
@@ -515,6 +537,38 @@ class SettingsView:
             
             c5 = gr.Radio(label="日志等级", choices=[("普通", "debug"), ("详细", "verbose")], value=opts.misc.log_level, interactive=True)
             self._bind(c5, ref(of(opts).misc.log_level))
+
+            gr.Markdown("#### 匿名数据收集")
+            gr.Markdown("""目前收集的数据包含：
+* 发生错误时的错误类型和堆栈信息
+                        
+**收集的数据将仅用于分析和改进 kaa。你可以随时在下面启用或禁用数据收集**。
+            """)
+            telemetry_status = gr.Markdown(
+                f"当前状态：{'已启用' if telemetry.is_enabled() else '已禁用'}"
+            )
+
+            def disable_telemetry() -> str:
+                try:
+                    telemetry.disable()
+                    gr.Info("禁用成功，重启 kaa 后生效")
+                except Exception as e:
+                    logger.exception("Failed to disable telemetry")
+                    gr.Warning(f"禁用失败: {e}")
+                return f"当前状态：{'已启用' if telemetry.is_enabled() else '已禁用'}"
+
+            def enable_telemetry() -> str:
+                try:
+                    telemetry.enable()
+                    gr.Info("启用成功，重启 kaa 后生效")
+                except Exception as e:
+                    logger.exception("Failed to enable telemetry")
+                    gr.Warning(f"启用失败: {e}")
+                return f"当前状态：{'已启用' if telemetry.is_enabled() else '已禁用'}"
+
+            with gr.Row():
+                gr.Button("禁用", scale=1).click(fn=disable_telemetry, outputs=telemetry_status)
+                gr.Button("启用", scale=1).click(fn=enable_telemetry, outputs=telemetry_status)
 
     def _create_idle_settings(self):
         with gr.Column():

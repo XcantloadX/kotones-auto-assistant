@@ -53,7 +53,7 @@ class TestColor(BaseTestCase):
         ]
         for color, expected, rect, path in test_cases:
             image = cv2.imread(path)
-            self.assertEqual(find(image, color, rect=rect, threshold=1), expected, f'{path} {color} {rect}')
+            self.assertEqual(find(image, color, rect=Rect(xywh=rect), threshold=1), expected, f'{path} {color} {rect}')
 
     def test_find_rgb_with_threshold(self):
         target_color = (252, 61, 74) # RGB

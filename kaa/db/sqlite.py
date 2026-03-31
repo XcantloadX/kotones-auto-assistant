@@ -26,7 +26,7 @@ def _ensure_db() -> sqlite3.Connection:
     return _db_dict[thread_id]
 
 
-def select_many(query: str, *args) -> List[Dict[str, Any]]:
+def select_many(query: str, *args) -> List[tuple[Any, ...]]:
     """执行查询并返回多行结果，每行为字典格式"""
     db = _ensure_db()
     c = db.cursor()
@@ -34,7 +34,7 @@ def select_many(query: str, *args) -> List[Dict[str, Any]]:
     return c.fetchall()
 
 
-def select(query: str, *args) -> Optional[Dict[str, Any]]:
+def select(query: str, *args) -> Optional[tuple[Any, ...]]:
     """执行查询并返回单行结果，为字典格式"""
     db = _ensure_db()
     c = db.cursor()

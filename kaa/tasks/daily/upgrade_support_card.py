@@ -27,8 +27,8 @@ def upgrade_support_card():
     
     # 进入支援卡页面
     logger.info('Entering Support Card page')
-    device.click(image.expect_wait(R.Common.ButtonIdol, timeout=5))
-    device.click(image.expect_wait(R.Common.ButtonIdolSupportCard, timeout=5))
+    R.Common.ButtonIdol.wait(timeout=5).click()
+    R.Common.ButtonIdolSupportCard.wait(timeout=5).click()
     sleep(2)
 
     # 重试10次
@@ -55,9 +55,9 @@ def upgrade_support_card():
         sleep(0.5)
     
     # 点击两次升级按钮（两个按钮的logo不一样，但是文字是一样的，这里资源文件只包含文字）
-    device.click(image.expect_wait(R.Daily.ButtonSupportCardUpgrade, timeout=5))
+    R.Daily.ButtonSupportCardUpgrade.wait(timeout=5).click()
     sleep(0.5)
-    device.click(image.expect_wait(R.Daily.ButtonSupportCardUpgrade, timeout=5))
+    R.Daily.ButtonSupportCardUpgrade.wait(timeout=5).click()
     sleep(1)
 
 if __name__ == '__main__':

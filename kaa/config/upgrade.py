@@ -14,8 +14,6 @@ def upgrade_config() -> str | None:
     # 避免循环依赖，这里再进行本地导入
     from .migrations import MIGRATION_REGISTRY, LATEST_VERSION  # pylint: disable=import-outside-toplevel
 
-    logger.setLevel(logging.DEBUG)
-    print('1212121212')
     config_path = "config.json"
     if not os.path.exists(config_path):
         logger.debug("config.json not found. Skip upgrade.")

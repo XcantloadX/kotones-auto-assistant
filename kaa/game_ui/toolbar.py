@@ -20,9 +20,9 @@ def toolbar_home(critical: Literal[True]) -> TemplateMatchResult:
 def toolbar_home(critical: bool = False):
     device.screenshot()
     if critical:
-        return image.expect_wait(R.Common.ButtonToolbarHome, preprocessors=[WhiteFilter()])
+        return image.expect_wait(R.Common.ButtonToolbarHome.template, preprocessors=[WhiteFilter()])
     else:
-        return image.find(R.Common.ButtonToolbarHome, preprocessors=[WhiteFilter()])
+        return image.find(R.Common.ButtonToolbarHome.template, preprocessors=[WhiteFilter()])
 
 @overload
 def toolbar_menu(critical: Literal[False] = False) -> TemplateMatchResult | None:
@@ -39,6 +39,6 @@ _TOOLBAR_THRESHOLD = 0.6
 def toolbar_menu(critical: bool = False):
     device.screenshot()
     if critical:
-        return image.expect_wait(R.Common.ButtonToolbarMenu, preprocessors=[WhiteFilter()], threshold=_TOOLBAR_THRESHOLD)
+        return image.expect_wait(R.Common.ButtonToolbarMenu.template, preprocessors=[WhiteFilter()], threshold=_TOOLBAR_THRESHOLD)
     else:
-        return image.find(R.Common.ButtonToolbarMenu, preprocessors=[WhiteFilter()], threshold=_TOOLBAR_THRESHOLD)
+        return image.find(R.Common.ButtonToolbarMenu.template, preprocessors=[WhiteFilter()], threshold=_TOOLBAR_THRESHOLD)

@@ -3,7 +3,7 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-version = "v2025.11.post4"
+version = "v2026.3b1"
 name = "ksaa"
 description = "Kotones Auto Assistant(kaa) is a script for game 'Gakuen Idol M@ster' that automates the dailies and produces."
 readme = "README.md"
@@ -12,8 +12,7 @@ dependencies = [
     # Image Processing & OCR
     "opencv-python~=4.10",
     "rapidocr_onnxruntime~=1.4",
-    "av==14.0.1",
-    "scikit-image~=0.25",
+    "ddddocr==1.6.1",
     "thefuzz~=0.22",
     # Adb Control
     "adbutils~=2.8",
@@ -38,13 +37,45 @@ dependencies = [
     # A module that was compiled using NumPy 1.x cannot be run in NumPy 2.0.0 as it may crash.
     "numpy<2.0",
     # For DMM version
-    # TODO: move these dependencies to optional-dependencies
     "pywin32==310; sys_platform == 'win32'",
     "ahk~=1.8.3; sys_platform == 'win32'",
-    "win11toast~=0.35; sys_platform == 'win32'",  # For Windows Toast Notification
+    "win11toast~=0.35; sys_platform == 'win32'", # For Windows Toast Notification
     "keyboard~=0.13.5",
-    "kotonebot[android]==0.5.0",
-    "kotonebot[windows]==0.5.0; sys_platform == 'win32'",
+    "kotonebot[android]==0.12.0",
+    "kotonebot[windows]==0.12.0; sys_platform == 'win32'",
+    "sentry-sdk>=2.52.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    # Packaging
+    "pyinstaller==6.11.1",
+    "twine==6.1.0",
+    "build==1.2.2.post1",
+    # Profiling
+    "snakeviz==2.2.2",
+    # Make resources
+    "jinja2==3.1.5",
+    "dataclasses-json==0.6.7",
+    # Extract game data
+    "PyYAML==6.0.2",
+    "tqdm==4.67.1",
+    "pypika==0.48.9",
+    "UnityPy==1.21.3",
+    "rich~=13.9",
+    # Coverage Test
+    "coverage",
+
+    # Manifest: request, decrypt, parse, export
+    "requests==2.32.5",
+    "cryptography==42.0.0",
+    "protobuf==6.33.1",
+    "pandas==2.3.3",
+    # Object/Media plugins for .unity3d, image, audio
+    "pillow==11.3.0",
+    "pydub==0.25.1",
+    # Additional
+    "flask==3.1.2",
 ]
 
 
@@ -59,3 +90,7 @@ version = {file = "./version"}
 
 [tool.basedpyright]
 typeCheckingMode = "basic"
+
+[tool.kotonebot.editor]
+prefabs_module = "kaa.game_ui.elements"
+resource_path = "kotonebot-resource/sprites/jp"
