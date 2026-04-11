@@ -1,6 +1,7 @@
 import os
 import time
 import logging
+from asyncio import CancelledError
 
 logger = logging.getLogger(__name__)
 PATH = './conf/telemetry'
@@ -82,7 +83,7 @@ def setup():
         send_client_reports=False,
         auto_session_tracking=False,
         # User-initiated termination should not be reported as crash.
-        ignore_errors=[KeyboardInterrupt],
+        ignore_errors=[KeyboardInterrupt, CancelledError],
     )
     logger.info('Telemetry initialized.')
 
