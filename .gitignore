@@ -19,6 +19,7 @@ messages/
 logs/
 traces/
 cache/
+submodules/gakumasu-diff/
 ##########################
 
 # Byte-compiled / optimized / DLL files

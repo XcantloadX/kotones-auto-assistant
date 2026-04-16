@@ -19,6 +19,20 @@ default:
 fetch-submodule:
     git submodule update --init --remote --recursive --progress --depth 1
 
+fetch-gakumasu-diff:
+    #!{{shebang_pwsh}}
+    $repoPath = "./submodules/gakumasu-diff"
+    $repoUrl = "https://github.com/vertesan/gakumasu-diff.git"
+
+    if (-not (Test-Path $repoPath)) {
+        Write-Host "gakumasu-diff not found. Cloning..."
+        New-Item -ItemType Directory -Force -Path ./submodules | Out-Null
+        git clone --depth 1 $repoUrl $repoPath
+    } else {
+        Write-Host "Updating gakumasu-diff..."
+        git -C $repoPath pull --ff-only
+    }
+
 resource:
     python tools/make_resources.py
 
@@ -26,7 +40,7 @@ devtool:
     kbot devtools
 
 # Check and create virtual environment
-env: fetch-submodule extract-game-data
+env: fetch-submodule fetch-gakumasu-diff extract-game-data
     #!{{shebang_pwsh}}
     python tools/make_resources.py
 
@@ -44,10 +58,12 @@ generate-metadata: env
 extract-game-data:
     #!{{shebang_pwsh}}
     Write-Host "Extracting game data..."
+
+    $repoPath = "./submodules/gakumasu-diff"
     
     New-Item -ItemType File -Force -Path ./kaa/resources/__init__.py
     
-    $currentHash = git -C ./submodules/gakumasu-diff rev-parse HEAD
+    $currentHash = git -C $repoPath rev-parse HEAD
     $hashFile = "./kaa/resources/game_ver.txt"
     $shouldUpdate = $true
     
@@ -65,7 +81,7 @@ extract-game-data:
 
         $currentHash | Out-File -FilePath $hashFile
         Remove-Item ./kaa/resources/game.db
-        python ./tools/db/extract_schema.py -i ./submodules/gakumasu-diff -d ./kaa/resources/game.db
+        python ./tools/db/extract_schema.py -i $repoPath -d ./kaa/resources/game.db
         python ./tools/db/extract_resources.py
     }
 
@@ -89,7 +105,7 @@ extract-game-data:
     python tools/make_resources.py # Make R.py in development mode
 
 # Upload to PyPI
-publish: package
+publish:
     # if (git diff-index --quiet HEAD) { } else { Write-Host "Error: Commit all changes before publishing"; exit 1 }
     @Write-Host "Uploading to PyPI..."
     twine upload dist/* -u __token__ -p $env:PYPI_TOKEN
