@@ -14,6 +14,7 @@ def filter_rectangles(
     color_ranges: tuple[HsvColor, HsvColor],
     aspect_ratio_threshold: float,
     area_threshold: int,
+    width_threshold: int = 0,
     rect: Rect | None = None
 ) -> list[Rect]:
     """
@@ -39,6 +40,8 @@ def filter_rectangles(
                 y + h <= rect_y2
             ):
                 continue
+        if w < width_threshold:
+            continue
         aspect_ratio = w / h
         area = cv2.contourArea(contour)
         if aspect_ratio >= aspect_ratio_threshold and area >= area_threshold:
