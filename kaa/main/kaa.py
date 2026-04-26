@@ -283,6 +283,19 @@ class Kaa(KotoneBot):
             ]
         )
 
+    def _initialize(self):
+        from kotonebot.backend.context import init_context
+        from kotonebot.core.bot import BotContext
+        
+        logger.info("Initializing Device...")
+        device = self.device_factory()
+        self._ctx = BotContext(bot=self, device=device)
+        
+        init_context(
+            target_device=device,
+            force=True
+        )
+
     def set_log_level(self, level: int):
         handlers = logging.getLogger().handlers
         if len(handlers) == 0:
