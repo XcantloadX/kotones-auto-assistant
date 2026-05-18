@@ -230,7 +230,6 @@ class SettingsView:
                 ('adb - 模拟器通用', 'adb'),
                 ('uiautomator2 - 模拟器通用', 'uiautomator2'),
                 ('windows - DMM 版前台挂机', 'windows'),
-                ('remote_windows（调试专用勿选）', 'remote_windows'),
                 ('windows_background - DMM 版后台挂机（实验性）', 'windows_background'),
                 ('nemu_ipc - MuMu 模拟器专属（推荐）', 'nemu_ipc')
             ],
@@ -245,8 +244,8 @@ class SettingsView:
 
             is_mumu = 'mumu' in backend_type
             # 1. 检查 DMM 兼容性
-            if backend_type == 'dmm':
-                if impl != 'windows' and impl != 'remote_windows' and impl != 'windows_background':
+            elif backend_type == 'dmm':
+                if impl != 'windows' and impl != 'windows_background':
                     Alert(
                         title="提示", 
                         value="DMM 版本仅支持 `windows` 或 `windows_background` 截图方式",
@@ -270,10 +269,10 @@ class SettingsView:
                         variant="info",
                         show_close=False
                     )
-                elif impl in ['windows', 'remote_windows', 'windows_background']:
+                elif impl in ['windows', 'windows_background', 'macos']:
                     Alert(
                         title="提示",
-                        value="模拟器不支持 `windows` 截图方式，建议使用 `adb` 或 `nemu_ipc`",
+                        value="模拟器不支持 `windows` 或 `macos` 相关的原生截图方式，建议使用 `adb` 或 `nemu_ipc`",
                         variant="warning",
                         show_close=False
                     )

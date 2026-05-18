@@ -182,9 +182,6 @@ def windows_launch():
     结束状态：游戏窗口出现
     """
     # 检查管理员权限
-    # TODO: 检查截图类型不应该依赖配置文件，而是直接检查 device 实例
-    if config.current.backend.screenshot_impl == 'remote_windows':
-        raise NotImplementedError("Task `start_game` is not supported on remote_windows.")
     try:
         is_admin = os.getuid() == 0 # type: ignore
     except AttributeError:
