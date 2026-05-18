@@ -244,7 +244,7 @@ class SettingsView:
 
             is_mumu = 'mumu' in backend_type
             # 1. 检查 DMM 兼容性
-            elif backend_type == 'dmm':
+            if backend_type == 'dmm':
                 if impl != 'windows' and impl != 'windows_background':
                     Alert(
                         title="提示", 
