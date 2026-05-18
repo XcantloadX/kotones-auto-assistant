@@ -4,6 +4,7 @@
 
 【更新内容】
 1. 移除已废弃截图方法「remote_windows」
+2. 新增对于 macOS PlayCover 的支持，现在 kaa 可以在 MacBook 或 Mac mini 上运行了！
 
 ### v2026.04b1
 

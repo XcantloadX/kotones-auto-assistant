@@ -16,6 +16,7 @@ from kaa.config import Priority, conf
 from .actions.scenes import at_home, goto_home
 from .actions.commu import handle_unread_commu
 from kaa.tasks.common import skip
+from kaa.constants import PLAYCOVER_BUNDLE_ID
 from kaa.errors import ElevationRequiredError, GameUpdateNeededError, DmmGameLaunchError
 
 logger = logging.getLogger(__name__)
@@ -245,6 +246,28 @@ def windows_launch():
             break
         logger.debug('Waiting for game window...')
 
+@action('启动游戏.macOS', screenshot_mode='manual-inherit')
+def macos_launch():
+    """
+    前置条件：-
+    结束状态：-
+    """
+    from kotonebot.client.playcover import Playcover
+    app = Playcover.find(PLAYCOVER_BUNDLE_ID)
+    if app is None:
+        raise ValueError(f'PlayCover app not found: {PLAYCOVER_BUNDLE_ID}')
+
+    if app.running():
+        logger.info('Game already started')
+        if not at_home():
+            logger.info('Not at home, going to home')
+            goto_home()
+        return
+
+    logger.info('Launching game via PlayCover...')
+    app.launch()
+    app.wait_available(timeout=120)
+
 @task('启动游戏', priority=Priority.START_GAME)
 def start_game():
     """
@@ -258,6 +281,8 @@ def start_game():
         android_launch()
     elif device.platform == 'windows':
         windows_launch()
+    elif device.platform == 'macos':
+        macos_launch()
     else:
         raise ValueError(f'Unsupported platform: {device.platform}')
 

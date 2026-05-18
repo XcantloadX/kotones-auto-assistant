@@ -224,6 +224,15 @@ class SettingsView:
                 outputs=[backend_type_state, instance_id_state]
             )
 
+            # --- PlayCover ---
+            with gr.Tab("PlayCover (macOS)", id="playcover") as tab_playcover:
+                gr.Markdown("已选中 PlayCover (macOS)。将自动寻找已安装的 iOS 应用。请确保在下方截图方法中选择 `macos`。")
+            
+            tab_playcover.select(
+                fn=lambda: ("playcover", None), 
+                outputs=[backend_type_state, instance_id_state]
+            )
+
         # 通用设置
         comps['screenshot'] = gr.Dropdown(
             choices=[
@@ -231,7 +240,8 @@ class SettingsView:
                 ('uiautomator2 - 模拟器通用', 'uiautomator2'),
                 ('windows - DMM 版前台挂机', 'windows'),
                 ('windows_background - DMM 版后台挂机（实验性）', 'windows_background'),
-                ('nemu_ipc - MuMu 模拟器专属（推荐）', 'nemu_ipc')
+                ('nemu_ipc - MuMu 模拟器专属（推荐）', 'nemu_ipc'),
+                ('macos - macOS 原生窗口控制', 'macos')
             ],
             value=backend_config.screenshot_impl, label="截图方法", interactive=True
         )
@@ -243,6 +253,16 @@ class SettingsView:
                 return
 
             is_mumu = 'mumu' in backend_type
+            
+            if backend_type == 'playcover':
+                if impl != 'macos':
+                    Alert(
+                        title="提示",
+                        value="PlayCover 仅支持 `macos` 截图方式",
+                        variant="warning",
+                        show_close=False
+                    )
+            
             # 1. 检查 DMM 兼容性
             if backend_type == 'dmm':
                 if impl != 'windows' and impl != 'windows_background':
