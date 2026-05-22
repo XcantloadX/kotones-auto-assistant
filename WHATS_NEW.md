@@ -2,9 +2,12 @@
 ## kaa
 ### v2026.05b1
 
-【更新内容】
-1. 移除已废弃截图方法「remote_windows」
+新增：
+1. 移除已废弃截图方法「remote_windows」。
 2. 新增对于 macOS PlayCover 的支持，现在 kaa 可以在 MacBook 或 Mac mini 上运行了！
+
+修复：
+1. 修复了由于游戏 UI 更新导致的卡在偶像选择界面上。
 
 ### v2026.04b1
 
