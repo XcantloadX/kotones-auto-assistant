@@ -6,7 +6,7 @@ import numpy as np
 from cv2.typing import MatLike
 
 from kaa.config import conf
-from kaa.tasks.produce.cards import CardDetectResult, calc_card_position, SKIP_CARD_BUTTON, skill_card_count
+from kaa.tasks.produce.shared.cards import CardDetectResult, calc_card_position, SKIP_CARD_BUTTON, skill_card_count
 from kaa.util.trace import trace
 from kotonebot import logging, use_screenshot, device
 from kotonebot.primitives import Rect

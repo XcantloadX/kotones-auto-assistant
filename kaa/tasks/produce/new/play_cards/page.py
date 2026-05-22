@@ -11,7 +11,7 @@ from kotonebot import logging, device, Loop, Countdown
 
 from kaa.tasks import R
 from .ui import CardGameObject, locate_cards
-from ..page import eval_once
+from kaa.tasks.produce.new.page import eval_once
 
 logger = logging.getLogger(__name__)
 HUD_HEIGHT = 226

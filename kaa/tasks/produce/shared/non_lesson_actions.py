@@ -10,7 +10,7 @@ from kaa.game_ui import dialog
 
 from kaa.tasks import R
 from kaa.config import conf
-from ..produce.common import ProduceInterrupt
+from kaa.tasks.produce.shared.common import ProduceInterrupt
 from kaa.game_ui.commu_event_buttons import CommuEventButtonUI
 from kotonebot.util import Countdown
 from kotonebot.backend.loop import Loop

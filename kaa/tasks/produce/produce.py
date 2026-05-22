@@ -3,9 +3,9 @@ from typing import Optional, Literal
 from typing_extensions import assert_never
 
 from kaa.kaa_context import produce_solution
-from kaa.tasks.produce.common import resume_produce_pre
-from kaa.tasks.produce.controller import ProduceController
-from kaa.tasks.produce.in_purodyuusu import (
+from kaa.tasks.produce.shared.common import resume_produce_pre
+from kaa.tasks.produce.new.controller import ProduceController
+from kaa.tasks.produce.legacy.in_purodyuusu import (
     hajime_regular, hajime_pro, hajime_master,
     resume_regular_produce, resume_pro_produce, resume_master_produce,
 )

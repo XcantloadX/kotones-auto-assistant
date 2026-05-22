@@ -14,7 +14,7 @@ from kaa.config.const import ProduceAction
 from kaa.tasks.actions.loading import loading
 from kaa.game_ui import CommuEventButtonUI, dialog, badge
 from .consts import Drink, Scene, SceneType, SelectDrinkDialog, PerformanceMetricsVal
-from kaa.tasks.produce.cards import CardDetectResult, detect_recommended_card, skill_card_count
+from kaa.tasks.produce.shared.cards import CardDetectResult, detect_recommended_card, skill_card_count
 if TYPE_CHECKING:
     from .controller import ProduceController
 

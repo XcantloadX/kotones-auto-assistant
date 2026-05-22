@@ -6,19 +6,19 @@ from kaa.kaa_context import conf, produce_solution
 from kaa.game_ui.schedule import Schedule
 from kaa.tasks import R
 from kaa.tasks.common import skip
-from ..actions import loading
+from kaa.tasks.actions import loading
 from kaa.game_ui import WhiteFilter, dialog
-from ..actions.scenes import at_home
-from .cards import do_cards, CardDetectResult
-from ..actions.commu import handle_unread_commu
+from kaa.tasks.actions.scenes import at_home
+from kaa.tasks.produce.shared.cards import do_cards, CardDetectResult
+from kaa.tasks.actions.commu import handle_unread_commu
 from kotonebot.errors import UnrecoverableError
 from kotonebot.util import Countdown, cropped
 from kotonebot.backend.loop import Loop
 from kaa.config import ProduceAction, RecommendCardDetectionMode
-from ..produce.common import until_acquisition_clear, commu_event, ProduceInterrupt
+from kaa.tasks.produce.shared.common import until_acquisition_clear, commu_event, ProduceInterrupt
 from kotonebot import ocr, device, contains, image, regex, action, sleep, wait
 from kotonebot.core import AnyOf
-from ..produce.non_lesson_actions import (
+from kaa.tasks.produce.shared.non_lesson_actions import (
     enter_allowance, allowance_available,
     study_available, enter_study,
     is_rest_available, rest,

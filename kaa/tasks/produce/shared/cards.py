@@ -9,8 +9,8 @@ from kaa.tasks import R
 from kaa.tasks.common import skip
 from kaa.config import conf
 from kaa.game_ui import dialog
-from kaa.tasks.produce.common import acquisition_date_change_dialog
-from kaa.tasks.produce.play_cards.strategy import AbstractBattleStrategy
+from kaa.tasks.produce.shared.common import acquisition_date_change_dialog
+from kaa.tasks.produce.new.play_cards.strategy import AbstractBattleStrategy
 from kotonebot.primitives import RectTuple, Rect
 from kotonebot import action, Interval, Countdown, device, image, sleep, ocr, contains, use_screenshot, color
 from kotonebot.backend.loop import Loop
@@ -148,7 +148,7 @@ def do_cards(
         if battle_strategy is None:
             return False
         try:
-            from kaa.tasks.produce.play_cards.page import LessonBattleContext
+            from kaa.tasks.produce.new.play_cards.page import LessonBattleContext
             ctx = LessonBattleContext()
             handled = battle_strategy.on_action(ctx)
             if handled is False:
@@ -377,7 +377,7 @@ def detect_recommended_card(
         timeout: float = 0,
         interval: float = 1 / 30,
     ):
-    from kaa.tasks.produce.play_cards.bandai_strategy import (
+    from kaa.tasks.produce.new.play_cards.bandai_strategy import (
         detect_recommended_card as _detect_recommended_card,
     )
 
