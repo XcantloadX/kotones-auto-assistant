@@ -88,6 +88,13 @@ class ProduceConfig(ConfigBaseModel):
     * off: 自动禁用
     * ignore: 不改变当前状态
     """
+    produce_engine: Literal['new', 'legacy'] = 'new'
+    """
+    培育引擎。
+
+    * new: 使用新版智能培育（ProduceController）
+    * legacy: 使用旧版培育（hajime_* / resume_*_produce）
+    """
 
 class MissionRewardConfig(ConfigBaseModel):
     enabled: bool = False

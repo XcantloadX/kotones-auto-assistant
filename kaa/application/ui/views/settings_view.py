@@ -474,6 +474,14 @@ class SettingsView:
                 fever = gr.Radio(label="培育前开启活动模式", choices=[("不操作", "ignore"), ("自动启用", "on"), ("自动禁用", "off")], value=opts.produce.enable_fever_month, interactive=True, info="某些活动期间，在选择培育模式/难度页面的切换活动开关")
                 self._bind(fever, ref(of(opts).produce.enable_fever_month))
 
+                engine = gr.Radio(
+                    label="培育引擎",
+                    choices=[("新版·实验性", "new"), ("旧版培育", "legacy")],
+                    value=opts.produce.produce_engine,
+                    interactive=True,
+                )
+                self._bind(engine, ref(of(opts).produce.produce_engine))
+
     def _create_start_game_settings(self):
         with gr.Column():
             gr.Markdown("### 启动游戏设置")
