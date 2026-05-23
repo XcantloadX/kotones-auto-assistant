@@ -88,7 +88,7 @@ class ProduceConfig(ConfigBaseModel):
     * off: 自动禁用
     * ignore: 不改变当前状态
     """
-    produce_engine: Literal['new', 'legacy'] = 'new'
+    produce_engine: Literal['new', 'legacy'] = 'legacy'
     """
     培育引擎。
 
