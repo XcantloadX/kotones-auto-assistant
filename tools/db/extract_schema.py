@@ -266,6 +266,24 @@ def process_file_worker(yaml_file: str) -> tuple[Optional[str], Optional[str], s
     
     # Clean content
     content = content.replace('\t', '\\t').replace('\x0b', ' ')
+
+    # Localization.yaml has known block-scalar indentation issues; auto-fix to keep parsing robust.
+    if os.path.basename(yaml_file) == "Localization.yaml":
+        lines = content.splitlines()
+        fixed_lines = []
+        skip_next = False
+        for index, line in enumerate(lines):
+            if skip_next:
+                skip_next = False
+                continue
+            fixed_lines.append(line)
+            if line.rstrip() == "description: |" and index + 1 < len(lines):
+                next_line = lines[index + 1]
+                if next_line and not next_line.startswith("  "):
+                    # Force indent for the first line of the block scalar.
+                    fixed_lines.append("  " + next_line)
+                    skip_next = True
+        content = "\n".join(fixed_lines)
     
     data = yaml.load(content, Loader=SafeLoader)
     
