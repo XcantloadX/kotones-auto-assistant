@@ -19,20 +19,6 @@ default:
 fetch-submodule:
     git submodule update --init --remote --recursive --progress --depth 1
 
-fetch-gakumasu-diff:
-    #!{{shebang_pwsh}}
-    $repoPath = "./submodules/gakumasu-diff"
-    $repoUrl = "https://github.com/vertesan/gakumasu-diff.git"
-
-    if (-not (Test-Path $repoPath)) {
-        Write-Host "gakumasu-diff not found. Cloning..."
-        New-Item -ItemType Directory -Force -Path ./submodules | Out-Null
-        git clone --depth 1 $repoUrl $repoPath
-    } else {
-        Write-Host "Updating gakumasu-diff..."
-        git -C $repoPath pull --ff-only
-    }
-
 resource:
     python tools/make_resources.py
 
@@ -40,7 +26,7 @@ devtool:
     kbot devtools
 
 # Check and create virtual environment
-env: fetch-submodule fetch-gakumasu-diff extract-game-data
+env: fetch-submodule
     #!{{shebang_pwsh}}
     python tools/make_resources.py
 
@@ -55,42 +41,12 @@ generate-metadata: env
     with open(metadata_path, "w", encoding="utf-8") as f:
         f.write(f'WHATS_NEW = """\n{content}\n"""')
 
-extract-game-data:
-    #!{{shebang_pwsh}}
-    Write-Host "Extracting game data..."
-
-    $repoPath = "./submodules/gakumasu-diff"
-    
-    New-Item -ItemType File -Force -Path ./kaa/resources/__init__.py
-    
-    $currentHash = git -C $repoPath rev-parse HEAD
-    $hashFile = "./kaa/resources/game_ver.txt"
-    $shouldUpdate = $true
-    
-    if (Test-Path $hashFile) {
-        $savedHash = Get-Content $hashFile
-
-        if ($currentHash -eq $savedHash) {
-            Write-Host "Game data is up to date. Skipping extraction."
-            $shouldUpdate = $false
-        }
-    }
-    
-    if ($shouldUpdate) {
-        Write-Host "Game data needs update. Extracting..."
-
-        $currentHash | Out-File -FilePath $hashFile
-        Remove-Item ./kaa/resources/game.db
-        python ./tools/db/extract_schema.py -i $repoPath -d ./kaa/resources/game.db
-        python ./tools/db/extract_resources.py
-    }
-
 @package-resource:
     Write-Host "Packaging kotonebot-resource..."
     @python -m build -s kotonebot-resource
 
 # Package KAA
-@package: env package-resource generate-metadata extract-game-data
+@package: env package-resource generate-metadata
     python tools/make_resources.py -p # Make R.py in production mode
 
     Write-Host "Removing old build files..."

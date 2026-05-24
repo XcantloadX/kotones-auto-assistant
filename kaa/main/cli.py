@@ -12,8 +12,6 @@ except Exception as e:
     print(f'Failed to set up telemetry: {e}')
 
 from .kaa import Kaa
-from ..util.paths import get_ahk_path
-from kotonebot.client.implements.windows import WindowsImplConfig
 from kotonebot.backend.context import tasks_from_id, task_registry
 
 version = importlib.metadata.version('ksaa')
@@ -110,6 +108,23 @@ def main():
         from kaa.util.logging import setup, add_file_logger
         setup()
         add_file_logger(log_filename)
+
+        from kaa.game_data.updater import GameDataUpdater
+        from kaa.game_data.update_ui import GameDataUpdateUI
+
+        _updater = GameDataUpdater()
+        _update_ui = GameDataUpdateUI()
+        _progress_cb = lambda msg: logging.getLogger(__name__).info('[game_data] %s', msg)  # noqa: E731
+
+        def _run_update():
+            _updater.check_and_update(
+                progress_cb=_progress_cb,
+                file_progress_cb=_update_ui.on_file_progress,
+            )
+            _update_ui.mark_complete()
+
+        _run_update()
+
         from .gr import main as gr_main
         from ..application.ui.facade import KaaFacade
         facade = KaaFacade(kaa())

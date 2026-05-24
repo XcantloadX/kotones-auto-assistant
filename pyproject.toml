@@ -29,6 +29,9 @@ dependencies = [
     "pydantic~=2.10",
     # Resource
     "ksaa-res==0.2.0",
+    # Game data download
+    "requests~=2.32",
+    "zstandard~=0.25",
     # Other
     "typing-extensions~=4.12",
     "python-dotenv~=1.0.1",
