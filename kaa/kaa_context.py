@@ -37,3 +37,11 @@ def produce_solution() -> 'ProduceSolution':
         raise NoProduceSolutionSelectedError()
     # TODO: 这里需要缓存，不能每次都从磁盘读取
     return ProduceSolutionManager().read(id)
+
+def save_config():
+    """保存当前配置到磁盘"""
+    from kaa.config.context import ContextConfig
+    config: ContextConfig = vars.get('config', None)
+    if config is None:
+        raise RuntimeError("Config not loaded.")
+    config.save()

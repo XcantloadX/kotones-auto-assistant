@@ -8,7 +8,7 @@ import subprocess
 
 from kotonebot.util import Countdown
 from kotonebot.backend.loop import Loop
-from kotonebot import task, action, sleep, device, ocr, config
+from kotonebot import task, action, sleep, device, ocr
 
 from kaa.tasks import R
 from .actions.loading import loading
@@ -16,6 +16,7 @@ from kaa.config import Priority, conf
 from .actions.scenes import at_home, goto_home
 from .actions.commu import handle_unread_commu
 from kaa.tasks.common import skip
+from ..kaa_context import save_config
 from kaa.constants import PLAYCOVER_BUNDLE_ID
 from kaa.errors import ElevationRequiredError, GameUpdateNeededError, DmmGameLaunchError
 
@@ -48,7 +49,7 @@ def locate_game_path() -> str | None:
     if game_path and not conf().start_game.dmm_game_path:
         logger.info('Saving game path to config...')
         conf().start_game.dmm_game_path = game_path
-        config.save()
+        save_config()
     return game_path
 
 def start_windows_bypass():
