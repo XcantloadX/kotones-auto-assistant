@@ -19,8 +19,8 @@ class UpdateView:
             
             with gr.Accordion("更新日志", open=False):
                 try:
-                    from kaa.metadata import WHATS_NEW
-                    gr.Markdown(WHATS_NEW)
+                    from kaa.metadata import CHANGELOG
+                    gr.Markdown(CHANGELOG)
                 except ImportError:
                     gr.Markdown("更新日志不可用")
             
