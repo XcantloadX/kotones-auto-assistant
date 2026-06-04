@@ -12,10 +12,7 @@ except Exception as e:
     print(f'Failed to set up telemetry: {e}')
 
 from .kaa import Kaa
-from ..util.paths import get_ahk_path
-from kotonebot.client.implements.windows import WindowsImplConfig
 from kotonebot.backend.context import tasks_from_id, task_registry
-from kotonebot.client.implements.remote_windows import RemoteWindowsServer
 
 version = importlib.metadata.version('ksaa')
 
@@ -97,20 +94,6 @@ def task_list() -> int:
         print(f'  * {task.id}: {task.name}\n    {task.description.strip()}')
     return 0
 
-def remote_server() -> int:
-    args = psr.parse_args()
-    try:
-        ahk_path = get_ahk_path()
-        server = RemoteWindowsServer(WindowsImplConfig(window_title='gakumas', ahk_exe_path=ahk_path), args.host, args.port)
-        server.start()
-        return 0
-    except KeyboardInterrupt:
-        print("Server stopped by user")
-        return 0
-    except Exception as e:
-        print(f'Error starting remote server: {e}')
-        return -1
-
 def main():
     args = psr.parse_args()
     if args.subcommands == 'task':
@@ -120,13 +103,28 @@ def main():
             sys.exit(task_list())
         else:
             raise ValueError(f'Unknown task command: {args.task_command}')
-    elif args.subcommands == 'remote-server':
-        sys.exit(remote_server())
     elif args.subcommands is None:
         log_filename = datetime.now().strftime('logs/%y-%m-%d-%H-%M-%S.log')
         from kaa.util.logging import setup, add_file_logger
         setup()
         add_file_logger(log_filename)
+
+        from kaa.game_data.updater import GameDataUpdater
+        from kaa.game_data.update_ui import GameDataUpdateUI
+
+        _updater = GameDataUpdater()
+        _update_ui = GameDataUpdateUI()
+        _progress_cb = lambda msg: logging.getLogger(__name__).info('[game_data] %s', msg)  # noqa: E731
+
+        def _run_update():
+            _updater.check_and_update(
+                progress_cb=_progress_cb,
+                file_progress_cb=_update_ui.on_file_progress,
+            )
+            _update_ui.mark_complete()
+
+        _run_update()
+
         from .gr import main as gr_main
         from ..application.ui.facade import KaaFacade
         facade = KaaFacade(kaa())

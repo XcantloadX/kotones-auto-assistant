@@ -57,4 +57,4 @@ class DmmHost(HostProtocol[DmmRecipes]):
 
     @staticmethod
     def recipes() -> 'list[DmmRecipes]':
-        return ['windows', 'remote_windows']
+        return ['windows']

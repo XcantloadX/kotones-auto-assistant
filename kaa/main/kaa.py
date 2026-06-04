@@ -20,6 +20,7 @@ from kotonebot.primitives.geometry import Size
 from kotonebot.ui import user
 from kotonebot.util import is_windows
 from kaa.errors import WindowsOnlyError
+from kaa.constants import PLAYCOVER_BUNDLE_ID
 from ..util.paths import get_ahk_path
 from ..kaa_context import _set_instance
 from kaa.tasks import POST_TASK_REGISTRY, TASK_FUNCTIONS
@@ -95,12 +96,12 @@ class KaaDeviceFactory:
         conf().device.default_scaler_factory = lambda: PortraitGameScaler()
         conf().device.default_logic_resolution = Size(720, 1280)
 
-    def _get_backend_instance(self, config: UserConfig) -> Instance:
+    def _get_backend_instance(self, config: UserConfig) -> Any:
         """
-        根据配置获取或创建 Instance。
+        根据配置获取或创建 Instance 或 NativeApp。
 
         :param config: 用户配置对象
-        :return: 后端实例
+        :return: 后端实例或原生应用实例
         """
         from kotonebot.client.host import create_custom
         logger.info(f'Querying for backend: {config.backend.type}')
@@ -156,10 +157,20 @@ class KaaDeviceFactory:
             assert DmmHost is not None
             return DmmHost.instance
 
+        elif b_type == 'playcover':
+            from kotonebot.util import is_macos
+            if not is_macos():
+                raise UserFriendlyError('PlayCover 版仅支持 macOS 系统。')
+            from kotonebot.client.playcover import Playcover
+            app = Playcover.find(PLAYCOVER_BUNDLE_ID)
+            if app is None:
+                raise ValueError(f'PlayCover app not found: {PLAYCOVER_BUNDLE_ID}')
+            return app
+
         else:
             raise ValueError(f'Unsupported backend type: {b_type}')
 
-    def _ensure_instance_running(self, instance: Instance, config: UserConfig):
+    def _ensure_instance_running(self, instance: Any, config: UserConfig):
         """
         确保 Instance 正在运行。
 
@@ -172,35 +183,40 @@ class KaaDeviceFactory:
 
         if config.backend.check_emulator and not instance.running():
             logger.info(f'Starting backend "{instance}"...')
-            instance.start()
+            if hasattr(instance, 'launch'):
+                instance.launch()
+            else:
+                instance.start()
             logger.info(f'Waiting for backend "{instance}" to be available...')
             instance.wait_available()
         else:
             logger.info(f'Backend "{instance}" already running or check is disabled.')
 
-    def _create_device_impl(self, instance: Instance, config: UserConfig) -> Device:
+    def _create_device_impl(self, instance: Any, config: UserConfig) -> Device:
         """
         创建设备。
         """
         impl_name = config.backend.screenshot_impl
         
+        if hasattr(instance, "create_device") and impl_name == 'macos':
+            return instance.create_device()
+        
         if DmmInstance and isinstance(instance, DmmInstance):
             d = WindowsDevice()
             if impl_name == 'windows':
                 from kotonebot.client.implements.windows import WindowsImpl
+                from kotonebot.interop.window import WindowQuery
                 ahk_path = get_ahk_path()
-                impl = WindowsImpl(device=d, window_title='gakumas', ahk_exe_path=ahk_path)
-                d.setup(screenshot=impl, touch=impl)
-            elif impl_name == 'remote_windows':
-                from kotonebot.client.implements.remote_windows import RemoteWindowsImpl
-                impl = RemoteWindowsImpl(device=d, host=config.backend.adb_ip, port=config.backend.adb_port)
+                impl = WindowsImpl(device=d, window_query=WindowQuery(title_contains='gakumas'), ahk_exe_path=ahk_path)
                 d.setup(screenshot=impl, touch=impl)
             elif impl_name == 'windows_background':
                 from kotonebot.client.implements.windows.send_message import SendMessageImpl
                 from kotonebot.client.implements.windows.print_window import PrintWindowImpl
+                from kotonebot.interop.window import WindowQuery
+                query = WindowQuery(title_contains='gakumas')
                 d.setup(
-                    screenshot=PrintWindowImpl(d, 'gakumas'),
-                    touch=SendMessageImpl(d, 'gakumas', wait_cursor_idle=config.backend.cursor_wait_speed),
+                    screenshot=PrintWindowImpl(d, query),
+                    touch=SendMessageImpl(d, query, wait_cursor_idle=config.backend.cursor_wait_speed),
                 )
             else:
                 raise ValueError(f"Impl of '{impl_name}' is not supported on DMM.")
@@ -281,6 +297,19 @@ class Kaa(KotoneBot):
                 sentry_middleware,
                 windows_gui_error_middleware
             ]
+        )
+
+    def _initialize(self):
+        from kotonebot.backend.context import init_context
+        from kotonebot.core.bot import BotContext
+        
+        logger.info("Initializing Device...")
+        device = self.device_factory()
+        self._ctx = BotContext(bot=self, device=device)
+        
+        init_context(
+            target_device=device,
+            force=True
         )
 
     def set_log_level(self, level: int):

@@ -39,6 +39,7 @@ DEFAULT_COLORS = [
     (web2cv(BLUE_LOW), web2cv(BLUE_HIGH)),
     ORANGE_RANGE
 ]
+WIDTH_THRESHOLD = 600
 
 # 参考图片：
 # [screenshots/produce/action_study3.png]
@@ -66,7 +67,7 @@ class CommuEventButtonUI:
     def selected(self, description: bool = True, title: bool = False) -> EventButton | None:
         img = device.screenshot()
         for i, color_range in enumerate(self.color_ranges):
-            rects = filter_rectangles(img, color_range, 7, 500, rect=self.rect)
+            rects = filter_rectangles(img, color_range, 7, 500, width_threshold=WIDTH_THRESHOLD, rect=self.rect)
             if len(rects) > 0:
                 desc_text = self.description() if description else ''
                 title_text = ocr.ocr(rect=rects[0]).squash().text if title else ''
@@ -85,7 +86,7 @@ class CommuEventButtonUI:
         :param title: 是否识别标题。
         """
         img = device.screenshot()
-        rects = filter_rectangles(img, (WHITE_LOW, WHITE_HIGH), 7, 500, rect=self.rect)
+        rects = filter_rectangles(img, (WHITE_LOW, WHITE_HIGH), 7, 500, width_threshold=WIDTH_THRESHOLD, rect=self.rect)
         if not rects:
             return []
         selected = self.selected()
@@ -119,7 +120,7 @@ class CommuEventButtonUI:
         结束状态：-
         """
         img = device.screenshot()
-        rects = filter_rectangles(img, (WHITE_LOW, WHITE_HIGH), 3, 1000, rect=self.rect)
+        rects = filter_rectangles(img, (WHITE_LOW, WHITE_HIGH), 3, 1000, width_threshold=WIDTH_THRESHOLD, rect=self.rect)
         rects.sort(key=lambda x: x.y1)
         # TODO: 这里 rects 可能为空，需要加入判断重试
         ocr_result = ocr.raw().ocr(img, rect=rects[0])

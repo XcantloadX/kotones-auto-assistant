@@ -3,8 +3,12 @@ from typing import Optional, Literal
 from typing_extensions import assert_never
 
 from kaa.kaa_context import produce_solution
-from kaa.tasks.produce.common import resume_produce_pre
-from kaa.tasks.produce.controller import ProduceController
+from kaa.tasks.produce.shared.common import resume_produce_pre
+from kaa.tasks.produce.new.controller import ProduceController
+from kaa.tasks.produce.legacy.in_purodyuusu import (
+    hajime_regular, hajime_pro, hajime_master,
+    resume_regular_produce, resume_pro_produce, resume_master_produce,
+)
 from kotonebot.ui import user
 from kaa.tasks import R
 from kaa.config import conf
@@ -117,6 +121,31 @@ def select_set(index: int):
     
     logger.error(f'Failed to navigate to set #{index} after {max_retries} retries.')
     
+@action('继续当前培育.继续培育', screenshot_mode='manual-inherit')
+def resume_produce_lst(
+    mode: Literal['regular', 'pro', 'master'],
+    current_week: int
+):
+    """
+    继续当前培育.继续培育\n
+    该函数正常情况不应该被单独调用。
+
+    前置条件：培育中的任意一个页面\n
+    结束状态：游戏首页
+
+    :param mode: 培育模式
+    :param current_week: 培育的周数
+    """
+    match mode:
+        case 'regular':
+            resume_regular_produce(current_week)
+        case 'pro':
+            resume_pro_produce(current_week)
+        case 'master':
+            resume_master_produce(current_week)
+        case _:
+            assert_never(mode)
+
 @action('继续当前培育', screenshot_mode='manual-inherit')
 def resume_produce():
     """
@@ -128,7 +157,10 @@ def resume_produce():
 
     mode, current_week = resume_produce_pre()
 
-    ProduceController(mode=mode).run()
+    if conf().produce.produce_engine == 'legacy':
+        resume_produce_lst(mode, current_week)
+    else:
+        ProduceController(mode=mode).run()
 
 @action('执行培育', screenshot_mode='manual-inherit')
 def do_produce(
@@ -157,6 +189,12 @@ def do_produce(
     device.screenshot()
     # 点击培育按钮，然后判断是新开还是再开培育
     for _ in Loop(interval=0.6):
+        # 跨端破坏培育提示
+        if R.Produce.BreakProduceDialog.Title.exists():
+            if R.Produce.BreakProduceDialog.ButtonConfirm.try_click():
+                logger.info('Confirmed break produce dialog.')
+                continue
+            
         if R.Produce.LogoHajime.exists(): # Hajime培育界面
             # 新开
             break
@@ -338,8 +376,19 @@ def do_produce(
             pass
         if R.Common.ButtonConfirmNoIcon.try_click():
             pass
-    c = ProduceController(mode=mode)
-    c.run()
+    if conf().produce.produce_engine == 'legacy':
+        match mode:
+            case 'regular':
+                hajime_regular()
+            case 'pro':
+                hajime_pro()
+            case 'master':
+                hajime_master()
+            case _:
+                assert_never(mode)
+    else:
+        c = ProduceController(mode=mode)
+        c.run()
     return True
 
 @task('培育')

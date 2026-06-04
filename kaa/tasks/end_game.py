@@ -8,6 +8,7 @@ import threading
 from kotonebot.ui import user
 from ..kaa_context import instance, raw_conf
 from kaa.config import Priority, conf
+from kaa.constants import PLAYCOVER_BUNDLE_ID
 from kotonebot import task, action, device
 
 logger = logging.getLogger(__name__)
@@ -35,6 +36,24 @@ def windows_close():
     os.system('taskkill /f /im gakumas.exe')
     logger.info("Game closed successfully")
 
+@action('关闭游戏.macOS', screenshot_mode='manual-inherit')
+def macos_close():
+    """
+    前置条件：-
+    结束状态：游戏关闭
+    """
+    from kotonebot.client.playcover import Playcover
+    logger.info('Closing game')
+    app = Playcover.find(PLAYCOVER_BUNDLE_ID)
+    if app is None:
+        logger.warning('PlayCover app not found: %s', PLAYCOVER_BUNDLE_ID)
+        return
+    if not app.running():
+        logger.info('Game is not running')
+        return
+    app.terminate()
+    logger.info('Game closed successfully')
+
 @task('关闭游戏', priority=Priority.END_GAME, run_at='post')
 def end_game():
     """
@@ -46,6 +65,8 @@ def end_game():
             android_close()
         elif device.platform == 'windows':
             windows_close()
+        elif device.platform == 'macos':
+            macos_close()
         else:
             raise ValueError(f'Unsupported platform: {device.platform}')
 

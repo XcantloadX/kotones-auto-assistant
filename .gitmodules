@@ -1,6 +1,3 @@
-[submodule "submodules/gakumasu-diff"]
-	path = submodules/gakumasu-diff
-	url = https://github.com/vertesan/gakumasu-diff.git
 [submodule "submodules/GkmasObjectManager"]
 	path = submodules/GkmasObjectManager
 	url = https://github.com/AllenHeartcore/GkmasObjectManager.git

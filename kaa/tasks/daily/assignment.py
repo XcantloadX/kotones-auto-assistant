@@ -5,12 +5,13 @@ from datetime import timedelta
 
 import cv2
 from cv2.typing import MatLike
+from kotonebot.core import AnyOf
+from kotonebot.backend import image as raw_image
+from kotonebot import task, device, action, ocr, contains, color, sleep, regex
 
 from kaa.tasks import R
 from kaa.config import conf
 from ..actions.scenes import at_home, goto_home
-from kotonebot import task, device, image, action, ocr, contains, cropped, color, sleep, regex
-from kotonebot.core import AnyOf
 
 logger = logging.getLogger(__name__)
 
@@ -29,20 +30,6 @@ def similar(
     image2 = cv2.cvtColor(image2, cv2.COLOR_BGR2GRAY)
     result = structural_similarity(image1, image2, multichannel=True)
     return result >= threshold
-
-
-@action('领取工作奖励')
-def handle_claim_assignment():
-    """
-    领取工作奖励
-
-    前置条件：点击了工作按钮，已进入领取页面 \n
-    结束状态：分配工作页面
-    """
-    # 领取奖励 [screenshots/assignment/acquire.png]
-    if R.Common.ButtonCompletion.try_click():
-        return True
-    return False
 
 @action('重新分配工作')
 def assign(type: Literal['mini', 'online']) -> bool:
@@ -88,21 +75,23 @@ def assign(type: Literal['mini', 'online']) -> bool:
             logger.warning('No kouchou icons found. Trying again...')
             continue
         results.sort(key=lambda r: r.rect.x1)
-        results.pop(0) # 第一个是说明文字里的图标
+
         # 尝试点击所有目标
         for target in results:
             logger.debug(f'Clicking idol #{target}...')
-            with cropped(device, y2=0.3):
-                img1 = device.screenshot()
-                # 选择偶像并判断是否选择成功
-                device.click(target)
-                sleep(1)
-                img2 = device.screenshot()
-                if similar(img1, img2, 0.97):
-                    logger.info(f'Idol #{target} already assigned. Trying next.')
-                    continue
-                selected = True
-                break
+            img1 = device.screenshot()
+            x, y, w, h = R.Daily.Assignment.BoxCharName.rect
+            img1 = img1[y:y+h, x:x+w]
+            # 选择偶像并判断是否选择成功
+            device.click(target)
+            sleep(1)
+            img2 = device.screenshot()
+            img2 = img2[y:y+h, x:x+w]
+            if raw_image.find(img1, img2, threshold=0.95):
+                logger.info(f'Idol #{target} already assigned. Trying next.')
+                continue
+            selected = True
+            break
         if not selected:
             attempts += 1
             if attempts >= max_attempts:
@@ -119,11 +108,14 @@ def assign(type: Literal['mini', 'online']) -> bool:
     # 等待页面加载
     R.Common.ButtonConfirmNoIcon.wait()
     # 选择时间 [screenshots/assignment/assign_mini_live2.png]
-    if ocr.find(contains(f'{target_duration}時間')):
-        logger.info(f'{target_duration}時間 selected.')
-        device.click()
+    if target_duration == 4:
+        R.Daily.Assignment.Button4Hours.wait().click()
+    elif target_duration == 8:
+        R.Daily.Assignment.Button8Hours.wait().click()
+    elif target_duration == 12:
+        R.Daily.Assignment.Button12Hours.wait().click()
     else:
-        logger.warning(f'{target_duration}時間 not found. Using default duration.')
+        raise ValueError(f'Invalid target_duration: {target_duration}')
     sleep(0.5)
     while not at_assignment():
         # 点击 决定する
@@ -190,8 +182,10 @@ def assignment():
     btn_assignment.click()
     # 等待加载、领取奖励
     while not at_assignment():
-        if completed and handle_claim_assignment():
-            logger.info('Assignment acquired.')
+        if completed:
+            # 领取奖励 [screenshots/assignment/acquire.png]
+            if R.Common.ButtonCompletion.try_click():
+                logger.info('Assignment acquired.')
     # 重新分配
     if conf().assignment.mini_live_reassign_enabled:
         if R.Daily.IconAssignMiniLive.exists():

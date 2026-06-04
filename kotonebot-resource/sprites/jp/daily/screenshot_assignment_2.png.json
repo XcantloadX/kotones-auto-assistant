@@ -1,0 +1,40 @@
+{
+  "version": 3,
+  "definitions": {
+    "0479c6ef-ad81-43ea-bd0a-a5f152d20cdd": {
+      "type": "prefab",
+      "prefab_id": "TemplateMatchPrefab",
+      "name": "Daily.IconAssignKouchou",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 34.88270705898333,
+          "y1": 642.2368626004385,
+          "x2": 68.76801378790958,
+          "y2": 681.0170222339977
+        },
+        "region": {
+          "kind": "rect",
+          "x1": 9.057423586065227,
+          "y1": 692.0226500367144,
+          "x2": 713.043701615843,
+          "y2": 1023.1439388037559
+        }
+      }
+    },
+    "9dbe49b6-c082-4f69-b8ce-6d0964a0c9db": {
+      "type": "hint-box",
+      "props": {
+        "rect": {
+          "kind": "rect",
+          "x1": 311.7692923390396,
+          "y1": 163.0882905821931,
+          "x2": 707.648804362502,
+          "y2": 241.9054801221705
+        }
+      },
+      "name": "Daily.Assignment.BoxCharName",
+      "displayName": "选择角色页面 名称"
+    }
+  }
+}

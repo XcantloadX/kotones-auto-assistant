@@ -8,7 +8,7 @@ import subprocess
 
 from kotonebot.util import Countdown
 from kotonebot.backend.loop import Loop
-from kotonebot import task, action, sleep, device, ocr, config
+from kotonebot import task, action, sleep, device, ocr
 
 from kaa.tasks import R
 from .actions.loading import loading
@@ -16,6 +16,8 @@ from kaa.config import Priority, conf
 from .actions.scenes import at_home, goto_home
 from .actions.commu import handle_unread_commu
 from kaa.tasks.common import skip
+from ..kaa_context import save_config
+from kaa.constants import PLAYCOVER_BUNDLE_ID
 from kaa.errors import ElevationRequiredError, GameUpdateNeededError, DmmGameLaunchError
 
 logger = logging.getLogger(__name__)
@@ -47,7 +49,7 @@ def locate_game_path() -> str | None:
     if game_path and not conf().start_game.dmm_game_path:
         logger.info('Saving game path to config...')
         conf().start_game.dmm_game_path = game_path
-        config.save()
+        save_config()
     return game_path
 
 def start_windows_bypass():
@@ -182,9 +184,6 @@ def windows_launch():
     结束状态：游戏窗口出现
     """
     # 检查管理员权限
-    # TODO: 检查截图类型不应该依赖配置文件，而是直接检查 device 实例
-    if config.current.backend.screenshot_impl == 'remote_windows':
-        raise NotImplementedError("Task `start_game` is not supported on remote_windows.")
     try:
         is_admin = os.getuid() == 0 # type: ignore
     except AttributeError:
@@ -248,6 +247,28 @@ def windows_launch():
             break
         logger.debug('Waiting for game window...')
 
+@action('启动游戏.macOS', screenshot_mode='manual-inherit')
+def macos_launch():
+    """
+    前置条件：-
+    结束状态：-
+    """
+    from kotonebot.client.playcover import Playcover
+    app = Playcover.find(PLAYCOVER_BUNDLE_ID)
+    if app is None:
+        raise ValueError(f'PlayCover app not found: {PLAYCOVER_BUNDLE_ID}')
+
+    if app.running():
+        logger.info('Game already started')
+        if not at_home():
+            logger.info('Not at home, going to home')
+            goto_home()
+        return
+
+    logger.info('Launching game via PlayCover...')
+    app.launch()
+    app.wait_available(timeout=120)
+
 @task('启动游戏', priority=Priority.START_GAME)
 def start_game():
     """
@@ -261,6 +282,8 @@ def start_game():
         android_launch()
     elif device.platform == 'windows':
         windows_launch()
+    elif device.platform == 'macos':
+        macos_launch()
     else:
         raise ValueError(f'Unsupported platform: {device.platform}')
 

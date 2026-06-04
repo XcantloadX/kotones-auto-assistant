@@ -5,15 +5,17 @@ import threading
 from contextlib import suppress
 from typing import Callable, Optional
 
-with suppress(ImportError):
-    keyboard = None
-    win32api = None
-    win32gui = None
-    win32con = None
-    import keyboard # type: ignore
-    import win32api # type: ignore
-    import win32gui # type: ignore
-    import win32con # type: ignore
+keyboard = None
+win32api = None
+win32gui = None
+win32con = None
+
+if sys.platform.startswith('win'):
+    with suppress(ImportError):
+        import keyboard # type: ignore
+        import win32api # type: ignore
+        import win32gui # type: ignore
+        import win32con # type: ignore
 
 from kotonebot.backend.context.context import vars
 from kaa.config.schema import IdleModeConfig

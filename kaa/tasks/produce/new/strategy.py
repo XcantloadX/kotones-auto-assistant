@@ -1,17 +1,17 @@
 from typing import TYPE_CHECKING, Literal
 
-from kaa.tasks.produce.in_purodyuusu import produce_end
-from kaa.tasks.produce.play_cards.bandai_strategy import BandaiStrategy
+from kaa.tasks.produce.legacy.in_purodyuusu import produce_end
+from kaa.tasks.produce.new.play_cards.bandai_strategy import BandaiStrategy
 from kotonebot import logging, sleep, device, Loop
 from kotonebot.core import AnyOf
 from kotonebot.errors import UnrecoverableError
 
 from kaa.tasks import R
-from kaa.tasks.produce.cards import CardDetectResult, do_cards
-from kaa.tasks.produce.play_cards.expert_strategy import ExpertSystemStrategy
+from kaa.tasks.produce.shared.cards import CardDetectResult, do_cards
+from kaa.tasks.produce.new.play_cards.expert_strategy import ExpertSystemStrategy
 from kaa.kaa_context import produce_solution
 from kaa.config.const import ProduceAction, RecommendCardDetectionMode
-from kaa.tasks.produce.common import ProduceInterrupt, acquisition_date_change_dialog
+from kaa.tasks.produce.shared.common import ProduceInterrupt, acquisition_date_change_dialog
 from kaa.tasks.actions.commu import handle_unread_commu
 
 if TYPE_CHECKING:

@@ -224,15 +224,24 @@ class SettingsView:
                 outputs=[backend_type_state, instance_id_state]
             )
 
+            # --- PlayCover ---
+            with gr.Tab("PlayCover (macOS)", id="playcover") as tab_playcover:
+                gr.Markdown("已选中 PlayCover (macOS)。将自动寻找已安装的 iOS 应用。请确保在下方截图方法中选择 `macos`。")
+            
+            tab_playcover.select(
+                fn=lambda: ("playcover", None), 
+                outputs=[backend_type_state, instance_id_state]
+            )
+
         # 通用设置
         comps['screenshot'] = gr.Dropdown(
             choices=[
                 ('adb - 模拟器通用', 'adb'),
                 ('uiautomator2 - 模拟器通用', 'uiautomator2'),
                 ('windows - DMM 版前台挂机', 'windows'),
-                ('remote_windows（调试专用勿选）', 'remote_windows'),
                 ('windows_background - DMM 版后台挂机（实验性）', 'windows_background'),
-                ('nemu_ipc - MuMu 模拟器专属（推荐）', 'nemu_ipc')
+                ('nemu_ipc - MuMu 模拟器专属（推荐）', 'nemu_ipc'),
+                ('macos - macOS 原生窗口控制', 'macos')
             ],
             value=backend_config.screenshot_impl, label="截图方法", interactive=True
         )
@@ -244,9 +253,19 @@ class SettingsView:
                 return
 
             is_mumu = 'mumu' in backend_type
+            
+            if backend_type == 'playcover':
+                if impl != 'macos':
+                    Alert(
+                        title="提示",
+                        value="PlayCover 仅支持 `macos` 截图方式",
+                        variant="warning",
+                        show_close=False
+                    )
+            
             # 1. 检查 DMM 兼容性
             if backend_type == 'dmm':
-                if impl != 'windows' and impl != 'remote_windows' and impl != 'windows_background':
+                if impl != 'windows' and impl != 'windows_background':
                     Alert(
                         title="提示", 
                         value="DMM 版本仅支持 `windows` 或 `windows_background` 截图方式",
@@ -270,10 +289,10 @@ class SettingsView:
                         variant="info",
                         show_close=False
                     )
-                elif impl in ['windows', 'remote_windows', 'windows_background']:
+                elif impl in ['windows', 'windows_background', 'macos']:
                     Alert(
                         title="提示",
-                        value="模拟器不支持 `windows` 截图方式，建议使用 `adb` 或 `nemu_ipc`",
+                        value="模拟器不支持 `windows` 或 `macos` 相关的原生截图方式，建议使用 `adb` 或 `nemu_ipc`",
                         variant="warning",
                         show_close=False
                     )
@@ -454,6 +473,14 @@ class SettingsView:
 
                 fever = gr.Radio(label="培育前开启活动模式", choices=[("不操作", "ignore"), ("自动启用", "on"), ("自动禁用", "off")], value=opts.produce.enable_fever_month, interactive=True, info="某些活动期间，在选择培育模式/难度页面的切换活动开关")
                 self._bind(fever, ref(of(opts).produce.enable_fever_month))
+
+                engine = gr.Radio(
+                    label="培育引擎",
+                    choices=[("新版·实验性", "new"), ("旧版培育", "legacy")],
+                    value=opts.produce.produce_engine,
+                    interactive=True,
+                )
+                self._bind(engine, ref(of(opts).produce.produce_engine))
 
     def _create_start_game_settings(self):
         with gr.Column():

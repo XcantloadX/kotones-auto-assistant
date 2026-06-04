@@ -1,7 +1,7 @@
 from typing import Callable
 from typing_extensions import assert_never
 
-from kaa.tasks.produce.common import ProduceInterrupt
+from kaa.tasks.produce.shared.common import ProduceInterrupt
 from kotonebot import logging, Loop, action, sleep, device, Countdown
 
 from .page import (

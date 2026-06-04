@@ -5,8 +5,8 @@ from pydantic import BaseModel, ConfigDict
 
 
 T = TypeVar('T')
-BackendType = Literal['custom', 'mumu12', 'mumu12v5', 'leidian', 'dmm']
-DeviceRecipes = Literal['adb', 'uiautomator2', 'windows', 'remote_windows', 'nemu_ipc', 'windows_background']
+BackendType = Literal['custom', 'mumu12', 'mumu12v5', 'leidian', 'dmm', 'playcover']
+DeviceRecipes = Literal['adb', 'uiautomator2', 'windows', 'nemu_ipc', 'windows_background', 'macos']
 
 class ConfigBaseModel(BaseModel):
     model_config = ConfigDict(use_attribute_docstrings=True)
@@ -31,7 +31,6 @@ class BackendConfig(ConfigBaseModel):
     """
     截图方法。暂时推荐使用【adb】截图方式。
 
-    如果使用 remote_windows，需要在 adb_ip 中填写远程 Windows 的 IP 地址，在 adb_port 中填写远程 Windows 的端口号。
     """
     check_emulator: bool = False
     """
