@@ -89,7 +89,7 @@ if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO, format='[%(asctime)s] [%(levelname)s] [%(name)s] [%(funcName)s] [%(lineno)d] %(message)s')
     logger.setLevel(logging.DEBUG)
     from kotonebot.backend.context import manual_context, inject_context
-    from kotonebot.backend.debug.mock import MockDevice
+    from kotonebot.debug.mock import MockDevice
     manual_context().begin()
     _md = MockDevice()
     _md.load_image(r"D:\a.png")

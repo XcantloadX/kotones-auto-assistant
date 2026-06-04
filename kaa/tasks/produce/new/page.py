@@ -856,7 +856,7 @@ class ProducePage(
         pass
 
 if __name__ == '__main__':
-    from kotonebot.backend.debug.mock import MockDevice
+    from kotonebot.debug.mock import MockDevice
     from kotonebot.backend.context.context import init_context, manual_context
     # d = MockDevice()
     # d.load_image(r'E:\GithubRepos\KotonesAutoAssistant\dump_tmp\1766923332.9383092-EXAM.png')

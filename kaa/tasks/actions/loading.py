@@ -5,7 +5,6 @@ import cv2
 import numpy as np
 
 from kotonebot import device, action, sleep
-from kotonebot.backend.debug import result
 from kaa.tasks import R
 
 logger = getLogger(__name__)
@@ -24,7 +23,6 @@ def loading() -> bool:
     b,g,r = cv2.split(img)
     shiftet_im = b.astype(np.int64) + 1000 * (g.astype(np.int64) + 1) + 1000 * 1000 * (r.astype(np.int64) + 1)
     ret = len(np.unique(shiftet_im)) <= 2
-    result('tasks.actions.loading', [img, original_img], f'result={ret}')
     return ret
 
 @action('等待加载开始')
