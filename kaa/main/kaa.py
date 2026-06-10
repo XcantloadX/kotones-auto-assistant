@@ -282,7 +282,7 @@ class Kaa(KotoneBot):
     琴音小助手 kaa 主类。由其他 GUI/TUI 调用。
     """
     def __init__(self, config_path: str):
-        self.upgrade_msg = upgrade_config()
+        upgrade_config()
         self.version = importlib.metadata.version('ksaa')
         
         logger.info('Version: %s', self.version)

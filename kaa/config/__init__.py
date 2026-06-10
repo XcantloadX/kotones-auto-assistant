@@ -27,8 +27,8 @@ from .const import (
 from ..kaa_context import conf
 
 # 配置升级逻辑
-from .upgrade import upgrade_config
-from .migrations import MIGRATION_REGISTRY, LATEST_VERSION
+from .migrations import LATEST_VERSION, upgrade_config
+from .migration import get_deferred_messages, MigrationMessage
 
 __all__ = [
     # schema 导出
@@ -58,7 +58,7 @@ __all__ = [
     "RecommendCardDetectionMode",
     # upgrade 导出
     "upgrade_config",
-    "migrations",
-    "MIGRATION_REGISTRY",
     "LATEST_VERSION",
+    "get_deferred_messages",
+    "MigrationMessage",
 ]

@@ -1,6 +1,7 @@
 import gradio as gr
 from kaa.application.ui.facade import KaaFacade, ConfigValidationError
 from kaa.application.ui.common import GradioComponents
+from kaa.config.migration import get_deferred_messages
 
 class StatusView:
     def __init__(self, facade: KaaFacade, components: GradioComponents):
@@ -62,9 +63,13 @@ class StatusView:
             capsule_toys_quick, upgrade_support_card_quick
         ]
 
-        if self.facade._kaa.upgrade_msg:
+        migration_messages = get_deferred_messages()
+        if migration_messages:
             gr.Markdown('### 配置升级报告')
-            gr.Markdown(self.facade._kaa.upgrade_msg)
+            for msg in migration_messages:
+                prefix = '⚠️ ' if msg.level == 'warning' else 'ℹ️ '
+                version_info = f'（{msg.old_version} → {msg.new_version}）' if msg.old_version else ''
+                gr.Markdown(f'{prefix}{version_info}{msg.text}')
         gr.Markdown('脚本报错或者卡住？前往"反馈"选项卡可以快速导出报告！')
 
         if self.facade.config_service.get_current_user_config().keep_screenshots:
