@@ -54,6 +54,24 @@ class SettingsView:
             gr.Warning(f"保存失败，已还原: {str(e)}")
             return "*保存失败*"
 
+    def _bind_shared(self, component: GradioInput, ref: Ref, shared_getter):
+        """将组件绑定到 SharedConfig 中的 Ref，保存时写入 _shared.json。"""
+        def on_change(value):
+            old = ref.value
+            if value == old:
+                return
+
+            def update():
+                ref.value = value
+                self.facade.save_shared_configs(shared_getter())
+
+            return self._handle_config_update(update, success_msg=None)
+
+        if isinstance(component, (gr.Textbox, gr.Number)):
+            component.blur(fn=on_change, inputs=component, outputs=self.status_text)
+        else:
+            component.change(fn=on_change, inputs=component, outputs=self.status_text)
+
     def _bind(self, component: GradioInput, ref: Ref):
         """
         将组件绑定到配置 Ref。自动选择最佳触发事件。
@@ -548,22 +566,23 @@ class SettingsView:
     def _create_misc_settings(self):
         with gr.Column():
             gr.Markdown("### 杂项设置")
-            opts = self.facade.config_service.get_options()
-            
-            c1 = gr.Radio(label="检查更新时机", choices=[("从不", "never"), ("启动时", "startup")], value=opts.misc.check_update, interactive=True)
-            self._bind(c1, ref(of(opts).misc.check_update))
-            
-            c2 = gr.Checkbox(label="自动安装更新", value=opts.misc.auto_install_update, interactive=True)
-            self._bind(c2, ref(of(opts).misc.auto_install_update))
-            
-            c3 = gr.Checkbox(label="允许局域网访问 Web 界面", value=opts.misc.expose_to_lan, interactive=True)
-            self._bind(c3, ref(of(opts).misc.expose_to_lan))
-            
-            c4 = gr.Radio(label="更新通道", choices=[("稳定版", "release"), ("测试版", "beta")], value=opts.misc.update_channel, interactive=True)
-            self._bind(c4, ref(of(opts).misc.update_channel))
-            
-            c5 = gr.Radio(label="日志等级", choices=[("普通", "debug"), ("详细", "verbose")], value=opts.misc.log_level, interactive=True)
-            self._bind(c5, ref(of(opts).misc.log_level))
+            shared = self.facade.config_service.get_shared()
+            misc = shared.misc
+
+            c1 = gr.Radio(label="检查更新时机", choices=[("从不", "never"), ("启动时", "startup")], value=misc.check_update, interactive=True)
+            self._bind_shared(c1, ref(of(misc).check_update), lambda: shared)
+
+            c2 = gr.Checkbox(label="自动安装更新", value=misc.auto_install_update, interactive=True)
+            self._bind_shared(c2, ref(of(misc).auto_install_update), lambda: shared)
+
+            c3 = gr.Checkbox(label="允许局域网访问 Web 界面", value=misc.expose_to_lan, interactive=True)
+            self._bind_shared(c3, ref(of(misc).expose_to_lan), lambda: shared)
+
+            c4 = gr.Radio(label="更新通道", choices=[("稳定版", "release"), ("测试版", "beta")], value=misc.update_channel, interactive=True)
+            self._bind_shared(c4, ref(of(misc).update_channel), lambda: shared)
+
+            c5 = gr.Radio(label="日志等级", choices=[("普通", "debug"), ("详细", "verbose")], value=misc.log_level, interactive=True)
+            self._bind_shared(c5, ref(of(misc).log_level), lambda: shared)
 
             gr.Markdown("#### 匿名数据收集")
             gr.Markdown("""目前收集的数据包含：

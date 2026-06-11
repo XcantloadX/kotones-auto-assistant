@@ -1,7 +1,7 @@
 from typing import List, Dict, Tuple, Callable, Any, Literal, Optional
 from dataclasses import dataclass, field
 import gradio as gr
-from kaa.config.schema import BaseConfig
+from kaa.config.schema import KaaConfig
 
 # Type hints
 GradioInput = gr.Textbox | gr.Number | gr.Checkbox | gr.Dropdown | gr.Radio | gr.Slider | gr.State
@@ -69,7 +69,7 @@ ConfigKey = Literal[
     '_selected_backend_index'
     
 ]
-ConfigSetFunction = Callable[[BaseConfig, Dict[ConfigKey, Any]], None]
+ConfigSetFunction = Callable[[KaaConfig, Dict[ConfigKey, Any]], None]
 ConfigBuilderReturnValue = Tuple[ConfigSetFunction, Dict[ConfigKey, GradioInput]]
 
 

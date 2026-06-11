@@ -522,10 +522,101 @@ class ProfileV6ToV7(MigrationStep):
 
 
 # ---------------------------------------------------------------------------
+# V7 → V8：单文件 config.json 拆分为多文件格式
+# ---------------------------------------------------------------------------
+
+class ProfileV7ToV8(MigrationStep):
+    """将旧的单文件 config.json 拆分为多个 {name}.json + _shared.json。
+
+    同时处理两种旧路径：./config.json（根目录）和 conf/config.json。
+    """
+
+    def _find_legacy_path(self, ctx: MigrationContext) -> Path | None:
+        conf_path = ctx.config_dir / 'config.json'
+        if conf_path.exists():
+            return conf_path
+        root_path = ctx.config_dir.parent / 'config.json'
+        if root_path.exists():
+            return root_path
+        return None
+
+    def check_needed(self, ctx: MigrationContext) -> bool:
+        return self._find_legacy_path(ctx) is not None
+
+    def apply(self, ctx: MigrationContext) -> None:
+        path = self._find_legacy_path(ctx)
+        assert path is not None
+        ctx.config_dir.mkdir(parents=True, exist_ok=True)
+        profiles_dir = ctx.config_dir / 'profiles'
+        profiles_dir.mkdir(parents=True, exist_ok=True)
+        data = json.loads(path.read_text(encoding='utf-8'))
+        user_configs: list[dict] = data.get('user_configs', [])
+
+        # 从第一个 user_config 提取 misc → _shared.misc
+        misc_data: dict = {}
+        if user_configs:
+            misc_data = (user_configs[0].get('options') or {}).get('misc', {})
+
+        shared_file = ctx.config_dir / '_shared.json'
+        if not shared_file.exists():
+            shared_data = {
+                'version': 1,
+                'profiles': {'last_used': None, 'open_tabs': []},
+                'misc': misc_data,
+            }
+            shared_file.write_text(
+                json.dumps(shared_data, indent=2, ensure_ascii=False),
+                encoding='utf-8',
+            )
+
+        # 逐个写出 profile 文件到 conf/profiles/
+        name_counts: dict[str, int] = {}
+        for user_cfg in user_configs:
+            raw_name: str = user_cfg.get('name', 'default')
+            safe_name = re.sub(r'[\\/:*?"<>|]', '_', raw_name)
+
+            # 处理同名冲突
+            if safe_name in name_counts:
+                name_counts[safe_name] += 1
+                safe_name = f'{safe_name}_{name_counts[safe_name]}'
+            else:
+                name_counts[safe_name] = 0
+
+            options: dict = dict(user_cfg.get('options') or {})
+            options.pop('misc', None)  # misc 已移入 _shared
+
+            profile_data: dict = {
+                'version': 8,
+                'name': raw_name,
+                'description': user_cfg.get('description', ''),
+                'backend': user_cfg.get('backend', {}),
+                'keep_screenshots': user_cfg.get('keep_screenshots', False),
+                **options,
+            }
+
+            profile_file = profiles_dir / f'{safe_name}.json'
+            if not profile_file.exists():
+                profile_file.write_text(
+                    json.dumps(profile_data, indent=2, ensure_ascii=False),
+                    encoding='utf-8',
+                )
+
+        # 将原文件重命名为 .bak
+        path.rename(ctx.config_dir / 'config.json.bak')
+
+        ctx.messages.append(MigrationMessage(
+            text=f"配置已迁移为多文件格式，共迁移 {len(user_configs)} 个 profile",
+            old_version='v2026.05b1 (v7)',
+            new_version='v2025.06b1 (v8)',
+        ))
+        logger.info("Migrated %d user_config(s) to multi-file format.", len(user_configs))
+
+
+# ---------------------------------------------------------------------------
 # 迁移链
 # ---------------------------------------------------------------------------
 
-LATEST_VERSION: int = 7
+LATEST_VERSION: int = 8
 
 profile_migration_chain = MigrationChain(steps=[
     ProfileV1ToV2(),
@@ -534,6 +625,7 @@ profile_migration_chain = MigrationChain(steps=[
     ProfileV4ToV5(),
     ProfileV5ToV6(),
     ProfileV6ToV7(),
+    ProfileV7ToV8(),
 ])
 
 

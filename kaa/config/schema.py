@@ -1,6 +1,8 @@
 from typing import TypeVar, Literal, Sequence
 from pydantic import BaseModel, ConfigDict
 
+from .base_config import BackendConfig
+
 
 from .const import (
     ConfigEnum,
@@ -222,7 +224,18 @@ class IdleModeConfig(ConfigBaseModel):
     minimize_on_pause: bool = True
     """按键触发暂停时最小化游戏窗口"""
 
-class BaseConfig(ConfigBaseModel):
+
+
+CONFIG_VERSION_CODE = 8
+
+
+class KaaConfig(ConfigBaseModel):
+    version: int = CONFIG_VERSION_CODE
+    name: str = 'default'
+    description: str = ''
+    backend: BackendConfig = BackendConfig()
+    keep_screenshots: bool = False
+
     purchase: PurchaseConfig = PurchaseConfig()
     """商店购买配置"""
 
@@ -261,9 +274,6 @@ class BaseConfig(ConfigBaseModel):
 
     end_game: EndGameConfig = EndGameConfig()
     """关闭游戏配置"""
-
-    misc: MiscConfig = MiscConfig()
-    """杂项配置"""
-
+    
     idle: IdleModeConfig = IdleModeConfig()
     """闲置挂机配置"""

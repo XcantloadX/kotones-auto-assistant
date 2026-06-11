@@ -26,7 +26,8 @@ class KaaFacade:
 
     def __init__(self, kaa_instance: Kaa):
         # Core services
-        self.config_service = ConfigService()
+        from kaa.config import manager as config_manager  # noqa: PLC0415
+        self.config_service = ConfigService(name=config_manager.read_shared().profiles.last_used or 'default')
         self.produce_solution_service = ProduceSolutionService()
         self.task_service = TaskService(kaa_instance)
 
@@ -135,12 +136,14 @@ class KaaFacade:
 
     # --- Configuration ---
 
-    def get_all_configs(self) -> Tuple[Any, Any]:
-        """
-        Gets all configuration objects.
-        :return: A tuple of (root_config, current_user_config).
-        """
-        return self.config_service.get_root_config(), self.config_service.get_current_user_config()
+    def save_shared_configs(self, shared):
+        """Saves shared configuration (_shared.json)."""
+        try:
+            self.config_service.save_shared(shared)
+            return "设置已保存！"
+        except Exception as e:
+            logger.error(f"Failed to save shared config: {e}", exc_info=True)
+            raise RuntimeError("设置保存失败，请重启程序。") from e
 
     def save_configs(self):
         """

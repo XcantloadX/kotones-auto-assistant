@@ -1,5 +1,5 @@
 from .schema import (
-    BaseConfig,
+    KaaConfig,
     PurchaseConfig,
     ActivityFundsConfig,
     PresentsConfig,
@@ -15,7 +15,9 @@ from .schema import (
     EndGameConfig,
     MiscConfig,
     IdleModeConfig,
+    CONFIG_VERSION_CODE,
 )
+from .shared import SharedConfig, SharedMiscConfig, ProfilesConfig
 from .const import (
     ConfigEnum,
     Priority,
@@ -32,7 +34,7 @@ from .migration import get_deferred_messages, MigrationMessage
 
 __all__ = [
     # schema 导出
-    "BaseConfig",
+    "KaaConfig",
     "PurchaseConfig",
     "ActivityFundsConfig",
     "PresentsConfig",
@@ -48,6 +50,11 @@ __all__ = [
     "EndGameConfig",
     "MiscConfig",
     "IdleModeConfig",
+    "CONFIG_VERSION_CODE",
+    # shared 导出
+    "SharedConfig",
+    "SharedMiscConfig",
+    "ProfilesConfig",
     "conf",
     # const 导出
     "ConfigEnum",

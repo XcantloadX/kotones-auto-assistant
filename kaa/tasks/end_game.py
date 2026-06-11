@@ -6,7 +6,7 @@ import _thread
 import threading
 
 from kotonebot.ui import user
-from ..kaa_context import instance, raw_conf
+from ..kaa_context import instance
 from kaa.config import Priority, conf
 from kaa.constants import PLAYCOVER_BUNDLE_ID
 from kotonebot import task, action, device
@@ -78,7 +78,7 @@ def end_game():
 
     # 关闭模拟器
     if conf().end_game.kill_emulator:
-        if not raw_conf().backend.emulator_path:
+        if not conf().backend.emulator_path:
             user.warning('未配置模拟器 exe 文件路径，无法关闭模拟器。跳过此次操作。')
         else:
             instance().stop()

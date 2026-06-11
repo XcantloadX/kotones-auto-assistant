@@ -4,29 +4,44 @@ from kotonebot.backend.context import vars
 from kotonebot.client.host import Instance
 
 if TYPE_CHECKING:
-    from kaa.config.schema import BaseConfig
+    from kaa.config.schema import KaaConfig
     from kaa.config.produce import ProduceSolution
 from kaa.errors import NoProduceSolutionSelectedError
+
+_config_cache: 'KaaConfig | None' = None
+_config_name: 'str | None' = None
+
 
 def _set_instance(new_instance: Instance) -> None:
     vars.set('instance', new_instance)
 
+
 def instance() -> Instance:
     return vars.get('instance')
 
-def conf() -> 'BaseConfig':
-    return raw_conf().options
 
-def raw_conf():
-    """获取当前配置数据"""
-    from kaa.config.context import ContextConfig
+def init(config: 'KaaConfig', name: str) -> None:
+    """在启动任务前由调度器调用，注入当前 profile。"""
+    global _config_cache, _config_name
+    _config_cache = config
+    _config_name = name
 
-    config: ContextConfig | None = vars.get('config', None)
-    if config is None:
-        config = ContextConfig(config_path='config.json')
-        vars.set('config', config)        
-    c = config.current
-    return c
+
+def conf() -> 'KaaConfig':
+    """获取当前 profile 配置。"""
+    if _config_cache is None:
+        raise RuntimeError("Config not initialized. Call init() before running tasks.")
+    return _config_cache
+
+
+def save_config() -> None:
+    """将当前 profile 写回磁盘。"""
+    from kaa.config import manager  # noqa: PLC0415
+
+    if _config_cache is None or _config_name is None:
+        return
+    manager.write(_config_name, _config_cache)
+
 
 def produce_solution() -> 'ProduceSolution':
     """获取当前培育方案"""
@@ -37,11 +52,3 @@ def produce_solution() -> 'ProduceSolution':
         raise NoProduceSolutionSelectedError()
     # TODO: 这里需要缓存，不能每次都从磁盘读取
     return ProduceSolutionManager().read(id)
-
-def save_config():
-    """保存当前配置到磁盘"""
-    from kaa.config.context import ContextConfig
-    config: ContextConfig = vars.get('config', None)
-    if config is None:
-        raise RuntimeError("Config not loaded.")
-    config.save()

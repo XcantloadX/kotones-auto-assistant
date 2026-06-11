@@ -128,7 +128,8 @@ def main():
         from .gr import main as gr_main
         from ..application.ui.facade import KaaFacade
         facade = KaaFacade(kaa())
-        log_level_str = facade.config_service.get_options().misc.log_level
+        from kaa.config import manager as config_manager
+        log_level_str = config_manager.read_shared().misc.log_level
         log_level = logging.DEBUG if log_level_str == 'verbose' else logging.INFO
         kaa().set_log_level(log_level)
         gr_main(facade, psr.parse_args().start_immidiately)

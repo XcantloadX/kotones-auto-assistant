@@ -30,7 +30,8 @@ def main(facade: KaaFacade, start_immediately: bool = False):
         if start_immediately:
             facade.start_all_tasks()
 
-        misc_opts = facade.config_service.get_options().misc
+        from kaa.config import manager as config_manager
+        misc_opts = config_manager.read_shared().misc
         logger.info(f"Launching Gradio UI... LAN exposure: {misc_opts.expose_to_lan}")
         
         blocks.launch(

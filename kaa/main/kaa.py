@@ -13,9 +13,9 @@ from kotonebot.client.host import (
 )
 from kotonebot.client.host.mumu12_host import Mumu12V5Host, MuMu12HostConfig
 from kotonebot.client.host.protocol import Instance, AdbHostConfig
-from kaa.config.base_config import UserConfig
-from kaa.config.manager import load_config
-from kaa.config import BaseConfig, upgrade_config
+from kaa.config.schema import KaaConfig
+from kaa.config import upgrade_config
+from kaa.config import manager as config_manager
 from kotonebot.primitives.geometry import Size
 from kotonebot.ui import user
 from kotonebot.util import is_windows
@@ -72,23 +72,22 @@ def windows_gui_error_middleware(ctx: BotContext, task: Task, next_handler: Next
 
 class KaaDeviceFactory:
     def __init__(self):
-        self.config_path = './config.json'
         self.backend_instance: Instance | None = None
         self.target_screenshot_interval: float | None = None
 
     def __call__(self) -> Device:
-        config = load_config(self.config_path, type=BaseConfig)
-        user_config = config.user_configs[0]
-        self.target_screenshot_interval = user_config.backend.target_screenshot_interval
+        from kaa.kaa_context import conf as get_conf  # noqa: PLC0415
+        config = get_conf()
+        self.target_screenshot_interval = config.backend.target_screenshot_interval
 
         from kotonebot.config.config import conf
         from kotonebot.client.scaler import PortraitGameScaler
         conf().device.default_scaler_factory = lambda: PortraitGameScaler()
         conf().device.default_logic_resolution = Size(720, 1280)
         self._setup_global_device_conf()
-        self.backend_instance = self._get_backend_instance(user_config)
-        self._ensure_instance_running(self.backend_instance, user_config)
-        return self._create_device_impl(self.backend_instance, user_config)
+        self.backend_instance = self._get_backend_instance(config)
+        self._ensure_instance_running(self.backend_instance, config)
+        return self._create_device_impl(self.backend_instance, config)
 
     def _setup_global_device_conf(self):
         from kotonebot.config.config import conf
@@ -96,7 +95,7 @@ class KaaDeviceFactory:
         conf().device.default_scaler_factory = lambda: PortraitGameScaler()
         conf().device.default_logic_resolution = Size(720, 1280)
 
-    def _get_backend_instance(self, config: UserConfig) -> Any:
+    def _get_backend_instance(self, config: KaaConfig) -> Any:
         """
         根据配置获取或创建 Instance 或 NativeApp。
 
@@ -170,7 +169,7 @@ class KaaDeviceFactory:
         else:
             raise ValueError(f'Unsupported backend type: {b_type}')
 
-    def _ensure_instance_running(self, instance: Any, config: UserConfig):
+    def _ensure_instance_running(self, instance: Any, config: KaaConfig):
         """
         确保 Instance 正在运行。
 
@@ -192,7 +191,7 @@ class KaaDeviceFactory:
         else:
             logger.info(f'Backend "{instance}" already running or check is disabled.')
 
-    def _create_device_impl(self, instance: Any, config: UserConfig) -> Device:
+    def _create_device_impl(self, instance: Any, config: KaaConfig) -> Device:
         """
         创建设备。
         """
@@ -224,13 +223,12 @@ class KaaDeviceFactory:
 
         elif isinstance(instance, (CustomInstance, Mumu12Instance, LeidianInstance)):
             if impl_name == 'nemu_ipc' and isinstance(instance, Mumu12Instance):
-                options = cast(BaseConfig, config.options)
                 timeout = 180
                 args = {}
                 if config.backend.mumu_background_mode:
                     args = {
                         "display_id": None,
-                        "target_package_name": options.start_game.game_package_name,
+                        "target_package_name": config.start_game.game_package_name,
                         "app_index": 0
                     }
                 host_conf = MuMu12HostConfig(timeout=timeout, **args)
@@ -253,8 +251,8 @@ def sentry_middleware(ctx: BotContext, task: Task, next_handler: Callable[[], No
         with sentry_sdk.push_scope() as scope:
             scope.set_tag('task_name', task.name)
             try:
-                with open('./config.json', 'r', encoding='utf-8') as f:
-                    scope.set_extra('config', f.read())
+                from kaa.kaa_context import conf as get_conf  # noqa: PLC0415
+                scope.set_extra('config', get_conf().model_dump_json(indent=2))
             except Exception:
                 logger.warning('Failed to attach config to Sentry report.', exc_info=True)
             try:
@@ -283,6 +281,7 @@ class Kaa(KotoneBot):
     """
     def __init__(self, config_path: str):
         upgrade_config()
+        self._init_config()
         self.version = importlib.metadata.version('ksaa')
         
         logger.info('Version: %s', self.version)
@@ -298,6 +297,24 @@ class Kaa(KotoneBot):
                 windows_gui_error_middleware
             ]
         )
+
+    def _init_config(self) -> None:
+        """从磁盘加载当前 profile 并注入运行时上下文。"""
+        from kaa.config import manager  # noqa: PLC0415
+        from kaa.kaa_context import init  # noqa: PLC0415
+
+        shared = manager.read_shared()
+        name = shared.profiles.last_used
+        if not name:
+            profiles = manager.list_profiles()
+            name = profiles[0] if profiles else 'default'
+            manager.create(name, exist='ok')
+            shared.profiles.last_used = name
+            manager.write_shared(shared)
+
+        config = manager.read(name, not_exist='create')
+        init(config, name)
+        logger.info("Loaded profile '%s'", name)
 
     def _initialize(self):
         from kotonebot.backend.context import init_context

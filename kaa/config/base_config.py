@@ -1,18 +1,11 @@
-import uuid
-from typing import Generic, TypeVar, Literal
-
+from typing import Literal
 from pydantic import BaseModel, ConfigDict
 
 
-T = TypeVar('T')
-BackendType = Literal['custom', 'mumu12', 'mumu12v5', 'leidian', 'dmm', 'playcover']
-DeviceRecipes = Literal['adb', 'uiautomator2', 'windows', 'nemu_ipc', 'windows_background', 'macos']
-
-class ConfigBaseModel(BaseModel):
+class BackendConfig(BaseModel):
     model_config = ConfigDict(use_attribute_docstrings=True)
 
-class BackendConfig(ConfigBaseModel):
-    type: BackendType = 'custom'
+    type: Literal['custom', 'mumu12', 'mumu12v5', 'leidian', 'dmm', 'playcover'] = 'custom'
     """后端类型。"""
     instance_id: str | None = None
     """模拟器实例 ID。"""
@@ -23,11 +16,11 @@ class BackendConfig(ConfigBaseModel):
     adb_emulator_name: str | None = None
     """
     adb 连接的模拟器名，用于 自动启动模拟器 功能。
-    
+
     雷电模拟器需要设置正确的模拟器名，否则 自动启动模拟器 功能将无法正常工作。
     其他功能不受影响。
     """
-    screenshot_impl: DeviceRecipes = 'adb'
+    screenshot_impl: Literal['adb', 'uiautomator2', 'nemu_ipc', 'windows', 'windows_background', 'macos'] = 'adb'
     """
     截图方法。暂时推荐使用【adb】截图方式。
 
@@ -59,7 +52,8 @@ class BackendConfig(ConfigBaseModel):
     -1 表示使用内置默认值，0 表示禁用该功能。
     """
 
-class PushConfig(ConfigBaseModel):
+
+class PushConfig(BaseModel):
     """推送配置。"""
 
     wx_pusher_enabled: bool = False
@@ -71,32 +65,3 @@ class PushConfig(ConfigBaseModel):
 
     free_image_host_key: str | None = None
     """FreeImageHost API key。用于在推送通知时显示图片。"""
-
-class UserConfig(ConfigBaseModel, Generic[T]):
-    """用户可以自由添加、删除的配置数据。"""
-
-    name: str = 'default_config'
-    """显示名称。通常由用户输入。"""
-    id: str = uuid.uuid4().hex
-    """唯一标识符。"""
-    category: str = 'default'
-    """类别。如：'global'、'china'、'asia' 等。"""
-    description: str = ''
-    """描述。通常由用户输入。"""
-    backend: BackendConfig = BackendConfig()
-    """后端配置。"""
-    keep_screenshots: bool = False
-    """
-    是否保留截图。
-    若启用，则会保存每一张截图到 `dumps` 目录下。启用该选项有助于辅助调试。
-    """
-    options: T
-    """下游脚本储存的具体数据。"""
-
-
-class RootConfig(ConfigBaseModel, Generic[T]):
-    version: int = 7
-    """配置版本。"""
-    user_configs: list[UserConfig[T]] = []
-    """用户配置。"""
-

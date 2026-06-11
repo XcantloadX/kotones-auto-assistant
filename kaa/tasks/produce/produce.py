@@ -440,7 +440,7 @@ if __name__ == '__main__':
     logging.getLogger('kotonebot').setLevel(logging.DEBUG)
     logger.setLevel(logging.DEBUG)
     from kotonebot.backend.context import init_context
-    from kaa.common import BaseConfig
+    from kaa.common import KaaConfig
     from kaa.main import Kaa
 
     conf().produce.enabled = True
