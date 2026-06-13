@@ -120,7 +120,7 @@ class TaskService:
         """
         try:
             return context_vars.flow.is_paused
-        except ContextNotInitializedError:
+        except (ContextNotInitializedError, AttributeError):
             return None
 
     def get_all_task_names(self) -> List[str]:
