@@ -65,11 +65,37 @@ class StatusView:
 
         migration_messages = get_deferred_messages()
         if migration_messages:
-            gr.Markdown('### 配置升级报告')
+            rows = []
             for msg in migration_messages:
                 prefix = '⚠️ ' if msg.level == 'warning' else 'ℹ️ '
                 version_info = f'（{msg.old_version} → {msg.new_version}）' if msg.old_version else ''
-                gr.Markdown(f'{prefix}{version_info}{msg.text}')
+                rows.append(f'<p style="margin:6px 0">{prefix}{version_info}{msg.text}</p>')
+            rows_html = '\n'.join(rows)
+            gr.HTML(f"""
+<div id="kaa-migration-modal-overlay" style="
+    position:fixed;top:0;left:0;right:0;bottom:0;
+    background:rgba(0,0,0,0.5);z-index:9999;
+    display:flex;align-items:center;justify-content:center;">
+  <div style="
+      background:var(--background-fill-primary,#fff);
+      color:var(--body-text-color,#111);
+      padding:28px 32px;border-radius:12px;
+      max-width:560px;width:90%;max-height:80vh;overflow-y:auto;
+      box-shadow:0 8px 32px rgba(0,0,0,0.25);">
+    <h3 style="margin:0 0 16px">配置升级报告</h3>
+    {rows_html}
+    <div style="margin-top:20px;text-align:right">
+      <button onclick="document.getElementById('kaa-migration-modal-overlay').remove()"
+              style="padding:8px 24px;background:var(--button-primary-background-fill,#1a73e8);
+                     color:var(--button-primary-text-color,#fff);
+                     border:none;border-radius:6px;cursor:pointer;font-size:14px;">
+        知道了
+      </button>
+    </div>
+  </div>
+</div>
+""")
+
         gr.Markdown('脚本报错或者卡住？前往"反馈"选项卡可以快速导出报告！')
 
         if self.facade.config_service.get_current_user_config().keep_screenshots:
