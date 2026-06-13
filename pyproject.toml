@@ -25,6 +25,7 @@ dependencies = [
     "psutil~=6.1",
     # GUI
     "gradio~=6.0",
+    "PySide6~=6.7",
     # Configuration
     "pydantic~=2.10",
     # Resource
