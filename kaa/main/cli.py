@@ -1,6 +1,7 @@
 import os
 import sys
 import logging
+import warnings
 import argparse
 import importlib.metadata
 from datetime import datetime
@@ -10,6 +11,8 @@ try:
     setup()
 except Exception as e:
     print(f'Failed to set up telemetry: {e}')
+
+warnings.filterwarnings("ignore", message=".*HTTP_422_UNPROCESSABLE_ENTITY.*")
 
 from .kaa import Kaa
 from kotonebot.backend.context import tasks_from_id, task_registry
