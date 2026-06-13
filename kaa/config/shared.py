@@ -15,7 +15,13 @@ class SharedMiscConfig(BaseModel):
     log_level: Literal['debug', 'verbose'] = 'debug'
 
 
+class TelemetryConfig(BaseModel):
+    sentry: bool | None = None
+    """是否启用 Sentry 匿名错误报告。None 表示用户尚未选择。"""
+
+
 class SharedConfig(BaseModel):
     version: int = 1
     profiles: ProfilesConfig = ProfilesConfig()
     misc: SharedMiscConfig = SharedMiscConfig()
+    telemetry: TelemetryConfig = TelemetryConfig()

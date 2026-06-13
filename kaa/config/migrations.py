@@ -613,6 +613,33 @@ class ProfileV7ToV8(MigrationStep):
 
 
 # ---------------------------------------------------------------------------
+# Shared V1 → V2：conf/telemetry 文件迁移到 _shared.json
+# ---------------------------------------------------------------------------
+
+class SharedV1ToV2(MigrationStep):
+    """将 conf/telemetry 文件的值迁移到 _shared.json 的 telemetry.sentry 字段。"""
+
+    def check_needed(self, ctx: MigrationContext) -> bool:
+        return (ctx.config_dir / 'telemetry').exists()
+
+    def apply(self, ctx: MigrationContext) -> None:
+        telemetry_file = ctx.config_dir / 'telemetry'
+        enabled = telemetry_file.read_text(encoding='utf-8').strip() != '0'
+
+        shared_file = ctx.config_dir / '_shared.json'
+        data = json.loads(shared_file.read_text(encoding='utf-8')) if shared_file.exists() else {}
+        data.setdefault('telemetry', {})['sentry'] = enabled
+        shared_file.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding='utf-8')
+
+        telemetry_file.unlink()
+        ctx.messages.append(MigrationMessage(
+            text="已将匿名错误报告设置迁移到 _shared.json。",
+            old_version='v2026.06b1',
+            new_version='v2025.06b2',
+        ))
+
+
+# ---------------------------------------------------------------------------
 # 迁移链
 # ---------------------------------------------------------------------------
 
@@ -626,6 +653,7 @@ profile_migration_chain = MigrationChain(steps=[
     ProfileV5ToV6(),
     ProfileV6ToV7(),
     ProfileV7ToV8(),
+    SharedV1ToV2(),
 ])
 
 
