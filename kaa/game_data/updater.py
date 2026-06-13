@@ -6,8 +6,12 @@ import os
 import time
 import zipfile
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import Callable, Optional
+from typing import TYPE_CHECKING, Callable, Optional
+
+if TYPE_CHECKING:
+    from kaa.config.shared import SharedMiscConfig
 
 import requests
 import zstandard
@@ -75,16 +79,21 @@ def _probe(mirror: _Mirror, timeout: float = 5.0) -> tuple[float, _Mirror]:
     return float('inf'), mirror
 
 
-def _select_mirror() -> _Mirror:
+def _select_mirror(log_cb: Optional[Callable[[str], None]] = None) -> _Mirror:
     """
     并发探测所有内置镜像，返回延迟最低的可用镜像。
     结果进程级缓存，后续调用直接返回缓存值。
     """
+    def log(msg: str):
+        logger.info(msg)
+        if log_cb:
+            log_cb(msg)
+
     global _selected_mirror
     if _selected_mirror is not None:
         return _selected_mirror
 
-    logger.info("正在探测 GitHub 镜像连通性（%d 个候选）...", len(_BUILTIN_MIRRORS))
+    log(f"正在探测 GitHub 镜像连通性（{len(_BUILTIN_MIRRORS)} 个候选）...")
     with concurrent.futures.ThreadPoolExecutor(max_workers=len(_BUILTIN_MIRRORS)) as pool:
         futures = [pool.submit(_probe, m) for m in _BUILTIN_MIRRORS]
         results = [f.result() for f in concurrent.futures.as_completed(futures)]
@@ -93,11 +102,10 @@ def _select_mirror() -> _Mirror:
     best_latency, best_mirror = results[0]
 
     if best_latency == float('inf'):
-        # 全部不可达时回退到直连，让后续下载自然报错
-        logger.warning("所有镜像均不可达，回退到直连 GitHub")
+        log("所有镜像均不可达，回退到直连 GitHub")
         _selected_mirror = _BUILTIN_MIRRORS[0]
     else:
-        logger.info("选用镜像：%s（延迟 %.0f ms）", best_mirror.label, best_latency * 1000)
+        log(f"选用镜像：{best_mirror.label}（延迟 {best_latency * 1000:.0f} ms）")
         _selected_mirror = best_mirror
 
     return _selected_mirror
@@ -180,6 +188,37 @@ def _download(
 
     raise RuntimeError(f"下载失败，已重试 {max_retries} 次")
 
+# ── 检查时机 ──────────────────────────────────────────────────────────────────
+
+def should_check(misc: 'SharedMiscConfig') -> bool:
+    """根据配置的检查频率，判断当前是否需要检查游戏资源。"""
+    if not version_path().exists():
+        return True
+    mode = misc.game_data_check
+    if mode == 'manual':
+        return False
+    if mode == 'startup':
+        return True
+    last = misc.game_data_last_checked
+    if last is None:
+        return True
+    try:
+        last_dt = datetime.fromisoformat(last)
+        # 若 last_dt 没有时区信息，当作本地时间处理
+        if last_dt.tzinfo is None:
+            now = datetime.now()
+        else:
+            now = datetime.now(timezone.utc)
+        delta = now - last_dt
+        if mode == 'daily':
+            return delta.total_seconds() >= 86400
+        if mode == 'weekly':
+            return delta.total_seconds() >= 604800
+    except ValueError:
+        return True
+    return True
+
+
 # ── 更新器 ────────────────────────────────────────────────────────────────────
 
 class GameDataUpdater:
@@ -195,6 +234,10 @@ class GameDataUpdater:
         chunk 后调用，供 UI 层展示实时进度。
         :return: 是否执行了更新
         """
+        from kaa.config import manager as config_manager
+        _shared = config_manager.read_shared()
+        _shared.misc.game_data_last_checked = datetime.now().isoformat()
+        config_manager.write_shared(_shared)
         def log(msg: str):
             if progress_cb:
                 progress_cb(msg)
@@ -208,7 +251,7 @@ class GameDataUpdater:
             return lambda dl, total: cb(name, dl, total)
 
         # 0. 选择最优镜像（首次调用时并发探测，后续命中缓存）
-        mirror = _select_mirror()
+        mirror = _select_mirror(log_cb=progress_cb)
 
         # 1. 拉取 manifest
         log("正在获取游戏数据版本信息...")

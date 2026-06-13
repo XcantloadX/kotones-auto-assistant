@@ -95,6 +95,7 @@ class _FileRow:
         self._bar.setValue(0)
         self._bar.setTextVisible(False)
         self._bar.setMinimumWidth(160)
+        self._bar.setMinimumHeight(24)
         layout.addWidget(self._bar, row, 2)
 
         self._speed_lbl = QLabel("—")

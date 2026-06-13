@@ -681,6 +681,22 @@ class SettingsView:
             c5 = gr.Radio(label="日志等级", choices=[("普通", "debug"), ("详细", "verbose")], value=misc.log_level, interactive=True)
             self._bind_shared(c5, ref(of(misc).log_level), lambda: shared)
 
+            c7 = gr.Radio(
+                label="游戏资源检查时机",
+                choices=[("手动", "manual"), ("每次启动", "startup"), ("每天一次", "daily"), ("每周一次", "weekly")],
+                value=misc.game_data_check,
+                interactive=True,
+            )
+            self._bind_shared(c7, ref(of(misc).game_data_check), lambda: shared)
+
+            game_data_output = gr.Textbox(label="游戏资源检查进度", interactive=False, lines=4, visible=False)
+            def _check_game_data():
+                yield from ((gr.Textbox(value=text, visible=True)) for text in self.facade.check_game_data())
+            gr.Button("立即检查游戏资源").click(
+                fn=_check_game_data,
+                outputs=game_data_output,
+            )
+
             gr.Markdown("#### 匿名数据收集")
             gr.Markdown("""目前收集的数据包含：
 * 发生错误时的错误类型和堆栈信息

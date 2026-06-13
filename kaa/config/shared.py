@@ -13,6 +13,10 @@ class SharedMiscConfig(BaseModel):
     expose_to_lan: bool = False
     update_channel: Literal['release', 'beta'] = 'release'
     log_level: Literal['debug', 'verbose'] = 'debug'
+    game_data_check: Literal['manual', 'startup', 'daily', 'weekly'] = 'startup'
+    """游戏资源文件检查频率。manual=手动，startup=每次启动，daily=每天一次，weekly=每周一次。"""
+    game_data_last_checked: str | None = None
+    """上次检查游戏资源的时间（ISO 8601），由程序写入。"""
 
 
 class TelemetryConfig(BaseModel):

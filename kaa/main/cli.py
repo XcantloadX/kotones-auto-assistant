@@ -112,7 +112,8 @@ def main():
         setup()
         add_file_logger(log_filename)
 
-        from kaa.game_data.updater import GameDataUpdater
+        from kaa.config import manager as config_manager
+        from kaa.game_data.updater import GameDataUpdater, should_check
         from kaa.game_data.update_ui import GameDataUpdateUI
 
         _updater = GameDataUpdater()
@@ -126,12 +127,13 @@ def main():
             )
             _update_ui.mark_complete()
 
-        _run_update()
+        _shared = config_manager.read_shared()
+        if should_check(_shared.misc):
+            _run_update()
 
         from .gr import main as gr_main
         from ..application.ui.facade import KaaFacade
         facade = KaaFacade(kaa())
-        from kaa.config import manager as config_manager
         log_level_str = config_manager.read_shared().misc.log_level
         log_level = logging.DEBUG if log_level_str == 'verbose' else logging.INFO
         kaa().set_log_level(log_level)

@@ -187,6 +187,34 @@ class KaaFacade:
         """Saves a produce solution."""
         self.produce_solution_service.save_solution(solution)
 
+    # --- Game Data ---
+    def check_game_data(self):
+        """检查并更新游戏资源，以生成器形式流式返回进度文本，供 Gradio UI 展示。"""
+        import queue
+        import threading
+        from kaa.game_data.updater import GameDataUpdater
+
+        updater = GameDataUpdater()
+        q: queue.Queue[str | None] = queue.Queue()
+
+        def _run():
+            try:
+                updater.check_and_update(progress_cb=q.put)
+            except Exception as e:
+                q.put(f"错误：{e}")
+            finally:
+                q.put(None)
+
+        threading.Thread(target=_run, daemon=True).start()
+
+        lines: list[str] = []
+        while True:
+            msg = q.get()
+            if msg is None:
+                break
+            lines.append(msg)
+            yield "\n".join(lines)
+
     # --- Misc ---
     def export_logs_as_zip(self) -> str:
         # This logic was in gr.py, moving it here.
