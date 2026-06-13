@@ -77,17 +77,18 @@ class ConfigService:
             'playcover': ['macos'],
         }
         backend = config.backend
-        if backend.screenshot_impl not in valid_screenshot_methods.get(backend.type, []):
+        lc_type = backend.lifecycle.type
+        if backend.screenshot_impl not in valid_screenshot_methods.get(lc_type, []):
             raise ConfigValidationError(
                 f"截图方法 '{backend.screenshot_impl}' "
-                f"不适用于当前选择的模拟器类型 '{backend.type}'。"
+                f"不适用于当前选择的模拟器类型 '{lc_type}'。"
             )
 
-        if config.produce.enabled and not config.produce.selected_solution_id:
+        if config.tasks.produce.enabled and not config.tasks.produce.selected_solution_id:
             raise ConfigValidationError("启用培育时，必须选择培育方案。")
 
-        if config.purchase.ap_enabled and not config.purchase.ap_items:
+        if config.tasks.purchase.ap_enabled and not config.tasks.purchase.ap_items:
             raise ConfigValidationError("启用AP购买时，AP商店购买物品不能为空。")
 
-        if config.purchase.money_enabled and not config.purchase.money_items:
+        if config.tasks.purchase.money_enabled and not config.tasks.purchase.money_items:
             raise ConfigValidationError("启用金币购买时，金币商店购买物品不能为空。")

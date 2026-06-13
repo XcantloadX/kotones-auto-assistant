@@ -45,14 +45,14 @@ def assign(type: Literal['mini', 'online']) -> bool:
     target_duration = 12
     R.Daily.IconTitleAssign.wait(timeout=10)
     if type == 'mini':
-        target_duration = conf().assignment.mini_live_duration
+        target_duration = conf().tasks.assignment.mini_live_duration
         if R.Daily.IconAssignMiniLive.try_click():
             pass
         else:
             logger.warning('MiniLive already assigned. Skipping...')
             return False
     elif type == 'online':
-        target_duration = conf().assignment.online_live_duration
+        target_duration = conf().tasks.assignment.online_live_duration
         if R.Daily.IconAssignOnlineLive.try_click():
             pass
         else:
@@ -161,7 +161,7 @@ def at_assignment():
 @task('工作')
 def assignment():
     """领取工作奖励并重新分配工作"""
-    if not conf().assignment.enabled:
+    if not conf().tasks.assignment.enabled:
         logger.info('Assignment is disabled.')
         return
     if not at_home():
@@ -187,14 +187,14 @@ def assignment():
             if R.Common.ButtonCompletion.try_click():
                 logger.info('Assignment acquired.')
     # 重新分配
-    if conf().assignment.mini_live_reassign_enabled:
+    if conf().tasks.assignment.mini_live_reassign_enabled:
         if R.Daily.IconAssignMiniLive.exists():
             assign('mini')
     else:
         logger.info('MiniLive reassign is disabled.')
     while not at_assignment():
         pass
-    if conf().assignment.online_live_reassign_enabled:
+    if conf().tasks.assignment.online_live_reassign_enabled:
         if R.Daily.IconAssignOnlineLive.exists():
             assign('online')
     else:

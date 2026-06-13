@@ -110,7 +110,7 @@ def mission_reward():
     """
     领取任务奖励
     """
-    if not conf().mission_reward.enabled:
+    if not conf().tasks.mission_reward.enabled:
         logger.info('Mission reward is disabled.')
         return
     logger.info('Claiming mission rewards.')

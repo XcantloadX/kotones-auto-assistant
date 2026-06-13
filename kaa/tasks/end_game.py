@@ -8,6 +8,7 @@ import threading
 from kotonebot.ui import user
 from ..kaa_context import instance
 from kaa.config import Priority, conf
+from kaa.config.base_config import CustomDevice, DmmDevice
 from kaa.constants import PLAYCOVER_BUNDLE_ID
 from kotonebot import task, action, device
 
@@ -20,9 +21,9 @@ def android_close():
     结束状态：游戏关闭
     """
     logger.info("Closing game")
-    if device.current_package() == conf().start_game.game_package_name:
+    if device.current_package() == conf().tasks.start_game.game_package_name:
         logger.info("Force stopping game")
-        device.adb.shell(f"am force-stop {conf().start_game.game_package_name}")
+        device.adb.shell(f"am force-stop {conf().tasks.start_game.game_package_name}")
 
     logger.info("Game closed successfully")
 
@@ -60,7 +61,7 @@ def end_game():
     游戏结束时执行的任务。
     """
     # 关闭游戏
-    if conf().end_game.kill_game:
+    if conf().tasks.end_game.kill_game:
         if device.platform == 'android':
             android_close()
         elif device.platform == 'windows':
@@ -71,22 +72,23 @@ def end_game():
             raise ValueError(f'Unsupported platform: {device.platform}')
 
     # 关闭 DMM
-    if conf().end_game.kill_dmm:
+    if conf().tasks.end_game.kill_dmm:
         logger.info("Closing DMM")
         os.system('taskkill /f /im DMMGamePlayer.exe')
         logger.info("DMM closed successfully")
 
     # 关闭模拟器
-    if conf().end_game.kill_emulator:
-        if not conf().backend.emulator_path:
+    if conf().tasks.end_game.kill_emulator:
+        lc = conf().backend.lifecycle
+        if not (isinstance(lc, (CustomDevice, DmmDevice)) and lc.emulator_path):
             user.warning('未配置模拟器 exe 文件路径，无法关闭模拟器。跳过此次操作。')
         else:
             instance().stop()
 
     # 恢复汉化插件
-    if conf().end_game.restore_gakumas_localify:
+    if conf().tasks.end_game.restore_gakumas_localify:
         logger.info('Restoring Gakumas Localify...')
-        game_path = conf().start_game.dmm_game_path
+        game_path = conf().tasks.start_game.dmm_game_path
         if not game_path:
             # user.info
             raise ValueError('dmm_game_path unset.')
@@ -98,18 +100,18 @@ def end_game():
             logger.info('Gakumas Localify restored.')
 
     # 关机
-    if conf().end_game.shutdown:
+    if conf().tasks.end_game.shutdown:
         logger.info("Shutting down system")
         os.system('shutdown /s /t 60')
         logger.info("System will shut down in 60 seconds")
 
     # 休眠
-    if conf().end_game.hibernate:
+    if conf().tasks.end_game.hibernate:
         logger.info("Hibernating system")
         os.system('shutdown /h')
 
     # 退出 kaa
-    if conf().end_game.exit_kaa:
+    if conf().tasks.end_game.exit_kaa:
         logger.info("Exiting kaa")
         # kaa 不在主线程中运行，一般是以 GUI 运行
         if not threading.main_thread() is threading.current_thread():
@@ -119,7 +121,7 @@ def end_game():
     logger.info("Game ended successfully")
 
 if __name__ == '__main__':
-    conf().end_game.kill_game = True
-    conf().end_game.kill_dmm = True
-    conf().end_game.kill_emulator = True
+    conf().tasks.end_game.kill_game = True
+    conf().tasks.end_game.kill_dmm = True
+    conf().tasks.end_game.kill_emulator = True
     end_game()

@@ -103,20 +103,26 @@ class KaaDeviceFactory:
         :return: 后端实例或原生应用实例
         """
         from kotonebot.client.host import create_custom
-        logger.info(f'Querying for backend: {config.backend.type}')
-        
-        b_type = config.backend.type
-        
+        from kaa.config.base_config import (  # noqa: PLC0415
+            MuMu12Device, MuMu12V5Device, LeidianDevice, DmmDevice, CustomDevice, TcpConnection,
+        )
+        lc = config.backend.lifecycle
+        b_type = lc.type
+        logger.info(f'Querying for backend: {b_type}')
+
         if b_type == 'custom':
-            exe = config.backend.emulator_path
+            assert isinstance(lc, CustomDevice)
+            conn = config.backend.connection
+            assert isinstance(conn, TcpConnection)
+            exe = lc.emulator_path
             instance = create_custom(
-                adb_ip=config.backend.adb_ip,
-                adb_port=config.backend.adb_port,
-                adb_name=config.backend.adb_emulator_name,
+                adb_ip=conn.ip,
+                adb_port=conn.port,
+                adb_name=None,
                 exe_path=exe,
-                emulator_args=config.backend.emulator_args
+                emulator_args=lc.emulator_args,
             )
-            if config.backend.check_emulator:
+            if lc.check_and_start:
                 import os
                 if exe is None:
                     user.error('「检查并启动模拟器」已开启但未配置「模拟器 exe 文件路径」。')
@@ -127,27 +133,30 @@ class KaaDeviceFactory:
             return instance
 
         elif b_type == 'mumu12':
-            if config.backend.instance_id is None:
+            assert isinstance(lc, MuMu12Device)
+            if lc.instance_id is None:
                 raise ValueError('MuMu12 instance ID is not set.')
-            instance = Mumu12Host.query(id=config.backend.instance_id)
+            instance = Mumu12Host.query(id=lc.instance_id)
             if instance is None:
-                raise ValueError(f'MuMu12 instance not found: {config.backend.instance_id}')
+                raise ValueError(f'MuMu12 instance not found: {lc.instance_id}')
             return instance
 
         elif b_type == 'mumu12v5':
-            if config.backend.instance_id is None:
+            assert isinstance(lc, MuMu12V5Device)
+            if lc.instance_id is None:
                 raise ValueError('MuMu12v5 instance ID is not set.')
-            instance = Mumu12V5Host.query(id=config.backend.instance_id)
+            instance = Mumu12V5Host.query(id=lc.instance_id)
             if instance is None:
-                raise ValueError(f'MuMu12v5 instance not found: {config.backend.instance_id}')
+                raise ValueError(f'MuMu12v5 instance not found: {lc.instance_id}')
             return instance
 
         elif b_type == 'leidian':
-            if config.backend.instance_id is None:
+            assert isinstance(lc, LeidianDevice)
+            if lc.instance_id is None:
                 raise ValueError('Leidian instance ID is not set.')
-            instance = LeidianHost.query(id=config.backend.instance_id)
+            instance = LeidianHost.query(id=lc.instance_id)
             if instance is None:
-                raise ValueError(f'Leidian instance not found: {config.backend.instance_id}')
+                raise ValueError(f'Leidian instance not found: {lc.instance_id}')
             return instance
 
         elif b_type == 'dmm':
@@ -180,7 +189,12 @@ class KaaDeviceFactory:
             logger.info('DMM backend does not require startup.')
             return
 
-        if config.backend.check_emulator and not instance.running():
+        from kaa.config.base_config import PlayCoverDevice  # noqa: PLC0415
+        lc = config.backend.lifecycle
+        if isinstance(lc, PlayCoverDevice):
+            return
+
+        if lc.check_and_start and not instance.running():
             logger.info(f'Starting backend "{instance}"...')
             if hasattr(instance, 'launch'):
                 instance.launch()
@@ -195,12 +209,15 @@ class KaaDeviceFactory:
         """
         创建设备。
         """
+        from kaa.config.base_config import MuMu12Device, MuMu12V5Device, DmmDevice  # noqa: PLC0415
         impl_name = config.backend.screenshot_impl
-        
+        lc = config.backend.lifecycle
+
         if hasattr(instance, "create_device") and impl_name == 'macos':
             return instance.create_device()
-        
+
         if DmmInstance and isinstance(instance, DmmInstance):
+            assert isinstance(lc, DmmDevice)
             d = WindowsDevice()
             if impl_name == 'windows':
                 from kotonebot.client.implements.windows import WindowsImpl
@@ -215,7 +232,7 @@ class KaaDeviceFactory:
                 query = WindowQuery(title_contains='gakumas')
                 d.setup(
                     screenshot=PrintWindowImpl(d, query),
-                    touch=SendMessageImpl(d, query, wait_cursor_idle=config.backend.cursor_wait_speed),
+                    touch=SendMessageImpl(d, query, wait_cursor_idle=lc.cursor_wait_speed),
                 )
             else:
                 raise ValueError(f"Impl of '{impl_name}' is not supported on DMM.")
@@ -223,22 +240,23 @@ class KaaDeviceFactory:
 
         elif isinstance(instance, (CustomInstance, Mumu12Instance, LeidianInstance)):
             if impl_name == 'nemu_ipc' and isinstance(instance, Mumu12Instance):
+                assert isinstance(lc, (MuMu12Device, MuMu12V5Device))
                 timeout = 180
                 args = {}
-                if config.backend.mumu_background_mode:
+                if lc.mumu_background_mode:
                     args = {
                         "display_id": None,
-                        "target_package_name": config.start_game.game_package_name,
+                        "target_package_name": config.tasks.start_game.game_package_name,
                         "app_index": 0
                     }
                 host_conf = MuMu12HostConfig(timeout=timeout, **args)
                 return instance.create_device(cast(Any, impl_name), host_conf)
-            
+
             elif impl_name in ['adb', 'uiautomator2']:
                 host_conf = AdbHostConfig(timeout=180)
                 return instance.create_device(cast(Any, impl_name), host_conf)
             else:
-                raise ValueError(f"{config.backend.type} backend does not support implementation '{impl_name}'")
+                raise ValueError(f"{lc.type} backend does not support implementation '{impl_name}'")
         else:
             raise TypeError(f"Unknown instance type: {type(instance)}")
 

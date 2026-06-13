@@ -18,7 +18,7 @@ def upgrade_support_card():
     # 进入支援卡页面后，一直往下滑，滑倒底部（低等级支援卡区域）；
     # 然后点击左上角第一张支援卡，将左上角第一张支援卡提升一级。
 
-    if not conf().upgrade_support_card.enabled:
+    if not conf().tasks.upgrade_support_card.enabled:
         logger.info('"Upgrade support card" is disabled.')
         return
     

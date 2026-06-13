@@ -157,7 +157,7 @@ def resume_produce():
 
     mode, current_week = resume_produce_pre()
 
-    if conf().produce.produce_engine == 'legacy':
+    if conf().tasks.produce.produce_engine == 'legacy':
         resume_produce_lst(mode, current_week)
     else:
         ProduceController(mode=mode).run()
@@ -230,11 +230,11 @@ def do_produce(
         if R.Produce.ButtonProduce.try_click():
             pass
         # 强化月间处理
-        elif conf().produce.enable_fever_month == 'on' and R.Produce.SwitchEventModeOff.exists():
+        elif conf().tasks.produce.enable_fever_month == 'on' and R.Produce.SwitchEventModeOff.exists():
             logger.info('Fever month checked on.')
             device.click()
             sleep(0.5)
-        elif conf().produce.enable_fever_month == 'off' and R.Produce.SwitchEventModeOn.exists():
+        elif conf().tasks.produce.enable_fever_month == 'off' and R.Produce.SwitchEventModeOn.exists():
             logger.info('Fever month checked off.')
             device.click()
             sleep(0.5)
@@ -376,7 +376,7 @@ def do_produce(
             pass
         if R.Common.ButtonConfirmNoIcon.try_click():
             pass
-    if conf().produce.produce_engine == 'legacy':
+    if conf().tasks.produce.produce_engine == 'legacy':
         match mode:
             case 'regular':
                 hajime_regular()
@@ -396,11 +396,11 @@ def produce():
     """
     培育任务
     """
-    if not conf().produce.enabled:
+    if not conf().tasks.produce.enabled:
         logger.info('Produce is disabled.')
         return
     import time
-    count = conf().produce.produce_count
+    count = conf().tasks.produce.produce_count
     idol = produce_solution().data.idol
     memory_set = produce_solution().data.memory_set
     support_card_set = produce_solution().data.support_card_set
@@ -443,9 +443,9 @@ if __name__ == '__main__':
     from kaa.common import KaaConfig
     from kaa.main import Kaa
 
-    conf().produce.enabled = True
-    conf().produce.produce_count = 3
-    conf().produce.enable_fever_month = 'ignore'
+    conf().tasks.produce.enabled = True
+    conf().tasks.produce.produce_count = 3
+    conf().tasks.produce.enable_fever_month = 'ignore'
     produce_solution().data.mode = 'pro'
     # produce_solution().data.idol = 'i_card-skin-hski-3-002'
     # produce_solution().data.memory_set = 1

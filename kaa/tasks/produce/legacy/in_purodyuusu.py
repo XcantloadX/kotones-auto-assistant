@@ -765,7 +765,7 @@ def detect_produce_scene() -> ProduceStage:
     结束状态：游戏主页面\n
     """
     logger.info("Detecting current produce stage...")
-    cd = Countdown(conf().produce.interrupt_timeout).start()
+    cd = Countdown(conf().tasks.produce.interrupt_timeout).start()
     for _ in Loop():
         if cd.expired():
             raise UnrecoverableError('Unable to detect produce scene. Reseason: timed out.')

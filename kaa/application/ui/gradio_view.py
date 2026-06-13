@@ -113,7 +113,7 @@ class KaaGradioView:
         def update_quick_checkboxes():
             opts = self.facade.config_service.get_options()
             
-            end_game_opts = opts.end_game
+            end_game_opts = opts.tasks.end_game
             if end_game_opts.shutdown:
                 end_action_val = "完成后关机"
             elif end_game_opts.hibernate:
@@ -122,16 +122,16 @@ class KaaGradioView:
                 end_action_val = "完成后什么都不做"
 
             return {
-                self.components.quick_checkboxes[0]: gr.Checkbox(value=opts.purchase.enabled),
-                self.components.quick_checkboxes[1]: gr.Checkbox(value=opts.assignment.enabled),
-                self.components.quick_checkboxes[2]: gr.Checkbox(value=opts.contest.enabled),
-                self.components.quick_checkboxes[3]: gr.Checkbox(value=opts.produce.enabled),
-                self.components.quick_checkboxes[4]: gr.Checkbox(value=opts.mission_reward.enabled),
-                self.components.quick_checkboxes[5]: gr.Checkbox(value=opts.club_reward.enabled),
-                self.components.quick_checkboxes[6]: gr.Checkbox(value=opts.activity_funds.enabled),
-                self.components.quick_checkboxes[7]: gr.Checkbox(value=opts.presents.enabled),
-                self.components.quick_checkboxes[8]: gr.Checkbox(value=opts.capsule_toys.enabled),
-                self.components.quick_checkboxes[9]: gr.Checkbox(value=opts.upgrade_support_card.enabled),
+                self.components.quick_checkboxes[0]: gr.Checkbox(value=opts.tasks.purchase.enabled),
+                self.components.quick_checkboxes[1]: gr.Checkbox(value=opts.tasks.assignment.enabled),
+                self.components.quick_checkboxes[2]: gr.Checkbox(value=opts.tasks.contest.enabled),
+                self.components.quick_checkboxes[3]: gr.Checkbox(value=opts.tasks.produce.enabled),
+                self.components.quick_checkboxes[4]: gr.Checkbox(value=opts.tasks.mission_reward.enabled),
+                self.components.quick_checkboxes[5]: gr.Checkbox(value=opts.tasks.club_reward.enabled),
+                self.components.quick_checkboxes[6]: gr.Checkbox(value=opts.tasks.activity_funds.enabled),
+                self.components.quick_checkboxes[7]: gr.Checkbox(value=opts.tasks.presents.enabled),
+                self.components.quick_checkboxes[8]: gr.Checkbox(value=opts.tasks.capsule_toys.enabled),
+                self.components.quick_checkboxes[9]: gr.Checkbox(value=opts.tasks.upgrade_support_card.enabled),
                 self.components.end_action_dropdown: gr.Dropdown(value=end_action_val),
             }
 

@@ -81,7 +81,7 @@ def capsule_toys():
     # [screenshots/shop/capsule_toys_upper.png]
     # [screenshots/shop/capsule_toys_lower.png]
 
-    if not conf().capsule_toys.enabled:
+    if not conf().tasks.capsule_toys.enabled:
         logger.info('"Capsule Toys" is disabled.')
         return
     
@@ -101,11 +101,11 @@ def capsule_toys():
     if len(buttons) != 2:
         return
 
-    if conf().capsule_toys.friend_capsule_toys_count > 0:
-        draw_capsule_toys(buttons[0], conf().capsule_toys.friend_capsule_toys_count)
+    if conf().tasks.capsule_toys.friend_capsule_toys_count > 0:
+        draw_capsule_toys(buttons[0], conf().tasks.capsule_toys.friend_capsule_toys_count)
     
-    if conf().capsule_toys.sense_capsule_toys_count > 0:
-        draw_capsule_toys(buttons[1], conf().capsule_toys.sense_capsule_toys_count)
+    if conf().tasks.capsule_toys.sense_capsule_toys_count > 0:
+        draw_capsule_toys(buttons[1], conf().tasks.capsule_toys.sense_capsule_toys_count)
     
     # 划到第二页
     sc = Scrollable()
@@ -116,11 +116,11 @@ def capsule_toys():
     if len(buttons) != 2:
         return
     
-    if conf().capsule_toys.logic_capsule_toys_count > 0:
-        draw_capsule_toys(buttons[0], conf().capsule_toys.logic_capsule_toys_count)
+    if conf().tasks.capsule_toys.logic_capsule_toys_count > 0:
+        draw_capsule_toys(buttons[0], conf().tasks.capsule_toys.logic_capsule_toys_count)
     
-    if conf().capsule_toys.anomaly_capsule_toys_count > 0:
-        draw_capsule_toys(buttons[1], conf().capsule_toys.anomaly_capsule_toys_count)
+    if conf().tasks.capsule_toys.anomaly_capsule_toys_count > 0:
+        draw_capsule_toys(buttons[1], conf().tasks.capsule_toys.anomaly_capsule_toys_count)
 
 if __name__ == '__main__':
     capsule_toys()

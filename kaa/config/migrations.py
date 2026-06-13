@@ -640,10 +640,131 @@ class SharedV1ToV2(MigrationStep):
 
 
 # ---------------------------------------------------------------------------
+# V8 → V9：backend 平铺字段 → lifecycle/connection 嵌套；任务配置收拢到 tasks
+# ---------------------------------------------------------------------------
+
+_TASK_KEYS = [
+    'purchase', 'activity_funds', 'presents', 'assignment',
+    'contest', 'produce', 'mission_reward', 'club_reward',
+    'upgrade_support_card', 'capsule_toys', 'start_game', 'end_game',
+]
+
+
+class ProfileV8ToV9(MigrationStep):
+    """
+    1. backend 从平铺字段迁移到 lifecycle + connection 嵌套结构（check_emulator → check_and_start）。
+    2. 所有任务配置字段收拢到 tasks 键下。
+    """
+
+    def check_needed(self, ctx: MigrationContext) -> bool:
+        profiles_dir = ctx.config_dir / 'profiles'
+        if not profiles_dir.exists():
+            return False
+        for f in profiles_dir.glob('*.json'):
+            data = json.loads(f.read_text(encoding='utf-8'))
+            if data.get('version', 0) < 9:
+                return True
+        return False
+
+    def apply(self, ctx: MigrationContext) -> None:
+        profiles_dir = ctx.config_dir / 'profiles'
+        if not profiles_dir.exists():
+            return
+        migrated: list[str] = []
+        for f in profiles_dir.glob('*.json'):
+            data = json.loads(f.read_text(encoding='utf-8'))
+            if data.get('version', 0) >= 9:
+                continue
+
+            # ── 1. 迁移 backend ──────────────────────────────────────────────
+            backend = data.get('backend', {})
+            if 'type' in backend:
+                old_type = backend.get('type', 'custom')
+                instance_id = backend.get('instance_id')
+                adb_ip = backend.get('adb_ip', '127.0.0.1')
+                adb_port = backend.get('adb_port', 5555)
+                check_emulator = backend.get('check_emulator', False)
+                emulator_path = backend.get('emulator_path')
+                emulator_args = backend.get('emulator_args', '')
+                adb_emulator_name = backend.get('adb_emulator_name')
+                mumu_background_mode = backend.get('mumu_background_mode', False)
+                cursor_wait_speed = backend.get('cursor_wait_speed', -1)
+                windows_window_title = backend.get('windows_window_title', 'gakumas')
+                windows_ahk_path = backend.get('windows_ahk_path')
+                screenshot_impl = backend.get('screenshot_impl', 'adb')
+                target_screenshot_interval = backend.get('target_screenshot_interval')
+
+                if old_type in ('mumu12', 'mumu12v5'):
+                    lifecycle: dict = {
+                        'type': old_type,
+                        'instance_id': instance_id,
+                        'mumu_background_mode': mumu_background_mode,
+                        'check_and_start': check_emulator,
+                    }
+                    connection: dict = {'type': 'auto'}
+                elif old_type == 'leidian':
+                    lifecycle = {
+                        'type': 'leidian',
+                        'instance_id': instance_id,
+                        'adb_emulator_name': adb_emulator_name,
+                        'check_and_start': check_emulator,
+                    }
+                    connection = {'type': 'tcp', 'ip': adb_ip, 'port': adb_port}
+                elif old_type == 'dmm':
+                    lifecycle = {
+                        'type': 'dmm',
+                        'check_and_start': check_emulator,
+                        'emulator_path': emulator_path,
+                        'emulator_args': emulator_args,
+                        'cursor_wait_speed': cursor_wait_speed,
+                        'windows_window_title': windows_window_title,
+                        'windows_ahk_path': windows_ahk_path,
+                    }
+                    connection = {'type': 'tcp', 'ip': adb_ip, 'port': adb_port}
+                elif old_type == 'playcover':
+                    lifecycle = {'type': 'playcover'}
+                    connection = {'type': 'tcp', 'ip': adb_ip, 'port': adb_port}
+                else:  # custom
+                    lifecycle = {
+                        'type': 'custom',
+                        'check_and_start': check_emulator,
+                        'emulator_path': emulator_path,
+                        'emulator_args': emulator_args,
+                    }
+                    connection = {'type': 'tcp', 'ip': adb_ip, 'port': adb_port}
+
+                data['backend'] = {
+                    'lifecycle': lifecycle,
+                    'connection': connection,
+                    'screenshot_impl': screenshot_impl,
+                    'target_screenshot_interval': target_screenshot_interval,
+                }
+
+            # ── 2. 迁移 tasks ────────────────────────────────────────────────
+            tasks: dict = data.get('tasks', {})
+            for key in _TASK_KEYS:
+                if key in data:
+                    tasks[key] = data.pop(key)
+            if tasks:
+                data['tasks'] = tasks
+
+            data['version'] = 9
+            f.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding='utf-8')
+            migrated.append(f.stem)
+
+        if migrated:
+            ctx.messages.append(MigrationMessage(
+                text="设备设置与任务设置规范化",
+                old_version='v2026.06b1',
+                new_version='v2026.06b2',
+            ))
+
+
+# ---------------------------------------------------------------------------
 # 迁移链
 # ---------------------------------------------------------------------------
 
-LATEST_VERSION: int = 8
+LATEST_VERSION: int = 9
 
 profile_migration_chain = MigrationChain(steps=[
     ProfileV1ToV2(),
@@ -654,6 +775,7 @@ profile_migration_chain = MigrationChain(steps=[
     ProfileV6ToV7(),
     ProfileV7ToV8(),
     SharedV1ToV2(),
+    ProfileV8ToV9(),
 ])
 
 

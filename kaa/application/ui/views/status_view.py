@@ -13,7 +13,7 @@ class StatusView:
         gr.Markdown("## 状态")
 
         def _get_end_action_value() -> str:
-            end_game_opts = self.facade.config_service.get_options().end_game
+            end_game_opts = self.facade.config_service.get_options().tasks.end_game
             if end_game_opts.shutdown:
                 return "完成后关机"
             if end_game_opts.hibernate:
@@ -46,16 +46,16 @@ class StatusView:
 
         with gr.Row(elem_classes=["quick-controls-row"]):
             opts = self.facade.config_service.get_options()
-            purchase_quick = gr.Checkbox(label="商店", value=opts.purchase.enabled, interactive=True)
-            assignment_quick = gr.Checkbox(label="工作", value=opts.assignment.enabled, interactive=True)
-            contest_quick = gr.Checkbox(label="竞赛", value=opts.contest.enabled, interactive=True)
-            produce_quick = gr.Checkbox(label="培育", value=opts.produce.enabled, interactive=True)
-            mission_reward_quick = gr.Checkbox(label="任务", value=opts.mission_reward.enabled, interactive=True)
-            club_reward_quick = gr.Checkbox(label="社团", value=opts.club_reward.enabled, interactive=True)
-            activity_funds_quick = gr.Checkbox(label="活动费", value=opts.activity_funds.enabled, interactive=True)
-            presents_quick = gr.Checkbox(label="礼物", value=opts.presents.enabled, interactive=True)
-            capsule_toys_quick = gr.Checkbox(label="扭蛋", value=opts.capsule_toys.enabled, interactive=True)
-            upgrade_support_card_quick = gr.Checkbox(label="支援卡", value=opts.upgrade_support_card.enabled, interactive=True)
+            purchase_quick = gr.Checkbox(label="商店", value=opts.tasks.purchase.enabled, interactive=True)
+            assignment_quick = gr.Checkbox(label="工作", value=opts.tasks.assignment.enabled, interactive=True)
+            contest_quick = gr.Checkbox(label="竞赛", value=opts.tasks.contest.enabled, interactive=True)
+            produce_quick = gr.Checkbox(label="培育", value=opts.tasks.produce.enabled, interactive=True)
+            mission_reward_quick = gr.Checkbox(label="任务", value=opts.tasks.mission_reward.enabled, interactive=True)
+            club_reward_quick = gr.Checkbox(label="社团", value=opts.tasks.club_reward.enabled, interactive=True)
+            activity_funds_quick = gr.Checkbox(label="活动费", value=opts.tasks.activity_funds.enabled, interactive=True)
+            presents_quick = gr.Checkbox(label="礼物", value=opts.tasks.presents.enabled, interactive=True)
+            capsule_toys_quick = gr.Checkbox(label="扭蛋", value=opts.tasks.capsule_toys.enabled, interactive=True)
+            upgrade_support_card_quick = gr.Checkbox(label="支援卡", value=opts.tasks.upgrade_support_card.enabled, interactive=True)
 
         self.components.quick_checkboxes = [
             purchase_quick, assignment_quick, contest_quick, produce_quick,
@@ -154,20 +154,20 @@ class StatusView:
 
         def batch_select(default: bool, produce_only: bool, success_msg: str):
             opts = self.facade.config_service.get_options()
-            opts.purchase.enabled = default
-            opts.assignment.enabled = default
-            opts.contest.enabled = default
-            opts.produce.enabled = produce_only
-            opts.mission_reward.enabled = default
-            opts.club_reward.enabled = default
-            opts.activity_funds.enabled = default
-            opts.presents.enabled = default
-            opts.capsule_toys.enabled = default
-            opts.upgrade_support_card.enabled = default
+            opts.tasks.purchase.enabled = default
+            opts.tasks.assignment.enabled = default
+            opts.tasks.contest.enabled = default
+            opts.tasks.produce.enabled = produce_only
+            opts.tasks.mission_reward.enabled = default
+            opts.tasks.club_reward.enabled = default
+            opts.tasks.activity_funds.enabled = default
+            opts.tasks.presents.enabled = default
+            opts.tasks.capsule_toys.enabled = default
+            opts.tasks.upgrade_support_card.enabled = default
             save_quick_setting(success_msg, "⚠ 数据已保存，但重新加载失败")
 
         def save_quick_end_action(action: str):
-            opts = self.facade.config_service.get_options().end_game
+            opts = self.facade.config_service.get_options().tasks.end_game
             if action == "完成后关机":
                 opts.shutdown = True
                 opts.hibernate = False
@@ -189,14 +189,14 @@ class StatusView:
         unselect_produce_only_btn.click(fn=lambda: batch_select(True, False, "✓ 只不选培育成功"), outputs=None)
 
         # .input is used to only trigger on user interaction
-        purchase_quick.input(fn=lambda x: update_and_save_quick_setting('purchase.enabled', x, '商店'), inputs=[purchase_quick])
-        assignment_quick.input(fn=lambda x: update_and_save_quick_setting('assignment.enabled', x, '工作'), inputs=[assignment_quick])
-        contest_quick.input(fn=lambda x: update_and_save_quick_setting('contest.enabled', x, '竞赛'), inputs=[contest_quick])
-        produce_quick.input(fn=lambda x: update_and_save_quick_setting('produce.enabled', x, '培育'), inputs=[produce_quick])
-        mission_reward_quick.input(fn=lambda x: update_and_save_quick_setting('mission_reward.enabled', x, '任务奖励'), inputs=[mission_reward_quick])
-        club_reward_quick.input(fn=lambda x: update_and_save_quick_setting('club_reward.enabled', x, '社团奖励'), inputs=[club_reward_quick])
-        activity_funds_quick.input(fn=lambda x: update_and_save_quick_setting('activity_funds.enabled', x, '活动费'), inputs=[activity_funds_quick])
-        presents_quick.input(fn=lambda x: update_and_save_quick_setting('presents.enabled', x, '礼物'), inputs=[presents_quick])
-        capsule_toys_quick.input(fn=lambda x: update_and_save_quick_setting('capsule_toys.enabled', x, '扭蛋'), inputs=[capsule_toys_quick])
-        upgrade_support_card_quick.input(fn=lambda x: update_and_save_quick_setting('upgrade_support_card.enabled', x, '支援卡升级'), inputs=[upgrade_support_card_quick])
+        purchase_quick.input(fn=lambda x: update_and_save_quick_setting('tasks.purchase.enabled', x, '商店'), inputs=[purchase_quick])
+        assignment_quick.input(fn=lambda x: update_and_save_quick_setting('tasks.assignment.enabled', x, '工作'), inputs=[assignment_quick])
+        contest_quick.input(fn=lambda x: update_and_save_quick_setting('tasks.contest.enabled', x, '竞赛'), inputs=[contest_quick])
+        produce_quick.input(fn=lambda x: update_and_save_quick_setting('tasks.produce.enabled', x, '培育'), inputs=[produce_quick])
+        mission_reward_quick.input(fn=lambda x: update_and_save_quick_setting('tasks.mission_reward.enabled', x, '任务奖励'), inputs=[mission_reward_quick])
+        club_reward_quick.input(fn=lambda x: update_and_save_quick_setting('tasks.club_reward.enabled', x, '社团奖励'), inputs=[club_reward_quick])
+        activity_funds_quick.input(fn=lambda x: update_and_save_quick_setting('tasks.activity_funds.enabled', x, '活动费'), inputs=[activity_funds_quick])
+        presents_quick.input(fn=lambda x: update_and_save_quick_setting('tasks.presents.enabled', x, '礼物'), inputs=[presents_quick])
+        capsule_toys_quick.input(fn=lambda x: update_and_save_quick_setting('tasks.capsule_toys.enabled', x, '扭蛋'), inputs=[capsule_toys_quick])
+        upgrade_support_card_quick.input(fn=lambda x: update_and_save_quick_setting('tasks.upgrade_support_card.enabled', x, '支援卡升级'), inputs=[upgrade_support_card_quick])
         end_action_dropdown.change(fn=save_quick_end_action, inputs=[end_action_dropdown])

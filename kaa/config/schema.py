@@ -226,15 +226,11 @@ class IdleModeConfig(ConfigBaseModel):
 
 
 
-CONFIG_VERSION_CODE = 8
+CONFIG_VERSION_CODE = 9
 
 
-class KaaConfig(ConfigBaseModel):
-    version: int = CONFIG_VERSION_CODE
-    name: str = 'default'
-    description: str = ''
-    backend: BackendConfig = BackendConfig()
-    keep_screenshots: bool = False
+class TasksConfig(ConfigBaseModel):
+    """所有任务配置，字段名与 task_id 一一对应。"""
 
     purchase: PurchaseConfig = PurchaseConfig()
     """商店购买配置"""
@@ -266,14 +262,25 @@ class KaaConfig(ConfigBaseModel):
     capsule_toys: CapsuleToysConfig = CapsuleToysConfig()
     """扭蛋机配置"""
 
-    trace: TraceConfig = TraceConfig()
-    """跟踪配置"""
-
     start_game: StartGameConfig = StartGameConfig()
     """启动游戏配置"""
 
     end_game: EndGameConfig = EndGameConfig()
     """关闭游戏配置"""
-    
+
+
+class KaaConfig(ConfigBaseModel):
+    version: int = CONFIG_VERSION_CODE
+    name: str = 'default'
+    description: str = ''
+    backend: BackendConfig = BackendConfig()
+    keep_screenshots: bool = False
+
+    tasks: TasksConfig = TasksConfig()
+    """任务配置"""
+
+    trace: TraceConfig = TraceConfig()
+    """跟踪配置"""
+
     idle: IdleModeConfig = IdleModeConfig()
     """闲置挂机配置"""

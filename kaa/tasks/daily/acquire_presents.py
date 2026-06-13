@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 @task('领取礼物')
 def acquire_presents():
-    if not conf().presents.enabled:
+    if not conf().tasks.presents.enabled:
         logger.info('Presents acquisition is disabled.')
         return
 

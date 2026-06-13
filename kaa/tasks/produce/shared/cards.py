@@ -129,7 +129,7 @@ def do_cards(
     :param threshold_predicate: 推荐卡检测阈值判断函数
     :param end_predicate: 结束条件判断函数
     """
-    timeout_cd = Countdown(sec=conf().produce.produce_timeout_cd).start() # 推荐卡检测超时计时器
+    timeout_cd = Countdown(sec=conf().tasks.produce.produce_timeout_cd).start() # 推荐卡检测超时计时器
     break_cd = Countdown(sec=5) # 满足结束条件计时器
     no_card_cd = Countdown(sec=4) # 无手牌计时器
     detect_card_count_cd = Countdown(sec=4).start() # 刷新检测手牌数量间隔

@@ -47,7 +47,7 @@ def produce_solution() -> 'ProduceSolution':
     """获取当前培育方案"""
     from kaa.config.produce import ProduceSolutionManager
 
-    id = conf().produce.selected_solution_id
+    id = conf().tasks.produce.selected_solution_id
     if id is None:
         raise NoProduceSolutionSelectedError()
     # TODO: 这里需要缓存，不能每次都从磁盘读取

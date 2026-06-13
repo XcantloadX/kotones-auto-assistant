@@ -178,7 +178,7 @@ class KaaFacade:
     def delete_produce_solution(self, solution_id: str):
         """Deletes a produce solution."""
         # Prevent deleting the currently selected solution
-        selected_id = self.config_service.get_options().produce.selected_solution_id
+        selected_id = self.config_service.get_options().tasks.produce.selected_solution_id
         if solution_id == selected_id:
             raise ValueError("不可删除当前正在使用的培育方案。")
         self.produce_solution_service.delete_solution(solution_id)

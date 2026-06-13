@@ -275,7 +275,7 @@ class ProduceInterrupt:
         """
         :param timeout: 超时时间，单位秒。默认为 None，表示使用配置文件中的时间。
         """
-        timeout = timeout or conf().produce.interrupt_timeout
+        timeout = timeout or conf().tasks.produce.interrupt_timeout
         self.cd = Countdown(timeout)
 
     @staticmethod
