@@ -761,10 +761,57 @@ class ProfileV8ToV9(MigrationStep):
 
 
 # ---------------------------------------------------------------------------
+# V9 → V10：DMM 截图方式 windows → windows_native
+# ---------------------------------------------------------------------------
+
+class ProfileV9ToV10(MigrationStep):
+    """将 backend.screenshot_impl 为 'windows'（依赖 AHK 的旧实现）的 profile
+
+    自动切换到不依赖 AHK 的新实现 'windows_native'。
+    """
+
+    def check_needed(self, ctx: MigrationContext) -> bool:
+        profiles_dir = ctx.config_dir / 'profiles'
+        if not profiles_dir.exists():
+            return False
+        for f in profiles_dir.glob('*.json'):
+            data = json.loads(f.read_text(encoding='utf-8'))
+            if data.get('version', 0) < 10:
+                return True
+        return False
+
+    def apply(self, ctx: MigrationContext) -> None:
+        profiles_dir = ctx.config_dir / 'profiles'
+        if not profiles_dir.exists():
+            return
+        migrated: list[str] = []
+        for f in profiles_dir.glob('*.json'):
+            data = json.loads(f.read_text(encoding='utf-8'))
+            if data.get('version', 0) >= 10:
+                continue
+
+            backend = data.get('backend', {})
+            if backend.get('screenshot_impl') == 'windows':
+                backend['screenshot_impl'] = 'windows_native'
+                data['backend'] = backend
+                migrated.append(f.stem)
+
+            data['version'] = 10
+            f.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding='utf-8')
+
+        if migrated:
+            ctx.messages.append(MigrationMessage(
+                text="DMM 截图方式（windows）已自动切换到新的截图方式（windows_native）。如出现问题可手动切换回原选项。",
+                old_version='v2026.06b2',
+                new_version='v2026.06b3',
+            ))
+
+
+# ---------------------------------------------------------------------------
 # 迁移链
 # ---------------------------------------------------------------------------
 
-LATEST_VERSION: int = 9
+LATEST_VERSION: int = 10
 
 profile_migration_chain = MigrationChain(steps=[
     ProfileV1ToV2(),
@@ -776,6 +823,7 @@ profile_migration_chain = MigrationChain(steps=[
     ProfileV7ToV8(),
     SharedV1ToV2(),
     ProfileV8ToV9(),
+    ProfileV9ToV10(),
 ])
 
 

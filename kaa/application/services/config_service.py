@@ -73,7 +73,7 @@ class ConfigService:
             'mumu12v5': ['adb', 'uiautomator2', 'nemu_ipc'],
             'leidian': ['adb', 'uiautomator2'],
             'custom': ['adb', 'uiautomator2'],
-            'dmm': ['windows', 'windows_background'],
+            'dmm': ['windows', 'windows_native', 'windows_background'],
             'playcover': ['macos'],
         }
         backend = config.backend

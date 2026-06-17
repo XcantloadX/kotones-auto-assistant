@@ -140,7 +140,7 @@ class SettingsView:
             'mumu12v5': ['adb', 'uiautomator2', 'nemu_ipc'],
             'leidian': ['adb', 'uiautomator2'],
             'custom': ['adb', 'uiautomator2'],
-            'dmm': ['windows', 'windows_background'],
+            'dmm': ['windows', 'windows_native', 'windows_background'],
             'playcover': ['macos'],
         }
 
@@ -336,7 +336,8 @@ class SettingsView:
             choices=[
                 ('adb - 模拟器通用', 'adb'),
                 ('uiautomator2 - 模拟器通用', 'uiautomator2'),
-                ('windows - DMM 版前台挂机', 'windows'),
+                ('windows_native - DMM 版前台挂机', 'windows_native'),
+                ('windows - DMM 版前台挂机（旧，即将移除）', 'windows'),
                 ('windows_background - DMM 版后台挂机（实验性）', 'windows_background'),
                 ('nemu_ipc - MuMu 模拟器专属（推荐）', 'nemu_ipc'),
                 ('macos - macOS 原生窗口控制', 'macos')
@@ -360,6 +361,14 @@ class SettingsView:
 
             is_mumu = 'mumu' in backend_type
 
+            if impl == 'windows':
+                Alert(
+                    title="提示",
+                    value="「windows」控制方法已废弃，将在后续版本中移除。建议使用新的「windows_native」控制方法。",
+                    variant="warning",
+                    show_close=False
+                )
+
             if backend_type == 'playcover':
                 if impl != 'macos':
                     Alert(
@@ -371,10 +380,10 @@ class SettingsView:
 
             # 1. 检查 DMM 兼容性
             if backend_type == 'dmm':
-                if impl != 'windows' and impl != 'windows_background':
+                if impl not in ('windows', 'windows_native', 'windows_background'):
                     Alert(
                         title="提示",
-                        value="DMM 版本仅支持 `windows` 或 `windows_background` 截图方式",
+                        value="DMM 版本仅支持 `windows_native`、`windows` 或 `windows_background` 截图方式",
                         variant="warning",
                         show_close=False
                     )
@@ -395,7 +404,7 @@ class SettingsView:
                         variant="info",
                         show_close=False
                     )
-                elif impl in ['windows', 'windows_background', 'macos']:
+                elif impl in ['windows', 'windows_native', 'windows_background', 'macos']:
                     Alert(
                         title="提示",
                         value="模拟器不支持 `windows` 或 `macos` 相关的原生截图方式，建议使用 `adb` 或 `nemu_ipc`",

@@ -225,6 +225,11 @@ class KaaDeviceFactory:
                 ahk_path = get_ahk_path()
                 impl = WindowsImpl(device=d, window_query=WindowQuery(title_contains='gakumas'), ahk_exe_path=ahk_path)
                 d.setup(screenshot=impl, touch=impl)
+            elif impl_name == 'windows_native':
+                from kotonebot.client.implements.windows import WindowsNativeImpl
+                from kotonebot.interop.window import WindowQuery
+                impl = WindowsNativeImpl(device=d, window_query=WindowQuery(title_contains='gakumas'))
+                d.setup(screenshot=impl, touch=impl)
             elif impl_name == 'windows_background':
                 from kotonebot.client.implements.windows.send_message import SendMessageImpl
                 from kotonebot.client.implements.windows.print_window import PrintWindowImpl

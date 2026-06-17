@@ -61,6 +61,11 @@ class KaaGradioView:
             self.facade.idle_mgr.start()
         except Exception:
             logger.exception('Failed to start IdleModeManager')
+        # 启动 HotkeyManager（Ctrl+F4 暂停/恢复、Ctrl+F3 停止）
+        try:
+            self.facade.hotkey_mgr.start()
+        except Exception:
+            logger.exception('Failed to start HotkeyManager')
         return blocks
 
     

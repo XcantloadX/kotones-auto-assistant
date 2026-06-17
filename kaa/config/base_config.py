@@ -110,7 +110,7 @@ class BackendConfig(BaseModel):
     """设备生命周期配置。"""
     connection: DeviceConnection = Field(default_factory=lambda: TcpConnection(type='tcp'))
     """ADB 连接配置。"""
-    screenshot_impl: Literal['adb', 'uiautomator2', 'nemu_ipc', 'windows', 'windows_background', 'macos'] = 'adb'
+    screenshot_impl: Literal['adb', 'uiautomator2', 'nemu_ipc', 'windows', 'windows_native', 'windows_background', 'macos'] = 'adb'
     """
     截图方法。暂时推荐使用【adb】截图方式。
 

@@ -12,6 +12,7 @@ from kaa.application.services.task_service import TaskService
 from kaa.application.services.update_service import UpdateService
 from kaa.application.services.feedback_service import FeedbackService
 from kaa.application.core.idle_mode import IdleModeManager
+from kaa.application.core.hotkeys import HotkeyManager
 from kaa.config.produce import ProduceSolution
 from kotonebot.errors import ContextNotInitializedError
 
@@ -36,8 +37,15 @@ class KaaFacade:
         self.feedback_service = FeedbackService()
         self.instance_service = InstantService()
         self.idle_mgr = self._setup_idle_manager()
+        self.hotkey_mgr = self._setup_hotkey_manager()
 
         self._kaa = kaa_instance
+
+    def _setup_hotkey_manager(self) -> HotkeyManager:
+        """Initializes and configures the HotkeyManager (Ctrl+F4 暂停/恢复、Ctrl+F3 停止)。"""
+        return HotkeyManager(
+            request_stop=self.stop_tasks,
+        )
 
     def _setup_idle_manager(self) -> IdleModeManager:
         """Initializes and configures the IdleModeManager."""
