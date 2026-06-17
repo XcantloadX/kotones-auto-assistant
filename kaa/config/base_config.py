@@ -118,16 +118,3 @@ class BackendConfig(BaseModel):
     target_screenshot_interval: float | None = None
     """最小截图间隔，单位为秒。为 None 时不限制截图速度。"""
 
-
-class PushConfig(BaseModel):
-    """推送配置。"""
-
-    wx_pusher_enabled: bool = False
-    """是否启用 WxPusher 推送。"""
-    wx_pusher_app_token: str | None = None
-    """WxPusher 的 app token。"""
-    wx_pusher_uid: str | None = None
-    """WxPusher 的 uid。"""
-
-    free_image_host_key: str | None = None
-    """FreeImageHost API key。用于在推送通知时显示图片。"""
