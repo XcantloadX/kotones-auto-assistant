@@ -105,6 +105,7 @@ class _SplashBridge(QObject):
     statusTextChanged     = Signal(str)
     gameDataActiveChanged = Signal(bool)
     downloadFilesChanged  = Signal(list)
+    showChangelogDialog   = Signal(str, str)  # version, body
 
     _EMA_ALPHA      = 0.25
     _FLUSH_INTERVAL = 0.15  # seconds
@@ -168,6 +169,34 @@ class _SplashBridge(QObject):
         self.gradio_started = True
         self._set_gradio_url(url)
         logger.info("Gradio URL ready: %s", url)
+        self._check_and_show_changelog()
+
+    def _check_and_show_changelog(self) -> None:
+        try:
+            from kaa.config import manager as config_manager  # noqa: PLC0415
+            from kaa.application.services.update_service import get_version_changelog  # noqa: PLC0415
+
+            shared = config_manager.read_shared()
+            if shared.misc.last_seen_changelog != _APP_VERSION:
+                text = get_version_changelog(_APP_VERSION)
+                if text:
+                    # 去掉第一行标题（### v...），只保留正文
+                    lines = text.splitlines()
+                    body = "\n".join(lines[1:]).strip() if len(lines) > 1 else text
+                    self.showChangelogDialog.emit(_APP_VERSION, body)
+        except Exception:
+            logger.debug("Failed to check changelog version.", exc_info=True)
+
+    @Slot()
+    def onChangelogDismissed(self) -> None:
+        try:
+            from kaa.config import manager as config_manager  # noqa: PLC0415
+
+            shared = config_manager.read_shared()
+            shared.misc.last_seen_changelog = _APP_VERSION
+            config_manager.write_shared(shared)
+        except Exception:
+            logger.debug("Failed to save last_seen_changelog.", exc_info=True)
 
     @Slot(str)
     def onStatusChanged(self, text: str) -> None:

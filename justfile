@@ -30,7 +30,7 @@ env: fetch-submodule
     #!{{shebang_pwsh}}
     python tools/make_resources.py
 
-generate-metadata: env
+generate-metadata:
     #!{{shebang_python}}
     # 更新日志
     from pathlib import Path

@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Controls
+import QtQuick.Layouts
 import QtWebEngine
 
 ApplicationWindow {
@@ -13,6 +14,48 @@ ApplicationWindow {
 
     SystemPalette { id: sysPalette }
     color: sysPalette.window
+
+    Connections {
+        target: splash
+        function onShowChangelogDialog(version, text) {
+            changelogDialog.changelogVersion = version
+            changelogDialog.changelogText = text
+            changelogDialog.open()
+        }
+    }
+
+    Dialog {
+        id: changelogDialog
+        property string changelogVersion: ""
+        property string changelogText: ""
+
+        title: "更新日志（v" + changelogVersion + "）"
+        modal: true
+        anchors.centerIn: parent
+        width: Math.min(560, root.width - 80)
+        height: Math.min(420, root.height - 120)
+
+        standardButtons: Dialog.Ok
+
+        onAccepted: splash.onChangelogDismissed()
+        onRejected: splash.onChangelogDismissed()
+
+        ScrollView {
+            anchors.fill: parent
+            clip: true
+            ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+            ScrollBar.vertical.policy: ScrollBar.AlwaysOn
+
+            Text {
+                width: changelogDialog.width - 48
+                text: changelogDialog.changelogText
+                wrapMode: Text.Wrap
+                font.pixelSize: 14
+                lineHeight: 1.5
+                color: sysPalette.windowText
+            }
+        }
+    }
 
     SplashOverlay { visible: splash.gradioUrl.length === 0 }
 

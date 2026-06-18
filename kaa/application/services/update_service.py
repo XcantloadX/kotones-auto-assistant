@@ -18,6 +18,20 @@ logger = logging.getLogger(__name__)
 _PRIMARY_PIP_INDEX = ("https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple", "mirrors.tuna.tsinghua.edu.cn")
 _EXTRA_PIP_INDEX = ("https://pypi.1ichika.de/simple", "pypi.1ichika.de")
 
+def get_version_changelog(version: str) -> str | None:
+    """从 CHANGELOG 中提取指定版本的更新内容，找不到返回 None。"""
+    import re
+    from kaa.metadata import CHANGELOG  # noqa: PLC0415
+    pattern = re.compile(r"^### ", re.MULTILINE)
+    sections = pattern.split(CHANGELOG)
+    for section in sections:
+        first_line = section.split("\n", 1)[0].strip()
+        if first_line.lower().lstrip('v') == version.lower().lstrip('v'):
+            body = section.split("\n", 1)[1].strip() if "\n" in section else ""
+            return f"### {first_line}\n{body}" if body else f"### {first_line}"
+    return None
+
+
 class VersionInfo(BaseModel):
     """存储版本信息的 Pydantic 模型"""
     versions: List[str] = Field(default_factory=list)

@@ -17,6 +17,8 @@ class SharedMiscConfig(BaseModel):
     """游戏资源文件检查频率。manual=手动，startup=每次启动，daily=每天一次，weekly=每周一次。"""
     game_data_last_checked: str | None = None
     """上次检查游戏资源的时间（ISO 8601），由程序写入。"""
+    last_seen_changelog: str | None = None
+    """上次已展示更新日志的版本号，用于判断是否需要弹出新版提示。"""
 
 
 class TelemetryConfig(BaseModel):
