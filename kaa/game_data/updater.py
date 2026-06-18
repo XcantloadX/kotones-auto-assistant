@@ -239,10 +239,7 @@ class GameDataUpdater:
         _shared.misc.game_data_last_checked = datetime.now().isoformat()
         config_manager.write_shared(_shared)
         def log(msg: str):
-            if progress_cb:
-                progress_cb(msg)
-            else:
-                logger.info(msg)
+            logger.info(msg)
 
         def make_progress(name: str) -> Optional[Callable[[int, int], None]]:
             cb = file_progress_cb

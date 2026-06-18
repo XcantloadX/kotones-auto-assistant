@@ -1,5 +1,6 @@
 import logging
 import traceback
+from typing import Optional
 import gradio as gr
 
 from kaa.application.ui.facade import KaaFacade
@@ -18,27 +19,49 @@ custom_css = """
 }
 """
 
-def main(facade: KaaFacade, start_immediately: bool = False):
+# QML WebView 模式下使用的默认端口
+DEFAULT_GRADIO_PORT = 7860
+
+
+def main(
+    facade: KaaFacade,
+    start_immediately: bool = False,
+    *,
+    server_port: Optional[int] = None,
+) -> Optional[str]:
     """
     Main entry point for the KAA Gradio application.
-    Initializes the core application, facade, and UI view, then launches the UI.
+    Launches Gradio in non-blocking mode for the QML WebView.
+
+    :param facade: The KaaFacade instance.
+    :param start_immediately: Whether to start all tasks immediately.
+    :param server_port: Port to bind the Gradio server to.
+                        If None, uses DEFAULT_GRADIO_PORT.
+    :return: The local URL of the Gradio server (e.g. ``http://127.0.0.1:7860``),
+             or None on failure.
     """
     try:
         view = KaaGradioView(facade)
         blocks = view.create_ui()
-        
+
         if start_immediately:
             facade.start_all_tasks()
 
         from kaa.config import manager as config_manager
         misc_opts = config_manager.read_shared().misc
         logger.info(f"Launching Gradio UI... LAN exposure: {misc_opts.expose_to_lan}")
-        
-        blocks.launch(
+
+        app, local_url, share_url = blocks.launch(
             share=misc_opts.expose_to_lan,
-            inbrowser=True,
-            css=custom_css
+            inbrowser=False,
+            css=custom_css,
+            server_name='127.0.0.1',
+            server_port=server_port or DEFAULT_GRADIO_PORT,
+            prevent_thread_lock=True,
         )
+
+        logger.info(f"Gradio server running at {local_url} (non-blocking)")
+        return local_url
 
     except Exception:
         logger.exception("A critical error occurred during application startup.")
@@ -51,4 +74,5 @@ def main(facade: KaaFacade, start_immediately: bool = False):
             )
             gr.Code(traceback.format_exc(), label="Traceback")
 
-        error_blocks.launch(inbrowser=True)
+        error_blocks.launch(inbrowser=False)
+        return None

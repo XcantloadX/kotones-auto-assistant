@@ -113,31 +113,15 @@ def main():
         add_file_logger(log_filename)
 
         from kaa.config import manager as config_manager
-        from kaa.game_data.updater import GameDataUpdater, should_check
-        from kaa.game_data.update_ui import GameDataUpdateUI
 
-        _updater = GameDataUpdater()
-        _update_ui = GameDataUpdateUI()
-        _progress_cb = lambda msg: logging.getLogger(__name__).info('[game_data] %s', msg)  # noqa: E731
-
-        def _run_update():
-            _updater.check_and_update(
-                progress_cb=_progress_cb,
-                file_progress_cb=_update_ui.on_file_progress,
-            )
-            _update_ui.mark_complete()
-
-        _shared = config_manager.read_shared()
-        if should_check(_shared.misc):
-            _run_update()
-
-        from .gr import main as gr_main
         from ..application.ui.facade import KaaFacade
         facade = KaaFacade(kaa())
         log_level_str = config_manager.read_shared().misc.log_level
         log_level = logging.DEBUG if log_level_str == 'verbose' else logging.INFO
         kaa().set_log_level(log_level)
-        gr_main(facade, psr.parse_args().start_immidiately)
+
+        from .qml_app import main as qml_main
+        qml_main(facade, args.start_immidiately)
 
 if __name__ == '__main__':
     main()

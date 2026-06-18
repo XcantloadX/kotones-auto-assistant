@@ -1,0 +1,47 @@
+import QtQuick
+import QtQuick.Controls
+import QtWebEngine
+
+ApplicationWindow {
+    id: root
+    title: "琴音小助手"
+    visible: Window.Maximized
+    width: 1280
+    height: 800
+    minimumWidth: 800
+    minimumHeight: 600
+
+    SystemPalette { id: sysPalette }
+    color: sysPalette.window
+
+    SplashOverlay { visible: splash.gradioUrl.length === 0 }
+
+    WebEngineView {
+        id: webView
+        anchors.fill: parent
+        url: splash.gradioUrl
+        visible: splash.gradioUrl.length > 0
+
+        onLoadingChanged: function(loadRequest) {
+            if (loadRequest.status === WebEngineView.LoadFailedStatus) {
+                loadError.text = "加载失败，请检查 Gradio 服务是否正常运行。\nURL: " + splash.gradioUrl
+            }
+        }
+    }
+
+    LoadingOverlay {
+        loadingProgress: webView.loadingProgress
+        visible: splash.gradioUrl.length > 0 && webView.loadingProgress < 100
+    }
+
+    Text {
+        id: loadError
+        anchors.centerIn: parent
+        text: ""
+        color: "#d32f2f"
+        font.pixelSize: 14
+        horizontalAlignment: Text.AlignHCenter
+        visible: text.length > 0 && webView.loadingProgress < 100
+        z: 100
+    }
+}
