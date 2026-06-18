@@ -38,30 +38,19 @@ logger = logging.getLogger(__name__)
 
 
 def windows_gui_error_middleware(ctx: BotContext, task: Task, next_handler: NextHandler):
-    """负责处理 UserFriendlyError 并弹出 Windows 对话框"""
+    """负责处理 UserFriendlyError 并弹出对话框"""
     try:
         next_handler()
     except UserFriendlyError as e:
         ctx.has_error = True
         ctx.last_exception = e
         logger.error(f"Task {task.name} failed: {e.message}")
-        
-        if is_windows():
-            try:
-                from kotonebot.interop.win.task_dialog import TaskDialog
-                dialog = TaskDialog(
-                    title='琴音小助手',
-                    main_instruction='任务执行失败',
-                    content=e.message,
-                    custom_buttons=e.action_buttons,
-                    main_icon='error'
-                )
-                res, _, _ = dialog.show()
-                e.invoke(res)
-            except (ImportError, NotImplementedError):
-                pass
-            ctx.stop()
-    
+        from kaa.application.ui.error_bridge import get_bridge
+        bridge = get_bridge()
+        if bridge is not None:
+            bridge.show(e.message, e.action_buttons, e.invoke)
+        ctx.stop()
+
     except Exception as e:
         # 处理非用户友好错误
         ctx.has_error = True

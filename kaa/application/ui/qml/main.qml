@@ -24,6 +24,74 @@ ApplicationWindow {
         }
     }
 
+    Connections {
+        target: errorDialog
+        function onShowDialog(mainInstruction, content, buttons) {
+            taskErrorDialog.mainInstruction = mainInstruction
+            taskErrorDialog.content = content
+            taskErrorDialog.buttons = buttons
+            taskErrorDialog.open()
+        }
+    }
+
+    Dialog {
+        id: taskErrorDialog
+        property string mainInstruction: ""
+        property string content: ""
+        property var buttons: []
+
+        title: taskErrorDialog.mainInstruction
+        modal: true
+        closePolicy: Popup.NoAutoClose
+        anchors.centerIn: parent
+        width: Math.min(480, root.width - 80)
+        standardButtons: Dialog.NoButton
+
+        Column {
+            width: parent.width
+            spacing: 8
+
+            Text {
+                text: taskErrorDialog.content
+                font.pixelSize: 13
+                color: sysPalette.windowText
+                wrapMode: Text.Wrap
+                width: parent.width
+                lineHeight: 1.4
+            }
+        }
+
+        footer: Rectangle {
+            implicitHeight: 81
+            color: sysPalette.window
+
+            Rectangle {
+                width: parent.width
+                height: 1
+                color: Application.styleHints.colorScheme === Qt.Light ? "#0F000000" : "#15FFFFFF"
+            }
+
+            Row {
+                anchors.right: parent.right
+                anchors.verticalCenter: parent.verticalCenter
+                anchors.rightMargin: 24
+                spacing: 8
+
+                Repeater {
+                    model: taskErrorDialog.buttons
+                    Button {
+                        text: modelData.text
+                        highlighted: index === taskErrorDialog.buttons.length - 1
+                        onClicked: {
+                            errorDialog.onButtonClicked(modelData.id)
+                            taskErrorDialog.close()
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     Dialog {
         id: changelogDialog
         property string changelogVersion: ""

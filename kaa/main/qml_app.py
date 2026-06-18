@@ -21,6 +21,7 @@ from pathlib import Path
 from typing import Optional
 
 from PySide6.QtCore import QUrl, QObject, Property, QThread, Signal, Slot
+from kaa.application.ui.error_bridge import ErrorDialogBridge, set_bridge
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QApplication
 from PySide6.QtQml import QQmlApplicationEngine
@@ -355,8 +356,11 @@ def main(facade: KaaFacade, start_immediately: bool = False) -> None:
         raise FileNotFoundError(f"QML file not found: {qml_file}")
 
     bridge = _SplashBridge()
+    error_bridge = ErrorDialogBridge()
+    set_bridge(error_bridge)
     engine = QQmlApplicationEngine()
     engine.rootContext().setContextProperty("splash", bridge)
+    engine.rootContext().setContextProperty("errorDialog", error_bridge)
     engine.load(QUrl.fromLocalFile(str(qml_file)))
 
     if not engine.rootObjects():
@@ -394,6 +398,7 @@ def main(facade: KaaFacade, start_immediately: bool = False) -> None:
 
     # ── 5. 清理 ──────────────────────────────────────────────────
     # 先销毁 QML 引擎：此时 bridge 仍存活，QML 绑定求值不会得到 null
+    set_bridge(None)
     del engine
 
     # 等待后台线程退出（线程可能已通过 deleteLater 被销毁）
