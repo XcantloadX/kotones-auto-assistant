@@ -20,7 +20,6 @@ Rectangle {
             height: 120
             fillMode: Image.PreserveAspectFit
             smooth: true
-            mipmap: true
             visible: splash.iconPath.length > 0
         }
 

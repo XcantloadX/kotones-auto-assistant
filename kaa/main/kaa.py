@@ -2,7 +2,7 @@
 import sys
 import logging
 import importlib.metadata
-from typing import Any, cast, Callable
+from typing import Any, cast, Callable, Iterable
 
 from kotonebot.core.bot import BotContext, KotoneBot
 from kotonebot.backend.context import Task
@@ -290,10 +290,20 @@ def sentry_middleware(ctx: BotContext, task: Task, next_handler: Callable[[], No
 class Kaa(KotoneBot):
     """
     琴音小助手 kaa 主类。由其他 GUI/TUI 调用。
+
+    :param config_path: 配置文件目录路径
+    :param profile_name: 指定 profile 名称。传入时跳过配置发现，直接使用该 profile。
     """
-    def __init__(self, config_path: str):
-        upgrade_config()
-        self._init_config()
+    def __init__(self, config_path: str = './conf', profile_name: str | None = None):
+        self._profile_name = profile_name
+
+        if profile_name is None:
+            upgrade_config()
+            self._init_config()
+        else:
+            from kaa.config import manager  # noqa: PLC0415
+            self._config = manager.read(profile_name, not_exist='create')
+
         self.version = importlib.metadata.version('ksaa')
         
         logger.info('Version: %s', self.version)
@@ -324,8 +334,9 @@ class Kaa(KotoneBot):
             shared.profiles.last_used = name
             manager.write_shared(shared)
 
-        config = manager.read(name, not_exist='create')
-        init(config, name)
+        self._config = manager.read(name, not_exist='create')
+        self._profile_name = name
+        init(self._config, name)
         logger.info("Loaded profile '%s'", name)
 
     def _initialize(self):
@@ -349,6 +360,10 @@ class Kaa(KotoneBot):
             # 第一个 handler 是默认的 StreamHandler
             handlers[0].setLevel(level)
 
+    @property
+    def is_running(self) -> bool:
+        return self._ctx is not None and self._ctx.is_running
+
     def _task_generator(self):
         for task in (func.task for func in TASK_FUNCTIONS):
             try:
@@ -362,6 +377,14 @@ class Kaa(KotoneBot):
     
     def start_all(self):
         return self.start(self._task_generator())
+
+    def run(self, tasks: Iterable[Task]) -> None:
+        """重写：在 run 前注入 kaa_context（线程安全的单点入口，覆盖 run/start 两条路径）。"""
+        from kaa.kaa_context import init as kaa_init
+        assert self._config is not None and self._profile_name is not None, \
+            "Kaa not initialized. Call with a profile_name or ensure _init_config() has been called."
+        kaa_init(self._config, self._profile_name)
+        return super().run(tasks)
     
     def stop(self):
         try:

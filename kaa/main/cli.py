@@ -115,7 +115,8 @@ def main():
         from kaa.config import manager as config_manager
 
         from ..application.ui.facade import KaaFacade
-        facade = KaaFacade(kaa())
+        profile_name = config_manager.read_shared().profiles.last_used or 'default'
+        facade = KaaFacade(kaa(), profile_name)
         log_level_str = config_manager.read_shared().misc.log_level
         log_level = logging.DEBUG if log_level_str == 'verbose' else logging.INFO
         kaa().set_log_level(log_level)

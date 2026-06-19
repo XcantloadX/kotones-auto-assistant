@@ -70,7 +70,8 @@ class KaaGradioView:
 
     
     def _create_header(self):
-        gr.Markdown(f"# 琴音小助手 v{self.facade._kaa.version}")
+        profile_tag = f" | {self.facade.profile_name}"
+        gr.Markdown(f"# 琴音小助手 v{self.facade._kaa.version}{profile_tag}")
 
     def _setup_timers(self):
         """Sets up all the UI polling timers."""

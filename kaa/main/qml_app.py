@@ -1,35 +1,38 @@
 """QML + WebEngine 入口模块。
 
-启动一个 PySide6 QML 窗口，在 WebEngineView 内加载 Gradio 页面，
-替代原先 ``inbrowser=True`` 直接打开系统浏览器的行为。
-
-启动流程（串行）：
-1. 立即创建 ``QApplication`` 并加载 ``main.qml`` —— 用户看到 Splash 画面
-2. 后台 ``QThread`` 中依次执行：
-   a. 检查并更新游戏数据（通过 signal 报告进度到 QML）
-   b. 延迟导入 ``gradio`` 并启动 Gradio server
-3. 通过 Qt signals 将服务器 URL 回传主线程，设置到 QML 属性
-4. WebEngineView 加载 Gradio 页面，Splash 自动隐藏
+多 Profile 架构：
+- 共享 FastAPI 服务器，所有 Gradio Blocks 挂载到不同路径
+- TabManager 管理多 profile tab 生命周期
+- 启动时显示 Splash，后台完成游戏数据更新后启动 uvicorn
 """
 
 import logging
 import sys
 import time
+import threading
 from dataclasses import asdict, dataclass, field
 from importlib.metadata import version as pkg_version, PackageNotFoundError
+from typing import cast
 from pathlib import Path
-from typing import Optional
-
-from PySide6.QtCore import QUrl, QObject, Property, QThread, Signal, Slot
+from PySide6.QtCore import QUrl, QObject, Property, Signal, Slot
 from kaa.application.ui.error_bridge import ErrorDialogBridge, set_bridge
+from kaa.application.ui.controllers import TabManager, ProfileStoreBackend
 from PySide6.QtGui import QFont, QIcon
 from PySide6.QtWidgets import QApplication
 from PySide6.QtQml import QQmlApplicationEngine
 from PySide6.QtQuickControls2 import QQuickStyle
-# 导入 QtWebEngineWidgets 以确保 WebEngine 共享库在 QML 引擎加载前初始化
-from PySide6 import QtWebEngineWidgets  # noqa: F401
+from PySide6.QtQuick import QQuickWindow
+
+if sys.platform == 'win32':
+    from kaa.application.ui.platform_win32 import (
+        MaxHoverBridge,
+        TabBarHitTestBridge,
+        WindowEventFilter,
+        setup_frameless_window,
+    )
 
 from kaa.application.ui.facade import KaaFacade
+from fastapi import FastAPI
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +69,6 @@ _KB = 1024
 
 
 def _fmt_size(n: int) -> str:
-    """格式化字节大小，如 '1.2 MB' / '345.6 KB'。"""
     if n >= _MB:
         return f"{n / _MB:.1f} MB"
     if n >= _KB:
@@ -75,7 +77,6 @@ def _fmt_size(n: int) -> str:
 
 
 def _fmt_size_pair(downloaded: int, total: int) -> str:
-    """格式化已下载/总大小，如 '3.5 / 24.6 MB'。"""
     if total <= 0:
         return f"{_fmt_size(downloaded)} / —"
     if total >= _MB:
@@ -86,7 +87,6 @@ def _fmt_size_pair(downloaded: int, total: int) -> str:
 
 
 def _fmt_speed(bps: float) -> str:
-    """格式化下载速度，如 '2.3 MB/s' / '456 KB/s'。"""
     if bps <= 0:
         return "—"
     if bps >= _MB:
@@ -98,19 +98,17 @@ class _SplashBridge(QObject):
     """Python↔QML 通信桥，同时作为 worker signal 的接收端（Slot）。
 
     通过 ``engine.rootContext().setContextProperty("splash", bridge)`` 暴露给 QML。
-    worker signal 直接 connect 到对应 Slot，无需在 main() 里定义中间闭包。
-    进度追踪（EMA 速度 + 节流刷新）也内聚在此，因为它属于展示层行为。
     """
 
     gradioUrlChanged      = Signal(str)
     statusTextChanged     = Signal(str)
     gameDataActiveChanged = Signal(bool)
     downloadFilesChanged  = Signal(list)
-    showChangelogDialog   = Signal(str, str)  # version, body
-    showMigrationDialog   = Signal(list)      # list[dict] migration messages
+    showChangelogDialog   = Signal(str, str)
+    showMigrationDialog   = Signal(list)
 
     _EMA_ALPHA      = 0.25
-    _FLUSH_INTERVAL = 0.15  # seconds
+    _FLUSH_INTERVAL = 0.15
 
     def __init__(self) -> None:
         super().__init__()
@@ -122,7 +120,7 @@ class _SplashBridge(QObject):
         self._speed_state: dict[str, _SpeedState] = {}
         self._last_flush: float = 0.0
         self._dirty: bool = False
-        self.gradio_started: bool = False  # 供退出时决定是否调用 gr.close_all()
+        self.gradio_started: bool = False
 
     # ── Qt Properties ──────────────────────────────────────────────
 
@@ -164,8 +162,6 @@ class _SplashBridge(QObject):
     appVersion     = Property(str,  lambda self: _APP_VERSION, constant=True)
     iconPath       = Property(str,  lambda self: str(_ICON_PATH).replace("\\", "/"), constant=True)
 
-    # ── Slots（直接接收 _StartupWorker signals）────────────────────
-
     @Slot(str)
     def onUrlReady(self, url: str) -> None:
         self.gradio_started = True
@@ -176,14 +172,13 @@ class _SplashBridge(QObject):
 
     def _check_and_show_changelog(self) -> None:
         try:
-            from kaa.config import manager as config_manager  # noqa: PLC0415
-            from kaa.application.services.update_service import get_version_changelog  # noqa: PLC0415
+            from kaa.config import manager as config_manager
+            from kaa.application.services.update_service import get_version_changelog
 
             shared = config_manager.read_shared()
             if shared.misc.last_seen_changelog != _APP_VERSION:
                 text = get_version_changelog(_APP_VERSION)
                 if text:
-                    # 去掉第一行标题（### v...），只保留正文
                     lines = text.splitlines()
                     body = "\n".join(lines[1:]).strip() if len(lines) > 1 else text
                     self.showChangelogDialog.emit(_APP_VERSION, body)
@@ -192,7 +187,7 @@ class _SplashBridge(QObject):
 
     def _check_and_show_migration(self) -> None:
         try:
-            from kaa.config.migration import get_deferred_messages  # noqa: PLC0415
+            from kaa.config.migration import get_deferred_messages
 
             messages = get_deferred_messages()
             if messages:
@@ -212,8 +207,7 @@ class _SplashBridge(QObject):
     @Slot()
     def onChangelogDismissed(self) -> None:
         try:
-            from kaa.config import manager as config_manager  # noqa: PLC0415
-
+            from kaa.config import manager as config_manager
             shared = config_manager.read_shared()
             shared.misc.last_seen_changelog = _APP_VERSION
             config_manager.write_shared(shared)
@@ -274,103 +268,84 @@ class _SplashBridge(QObject):
         self._set_download_files([asdict(f) for f in self._files.values()])
 
 
-class _StartupWorker(QObject):
-    """在后台线程中串行完成游戏数据更新与 Gradio 服务器启动。
+def _startup_task(facade: KaaFacade, server_app: FastAPI, bridge: _SplashBridge,
+                  tab_manager: TabManager) -> None:
+    """后台线程入口：游戏数据更新 → 还原 tabs → 启动 uvicorn。"""
+    # ── Phase 1: 游戏数据更新 ────────────────────────────────
+    try:
+        from kaa.config import manager as config_manager
+        from kaa.game_data.updater import GameDataUpdater, should_check
 
-    - 游戏数据更新：通过 ``fileProgress`` signal 报告每个文件的下载进度。
-    - Gradio 是一个重型包，首次 ``import gradio`` 需要 5–15 秒。
+        shared = config_manager.read_shared()
+        if should_check(shared.misc):
+            bridge.onGameDataStarted()
+            logger.info("Starting game data update (QML mode).")
 
-    将这些操作放在后台线程，确保主线程的 Qt 事件循环（Splash 动画）不被阻塞。
-    """
-
-    urlReady = Signal(str)
-    statusChanged = Signal(str)
-    failed = Signal(str)
-    # 游戏数据下载进度：file_name, downloaded_bytes, total_bytes
-    fileProgress = Signal(str, int, int)
-    gameDataStarted = Signal()
-    gameDataFinished = Signal()
-
-    def __init__(self, facade: KaaFacade, start_immediately: bool):
-        super().__init__()
-        self._facade = facade
-        self._start_immediately = start_immediately
-
-    def run(self) -> None:
-        """Worker 入口：游戏数据更新 → 导入 gradio → 启动 server → 发射 urlReady。"""
-        # ── Phase 1: 游戏数据更新 ────────────────────────────────
-        try:
-            from kaa.config import manager as config_manager  # noqa: PLC0415
-            from kaa.game_data.updater import GameDataUpdater, should_check  # noqa: PLC0415
-
-            shared = config_manager.read_shared()
-            if should_check(shared.misc):
-                self.gameDataStarted.emit()
-                self.statusChanged.emit("正在更新游戏数据…")
-                logger.info("Starting game data update (QML mode).")
-
-                updater = GameDataUpdater()
-                updater.check_and_update(
-                    progress_cb=None,
-                    file_progress_cb=lambda name, dl, total: self.fileProgress.emit(name, dl, total),
-                )
-                self.gameDataFinished.emit()
-                logger.info("Game data update finished.")
-            else:
-                logger.info("Game data update skipped (not needed).")
-        except BaseException:
-            logger.exception("Game data update failed; continuing to start Gradio.")
-            self.gameDataFinished.emit()
-
-        # ── Phase 2: 启动 Gradio ─────────────────────────────────
-        try:
-            self.statusChanged.emit("正在加载依赖…")
-
-            # 延迟导入 gradio（重型操作，5–15s）
-            from kaa.main.gr import main as gr_main  # noqa: PLC0415
-
-            self.statusChanged.emit("正在启动服务器…")
-
-            url: Optional[str] = gr_main(
-                self._facade,
-                self._start_immediately,
+            updater = GameDataUpdater()
+            updater.check_and_update(
+                progress_cb=None,
+                file_progress_cb=lambda name, dl, total: bridge.onFileProgress(name, dl, total),
             )
+            bridge.onGameDataFinished()
+            logger.info("Game data update finished.")
+        else:
+            logger.info("Game data update skipped (not needed).")
+    except BaseException:
+        logger.exception("Game data update failed; continuing.")
+        bridge.onGameDataFinished()
 
-            if url:
-                logger.info("Gradio server URL: %s", url)
-                self.statusChanged.emit("正在加载页面…")
-                self.urlReady.emit(url)
-            else:
-                logger.error("Failed to start Gradio server.")
-                self.failed.emit("Gradio 服务器启动失败")
-        except Exception:
-            logger.exception("Gradio worker failed")
-            self.failed.emit("Gradio 启动过程中发生异常，请查看日志")
+    # ── Phase 2: 还原已保存 tabs（mount 会导入 gradio） ─────
+    try:
+        bridge.onStatusChanged("正在恢复标签页…")
+        tab_manager.restore_tabs()
+    except Exception:
+        logger.exception("Tab restoration failed; continuing.")
+
+    # ── Phase 3: 启动 uvicorn ────────────────────────────────
+    try:
+        bridge.onStatusChanged("正在启动服务器…")
+
+        import uvicorn
+        config = uvicorn.Config(
+            server_app,
+            host="127.0.0.1",
+            port=7860,
+            log_level="critical",
+        )
+        server = uvicorn.Server(config)
+        url = "http://127.0.0.1:7860"
+        logger.info("Uvicorn server ready at %s", url)
+        bridge.onStatusChanged("正在加载页面…")
+        bridge.onUrlReady(url)
+        server.run()
+    except Exception:
+        logger.exception("Uvicorn worker failed")
+        bridge.onStatusChanged("服务器启动过程中发生异常，请查看日志")
 
 
 # ── Entry point ────────────────────────────────────────────────────
 
 def main(facade: KaaFacade, start_immediately: bool = False) -> None:
     """
-    启动 QML 主窗口并加载 Gradio 页面。
+    启动 QML 主窗口，Multi-Profile 架构。
 
-    1. 立即创建 ``QApplication`` 并加载 ``main.qml``（显示 Splash）
-    2. 后台线程导入 gradio 并启动 server
-    3. server 就绪后通过 signal 将 URL 传回主线程
-    4. 运行 Qt 事件循环（阻塞，直到窗口关闭）
-
-    :param facade: KaaFacade 实例
-    :param start_immediately: 是否立即开始所有任务
+    1. 创建共享 FastAPI app + TabManager
+    2. 创建 QApplication，加载 main.qml（显示 Splash）
+    3. 后台线程完成游戏数据更新 + 启动 uvicorn
+    4. 用户通过 TitleBar 新建 tab → TabManager.openTab → ProfileRunner.mount
+       → WebEngineView 加载 Gradio 页面
     """
-    # ── 0. 设置 Fluent 控件样式（必须在 QApplication 创建前） ────
+    # ── 0. 设置 Fluent 控件样式 ─────────────────────────────────
     QQuickStyle.setStyle("FluentWinUI3")
 
-    # ── 1. 创建 QApplication ──────────────────────────────────────
+    # ── 1. 创建共享 FastAPI 服务器 ──────────────────────────────
+    server_app = FastAPI()
+
+    # ── 2. 创建 QApplication ─────────────────────────────────────
     app = QApplication(sys.argv)
     app.setApplicationName("琴音小助手")
     app.setWindowIcon(QIcon(str(_ICON_PATH)))
 
-    # ── 1.5 设置应用默认字体（各平台选择最合适的中文 UI 字体） ──
     if sys.platform == "win32":
         _font = QFont("Microsoft YaHei UI", 9)
     elif sys.platform == "darwin":
@@ -379,70 +354,69 @@ def main(facade: KaaFacade, start_immediately: bool = False) -> None:
         _font = QFont("Noto Sans CJK SC", 10)
     app.setFont(_font)
 
-    # ── 2. 创建 bridge，加载 QML（立即显示 Splash 画面） ─────────
+    # ── 3. 创建 controllers ─────────────────────────────────────
+    tab_manager = TabManager(server_app)
+    profile_store = ProfileStoreBackend(tab_manager)
+
+    # ── 4. 创建 bridge，加载 QML ────────────────────────────────
     qml_file = _QML_DIR / "main.qml"
     if not qml_file.exists():
-        logger.error(f"QML file not found: {qml_file}")
+        logger.error("QML file not found: %s", qml_file)
         raise FileNotFoundError(f"QML file not found: {qml_file}")
 
     bridge = _SplashBridge()
     error_bridge = ErrorDialogBridge()
     set_bridge(error_bridge)
     engine = QQmlApplicationEngine()
+
+    # ── 创建平台相关桥接对象 ────────────────────────────────────
+    max_hover_bridge = MaxHoverBridge() if sys.platform == 'win32' else None
+    tab_bar_bridge = TabBarHitTestBridge() if sys.platform == 'win32' else None
+
+    # 注册 QML 上下文属性
     engine.rootContext().setContextProperty("splash", bridge)
     engine.rootContext().setContextProperty("errorDialog", error_bridge)
+    engine.rootContext().setContextProperty("TabManager", tab_manager)
+    engine.rootContext().setContextProperty("ProfileStore", profile_store)
+    engine.rootContext().setContextProperty('maxHoverBridge', max_hover_bridge)
+    engine.rootContext().setContextProperty('tabBarBridge', tab_bar_bridge)
+    engine.rootContext().setContextProperty('fluentFontPath',
+        str(_UI_DIR / "fonts" / "FluentSystemIcons-Regular.ttf").replace("\\", "/"))
+
     engine.load(QUrl.fromLocalFile(str(qml_file)))
 
     if not engine.rootObjects():
         logger.error("Failed to load QML file. Exiting.")
         return
 
-    # ── 3. 后台线程：游戏数据更新 → Gradio 启动 ────────────────
-    thread = QThread()
-    worker = _StartupWorker(facade, start_immediately)
-    worker.moveToThread(thread)
+    # ── 5. 无边框窗口 + Win32 event filter（仅 Windows）────────
+    if sys.platform == 'win32' and max_hover_bridge is not None and tab_bar_bridge is not None:
+        window = cast(QQuickWindow, engine.rootObjects()[0])
+        hwnd = int(window.winId())
+        setup_frameless_window(hwnd)
+        _win_event_filter = WindowEventFilter(window, max_hover_bridge, tab_bar_bridge)
+        app.installNativeEventFilter(_win_event_filter)
 
-    def _on_finished() -> None:
-        thread.quit()
+    # ── 6. 后台线程：游戏数据更新 → 启动 uvicorn ──────────────
+    _startup_thread = threading.Thread(
+        target=_startup_task,
+        args=(facade, server_app, bridge, tab_manager),
+        daemon=True,
+    )
+    _startup_thread.start()
 
-    worker.urlReady.connect(bridge.onUrlReady)
-    worker.statusChanged.connect(bridge.onStatusChanged)
-    worker.failed.connect(bridge.onStatusChanged)
-    worker.failed.connect(_on_finished)
-    worker.urlReady.connect(_on_finished)
-    worker.gameDataStarted.connect(bridge.onGameDataStarted)
-    worker.gameDataFinished.connect(bridge.onGameDataFinished)
-    worker.fileProgress.connect(bridge.onFileProgress)
-    thread.started.connect(worker.run)
-
-    # 确保线程结束时 worker 被清理
-    thread.finished.connect(worker.deleteLater)
-    thread.finished.connect(thread.deleteLater)
-
-    thread.start()
-
-    # ── 4. 运行 Qt 事件循环 ──────────────────────────────────────
-    logger.info("Starting Qt event loop (QML WebView mode).")
+    # ── 6. 运行 Qt 事件循环 ─────────────────────────────────────
+    logger.info("Starting Qt event loop (Multi-Profile QML mode).")
     exit_code = app.exec()
     logger.info("Qt event loop exited with code %s.", exit_code)
 
-    # ── 5. 清理 ──────────────────────────────────────────────────
-    # 先销毁 QML 引擎：此时 bridge 仍存活，QML 绑定求值不会得到 null
+    # ── 7. 清理 ─────────────────────────────────────────────────
     set_bridge(None)
     del engine
 
-    # 等待后台线程退出（线程可能已通过 deleteLater 被销毁）
-    try:
-        if thread.isRunning():
-            thread.quit()
-            thread.wait(3000)
-    except RuntimeError:
-        logger.debug("QThread already deleted, skipping cleanup.")
-
-    # 关闭 Gradio server（仅在成功启动后才尝试）
     if bridge.gradio_started:
         try:
-            import gradio as gr  # noqa: PLC0415
+            import gradio as gr
             gr.close_all()
         except Exception:
             logger.debug("Failed to close Gradio servers during cleanup.", exc_info=True)

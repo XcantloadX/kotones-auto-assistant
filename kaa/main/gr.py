@@ -2,6 +2,7 @@ import logging
 import traceback
 from typing import Optional
 import gradio as gr
+from fastapi import FastAPI
 
 from kaa.application.ui.facade import KaaFacade
 from kaa.application.ui.gradio_view import KaaGradioView
@@ -21,6 +22,34 @@ custom_css = """
 
 # QML WebView 模式下使用的默认端口
 DEFAULT_GRADIO_PORT = 7860
+
+
+def create_profile_blocks(
+    facade: KaaFacade,
+) -> gr.Blocks:
+    """创建 profile 的 Blocks 实例（不启动服务器）。
+
+    :param facade: KaaFacade 实例
+    :param profile_name: profile 名称（用于 UI 显示）
+    :return: 配置好的 gr.Blocks 实例
+    """
+    view = KaaGradioView(facade)
+    blocks = view.create_ui()
+    return blocks
+
+
+def start_server(app: FastAPI) -> str:
+    """启动共享 FastAPI 服务器，返回 URL。"""
+    import uvicorn
+    config = uvicorn.Config(
+        app,
+        host="127.0.0.1",
+        port=DEFAULT_GRADIO_PORT,
+        log_level="info",
+    )
+    server = uvicorn.Server(config)
+    server.run()
+    return f"http://127.0.0.1:{DEFAULT_GRADIO_PORT}"
 
 
 def main(

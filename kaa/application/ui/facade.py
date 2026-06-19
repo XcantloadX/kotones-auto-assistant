@@ -25,10 +25,10 @@ class KaaFacade:
     It orchestrates service interactions and manages application state flow.
     """
 
-    def __init__(self, kaa_instance: Kaa):
+    def __init__(self, kaa_instance: Kaa, profile_name: str):
+        self._profile_name = profile_name
         # Core services
-        from kaa.config import manager as config_manager  # noqa: PLC0415
-        self.config_service = ConfigService(name=config_manager.read_shared().profiles.last_used or 'default')
+        self.config_service = ConfigService(name=profile_name)
         self.produce_solution_service = ProduceSolutionService()
         self.task_service = TaskService(kaa_instance)
 
@@ -40,6 +40,10 @@ class KaaFacade:
         self.hotkey_mgr = self._setup_hotkey_manager()
 
         self._kaa = kaa_instance
+
+    @property
+    def profile_name(self) -> str:
+        return self._profile_name
 
     def _setup_hotkey_manager(self) -> HotkeyManager:
         """Initializes and configures the HotkeyManager (Ctrl+F4 暂停/恢复、Ctrl+F3 停止)。"""
