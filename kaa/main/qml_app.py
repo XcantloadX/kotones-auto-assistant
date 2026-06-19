@@ -107,6 +107,7 @@ class _SplashBridge(QObject):
     gameDataActiveChanged = Signal(bool)
     downloadFilesChanged  = Signal(list)
     showChangelogDialog   = Signal(str, str)  # version, body
+    showMigrationDialog   = Signal(list)      # list[dict] migration messages
 
     _EMA_ALPHA      = 0.25
     _FLUSH_INTERVAL = 0.15  # seconds
@@ -170,6 +171,7 @@ class _SplashBridge(QObject):
         self.gradio_started = True
         self._set_gradio_url(url)
         logger.info("Gradio URL ready: %s", url)
+        self._check_and_show_migration()
         self._check_and_show_changelog()
 
     def _check_and_show_changelog(self) -> None:
@@ -187,6 +189,25 @@ class _SplashBridge(QObject):
                     self.showChangelogDialog.emit(_APP_VERSION, body)
         except Exception:
             logger.debug("Failed to check changelog version.", exc_info=True)
+
+    def _check_and_show_migration(self) -> None:
+        try:
+            from kaa.config.migration import get_deferred_messages  # noqa: PLC0415
+
+            messages = get_deferred_messages()
+            if messages:
+                data = [
+                    {
+                        "text": msg.text,
+                        "level": msg.level,
+                        "oldVersion": msg.old_version or "",
+                        "newVersion": msg.new_version or "",
+                    }
+                    for msg in messages
+                ]
+                self.showMigrationDialog.emit(data)
+        except Exception:
+            logger.debug("Failed to check migration messages.", exc_info=True)
 
     @Slot()
     def onChangelogDismissed(self) -> None:

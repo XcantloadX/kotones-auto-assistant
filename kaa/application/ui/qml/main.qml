@@ -25,6 +25,14 @@ ApplicationWindow {
     }
 
     Connections {
+        target: splash
+        function onShowMigrationDialog(messages) {
+            migrationDialog.messages = messages
+            migrationDialog.open()
+        }
+    }
+
+    Connections {
         target: errorDialog
         function onShowDialog(mainInstruction, content, buttons) {
             taskErrorDialog.mainInstruction = mainInstruction
@@ -121,6 +129,62 @@ ApplicationWindow {
                 font.pixelSize: 14
                 lineHeight: 1.5
                 color: sysPalette.windowText
+            }
+        }
+    }
+
+    Dialog {
+        id: migrationDialog
+        property var messages: []
+
+        title: "配置升级报告"
+        modal: true
+        anchors.centerIn: parent
+        width: Math.min(560, root.width - 80)
+        height: Math.min(420, root.height - 120)
+        standardButtons: Dialog.Ok
+
+        ScrollView {
+            anchors.fill: parent
+            clip: true
+            ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+            ScrollBar.vertical.policy: ScrollBar.AsNeeded
+
+            Column {
+                width: migrationDialog.width - 48
+                spacing: 8
+                topPadding: 8
+                bottomPadding: 8
+
+                Repeater {
+                    model: migrationDialog.messages
+
+                    delegate: Row {
+                        spacing: 6
+                        width: parent.width
+
+                        Text {
+                            text: modelData.level === "warning" ? "⚠️" : "ℹ️"
+                            font.pixelSize: 13
+                            color: modelData.level === "warning" ? "#e65100" : sysPalette.windowText
+                            verticalAlignment: Text.AlignTop
+                        }
+
+                        Text {
+                            width: parent.width - 26
+                            text: {
+                                var versionInfo = ""
+                                if (modelData.oldVersion && modelData.newVersion)
+                                    versionInfo = "（" + modelData.oldVersion + " → " + modelData.newVersion + "）"
+                                return versionInfo + modelData.text
+                            }
+                            wrapMode: Text.Wrap
+                            font.pixelSize: 13
+                            lineHeight: 1.4
+                            color: sysPalette.windowText
+                        }
+                    }
+                }
             }
         }
     }
