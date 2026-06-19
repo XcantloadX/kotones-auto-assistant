@@ -698,6 +698,13 @@ class SettingsView:
             )
             self._bind_shared(c7, ref(of(misc).game_data_check), lambda: shared)
 
+            c8 = gr.Checkbox(
+                label="自动安装游戏资源更新",
+                value=misc.game_data_auto_update,
+                interactive=True,
+            )
+            self._bind_shared(c8, ref(of(misc).game_data_auto_update), lambda: shared)
+
             game_data_output = gr.Textbox(label="游戏资源检查进度", interactive=False, lines=4, visible=False)
             def _check_game_data():
                 yield from ((gr.Textbox(value=text, visible=True)) for text in self.facade.check_game_data())

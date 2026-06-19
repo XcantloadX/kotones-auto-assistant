@@ -267,7 +267,15 @@ class GameDataUpdater:
             log("游戏数据已是最新版本")
             return False
 
-        log(f"发现新版本: {manifest.version[:8]}... 开始更新")
+        log(f"发现新版本: {manifest.version[:8]}")
+
+        if not _shared.misc.game_data_auto_update:
+            log("自动安装已关闭，跳过更新。如需自动安装，请在设置中启用「自动安装游戏资源更新」。")
+            if progress_cb:
+                progress_cb(f"发现新版本 {manifest.version[:8]}，自动安装已关闭，跳过更新。")
+            return False
+
+        log("开始更新...")
 
         # 3. 检查 game.db
         db_path = game_db_path()
