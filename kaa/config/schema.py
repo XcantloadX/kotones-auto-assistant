@@ -140,12 +140,6 @@ class StartGameConfig(ConfigBaseModel):
     start_through_kuyo: bool = False
     """是否通过Kuyo来启动游戏"""
 
-    game_package_name: str = 'com.bandainamcoent.idolmaster_gakuen'
-    """游戏包名"""
-
-    kuyo_package_name: str = 'org.kuyo.game'
-    """Kuyo包名"""
-
     disable_gakumas_localify: bool = False
     """
     自动检测并禁用 Gakumas Localify 汉化插件。
@@ -226,7 +220,7 @@ class IdleModeConfig(ConfigBaseModel):
 
 
 
-CONFIG_VERSION_CODE = 10
+CONFIG_VERSION_CODE = 11
 
 
 class TasksConfig(ConfigBaseModel):

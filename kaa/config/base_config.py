@@ -54,10 +54,6 @@ class DmmDevice(BaseModel):
 
     -1 表示使用内置默认值，0 表示禁用该功能。
     """
-    windows_window_title: str = 'gakumas'
-    """Windows 截图方式的窗口标题"""
-    windows_ahk_path: str | None = None
-    """Windows 截图方式的 AutoHotkey 可执行文件路径，为 None 时使用默认路径"""
 
 
 class PlayCoverDevice(BaseModel):

@@ -45,7 +45,6 @@ ConfigKey = Literal[
     
     # start game
     'start_game_enabled', 'start_through_kuyo',
-    'game_package_name', 'kuyo_package_name',
     'disable_gakumas_localify', 'dmm_game_path', 'dmm_bypass',
 
     # end game

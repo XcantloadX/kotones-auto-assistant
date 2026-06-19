@@ -808,10 +808,71 @@ class ProfileV9ToV10(MigrationStep):
 
 
 # ---------------------------------------------------------------------------
+# V10 → V11：移除硬编码到配置文件中的四项字段
+# ---------------------------------------------------------------------------
+
+class ProfileV10ToV11(MigrationStep):
+    """
+    移除已从模型层删除的四个配置字段：
+    - tasks.start_game.game_package_name（改硬编码）
+    - tasks.start_game.kuyo_package_name（改硬编码）
+    - backend.lifecycle.windows_window_title（不再需要）
+    - backend.lifecycle.windows_ahk_path（不再需要）
+    """
+
+    def check_needed(self, ctx: MigrationContext) -> bool:
+        profiles_dir = ctx.config_dir / 'profiles'
+        if not profiles_dir.exists():
+            return False
+        for f in profiles_dir.glob('*.json'):
+            data = json.loads(f.read_text(encoding='utf-8'))
+            if data.get('version', 0) < 11:
+                return True
+        return False
+
+    def apply(self, ctx: MigrationContext) -> None:
+        profiles_dir = ctx.config_dir / 'profiles'
+        if not profiles_dir.exists():
+            return
+        migrated: list[str] = []
+        for f in profiles_dir.glob('*.json'):
+            data = json.loads(f.read_text(encoding='utf-8'))
+            if data.get('version', 0) >= 11:
+                continue
+
+            # 移除 tasks.start_game 中的字段
+            tasks = data.get('tasks', {})
+            start_game = tasks.get('start_game', {})
+            start_game.pop('game_package_name', None)
+            start_game.pop('kuyo_package_name', None)
+            if start_game:
+                tasks['start_game'] = start_game
+
+            # 移除 backend.lifecycle 中的字段
+            backend = data.get('backend', {})
+            lifecycle = backend.get('lifecycle', {})
+            lifecycle.pop('windows_window_title', None)
+            lifecycle.pop('windows_ahk_path', None)
+            if lifecycle:
+                backend['lifecycle'] = lifecycle
+
+            data['version'] = 11
+            f.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding='utf-8')
+            migrated.append(f.stem)
+
+        if migrated:
+            ctx.messages.append(MigrationMessage(
+                text="已移除配置中的过期字段。",
+                old_version='v2026.6.1 (v10)',
+                new_version='v2026.6.2 (v11)',
+            ))
+
+
+# ---------------------------------------------------------------------------
 # 迁移链
 # ---------------------------------------------------------------------------
 
-LATEST_VERSION: int = 10
+LATEST_VERSION: int = 11
 
 profile_migration_chain = MigrationChain(steps=[
     ProfileV1ToV2(),
@@ -824,6 +885,7 @@ profile_migration_chain = MigrationChain(steps=[
     SharedV1ToV2(),
     ProfileV8ToV9(),
     ProfileV9ToV10(),
+    ProfileV10ToV11(),
 ])
 
 

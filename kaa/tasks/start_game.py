@@ -17,7 +17,7 @@ from .actions.scenes import at_home, goto_home
 from .actions.commu import handle_unread_commu
 from kaa.tasks.common import skip
 from ..kaa_context import save_config
-from kaa.constants import PLAYCOVER_BUNDLE_ID
+from kaa.constants import GAME_PACKAGE_NAME, KUYO_PACKAGE_NAME, PLAYCOVER_BUNDLE_ID
 from kaa.errors import ElevationRequiredError, GameUpdateNeededError, DmmGameLaunchError
 
 logger = logging.getLogger(__name__)
@@ -151,7 +151,7 @@ def android_launch():
     """
     _device = device.of_android()
     # 如果已经在游戏中，直接返回home
-    if _device.current_package() == conf().tasks.start_game.game_package_name:
+    if _device.current_package() == GAME_PACKAGE_NAME:
         logger.info("Game already started")
         if not at_home():
             logger.info("Not at home, going to home")
@@ -161,10 +161,10 @@ def android_launch():
     # 如果不在游戏中，启动游戏
     if not conf().tasks.start_game.start_through_kuyo:
         # 直接启动
-        _device.launch_app(conf().tasks.start_game.game_package_name)
+        _device.launch_app(GAME_PACKAGE_NAME)
     else:
         # 通过Kuyo启动
-        if _device.current_package() == conf().tasks.start_game.kuyo_package_name:
+        if _device.current_package() == KUYO_PACKAGE_NAME:
             logger.warning("Kuyo already started. Auto start game failed.")
             # TODO: Kuyo支持改进
             return

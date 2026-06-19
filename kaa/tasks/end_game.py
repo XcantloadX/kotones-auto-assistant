@@ -9,7 +9,7 @@ from kotonebot.ui import user
 from ..kaa_context import instance
 from kaa.config import Priority, conf
 from kaa.config.base_config import CustomDevice, DmmDevice
-from kaa.constants import PLAYCOVER_BUNDLE_ID
+from kaa.constants import GAME_PACKAGE_NAME, PLAYCOVER_BUNDLE_ID
 from kotonebot import task, action, device
 
 logger = logging.getLogger(__name__)
@@ -21,9 +21,9 @@ def android_close():
     结束状态：游戏关闭
     """
     logger.info("Closing game")
-    if device.current_package() == conf().tasks.start_game.game_package_name:
+    if device.current_package() == GAME_PACKAGE_NAME:
         logger.info("Force stopping game")
-        device.adb.shell(f"am force-stop {conf().tasks.start_game.game_package_name}")
+        device.adb.shell(f"am force-stop {GAME_PACKAGE_NAME}")
 
     logger.info("Game closed successfully")
 

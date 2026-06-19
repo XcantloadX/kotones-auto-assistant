@@ -316,8 +316,6 @@ class SettingsView:
                     emulator_path=getattr(cur, 'emulator_path', None),
                     emulator_args=getattr(cur, 'emulator_args', ''),
                     cursor_wait_speed=cur.cursor_wait_speed if isinstance(cur, DmmDevice) else -1,
-                    windows_window_title=cur.windows_window_title if isinstance(cur, DmmDevice) else 'gakumas',
-                    windows_ahk_path=cur.windows_ahk_path if isinstance(cur, DmmDevice) else None,
                 ))
                 return 'dmm', screenshot
 
@@ -629,8 +627,6 @@ class SettingsView:
                 kuyo = gr.Checkbox(label="通过Kuyo来启动游戏", value=opts.tasks.start_game.start_through_kuyo, interactive=True)
                 self._bind(kuyo, ref(of(opts).tasks.start_game.start_through_kuyo))
 
-                pkg = gr.Textbox(label="游戏包名", value=opts.tasks.start_game.game_package_name, interactive=True)
-                self._bind(pkg, ref(of(opts).tasks.start_game.game_package_name))
 
                 with gr.Group(visible=getattr(lc, 'check_and_start', False)) as check_emu_group:
                     check_emu.change(fn=lambda x: gr.Group(visible=x), inputs=check_emu, outputs=check_emu_group)
