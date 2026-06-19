@@ -22,7 +22,7 @@ from typing import Optional
 
 from PySide6.QtCore import QUrl, QObject, Property, QThread, Signal, Slot
 from kaa.application.ui.error_bridge import ErrorDialogBridge, set_bridge
-from PySide6.QtGui import QIcon
+from PySide6.QtGui import QFont, QIcon
 from PySide6.QtWidgets import QApplication
 from PySide6.QtQml import QQmlApplicationEngine
 from PySide6.QtQuickControls2 import QQuickStyle
@@ -369,6 +369,15 @@ def main(facade: KaaFacade, start_immediately: bool = False) -> None:
     app = QApplication(sys.argv)
     app.setApplicationName("琴音小助手")
     app.setWindowIcon(QIcon(str(_ICON_PATH)))
+
+    # ── 1.5 设置应用默认字体（各平台选择最合适的中文 UI 字体） ──
+    if sys.platform == "win32":
+        _font = QFont("Microsoft YaHei UI", 9)
+    elif sys.platform == "darwin":
+        _font = QFont("PingFang SC", 13)
+    else:
+        _font = QFont("Noto Sans CJK SC", 10)
+    app.setFont(_font)
 
     # ── 2. 创建 bridge，加载 QML（立即显示 Splash 画面） ─────────
     qml_file = _QML_DIR / "main.qml"
