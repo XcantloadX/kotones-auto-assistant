@@ -148,20 +148,6 @@ def task_list(ctx: click.Context) -> None:
         click.echo(f'  * {t.id}: {t.name}\n    {t.description.strip()}')
 
 
-@cli.command('remote-server')
-@click.option('--host', default='0.0.0.0', help='Host to bind to')
-@click.option('--port', type=int, default=8000, help='Port to bind to')
-@click.pass_context
-def remote_server(ctx: click.Context, host: str, port: int) -> None:
-    """Start the remote Windows server"""
-    kaa = make_kaa(ctx.obj['config'])
-    profile_name = ctx.obj['config'] or config_manager.read_shared().profiles.last_used or 'default'
-    from kaa.application.ui.facade import KaaFacade
-    from kaa.main import gr
-    facade = KaaFacade(kaa, profile_name)
-    gr.main(facade, server_port=port)
-
-
 def main() -> None:
     click.echo(f'Arguments: {sys.argv}')
     cli()
