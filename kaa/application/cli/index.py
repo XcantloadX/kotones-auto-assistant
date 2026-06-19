@@ -32,10 +32,10 @@ def cli_root_dir() -> str:
     return os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
 
 
-def make_kaa(config: str | None) -> Kaa:
+def make_kaa(config: str | None, allow_multi_profile: bool = False) -> Kaa:
     if config is None:
         profiles = config_manager.list_profiles()
-        if len(profiles) > 1:
+        if len(profiles) > 1 and not allow_multi_profile:
             names = ', '.join(profiles)
             raise click.UsageError(
                 f'Multiple profiles found ({names}). Please specify one with -c/--config.'
@@ -49,10 +49,10 @@ def make_kaa(config: str | None) -> Kaa:
 @click.option('-ll', '--log-level', default='DEBUG', help='Log level. Default: DEBUG')
 @click.option('--kill-dmm', is_flag=True, default=False, help='Kill DMM Game Player when tasks are completed.')
 @click.option('--kill-game', is_flag=True, default=False, help='Kill gakumas.exe when tasks are completed.')
-@click.option('--start-immidiately', is_flag=True, default=False, help='Start tasks immediately after launching the UI. Only available when no subcommand is specified.')
+@click.option('--start-immediately', is_flag=True, default=False, help='Start tasks immediately after launching the UI. Only available when no subcommand is specified.')
 @click.version_option(package_name='ksaa', prog_name='kaa')
 @click.pass_context
-def cli(ctx: click.Context, config: str | None, log_path: str | None, log_level: str, kill_dmm: bool, kill_game: bool, start_immidiately: bool) -> None:
+def cli(ctx: click.Context, config: str | None, log_path: str | None, log_level: str, kill_dmm: bool, kill_game: bool, start_immediately: bool) -> None:
     """Command-line interface for Kotone's Auto Assistant"""
     ctx.ensure_object(dict)
     ctx.obj['config'] = config
@@ -60,7 +60,7 @@ def cli(ctx: click.Context, config: str | None, log_path: str | None, log_level:
     ctx.obj['log_level'] = log_level
     ctx.obj['kill_dmm'] = kill_dmm
     ctx.obj['kill_game'] = kill_game
-    ctx.obj['start_immidiately'] = start_immidiately
+    ctx.obj['start_immidiately'] = start_immediately
 
     if ctx.invoked_subcommand is None:
         log_filename = datetime.now().strftime('logs/%y-%m-%d-%H-%M-%S.log')
@@ -68,7 +68,7 @@ def cli(ctx: click.Context, config: str | None, log_path: str | None, log_level:
         setup()
         add_file_logger(log_filename)
 
-        kaa = make_kaa(config)
+        kaa = make_kaa(config, allow_multi_profile=True)
         profile_name = config or config_manager.read_shared().profiles.last_used or 'default'
         from kaa.application.ui.facade import KaaFacade
         facade = KaaFacade(kaa, profile_name)
@@ -77,7 +77,7 @@ def cli(ctx: click.Context, config: str | None, log_path: str | None, log_level:
         kaa.set_log_level(log_level_val)
 
         from kaa.main.qml_app import main as qml_main
-        qml_main(facade, start_immidiately)
+        qml_main(facade, start_immediately)
 
 
 @cli.group()
