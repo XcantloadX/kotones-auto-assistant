@@ -97,22 +97,108 @@ from kaa.kaa_context import conf
 items = conf().tasks.purchase.money_items
 ```
 
+## Step 5 — 配置迁移（删除/改型/改名时必须）
+
+改动涉及**删除字段**、**修改字段类型/默认值**、**改名**时，存量 JSON 文件不会自动适配，必须新增迁移步骤。
+
+### 什么时候不需要迁移
+
+- 新增字段（Pydantic 默认值自动补缺）
+- 已有字段保持类型和语义不变，仅改 docstring
+
+### 迁移基础设施
+
+- `kaa/config/migration.py` → `MigrationStep`（基类）、`MigrationChain`、`MigrationMessage`
+- `kaa/config/migrations.py` → 具体的迁移步骤文件
+
+版本号定义：
+- `kaa/config/schema.py` → `CONFIG_VERSION_CODE`（新建 profile 用的默认版本）
+- `kaa/config/migrations.py` → `LATEST_VERSION`（迁移链的目标版本）
+- **两者必须一致**：每新增一个迁移步骤，同时 +1
+
+### 编写迁移步骤
+
+在 `kaa/config/migrations.py` 末尾新增一个 `MigrationStep` 子类，追加到 `profile_migration_chain`。
+
+Profile V10→V11（删除 4 个字段）的完整示例：
+
+```python
+class ProfileV10ToV11(MigrationStep):
+    """一句话描述迁移做什么。"""
+
+    def check_needed(self, ctx: MigrationContext) -> bool:
+        profiles_dir = ctx.config_dir / 'profiles'
+        if not profiles_dir.exists():
+            return False
+        for f in profiles_dir.glob('*.json'):
+            data = json.loads(f.read_text(encoding='utf-8'))
+            if data.get('version', 0) < 11:
+                return True
+        return False
+
+    def apply(self, ctx: MigrationContext) -> None:
+        profiles_dir = ctx.config_dir / 'profiles'
+        if not profiles_dir.exists():
+            return
+        migrated: list[str] = []
+        for f in profiles_dir.glob('*.json'):
+            data = json.loads(f.read_text(encoding='utf-8'))
+            if data.get('version', 0) >= 11:
+                continue
+
+            # TODO: 在这里写实际的迁移逻辑
+            # 例如 data['tasks']['start_game'].pop('game_package_name', None)
+
+            data['version'] = 11
+            f.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding='utf-8')
+            migrated.append(f.stem)
+
+        if migrated:
+            ctx.messages.append(MigrationMessage(
+                text="迁移说明文字",
+                old_version='v10',
+                new_version='v11',
+            ))
+```
+
+### 关键要点
+
+- **幂等性**：迁移步骤多次执行结果一致（`check_needed` 和 `apply` 都判断 `version >= target`）
+- **V8+ 的多文件格式**：遍历 `conf/profiles/*.json`，操作每个文件的 `data` 字典
+- **`_shared.json` 迁移**：可直接读写 `ctx.config_dir / '_shared.json'`
+- **`SharedConfig` 有独立版本号**：`shared.py` 中的 `version: int = 1`，需要时也新建 `SharedVXToVY` 步骤
+- **迁移消息**用 `MigrationMessage(text, old_version, new_version)` 记录，通过 `add_deferred_messages()` 展示给 GUI
+
+### 更新迁移链
+
+在文件末尾：
+
+```python
+# 1. 更新版本常量
+LATEST_VERSION: int = 11  # 原来的值 +1
+
+# 2. 将新步骤追加到迁移链末尾
+profile_migration_chain = MigrationChain(steps=[
+    ...
+    ProfileV9ToV10(),
+    ProfileV10ToV11(),  # ← 新增
+])
+```
+
 ## 改动的文件清单
 
-SharedConfig 示例（新增 `game_data_auto_update`）：
+所有情况都自动调整（管理器默认值补缺，无需迁移）：
 
 | 文件 | 改动 |
 |---|---|
-| `kaa/config/shared.py` | `SharedMiscConfig` 新增字段 |
-| `kaa/application/ui/views/settings_view.py` | 对应 `_create_misc_settings()` 新增控件 |
-| `kaa/game_data/updater.py` | 在检测到新版本后判断新字段 |
-| `conf/_shared.json` | 无需手改，管理器自动补缺省值 |
-
-Profile KaaConfig 示例（新增某项任务开关）：
-
-| 文件 | 改动 |
-|---|---|
-| `kaa/config/schema.py` | 对应子类新增字段 |
+| `kaa/config/shared.py` 或 `kaa/config/schema.py` | 对应子类新增字段 |
 | `kaa/application/ui/views/settings_view.py` | 对应 `_create_*_settings()` 新增控件 |
-| `kaa/tasks/xxx.py` | 任务逻辑中通过 `conf()` 读取 |
-| `conf/profiles/*.json` | 无需手改，管理器自动补缺省值 |
+| 业务代码文件（如 `kaa/tasks/xxx.py`） | 通过 `conf()` 或 `manager.read_shared()` 读取 |
+
+需要迁移的情况（删除/改型/改名），在以上基础上增加：
+
+| 文件 | 改动 |
+|---|---|
+| `kaa/config/schema.py` 或 `kaa/config/shared.py` | 修改或删除字段 |
+| `kaa/config/migrations.py` | 新增 `MigrationStep` 子类 + `LATEST_VERSION` + 迁移链追加 |
+| `conf/profiles/*.json` 或 `conf/_shared.json` | 无需手改，迁移步骤自动清理 |
