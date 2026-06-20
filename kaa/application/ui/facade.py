@@ -14,7 +14,6 @@ from kaa.application.services.feedback_service import FeedbackService
 from kaa.application.core.idle_mode import IdleModeManager
 from kaa.application.core.hotkeys import HotkeyManager
 from kaa.config.produce import ProduceSolution
-from kotonebot.errors import ContextNotInitializedError
 
 logger = logging.getLogger(__name__)
 
@@ -49,28 +48,19 @@ class KaaFacade:
         """Initializes and configures the HotkeyManager (Ctrl+F4 暂停/恢复、Ctrl+F3 停止)。"""
         return HotkeyManager(
             request_stop=self.stop_tasks,
+            get_pause_status=self.task_service.get_pause_status,
+            request_pause=self.task_service.request_pause,
+            request_resume=self.task_service.request_resume,
         )
 
     def _setup_idle_manager(self) -> IdleModeManager:
         """Initializes and configures the IdleModeManager."""
-
-        def is_task_running():
-            try:
-                return self.task_service.is_running() and not self.task_service.is_stopping
-            except ContextNotInitializedError:
-                return False
-
-        def is_task_paused():
-            try:
-                status = self.task_service.get_pause_status()
-                return status is True
-            except ContextNotInitializedError:
-                return False
-
         return IdleModeManager(
-            get_is_running=is_task_running,
-            get_is_paused=is_task_paused,
+            get_is_running=lambda: self.task_service.is_running() and not self.task_service.is_stopping,
+            get_is_paused=lambda: self.task_service.get_pause_status() is True,
             get_config=lambda: self.config_service.get_options().idle,
+            request_pause=self.task_service.request_pause,
+            request_resume=self.task_service.request_resume,
         )
 
     # --- Task Control ---

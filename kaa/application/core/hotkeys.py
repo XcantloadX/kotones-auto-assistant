@@ -9,8 +9,6 @@ if sys.platform.startswith('win'):
     with suppress(ImportError):
         import keyboard  # type: ignore
 
-from kotonebot.backend.context.context import vars as context_vars
-from kotonebot.errors import ContextNotInitializedError
 from kotonebot.interop.win.message_box import message_box
 
 logger = logging.getLogger(__name__)
@@ -31,8 +29,14 @@ class HotkeyManager:
         self,
         *,
         request_stop: Callable[[], None],
+        get_pause_status: Callable[[], bool | None],
+        request_pause: Callable[[], None],
+        request_resume: Callable[[], None],
     ) -> None:
         self._request_stop = request_stop
+        self._get_pause_status = get_pause_status
+        self._request_pause = request_pause
+        self._request_resume = request_resume
         self._handles: list[Callable[[], None]] = []
 
     def start(self) -> None:
@@ -57,16 +61,14 @@ class HotkeyManager:
 
     def _on_toggle_pause(self) -> None:
         try:
-            if context_vars.flow.is_paused:
+            if self._get_pause_status():
                 message_box(None, '任务即将恢复。\n关闭此消息框后将会继续执行', '琴音小助手', buttons='ok', icon='warning')
-                context_vars.flow.request_resume()
+                self._request_resume()
                 logger.info('Hotkey Ctrl+F4: resume requested')
             else:
-                context_vars.flow.request_pause()
+                self._request_pause()
                 logger.info('Hotkey Ctrl+F4: pause requested')
                 message_box(None, '任务已暂停。\n关闭此消息框后再按一次快捷键恢复执行。', '琴音小助手', buttons='ok', icon='warning')
-        except ContextNotInitializedError:
-            pass
         except Exception:
             logger.exception('Hotkey toggle pause failed')
 

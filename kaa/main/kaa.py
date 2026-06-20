@@ -24,7 +24,7 @@ from kaa.constants import PLAYCOVER_BUNDLE_ID
 from ..util.paths import get_ahk_path
 from ..kaa_context import _set_instance
 from kaa.tasks import POST_TASK_REGISTRY, TASK_FUNCTIONS
-from kotonebot.errors import ContextNotInitializedError, UserFriendlyError, StopCurrentTask
+from kotonebot.errors import UserFriendlyError, StopCurrentTask
 from kotonebot.core import NextHandler
 
 if is_windows():
@@ -387,10 +387,6 @@ class Kaa(KotoneBot):
         return super().run(tasks)
     
     def stop(self):
-        try:
-            from kotonebot.backend.context import vars as context_vars
-            flow = context_vars.flow
-            flow.request_interrupt()
-        except ContextNotInitializedError:
-            pass # Context might not be ready if stopping very early
+        if self._ctx is not None:
+            self._ctx.stop()
 
