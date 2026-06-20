@@ -40,7 +40,8 @@ ApplicationWindow {
     function _onTabsChanged() {
         tabList = JSON.parse(TabManager.tabsJson())
         activeTabIndex = TabManager.activeTabIndex
-        if (activeTabIndex >= 0) titleBar.setCurrentIndex(1)
+        if (tabList.length === 0) titleBar.setCurrentIndex(0)
+        else if (activeTabIndex >= 0) titleBar.setCurrentIndex(1)
     }
 
     function _onActiveTabChanged() {
