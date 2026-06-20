@@ -276,30 +276,93 @@ ApplicationWindow {
                             required property int index
                             property string gradioUrl: ""
 
-                            // 延迟创建 WebEngineView，避免初始化时阻塞主线程
-                            Loader {
-                                id: webLoader
+                            RowLayout {
                                 anchors.fill: parent
-                            }
+                                spacing: 0
 
-                            Component {
-                                id: webViewComponent
-                                WebEngineView {
-                                    url: gradioUrl
+                                SideNavigationBar {
+                                    id: sideNav
+                                    Layout.fillHeight: true
+                                    model: ["状态", "任务", "设置", "方案", "反馈", "更新"]
 
-                                    onLoadingChanged: function(loadRequest) {
-                                        if (loadRequest.status === WebEngineView.LoadFailedStatus) {
-                                            loadError.text = "加载失败\nURL: " + gradioUrl
-                                        }
+                                    onCurrentChanging: function(idx, prevIdx) {
+                                        sideNav.confirmSwitch(idx)
+                                        // webView.runJavaScript(
+                                        //     "(function(){" +
+                                        //     "  var b = document.querySelectorAll('button[role=\"tab\"]')[" + idx + "];" +
+                                        //     "  if (b) b.click();" +
+                                        //     "})()"
+                                        // )
+                                        webView.runJavaScript("document.querySelectorAll('button[role=tab]')[" + idx + "].click()");
+                                        webView.runJavaScript("console.log(document.querySelectorAll('button[role=tab]'))");
                                     }
                                 }
-                            }
 
-                            Timer {
-                                interval: 0
-                                running: true
-                                repeat: false
-                                onTriggered: webLoader.sourceComponent = webViewComponent
+                                // WebEngineView 区域
+                                Item {
+                                    Layout.fillWidth: true
+                                    Layout.fillHeight: true
+
+                                    WebEngineView {
+                                        id: webView
+                                        anchors.fill: parent
+                                        url: gradioUrl
+
+                                        onLoadingChanged: function(loadRequest) {
+                                            if (loadRequest.status === WebEngineView.LoadSucceededStatus) {
+                                                // 隐藏 Gradio tab-wrapper（导航栏）与 header markdown（#kaa-header）
+                                                runJavaScript(
+                                                    "(function(){" +
+                                                    "  var s = document.getElementById('__kaa_hide_chrome__');" +
+                                                    "  if (s) return;" +
+                                                    "  s = document.createElement('style');" +
+                                                    "  s.id = '__kaa_hide_chrome__';" +
+                                                    "  s.textContent = '.tab-wrapper{position:absolute!important;visibility:hidden!important;pointer-events:none!important;width:9999px!important;}" +
+                                                    "#kaa-header{display:none!important;}';" +
+                                                    "  document.head.appendChild(s);" +
+                                                    "})()"
+                                                )
+                                            }
+                                            if (loadRequest.status === WebEngineView.LoadFailedStatus) {
+                                                loadError.text = "加载失败\nURL: " + gradioUrl
+                                            }
+                                        }
+                                    }
+
+                                    // 加载中覆盖层
+                                    Rectangle {
+                                        anchors.fill: parent
+                                        color: "white"
+                                        visible: gradioUrl === "" || webView.loadingProgress < 100
+
+                                        Column {
+                                            anchors.centerIn: parent
+                                            spacing: 12
+
+                                            BusyIndicator {
+                                                anchors.horizontalCenter: parent.horizontalCenter
+                                                running: true
+                                            }
+
+                                            Text {
+                                                anchors.horizontalCenter: parent.horizontalCenter
+                                                text: "加载中…"
+                                                font.pixelSize: 14
+                                                opacity: 0.6
+                                            }
+                                        }
+                                    }
+
+                                    Text {
+                                        id: loadError
+                                        anchors.centerIn: parent
+                                        color: "#d32f2f"
+                                        font.pixelSize: 14
+                                        horizontalAlignment: Text.AlignHCenter
+                                        visible: text.length > 0
+                                        z: 100
+                                    }
+                                }
                             }
 
                             // mount 完成后 tabsChanged 会再次触发，届时更新 URL
@@ -311,41 +374,6 @@ ApplicationWindow {
                             }
 
                             Component.onCompleted: gradioUrl = TabManager.gradioUrlAt(index)
-
-                            // 加载中覆盖层
-                            Rectangle {
-                                anchors.fill: parent
-                                color: "white"
-                                visible: gradioUrl === "" || !webLoader.item || webLoader.item.loadingProgress < 100
-
-                                Column {
-                                    anchors.centerIn: parent
-                                    spacing: 12
-
-                                    BusyIndicator {
-                                        anchors.horizontalCenter: parent.horizontalCenter
-                                        running: true
-                                    }
-
-                                    Text {
-                                        anchors.horizontalCenter: parent.horizontalCenter
-                                        text: "加载中…"
-                                        font.pixelSize: 14
-                                        opacity: 0.6
-                                    }
-
-                                }
-                            }
-
-                            Text {
-                                id: loadError
-                                anchors.centerIn: parent
-                                color: "#d32f2f"
-                                font.pixelSize: 14
-                                horizontalAlignment: Text.AlignHCenter
-                                visible: text.length > 0
-                                z: 100
-                            }
                         }
                     }
                 }
