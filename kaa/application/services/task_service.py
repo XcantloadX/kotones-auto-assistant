@@ -1,6 +1,5 @@
 import logging
-from datetime import datetime, timedelta
-from typing import List, Tuple, Optional
+from typing import List, Tuple
 
 from kaa.main.kaa import Kaa
 from kaa.tasks import TASK_REGISTRY
@@ -21,7 +20,6 @@ class TaskService:
         self.is_running_all: bool = False
         self.is_running_single: bool = False
         self.is_stopping: bool = False
-        self.task_start_time: Optional[datetime] = None
 
         self._task_status = {task.task: "pending" for task in TASK_REGISTRY.values()}
 
@@ -31,7 +29,6 @@ class TaskService:
             self.is_running_all = False
             self.is_running_single = False
             self.is_stopping = False
-            self.task_start_time = None
         def _on_task_status_changed(task, status: str):
             self._task_status[task] = status
         self._kaa.events.started += _on_started
@@ -51,7 +48,6 @@ class TaskService:
         logger.info("Starting all tasks...")
         self.is_running_all = True
         self.is_stopping = False
-        self.task_start_time = datetime.now()
         self._kaa.start_all()
 
     def start_single_task(self, task_name: str) -> None:
@@ -72,7 +68,6 @@ class TaskService:
         logger.info(f"Starting single task: {task_name}")
         self.is_running_single = True
         self.is_stopping = False
-        self.task_start_time = datetime.now()
         self._kaa.start([task])
 
     def stop_tasks(self) -> None:
@@ -126,13 +121,3 @@ class TaskService:
     def get_all_task_names(self) -> List[str]:
         """Returns a list of all registered task names."""
         return list(task_registry.keys())
-
-    def get_task_runtime(self) -> Optional[timedelta]:
-        """
-        Gets the current task runtime.
-
-        :return: A timedelta object representing the runtime, or None if no task is running.
-        """
-        if self.task_start_time is None:
-            return None
-        return datetime.now() - self.task_start_time

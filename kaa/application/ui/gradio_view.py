@@ -105,16 +105,6 @@ class KaaGradioView:
             outputs=[self.components.task_status_df]
         )
 
-        # Timer for task runtime
-        def update_task_runtime():
-            runtime_str = self.facade.get_task_runtime()
-            return gr.Textbox(value=runtime_str)
-
-        gr.Timer(1.0).tick(
-            fn=update_task_runtime,
-            outputs=[self.components.task_runtime_text]
-        )
-        
         # Timer for quick-setting checkboxes
         def update_quick_checkboxes():
             opts = self.facade.config_service.get_options()

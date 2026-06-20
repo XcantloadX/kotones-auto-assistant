@@ -131,21 +131,6 @@ class KaaFacade:
             "interactive": can_pause,
         }
 
-    def get_task_runtime(self) -> str:
-        """
-        Gets the current task runtime as a formatted string.
-        :return: A string representing the runtime (e.g., "00:05:23"), or "未运行" if no task is running.
-        """
-        runtime = self.task_service.get_task_runtime()
-        if runtime is None:
-            return "未运行"
-        
-        total_seconds = int(runtime.total_seconds())
-        hours = total_seconds // 3600
-        minutes = (total_seconds % 3600) // 60
-        seconds = total_seconds % 60
-        return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
-
     # --- Configuration ---
 
     def save_shared_configs(self, shared):
