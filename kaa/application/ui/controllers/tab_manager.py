@@ -71,10 +71,6 @@ class TabManager(QObject):
             mount_path=mount_path,
             server_app=self._server_app,
         )
-        # mount 在后台线程执行，避免阻塞 UI
-        t = threading.Thread(target=runner.mount, daemon=True)
-        t.start()
-        t.join(timeout=30)
         return _TabEntry(runner=runner, mount_path=mount_path)
 
     def _destroy_entry(self, entry: _TabEntry) -> None:
@@ -154,6 +150,16 @@ class TabManager(QObject):
             self._save_tabs()
             self.tabsChanged.emit()
             self.activeTabChanged.emit()
+            # mount 在后台线程执行，完成后 tabsChanged 再通知 QML 刷新 URL
+            def _mount_and_notify():
+                try:
+                    entry.runner.mount()
+                except Exception:
+                    logger.exception('Failed to mount tab: %s', config_name)
+                    self.tabOpenFailed.emit(str(config_name))
+                    return
+                self.tabsChanged.emit()
+            threading.Thread(target=_mount_and_notify, daemon=True).start()
         except Exception as e:
             logger.exception('Failed to open tab: %s', config_name)
             self.tabOpenFailed.emit(str(e))
@@ -381,6 +387,8 @@ class TabManager(QObject):
     def _get_url_for_index(self, index: int) -> str:
         if 0 <= index < len(self._tabs):
             entry = self._tabs[index]
+            if not entry.runner._mounted:
+                return ""
             return f"http://127.0.0.1:7860{entry.mount_path}"
         return ""
 

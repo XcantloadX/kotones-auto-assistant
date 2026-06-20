@@ -273,25 +273,49 @@ ApplicationWindow {
                         model: window.tabList
                         delegate: Item {
                             required property int index
-                            readonly property string gradioUrl: TabManager.gradioUrlAt(index)
+                            property string gradioUrl: ""
 
-                            WebEngineView {
-                                id: webView
+                            // 延迟创建 WebEngineView，避免初始化时阻塞主线程
+                            Loader {
+                                id: webLoader
                                 anchors.fill: parent
-                                url: gradioUrl
+                            }
 
-                                onLoadingChanged: function(loadRequest) {
-                                    if (loadRequest.status === WebEngineView.LoadFailedStatus) {
-                                        loadError.text = "加载失败\nURL: " + gradioUrl
+                            Component {
+                                id: webViewComponent
+                                WebEngineView {
+                                    url: gradioUrl
+
+                                    onLoadingChanged: function(loadRequest) {
+                                        if (loadRequest.status === WebEngineView.LoadFailedStatus) {
+                                            loadError.text = "加载失败\nURL: " + gradioUrl
+                                        }
                                     }
                                 }
                             }
+
+                            Timer {
+                                interval: 0
+                                running: true
+                                repeat: false
+                                onTriggered: webLoader.sourceComponent = webViewComponent
+                            }
+
+                            // mount 完成后 tabsChanged 会再次触发，届时更新 URL
+                            Connections {
+                                target: TabManager
+                                function onTabsChanged() {
+                                    gradioUrl = TabManager.gradioUrlAt(index)
+                                }
+                            }
+
+                            Component.onCompleted: gradioUrl = TabManager.gradioUrlAt(index)
 
                             // 加载中覆盖层
                             Rectangle {
                                 anchors.fill: parent
                                 color: "white"
-                                visible: webView.loadingProgress < 100
+                                visible: gradioUrl === "" || !webLoader.item || webLoader.item.loadingProgress < 100
 
                                 Column {
                                     anchors.centerIn: parent
@@ -309,12 +333,6 @@ ApplicationWindow {
                                         opacity: 0.6
                                     }
 
-                                    ProgressBar {
-                                        anchors.horizontalCenter: parent.horizontalCenter
-                                        width: 300
-                                        from: 0; to: 100
-                                        value: webView.loadingProgress || 0
-                                    }
                                 }
                             }
 
