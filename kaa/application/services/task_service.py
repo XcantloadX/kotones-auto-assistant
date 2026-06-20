@@ -29,6 +29,9 @@ class TaskService:
             self.is_running_single = False
             self.is_stopping = False
             self._run_status = None
+            for task in self._task_status:
+                if self._task_status[task] == 'running':
+                    self._task_status[task] = 'pending'
 
         def _on_task_status_changed(task, status: str):
             self._task_status[task] = status

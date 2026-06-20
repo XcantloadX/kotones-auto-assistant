@@ -75,7 +75,7 @@ class TaskView:
             
             # Update status message
             status_msg = ""
-            if is_running:
+            if is_running and not is_stopping:
                 for name, status in tcs.get_task_statuses():
                     if status == 'running':
                         status_msg = f"正在执行任务: {name}"
