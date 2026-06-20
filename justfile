@@ -16,9 +16,6 @@ shebang_python := if os() == 'windows' {
 default:
     @just --list
 
-fetch-submodule:
-    git submodule update --init --remote --recursive --progress --depth 1
-
 resource:
     python tools/make_resources.py
 
@@ -26,7 +23,7 @@ devtool:
     kbot devtools
 
 # Check and create virtual environment
-env: fetch-submodule
+env:
     #!{{shebang_pwsh}}
     python tools/make_resources.py
 
