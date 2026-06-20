@@ -317,7 +317,7 @@ ApplicationWindow {
                                                     "  if (s) return;" +
                                                     "  s = document.createElement('style');" +
                                                     "  s.id = '__kaa_hide_chrome__';" +
-                                                    "  s.textContent = '.tab-wrapper{position:absolute!important;visibility:hidden!important;pointer-events:none!important;width:9999px!important;}" +
+                                                    "  s.textContent = '#kaa-header + .tabs > .tab-wrapper {position:absolute!important;visibility:hidden!important;pointer-events:none!important;width:9999px!important;}" +
                                                     "#kaa-header{display:none!important;}';" +
                                                     "  document.head.appendChild(s);" +
                                                     "})()"
