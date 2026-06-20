@@ -173,15 +173,13 @@ class _SplashBridge(QObject):
     def _check_and_show_changelog(self) -> None:
         try:
             from kaa.config import manager as config_manager
-            from kaa.application.services.update_service import get_version_changelog
+            from kaa.application.services.update_service import get_changelogs_since
 
             shared = config_manager.read_shared()
             if shared.misc.last_seen_changelog != _APP_VERSION:
-                text = get_version_changelog(_APP_VERSION)
+                text = get_changelogs_since(shared.misc.last_seen_changelog)
                 if text:
-                    lines = text.splitlines()
-                    body = "\n".join(lines[1:]).strip() if len(lines) > 1 else text
-                    self.showChangelogDialog.emit(_APP_VERSION, body)
+                    self.showChangelogDialog.emit(_APP_VERSION, text)
         except Exception:
             logger.debug("Failed to check changelog version.", exc_info=True)
 
