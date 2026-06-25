@@ -678,6 +678,7 @@ wheels = [
 [[package]]
 name = "kotonebot"
 version = "0.17.0"
+version = "0.17.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "ksaa-res" },
@@ -691,7 +692,9 @@ dependencies = [
     { name = "typing-extensions" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/9f/07/736de36a45ce7d033cb4052b5571686c9cb147d722f3ad098ab4cc29b7d8/kotonebot-0.17.0.tar.gz", hash = "sha256:c3832ca8f7c061f33585d9dbed54fe8b33495cd8d9a817574e820cfed4935771", size = 1626996, upload-time = "2026-06-20T12:21:14.218Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/9f/07/736de36a45ce7d033cb4052b5571686c9cb147d722f3ad098ab4cc29b7d8/kotonebot-0.17.0.tar.gz", hash = "sha256:c3832ca8f7c061f33585d9dbed54fe8b33495cd8d9a817574e820cfed4935771", size = 1626996, upload-time = "2026-06-20T12:21:14.218Z" }
 wheels = [
+    { url = "https://files.pythonhosted.org/packages/9b/db/64bc2c8462f9ce8618e71fed402d49bc5d82c47b4c1d848654d7e233daed/kotonebot-0.17.0-py3-none-any.whl", hash = "sha256:562508e15bcdf2b4d8ddcd052965cd28ec93af8cfbbb4ce573d0c355a27bd45a", size = 1685580, upload-time = "2026-06-20T12:21:22.763Z" },
     { url = "https://files.pythonhosted.org/packages/9b/db/64bc2c8462f9ce8618e71fed402d49bc5d82c47b4c1d848654d7e233daed/kotonebot-0.17.0-py3-none-any.whl", hash = "sha256:562508e15bcdf2b4d8ddcd052965cd28ec93af8cfbbb4ce573d0c355a27bd45a", size = 1685580, upload-time = "2026-06-20T12:21:22.763Z" },
 ]
 
@@ -792,7 +795,9 @@ requires-dist = [
     { name = "jinja2", marker = "extra == 'dev'", specifier = "==3.1.5" },
     { name = "keyboard", specifier = "~=0.13.5" },
     { name = "kotonebot", extras = ["android"], specifier = "==0.17.0" },
+    { name = "kotonebot", extras = ["android"], specifier = "==0.17.0" },
     { name = "kotonebot", extras = ["dev"], marker = "extra == 'dev'" },
+    { name = "kotonebot", extras = ["windows"], marker = "sys_platform == 'win32'", specifier = "==0.17.0" },
     { name = "kotonebot", extras = ["windows"], marker = "sys_platform == 'win32'", specifier = "==0.17.0" },
     { name = "ksaa-res", specifier = "==0.2.0" },
     { name = "numpy", specifier = "<2.0" },

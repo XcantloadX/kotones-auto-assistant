@@ -1,0 +1,36 @@
+{
+  "version": 3,
+  "definitions": {
+    "bbbade8f-b164-41d0-a980-49d592b40529": {
+      "type": "prefab",
+      "prefab_id": "TemplateMatchPrefab",
+      "name": "Daily.TextContestOverallStats",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 77.88765686582515,
+          "y1": 601.8176122625425,
+          "x2": 187.5727165880233,
+          "y2": 629.5256784896595
+        }
+      },
+      "displayName": "総合力合計"
+    },
+    "563b7fc3-ba03-46ed-849c-18109ec428b2": {
+      "type": "prefab",
+      "prefab_id": "TemplateMatchPrefab",
+      "name": "Daily.ButtonContestRanking",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 66.45189172495958,
+          "y1": 378.26377435835457,
+          "x2": 174.77026859438914,
+          "y2": 404.112945003146
+        },
+        "fixed": true
+      },
+      "displayName": "ランキング"
+    }
+  }
+}

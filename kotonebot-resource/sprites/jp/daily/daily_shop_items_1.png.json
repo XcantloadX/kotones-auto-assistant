@@ -56,10 +56,10 @@
       "props": {
         "template": {
           "kind": "image",
-          "x1": 71,
-          "y1": 594,
-          "x2": 142,
-          "y2": 667
+          "x1": 71.90892906274797,
+          "y1": 609.4651771345458,
+          "x2": 142.90892906274797,
+          "y2": 682.4651771345458
         }
       },
       "prefab_id": "TemplateMatchPrefab",
@@ -72,10 +72,10 @@
       "props": {
         "template": {
           "kind": "image",
-          "x1": 241,
-          "y1": 593,
-          "x2": 309,
-          "y2": 667
+          "x1": 243.72678718824352,
+          "y1": 609.3748934365778,
+          "x2": 311.7267871882435,
+          "y2": 683.3748934365778
         }
       },
       "prefab_id": "TemplateMatchPrefab",
@@ -88,10 +88,10 @@
       "props": {
         "template": {
           "kind": "image",
-          "x1": 417,
-          "y1": 586,
-          "x2": 481,
-          "y2": 668
+          "x1": 417.00000000000006,
+          "y1": 606.9234749467385,
+          "x2": 481.00000000000006,
+          "y2": 688.9234749467385
         }
       },
       "prefab_id": "TemplateMatchPrefab",
@@ -104,10 +104,10 @@
       "props": {
         "template": {
           "kind": "image",
-          "x1": 585,
-          "y1": 591,
-          "x2": 651,
-          "y2": 669
+          "x1": 584.0910709372522,
+          "y1": 607.3748934365778,
+          "x2": 650.0910709372522,
+          "y2": 685.3748934365778
         }
       },
       "prefab_id": "TemplateMatchPrefab",
@@ -121,9 +121,9 @@
         "template": {
           "kind": "image",
           "x1": 69,
-          "y1": 825,
+          "y1": 869.5760987995732,
           "x2": 138,
-          "y2": 899
+          "y2": 943.5760987995732
         }
       },
       "prefab_id": "TemplateMatchPrefab",
@@ -136,10 +136,10 @@
       "props": {
         "template": {
           "kind": "image",
-          "x1": 242,
-          "y1": 820,
-          "x2": 310,
-          "y2": 898
+          "x1": 241.09107093725225,
+          "y1": 862.756666195509,
+          "x2": 309.09107093725225,
+          "y2": 940.756666195509
         }
       },
       "prefab_id": "TemplateMatchPrefab",
@@ -152,10 +152,10 @@
       "props": {
         "template": {
           "kind": "image",
-          "x1": 413,
-          "y1": 821,
-          "x2": 481,
-          "y2": 897
+          "x1": 413.9089290627479,
+          "y1": 864.6663824975411,
+          "x2": 481.9089290627479,
+          "y2": 940.6663824975411
         }
       },
       "prefab_id": "TemplateMatchPrefab",
@@ -168,10 +168,10 @@
       "props": {
         "template": {
           "kind": "image",
-          "x1": 583,
-          "y1": 823,
-          "x2": 649,
-          "y2": 900
+          "x1": 582.0910709372522,
+          "y1": 863.9372335914447,
+          "x2": 648.0910709372522,
+          "y2": 940.9372335914447
         }
       },
       "prefab_id": "TemplateMatchPrefab",
@@ -192,6 +192,52 @@
       },
       "prefab_id": "TemplateMatchPrefab",
       "variant_policy": {}
+    },
+    "9b83bcf6-daee-4143-853b-aef63a557532": {
+      "type": "prefab",
+      "prefab_id": "TemplateMatchPrefab",
+      "name": "Daily.IconShopMoney",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 41.0270680342437,
+          "y1": 477.7458932257521,
+          "x2": 71.43641313716874,
+          "y2": 507.60184909344804
+        }
+      },
+      "displayName": "商店 money 图标"
+    },
+    "830819f5-f14d-4ff9-a50f-093167566fa8": {
+      "type": "prefab",
+      "prefab_id": "TemplateMatchPrefab",
+      "name": "Daily.TextShopRecommended",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 58.35648375000694,
+          "y1": 320.47822181039,
+          "x2": 147.55722938525378,
+          "y2": 346.94277298243503
+        }
+      },
+      "displayName": "商店 おすすめ 标识"
+    },
+    "2a39e3f8-2fe9-4a36-9955-55e0b2c627e4": {
+      "type": "prefab",
+      "prefab_id": "TemplateMatchPrefab",
+      "name": "Daily.TextTabShopAp",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 486.5882297034485,
+          "y1": 1080.6000597227194,
+          "x2": 548.7101775565668,
+          "y2": 1112.8039111489427
+        },
+        "fixed": true
+      },
+      "displayName": "商店 Tab AP"
     }
   }
 }

@@ -1,0 +1,19 @@
+{
+  "version": 3,
+  "definitions": {
+    "6a27a4ce-14db-41c1-a8cb-dd90b45774cf": {
+      "type": "prefab",
+      "prefab_id": "TemplateMatchPrefab",
+      "name": "Daily.IconShopAp",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 39.048089219724936,
+          "y1": 476.44599388265783,
+          "x2": 71.95638803329379,
+          "y2": 510.1027252289855
+        }
+      }
+    }
+  }
+}
