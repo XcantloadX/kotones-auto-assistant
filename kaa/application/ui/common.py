@@ -1,7 +1,7 @@
 from typing import List, Dict, Tuple, Callable, Any, Literal, Optional
 from dataclasses import dataclass, field
 import gradio as gr
-from kaa.config.schema import BaseConfig
+from kaa.config.schema import KaaConfig
 
 # Type hints
 GradioInput = gr.Textbox | gr.Number | gr.Checkbox | gr.Dropdown | gr.Radio | gr.Slider | gr.State
@@ -45,7 +45,6 @@ ConfigKey = Literal[
     
     # start game
     'start_game_enabled', 'start_through_kuyo',
-    'game_package_name', 'kuyo_package_name',
     'disable_gakumas_localify', 'dmm_game_path', 'dmm_bypass',
 
     # end game
@@ -69,7 +68,7 @@ ConfigKey = Literal[
     '_selected_backend_index'
     
 ]
-ConfigSetFunction = Callable[[BaseConfig, Dict[ConfigKey, Any]], None]
+ConfigSetFunction = Callable[[KaaConfig, Dict[ConfigKey, Any]], None]
 ConfigBuilderReturnValue = Tuple[ConfigSetFunction, Dict[ConfigKey, GradioInput]]
 
 
@@ -85,7 +84,6 @@ class GradioComponents:
     pause_btn: Optional[gr.Button] = None
     end_action_dropdown: Optional[gr.Dropdown] = None
     quick_checkboxes: List[gr.Checkbox] = field(default_factory=list)
-    task_runtime_text: Optional[gr.Textbox] = None
     task_status_df: Optional[gr.Dataframe] = None
     
     # Update tab components

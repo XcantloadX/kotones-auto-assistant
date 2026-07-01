@@ -765,7 +765,7 @@ def detect_produce_scene() -> ProduceStage:
     结束状态：游戏主页面\n
     """
     logger.info("Detecting current produce stage...")
-    cd = Countdown(conf().produce.interrupt_timeout).start()
+    cd = Countdown(conf().tasks.produce.interrupt_timeout).start()
     for _ in Loop():
         if cd.expired():
             raise UnrecoverableError('Unable to detect produce scene. Reseason: timed out.')
@@ -905,6 +905,3 @@ if __name__ == '__main__':
     file_handler.setFormatter(logging.Formatter('[%(asctime)s] [%(levelname)s] [%(name)s] %(message)s'))
     logging.getLogger().addHandler(file_handler)
 
-    from kotonebot.backend.debug import debug
-    debug.auto_save_to_folder = 'dumps'
-    debug.enabled = True

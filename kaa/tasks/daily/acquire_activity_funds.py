@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 @task('收取活动费', screenshot_mode='manual-inherit')
 def acquire_activity_funds():
-    if not conf().activity_funds.enabled:
+    if not conf().tasks.activity_funds.enabled:
         logger.info('Activity funds acquisition is disabled.')
         return
 

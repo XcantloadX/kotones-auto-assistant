@@ -26,7 +26,7 @@ def money_items2(items: Optional[list[DailyMoneyShopItems]] = None):
     logger.info(f'Purchasing マニー items.')
 
     if items is None:
-        items = conf().purchase.money_items
+        items = conf().tasks.purchase.money_items
 
     device.screenshot()
     if DailyMoneyShopItems.Recommendations in items:
@@ -142,7 +142,7 @@ def ap_items():
     # 按 X, Y 坐标排序从小到大
     results = sorted(results, key=lambda x: x.rect.top_left)
     # 按照配置文件里的设置过滤
-    item_indices = conf().purchase.ap_items
+    item_indices = conf().tasks.purchase.ap_items
     logger.info(f'Purchasing AP items: {item_indices}')
     for index in item_indices:
         if index <= len(results):
@@ -194,7 +194,7 @@ def purchase():
     """
     从商店购买物品
     """
-    if not conf().purchase.enabled:
+    if not conf().tasks.purchase.enabled:
         logger.info('Purchase is disabled.')
         return
 
@@ -205,11 +205,11 @@ def purchase():
     ap_tab = R.Daily.TextTabShopAp.wait()
 
     # 购买マニー物品
-    if conf().purchase.money_enabled:
+    if conf().tasks.purchase.money_enabled:
         R.Daily.IconShopMoney.wait()
         money_items2()
         sleep(0.5)
-        if conf().purchase.money_refresh and R.Daily.ButtonRefreshMoneyShop.try_click():
+        if conf().tasks.purchase.money_refresh and R.Daily.ButtonRefreshMoneyShop.try_click():
             logger.info('Refreshing money shop.')
             # 等待刷新完成
             for _ in Loop():
@@ -222,7 +222,7 @@ def purchase():
         logger.info('Money purchase is disabled.')
 
     # 购买 AP 物品
-    if conf().purchase.ap_enabled:
+    if conf().tasks.purchase.ap_enabled:
         # 如果不购买マニー物品，则需要等待动画加载完毕，否则按钮无法点击
         # FIXME: 使用Loop形式重构整个purchase函数
         sleep(0.5)
@@ -239,7 +239,7 @@ def purchase():
     device.click(R.Common.ButtonToolbarBack.wait())
 
     # 购买周免费礼包
-    if conf().purchase.weekly_enabled:
+    if conf().tasks.purchase.weekly_enabled:
         weekly_free_pack()
 
     goto_home()

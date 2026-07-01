@@ -18,6 +18,40 @@ logger = logging.getLogger(__name__)
 _PRIMARY_PIP_INDEX = ("https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple", "mirrors.tuna.tsinghua.edu.cn")
 _EXTRA_PIP_INDEX = ("https://pypi.1ichika.de/simple", "pypi.1ichika.de")
 
+def get_changelogs_since(since_version: str | None) -> str | None:
+    """
+    返回所有比 since_version 更新的版本的 changelog，拼接在一起。
+    since_version 为 None 时只返回最新一条（首次启动）。
+    版本按 CHANGELOG 中出现顺序排列（新版在前）。
+    """
+    import re
+    from kaa.metadata import CHANGELOG  # noqa: PLC0415
+    pattern = re.compile(r"^### ", re.MULTILINE)
+    sections = [s for s in pattern.split(CHANGELOG) if s.strip()]
+
+    def _section_text(section: str) -> str:
+        first_line = section.split("\n", 1)[0].strip()
+        body = section.split("\n", 1)[1].strip() if "\n" in section else ""
+        return f"### {first_line}\n{body}" if body else f"### {first_line}"
+
+    if since_version is None:
+        return _section_text(sections[0]) if sections else None
+
+    collected = []
+    for section in sections:
+        ver = section.split("\n", 1)[0].strip().lstrip('v')
+        try:
+            if _compare_versions(ver, since_version) > 0:
+                collected.append(_section_text(section))
+        except Exception:
+            continue
+
+    if not collected:
+        return _section_text(sections[0]) if sections else None
+
+    return "\n\n".join(collected)
+
+
 class VersionInfo(BaseModel):
     """存储版本信息的 Pydantic 模型"""
     versions: List[str] = Field(default_factory=list)

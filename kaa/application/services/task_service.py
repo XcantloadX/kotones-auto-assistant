@@ -1,11 +1,10 @@
 import logging
-from datetime import datetime, timedelta
-from typing import List, Tuple, Optional
+from typing import List, Tuple
 
 from kaa.main.kaa import Kaa
 from kaa.tasks import TASK_REGISTRY
-from kotonebot.backend.context import task_registry, vars as context_vars
-from kotonebot.errors import ContextNotInitializedError
+from kotonebot.backend.context import task_registry
+from kotonebot.core.bot import RunStatus
 
 logger = logging.getLogger(__name__)
 
@@ -21,20 +20,22 @@ class TaskService:
         self.is_running_all: bool = False
         self.is_running_single: bool = False
         self.is_stopping: bool = False
-        self.task_start_time: Optional[datetime] = None
+        self._run_status: RunStatus | None = None
 
         self._task_status = {task.task: "pending" for task in TASK_REGISTRY.values()}
 
-        def _on_started():
-            pass
         def _on_stopped(reason: str, exception: Exception | None):
             self.is_running_all = False
             self.is_running_single = False
             self.is_stopping = False
-            self.task_start_time = None
+            self._run_status = None
+            for task in self._task_status:
+                if self._task_status[task] == 'running':
+                    self._task_status[task] = 'pending'
+
         def _on_task_status_changed(task, status: str):
             self._task_status[task] = status
-        self._kaa.events.started += _on_started
+
         self._kaa.events.stopped += _on_stopped
         self._kaa.events.task_status_changed += _on_task_status_changed
 
@@ -51,8 +52,7 @@ class TaskService:
         logger.info("Starting all tasks...")
         self.is_running_all = True
         self.is_stopping = False
-        self.task_start_time = datetime.now()
-        self._kaa.start_all()
+        self._run_status = self._kaa.start_all()
 
     def start_single_task(self, task_name: str) -> None:
         """
@@ -72,8 +72,7 @@ class TaskService:
         logger.info(f"Starting single task: {task_name}")
         self.is_running_single = True
         self.is_stopping = False
-        self.task_start_time = datetime.now()
-        self._kaa.start([task])
+        self._run_status = self._kaa.start([task])
 
     def stop_tasks(self) -> None:
         """Stops the currently running tasks."""
@@ -83,6 +82,8 @@ class TaskService:
 
         logger.info("Stopping tasks...")
         self.is_stopping = True
+        if self._run_status is not None:
+            self._run_status.interrupt()
         self._kaa.stop()
 
     def get_task_statuses(self) -> List[Tuple[str, str]]:
@@ -97,42 +98,42 @@ class TaskService:
         """
         Toggles the pause/resume state of the running tasks.
 
-        :return: True if paused, False if resumed, None if context not initialized.
+        :return: True if paused, False if resumed, None if no active task.
         """
-        try:
-            if context_vars.flow.is_paused:
-                context_vars.flow.request_resume()
-                logger.info("Tasks resumed.")
-                return False
-            else:
-                context_vars.flow.request_pause()
-                logger.info("Tasks paused.")
-                return True
-        except ContextNotInitializedError:
-            logger.warning("Cannot toggle pause, context not initialized.")
+        run = self._run_status
+        if run is None or not run.running:
+            logger.warning("Cannot toggle pause, no active task.")
             return None
+        if run.is_paused:
+            run.resume()
+            logger.info("Tasks resumed.")
+            return False
+        else:
+            run.pause()
+            logger.info("Tasks paused.")
+            return True
 
     def get_pause_status(self) -> bool | None:
         """
         Gets the current pause status.
 
-        :return: True if paused, False if resumed, None if context not initialized.
+        :return: True if paused, False if running, None if no active task.
         """
-        try:
-            return context_vars.flow.is_paused
-        except ContextNotInitializedError:
+        run = self._run_status
+        if run is None:
             return None
+        return run.is_paused
+
+    def request_pause(self) -> None:
+        """Requests pause of the running task. Safe to call from any thread."""
+        if self._run_status is not None:
+            self._run_status.pause()
+
+    def request_resume(self) -> None:
+        """Requests resume of a paused task. Safe to call from any thread."""
+        if self._run_status is not None:
+            self._run_status.resume()
 
     def get_all_task_names(self) -> List[str]:
         """Returns a list of all registered task names."""
         return list(task_registry.keys())
-
-    def get_task_runtime(self) -> Optional[timedelta]:
-        """
-        Gets the current task runtime.
-
-        :return: A timedelta object representing the runtime, or None if no task is running.
-        """
-        if self.task_start_time is None:
-            return None
-        return datetime.now() - self.task_start_time

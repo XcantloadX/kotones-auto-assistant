@@ -2,7 +2,7 @@
 import sys
 import logging
 import importlib.metadata
-from typing import Any, cast, Callable
+from typing import Any, cast, Callable, Iterable
 
 from kotonebot.core.bot import BotContext, KotoneBot
 from kotonebot.backend.context import Task
@@ -13,9 +13,9 @@ from kotonebot.client.host import (
 )
 from kotonebot.client.host.mumu12_host import Mumu12V5Host, MuMu12HostConfig
 from kotonebot.client.host.protocol import Instance, AdbHostConfig
-from kaa.config.base_config import UserConfig
-from kaa.config.manager import load_config
-from kaa.config import BaseConfig, upgrade_config
+from kaa.config.schema import KaaConfig
+from kaa.config import upgrade_config
+from kaa.config import manager as config_manager
 from kotonebot.primitives.geometry import Size
 from kotonebot.ui import user
 from kotonebot.util import is_windows
@@ -24,7 +24,7 @@ from kaa.constants import PLAYCOVER_BUNDLE_ID
 from ..util.paths import get_ahk_path
 from ..kaa_context import _set_instance
 from kaa.tasks import POST_TASK_REGISTRY, TASK_FUNCTIONS
-from kotonebot.errors import ContextNotInitializedError, UserFriendlyError, StopCurrentTask
+from kotonebot.errors import UserFriendlyError, StopCurrentTask
 from kotonebot.core import NextHandler
 
 if is_windows():
@@ -38,30 +38,19 @@ logger = logging.getLogger(__name__)
 
 
 def windows_gui_error_middleware(ctx: BotContext, task: Task, next_handler: NextHandler):
-    """负责处理 UserFriendlyError 并弹出 Windows 对话框"""
+    """负责处理 UserFriendlyError 并弹出对话框"""
     try:
         next_handler()
     except UserFriendlyError as e:
         ctx.has_error = True
         ctx.last_exception = e
         logger.error(f"Task {task.name} failed: {e.message}")
-        
-        if is_windows():
-            try:
-                from kotonebot.interop.win.task_dialog import TaskDialog
-                dialog = TaskDialog(
-                    title='琴音小助手',
-                    main_instruction='任务执行失败',
-                    content=e.message,
-                    custom_buttons=e.action_buttons,
-                    main_icon='error'
-                )
-                res, _, _ = dialog.show()
-                e.invoke(res)
-            except (ImportError, NotImplementedError):
-                pass
-            ctx.stop()
-    
+        from kaa.application.ui.error_bridge import get_bridge
+        bridge = get_bridge()
+        if bridge is not None:
+            bridge.show(e.message, e.action_buttons, e.invoke)
+        ctx.stop()
+
     except Exception as e:
         # 处理非用户友好错误
         ctx.has_error = True
@@ -72,23 +61,22 @@ def windows_gui_error_middleware(ctx: BotContext, task: Task, next_handler: Next
 
 class KaaDeviceFactory:
     def __init__(self):
-        self.config_path = './config.json'
         self.backend_instance: Instance | None = None
         self.target_screenshot_interval: float | None = None
 
     def __call__(self) -> Device:
-        config = load_config(self.config_path, type=BaseConfig)
-        user_config = config.user_configs[0]
-        self.target_screenshot_interval = user_config.backend.target_screenshot_interval
+        from kaa.kaa_context import conf as get_conf  # noqa: PLC0415
+        config = get_conf()
+        self.target_screenshot_interval = config.backend.target_screenshot_interval
 
         from kotonebot.config.config import conf
         from kotonebot.client.scaler import PortraitGameScaler
         conf().device.default_scaler_factory = lambda: PortraitGameScaler()
         conf().device.default_logic_resolution = Size(720, 1280)
         self._setup_global_device_conf()
-        self.backend_instance = self._get_backend_instance(user_config)
-        self._ensure_instance_running(self.backend_instance, user_config)
-        return self._create_device_impl(self.backend_instance, user_config)
+        self.backend_instance = self._get_backend_instance(config)
+        self._ensure_instance_running(self.backend_instance, config)
+        return self._create_device_impl(self.backend_instance, config)
 
     def _setup_global_device_conf(self):
         from kotonebot.config.config import conf
@@ -96,7 +84,7 @@ class KaaDeviceFactory:
         conf().device.default_scaler_factory = lambda: PortraitGameScaler()
         conf().device.default_logic_resolution = Size(720, 1280)
 
-    def _get_backend_instance(self, config: UserConfig) -> Any:
+    def _get_backend_instance(self, config: KaaConfig) -> Any:
         """
         根据配置获取或创建 Instance 或 NativeApp。
 
@@ -104,20 +92,26 @@ class KaaDeviceFactory:
         :return: 后端实例或原生应用实例
         """
         from kotonebot.client.host import create_custom
-        logger.info(f'Querying for backend: {config.backend.type}')
-        
-        b_type = config.backend.type
-        
+        from kaa.config.base_config import (  # noqa: PLC0415
+            MuMu12Device, MuMu12V5Device, LeidianDevice, DmmDevice, CustomDevice, TcpConnection,
+        )
+        lc = config.backend.lifecycle
+        b_type = lc.type
+        logger.info(f'Querying for backend: {b_type}')
+
         if b_type == 'custom':
-            exe = config.backend.emulator_path
+            assert isinstance(lc, CustomDevice)
+            conn = config.backend.connection
+            assert isinstance(conn, TcpConnection)
+            exe = lc.emulator_path
             instance = create_custom(
-                adb_ip=config.backend.adb_ip,
-                adb_port=config.backend.adb_port,
-                adb_name=config.backend.adb_emulator_name,
+                adb_ip=conn.ip,
+                adb_port=conn.port,
+                adb_name=None,
                 exe_path=exe,
-                emulator_args=config.backend.emulator_args
+                emulator_args=lc.emulator_args,
             )
-            if config.backend.check_emulator:
+            if lc.check_and_start:
                 import os
                 if exe is None:
                     user.error('「检查并启动模拟器」已开启但未配置「模拟器 exe 文件路径」。')
@@ -128,27 +122,30 @@ class KaaDeviceFactory:
             return instance
 
         elif b_type == 'mumu12':
-            if config.backend.instance_id is None:
+            assert isinstance(lc, MuMu12Device)
+            if lc.instance_id is None:
                 raise ValueError('MuMu12 instance ID is not set.')
-            instance = Mumu12Host.query(id=config.backend.instance_id)
+            instance = Mumu12Host.query(id=lc.instance_id)
             if instance is None:
-                raise ValueError(f'MuMu12 instance not found: {config.backend.instance_id}')
+                raise ValueError(f'MuMu12 instance not found: {lc.instance_id}')
             return instance
 
         elif b_type == 'mumu12v5':
-            if config.backend.instance_id is None:
+            assert isinstance(lc, MuMu12V5Device)
+            if lc.instance_id is None:
                 raise ValueError('MuMu12v5 instance ID is not set.')
-            instance = Mumu12V5Host.query(id=config.backend.instance_id)
+            instance = Mumu12V5Host.query(id=lc.instance_id)
             if instance is None:
-                raise ValueError(f'MuMu12v5 instance not found: {config.backend.instance_id}')
+                raise ValueError(f'MuMu12v5 instance not found: {lc.instance_id}')
             return instance
 
         elif b_type == 'leidian':
-            if config.backend.instance_id is None:
+            assert isinstance(lc, LeidianDevice)
+            if lc.instance_id is None:
                 raise ValueError('Leidian instance ID is not set.')
-            instance = LeidianHost.query(id=config.backend.instance_id)
+            instance = LeidianHost.query(id=lc.instance_id)
             if instance is None:
-                raise ValueError(f'Leidian instance not found: {config.backend.instance_id}')
+                raise ValueError(f'Leidian instance not found: {lc.instance_id}')
             return instance
 
         elif b_type == 'dmm':
@@ -170,7 +167,7 @@ class KaaDeviceFactory:
         else:
             raise ValueError(f'Unsupported backend type: {b_type}')
 
-    def _ensure_instance_running(self, instance: Any, config: UserConfig):
+    def _ensure_instance_running(self, instance: Any, config: KaaConfig):
         """
         确保 Instance 正在运行。
 
@@ -181,7 +178,12 @@ class KaaDeviceFactory:
             logger.info('DMM backend does not require startup.')
             return
 
-        if config.backend.check_emulator and not instance.running():
+        from kaa.config.base_config import PlayCoverDevice  # noqa: PLC0415
+        lc = config.backend.lifecycle
+        if isinstance(lc, PlayCoverDevice):
+            return
+
+        if lc.check_and_start and not instance.running():
             logger.info(f'Starting backend "{instance}"...')
             if hasattr(instance, 'launch'):
                 instance.launch()
@@ -192,22 +194,30 @@ class KaaDeviceFactory:
         else:
             logger.info(f'Backend "{instance}" already running or check is disabled.')
 
-    def _create_device_impl(self, instance: Any, config: UserConfig) -> Device:
+    def _create_device_impl(self, instance: Any, config: KaaConfig) -> Device:
         """
         创建设备。
         """
+        from kaa.config.base_config import MuMu12Device, MuMu12V5Device, DmmDevice  # noqa: PLC0415
         impl_name = config.backend.screenshot_impl
-        
+        lc = config.backend.lifecycle
+
         if hasattr(instance, "create_device") and impl_name == 'macos':
             return instance.create_device()
-        
+
         if DmmInstance and isinstance(instance, DmmInstance):
+            assert isinstance(lc, DmmDevice)
             d = WindowsDevice()
             if impl_name == 'windows':
                 from kotonebot.client.implements.windows import WindowsImpl
                 from kotonebot.interop.window import WindowQuery
                 ahk_path = get_ahk_path()
                 impl = WindowsImpl(device=d, window_query=WindowQuery(title_contains='gakumas'), ahk_exe_path=ahk_path)
+                d.setup(screenshot=impl, touch=impl)
+            elif impl_name == 'windows_native':
+                from kotonebot.client.implements.windows import WindowsNativeImpl
+                from kotonebot.interop.window import WindowQuery
+                impl = WindowsNativeImpl(device=d, window_query=WindowQuery(title_contains='gakumas'))
                 d.setup(screenshot=impl, touch=impl)
             elif impl_name == 'windows_background':
                 from kotonebot.client.implements.windows.send_message import SendMessageImpl
@@ -216,7 +226,7 @@ class KaaDeviceFactory:
                 query = WindowQuery(title_contains='gakumas')
                 d.setup(
                     screenshot=PrintWindowImpl(d, query),
-                    touch=SendMessageImpl(d, query, wait_cursor_idle=config.backend.cursor_wait_speed),
+                    touch=SendMessageImpl(d, query, wait_cursor_idle=lc.cursor_wait_speed),
                 )
             else:
                 raise ValueError(f"Impl of '{impl_name}' is not supported on DMM.")
@@ -224,23 +234,23 @@ class KaaDeviceFactory:
 
         elif isinstance(instance, (CustomInstance, Mumu12Instance, LeidianInstance)):
             if impl_name == 'nemu_ipc' and isinstance(instance, Mumu12Instance):
-                options = cast(BaseConfig, config.options)
+                assert isinstance(lc, (MuMu12Device, MuMu12V5Device))
                 timeout = 180
                 args = {}
-                if config.backend.mumu_background_mode:
+                if lc.mumu_background_mode:
                     args = {
                         "display_id": None,
-                        "target_package_name": options.start_game.game_package_name,
+                        "target_package_name": config.tasks.start_game.game_package_name,
                         "app_index": 0
                     }
                 host_conf = MuMu12HostConfig(timeout=timeout, **args)
                 return instance.create_device(cast(Any, impl_name), host_conf)
-            
+
             elif impl_name in ['adb', 'uiautomator2']:
                 host_conf = AdbHostConfig(timeout=180)
                 return instance.create_device(cast(Any, impl_name), host_conf)
             else:
-                raise ValueError(f"{config.backend.type} backend does not support implementation '{impl_name}'")
+                raise ValueError(f"{lc.type} backend does not support implementation '{impl_name}'")
         else:
             raise TypeError(f"Unknown instance type: {type(instance)}")
 
@@ -253,8 +263,8 @@ def sentry_middleware(ctx: BotContext, task: Task, next_handler: Callable[[], No
         with sentry_sdk.push_scope() as scope:
             scope.set_tag('task_name', task.name)
             try:
-                with open('./config.json', 'r', encoding='utf-8') as f:
-                    scope.set_extra('config', f.read())
+                from kaa.kaa_context import conf as get_conf  # noqa: PLC0415
+                scope.set_extra('config', get_conf().model_dump_json(indent=2))
             except Exception:
                 logger.warning('Failed to attach config to Sentry report.', exc_info=True)
             try:
@@ -280,9 +290,20 @@ def sentry_middleware(ctx: BotContext, task: Task, next_handler: Callable[[], No
 class Kaa(KotoneBot):
     """
     琴音小助手 kaa 主类。由其他 GUI/TUI 调用。
+
+    :param config_path: 配置文件目录路径
+    :param profile_name: 指定 profile 名称。传入时跳过配置发现，直接使用该 profile。
     """
-    def __init__(self, config_path: str):
-        self.upgrade_msg = upgrade_config()
+    def __init__(self, config_path: str = './conf', profile_name: str | None = None):
+        self._profile_name = profile_name
+
+        if profile_name is None:
+            upgrade_config()
+            self._init_config()
+        else:
+            from kaa.config import manager  # noqa: PLC0415
+            self._config = manager.read(profile_name, not_exist='create')
+
         self.version = importlib.metadata.version('ksaa')
         
         logger.info('Version: %s', self.version)
@@ -298,6 +319,25 @@ class Kaa(KotoneBot):
                 windows_gui_error_middleware
             ]
         )
+
+    def _init_config(self) -> None:
+        """从磁盘加载当前 profile 并注入运行时上下文。"""
+        from kaa.config import manager  # noqa: PLC0415
+        from kaa.kaa_context import init  # noqa: PLC0415
+
+        shared = manager.read_shared()
+        name = shared.profiles.last_used
+        if not name:
+            profiles = manager.list_profiles()
+            name = profiles[0] if profiles else 'default'
+            manager.create(name, exist='ok')
+            shared.profiles.last_used = name
+            manager.write_shared(shared)
+
+        self._config = manager.read(name, not_exist='create')
+        self._profile_name = name
+        init(self._config, name)
+        logger.info("Loaded profile '%s'", name)
 
     def _initialize(self):
         from kotonebot.backend.context import init_context
@@ -320,6 +360,10 @@ class Kaa(KotoneBot):
             # 第一个 handler 是默认的 StreamHandler
             handlers[0].setLevel(level)
 
+    @property
+    def is_running(self) -> bool:
+        return self._ctx is not None and self._ctx.is_running
+
     def _task_generator(self):
         for task in (func.task for func in TASK_FUNCTIONS):
             try:
@@ -333,12 +377,16 @@ class Kaa(KotoneBot):
     
     def start_all(self):
         return self.start(self._task_generator())
+
+    def run(self, tasks: Iterable[Task]) -> None:
+        """重写：在 run 前注入 kaa_context（线程安全的单点入口，覆盖 run/start 两条路径）。"""
+        from kaa.kaa_context import init as kaa_init
+        assert self._config is not None and self._profile_name is not None, \
+            "Kaa not initialized. Call with a profile_name or ensure _init_config() has been called."
+        kaa_init(self._config, self._profile_name)
+        return super().run(tasks)
     
     def stop(self):
-        try:
-            from kotonebot.backend.context import vars as context_vars
-            flow = context_vars.flow
-            flow.request_interrupt()
-        except ContextNotInitializedError:
-            pass # Context might not be ready if stopping very early
+        if self._ctx is not None:
+            self._ctx.stop()
 

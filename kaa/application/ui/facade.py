@@ -12,8 +12,8 @@ from kaa.application.services.task_service import TaskService
 from kaa.application.services.update_service import UpdateService
 from kaa.application.services.feedback_service import FeedbackService
 from kaa.application.core.idle_mode import IdleModeManager
+from kaa.application.core.hotkeys import HotkeyManager
 from kaa.config.produce import ProduceSolution
-from kotonebot.errors import ContextNotInitializedError
 
 logger = logging.getLogger(__name__)
 
@@ -24,9 +24,10 @@ class KaaFacade:
     It orchestrates service interactions and manages application state flow.
     """
 
-    def __init__(self, kaa_instance: Kaa):
+    def __init__(self, kaa_instance: Kaa, profile_name: str):
+        self._profile_name = profile_name
         # Core services
-        self.config_service = ConfigService()
+        self.config_service = ConfigService(name=profile_name)
         self.produce_solution_service = ProduceSolutionService()
         self.task_service = TaskService(kaa_instance)
 
@@ -35,29 +36,31 @@ class KaaFacade:
         self.feedback_service = FeedbackService()
         self.instance_service = InstantService()
         self.idle_mgr = self._setup_idle_manager()
+        self.hotkey_mgr = self._setup_hotkey_manager()
 
         self._kaa = kaa_instance
 
+    @property
+    def profile_name(self) -> str:
+        return self._profile_name
+
+    def _setup_hotkey_manager(self) -> HotkeyManager:
+        """Initializes and configures the HotkeyManager (Ctrl+F4 暂停/恢复、Ctrl+F3 停止)。"""
+        return HotkeyManager(
+            request_stop=self.stop_tasks,
+            get_pause_status=self.task_service.get_pause_status,
+            request_pause=self.task_service.request_pause,
+            request_resume=self.task_service.request_resume,
+        )
+
     def _setup_idle_manager(self) -> IdleModeManager:
         """Initializes and configures the IdleModeManager."""
-
-        def is_task_running():
-            try:
-                return self.task_service.is_running() and not self.task_service.is_stopping
-            except ContextNotInitializedError:
-                return False
-
-        def is_task_paused():
-            try:
-                status = self.task_service.get_pause_status()
-                return status is True
-            except ContextNotInitializedError:
-                return False
-
         return IdleModeManager(
-            get_is_running=is_task_running,
-            get_is_paused=is_task_paused,
+            get_is_running=lambda: self.task_service.is_running() and not self.task_service.is_stopping,
+            get_is_paused=lambda: self.task_service.get_pause_status() is True,
             get_config=lambda: self.config_service.get_options().idle,
+            request_pause=self.task_service.request_pause,
+            request_resume=self.task_service.request_resume,
         )
 
     # --- Task Control ---
@@ -118,29 +121,16 @@ class KaaFacade:
             "interactive": can_pause,
         }
 
-    def get_task_runtime(self) -> str:
-        """
-        Gets the current task runtime as a formatted string.
-        :return: A string representing the runtime (e.g., "00:05:23"), or "未运行" if no task is running.
-        """
-        runtime = self.task_service.get_task_runtime()
-        if runtime is None:
-            return "未运行"
-        
-        total_seconds = int(runtime.total_seconds())
-        hours = total_seconds // 3600
-        minutes = (total_seconds % 3600) // 60
-        seconds = total_seconds % 60
-        return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
-
     # --- Configuration ---
 
-    def get_all_configs(self) -> Tuple[Any, Any]:
-        """
-        Gets all configuration objects.
-        :return: A tuple of (root_config, current_user_config).
-        """
-        return self.config_service.get_root_config(), self.config_service.get_current_user_config()
+    def save_shared_configs(self, shared):
+        """Saves shared configuration (_shared.json)."""
+        try:
+            self.config_service.save_shared(shared)
+            return "设置已保存！"
+        except Exception as e:
+            logger.error(f"Failed to save shared config: {e}", exc_info=True)
+            raise RuntimeError("设置保存失败，请重启程序。") from e
 
     def save_configs(self):
         """
@@ -175,7 +165,7 @@ class KaaFacade:
     def delete_produce_solution(self, solution_id: str):
         """Deletes a produce solution."""
         # Prevent deleting the currently selected solution
-        selected_id = self.config_service.get_options().produce.selected_solution_id
+        selected_id = self.config_service.get_options().tasks.produce.selected_solution_id
         if solution_id == selected_id:
             raise ValueError("不可删除当前正在使用的培育方案。")
         self.produce_solution_service.delete_solution(solution_id)
@@ -183,6 +173,34 @@ class KaaFacade:
     def save_produce_solution(self, solution: ProduceSolution):
         """Saves a produce solution."""
         self.produce_solution_service.save_solution(solution)
+
+    # --- Game Data ---
+    def check_game_data(self):
+        """检查并更新游戏资源，以生成器形式流式返回进度文本，供 Gradio UI 展示。"""
+        import queue
+        import threading
+        from kaa.game_data.updater import GameDataUpdater
+
+        updater = GameDataUpdater()
+        q: queue.Queue[str | None] = queue.Queue()
+
+        def _run():
+            try:
+                updater.check_and_update(progress_cb=q.put)
+            except Exception as e:
+                q.put(f"错误：{e}")
+            finally:
+                q.put(None)
+
+        threading.Thread(target=_run, daemon=True).start()
+
+        lines: list[str] = []
+        while True:
+            msg = q.get()
+            if msg is None:
+                break
+            lines.append(msg)
+            yield "\n".join(lines)
 
     # --- Misc ---
     def export_logs_as_zip(self) -> str:

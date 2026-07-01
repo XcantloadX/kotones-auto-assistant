@@ -98,9 +98,9 @@ class PIdol(IntEnum):
     藤田ことね_世界一可愛い私 = 藤田ことね_BASE + 1
     藤田ことね_Campusmode = 藤田ことね_BASE + 2
     藤田ことね_YellowBigBang = 藤田ことね_BASE + 3
-    藤田ことね_WhiteNightWhiteWish =藤田ことね_BASE + 4
+    藤田ことね_WhiteNightWhiteWish = 藤田ことね_BASE + 4
     藤田ことね_冠菊 = 藤田ことね_BASE + 5
     藤田ことね_初声 = 藤田ことね_BASE + 6
     藤田ことね_学園生活 = 藤田ことね_BASE + 7
 
-__all__ = ["PIdol"] 
+__all__ = ["PIdol"]

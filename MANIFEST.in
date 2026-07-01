@@ -1,5 +1,6 @@
 graft kaa/sprites
 graft kaa/resources
+graft kaa/application/ui
 prune tests
 prune tools
 prune experiments

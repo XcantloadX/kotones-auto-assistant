@@ -1,6 +1,8 @@
 from typing import TypeVar, Literal, Sequence
 from pydantic import BaseModel, ConfigDict
 
+from .base_config import BackendConfig
+
 
 from .const import (
     ConfigEnum,
@@ -138,12 +140,6 @@ class StartGameConfig(ConfigBaseModel):
     start_through_kuyo: bool = False
     """是否通过Kuyo来启动游戏"""
 
-    game_package_name: str = 'com.bandainamcoent.idolmaster_gakuen'
-    """游戏包名"""
-
-    kuyo_package_name: str = 'org.kuyo.game'
-    """Kuyo包名"""
-
     disable_gakumas_localify: bool = False
     """
     自动检测并禁用 Gakumas Localify 汉化插件。
@@ -222,7 +218,14 @@ class IdleModeConfig(ConfigBaseModel):
     minimize_on_pause: bool = True
     """按键触发暂停时最小化游戏窗口"""
 
-class BaseConfig(ConfigBaseModel):
+
+
+CONFIG_VERSION_CODE = 11
+
+
+class TasksConfig(ConfigBaseModel):
+    """所有任务配置，字段名与 task_id 一一对应。"""
+
     purchase: PurchaseConfig = PurchaseConfig()
     """商店购买配置"""
 
@@ -253,17 +256,25 @@ class BaseConfig(ConfigBaseModel):
     capsule_toys: CapsuleToysConfig = CapsuleToysConfig()
     """扭蛋机配置"""
 
-    trace: TraceConfig = TraceConfig()
-    """跟踪配置"""
-
     start_game: StartGameConfig = StartGameConfig()
     """启动游戏配置"""
 
     end_game: EndGameConfig = EndGameConfig()
     """关闭游戏配置"""
 
-    misc: MiscConfig = MiscConfig()
-    """杂项配置"""
+
+class KaaConfig(ConfigBaseModel):
+    version: int = CONFIG_VERSION_CODE
+    name: str = 'default'
+    description: str = ''
+    backend: BackendConfig = BackendConfig()
+    keep_screenshots: bool = False
+
+    tasks: TasksConfig = TasksConfig()
+    """任务配置"""
+
+    trace: TraceConfig = TraceConfig()
+    """跟踪配置"""
 
     idle: IdleModeConfig = IdleModeConfig()
     """闲置挂机配置"""

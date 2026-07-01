@@ -16,9 +16,6 @@ shebang_python := if os() == 'windows' {
 default:
     @just --list
 
-fetch-submodule:
-    git submodule update --init --remote --recursive --progress --depth 1
-
 resource:
     python tools/make_resources.py
 
@@ -26,20 +23,20 @@ devtool:
     kbot devtools
 
 # Check and create virtual environment
-env: fetch-submodule
+env:
     #!{{shebang_pwsh}}
     python tools/make_resources.py
 
-generate-metadata: env
+generate-metadata:
     #!{{shebang_python}}
     # 更新日志
     from pathlib import Path
-    with open("WHATS_NEW.md", "r", encoding="utf-8") as f:
+    with open("docs/CHANGELOG.md", "r", encoding="utf-8") as f:
         content = f.read()
     metadata_path = Path("kaa/metadata.py")
     metadata_path.parent.mkdir(parents=True, exist_ok=True)
     with open(metadata_path, "w", encoding="utf-8") as f:
-        f.write(f'WHATS_NEW = """\n{content}\n"""')
+        f.write(f'CHANGELOG = """\n{content}\n"""')
 
 @package-resource:
     Write-Host "Packaging kotonebot-resource..."

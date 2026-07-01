@@ -17,7 +17,6 @@ if sys.platform.startswith('win'):
         import win32gui # type: ignore
         import win32con # type: ignore
 
-from kotonebot.backend.context.context import vars
 from kaa.config.schema import IdleModeConfig
 
 logger = logging.getLogger(__name__)
@@ -52,10 +51,14 @@ class IdleModeManager:
         get_is_running: Callable[[], bool],
         get_is_paused: Callable[[], bool],
         get_config: Callable[[], IdleModeConfig],
+        request_pause: Callable[[], None],
+        request_resume: Callable[[], None],
     ) -> None:
         self._get_is_running = get_is_running
         self._get_is_paused = get_is_paused
         self._get_config = get_config
+        self._request_pause = request_pause
+        self._request_resume = request_resume
         self._stop_event = threading.Event()
         self._thread: Optional[threading.Thread] = None
         self._keyboard_hook = None
@@ -96,7 +99,7 @@ class IdleModeManager:
                     if idle_sec >= max(0, int(conf.idle_seconds)):
                         logger.info('System idle for %ss while paused. Requesting resume...', idle_sec)
                         try:
-                            vars.flow.request_resume()
+                            self._request_resume()
                         except Exception:
                             logger.exception('request_resume failed')
                 time.sleep(0.8)
@@ -122,7 +125,7 @@ class IdleModeManager:
             try:
                 if self._get_is_running() and not self._get_is_paused():
                     logger.info('Any key pressed -> pause requested')
-                    vars.flow.request_pause()
+                    self._request_pause()
                     if conf.minimize_on_pause:
                         self._minimize_game_window()
             except Exception:

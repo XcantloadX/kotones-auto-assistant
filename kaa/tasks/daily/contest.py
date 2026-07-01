@@ -71,7 +71,7 @@ def handle_challenge() -> bool:
     # 记忆未编成 [screenshots/contest/no_memo.png]
     if R.Daily.TextContestNoMemory.try_click():
         logger.debug('Memory not set.')
-        when_no_set = conf().contest.when_no_set
+        when_no_set = conf().tasks.contest.when_no_set
 
         auto_compilation = False
         match when_no_set:
@@ -157,7 +157,7 @@ def handle_pick_contestant(has_ongoing_contest: bool = False) -> tuple[bool, boo
             if len(contestant_list) != 3:
                 logger.warning('Cannot find all 3 contestants.')
             # 选择配置文件中对应的对手顺序（1最强，3最弱）
-            target = conf().contest.select_which_contestant
+            target = conf().tasks.contest.select_which_contestant
             if target >= 1 and target <= 3 and target <= len(contestant_list):
                 target -= 1  # [1, 3]映射至[0, 2]
             else:
@@ -171,7 +171,7 @@ def handle_pick_contestant(has_ongoing_contest: bool = False) -> tuple[bool, boo
 
 @task('竞赛')
 def contest():
-    if not conf().contest.enabled:
+    if not conf().tasks.contest.enabled:
         logger.info('Contest is disabled.')
         return
     logger.info('Contest started.')
