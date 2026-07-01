@@ -19,7 +19,7 @@ kaa/config/
 
 kaa/application/
   services/config_service.py          # 业务层：验证、持久化
-  ui/views/settings_view.py           # Gradio 设置页
+  ui/qml/pages/sections/             # QML 设置页各 section
 ```
 
 **存储格式：**

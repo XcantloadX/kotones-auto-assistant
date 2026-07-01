@@ -4,5 +4,22 @@
 """
 from .tab_manager import TabManager
 from .profile_store_backend import ProfileStoreBackend
+from .run_controller import RunController
+from .settings_controller import SettingsController
+from .progress_bridge import ProgressBridge
+from .log_bridge import LogBridge
+from .produce_controller import ProduceController
+from .update_controller import UpdateController
+from .feedback_controller import FeedbackController
 
-__all__ = ["TabManager", "ProfileStoreBackend"]
+__all__ = [
+    "TabManager",
+    "ProfileStoreBackend",
+    "RunController",
+    "SettingsController",
+    "ProgressBridge",
+    "LogBridge",
+    "ProduceController",
+    "UpdateController",
+    "FeedbackController",
+]

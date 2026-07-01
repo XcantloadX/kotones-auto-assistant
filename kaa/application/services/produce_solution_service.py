@@ -65,6 +65,18 @@ class ProduceSolutionService:
         self._manager.save(solution.id, solution)
         logger.info(f"Saved produce solution '{solution.name}' with ID {solution.id}")
 
+    def duplicate_solution(self, solution_id: str) -> ProduceSolution:
+        """
+        Duplicates a produce solution by its ID.
+
+        :param solution_id: The ID of the solution to duplicate.
+        :return: The newly created ProduceSolution object.
+        """
+        new_solution = self._manager.duplicate(solution_id)
+        self._manager.save(new_solution.id, new_solution)
+        logger.info(f"Duplicated produce solution '{new_solution.name}' from {solution_id}")
+        return new_solution
+
     def update_solution_data(self, solution_id: str, name: str, description: str, data: ProduceData) -> ProduceSolution:
         """
         Updates an existing produce solution with new data and saves it.

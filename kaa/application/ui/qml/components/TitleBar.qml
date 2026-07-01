@@ -31,6 +31,9 @@ Item {
     signal minimizeRequested()
     signal closeRequested()
 
+    // 待关闭 tab 的 index（dirty 检查用）
+    property int pendingCloseIndex: -1
+
     property var _tabs: []
     function _reloadTabs() {
         root._tabs = JSON.parse(TabManager.tabsJson())
@@ -51,7 +54,16 @@ Item {
         function onActiveTabChanged() { root._reloadTabs() }
         function onCloseTabBlocked(reason) { /* show notice in future */ }
         function onReadyToCloseTab(index) {
-            TabManager.closeTab(index)
+            root.pendingCloseIndex = index
+            var sc = TabManager.settingsCtrlAt(index)
+            var pc = TabManager.produceCtrlAt(index)
+            var dirty = (sc && sc.isDirty()) || (pc && pc.isDirty())
+            if (dirty) {
+                tabCloseUnsavedDialog.open()
+            } else {
+                TabManager.closeTab(index)
+                root.pendingCloseIndex = -1
+            }
         }
     }
 
@@ -100,6 +112,63 @@ Item {
                 title: "琴音小助手"
                 iconSource: "file:///" + splash.iconPath
                 onBackRequested: root.backRequested()
+            }
+        }
+    }
+
+    // ── Tab 关闭时的 dirty 检查对话框 ──────────────────────────────────
+    Dialog {
+        id: tabCloseUnsavedDialog
+        modal: true
+        title: "未保存的更改"
+        standardButtons: Dialog.NoButton
+        width: 420
+        anchors.centerIn: Overlay.overlay
+
+        contentItem: ColumnLayout {
+            spacing: 12
+            Label {
+                Layout.fillWidth: true
+                wrapMode: Text.Wrap
+                text: "该标签页有未保存的更改，关闭前请选择处理方式。"
+            }
+            RowLayout {
+                Layout.alignment: Qt.AlignRight
+                spacing: 8
+                Button {
+                    text: "取消"
+                    onClicked: {
+                        tabCloseUnsavedDialog.close()
+                        root.pendingCloseIndex = -1
+                    }
+                }
+                Button {
+                    text: "不保存并关闭"
+                    onClicked: {
+                        var idx = root.pendingCloseIndex
+                        tabCloseUnsavedDialog.close()
+                        root.pendingCloseIndex = -1
+                        if (idx >= 0) {
+                            TabManager.closeTab(idx)
+                        }
+                    }
+                }
+                Button {
+                    text: "保存并关闭"
+                    highlighted: true
+                    onClicked: {
+                        var idx = root.pendingCloseIndex
+                        tabCloseUnsavedDialog.close()
+                        root.pendingCloseIndex = -1
+                        if (idx >= 0) {
+                            var sc = TabManager.settingsCtrlAt(idx)
+                            var pc = TabManager.produceCtrlAt(idx)
+                            if (sc && sc.isDirty()) sc.save()
+                            if (pc && pc.isDirty()) pc.save()
+                            TabManager.closeTab(idx)
+                        }
+                    }
+                }
             }
         }
     }

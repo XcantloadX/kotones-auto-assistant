@@ -178,6 +178,12 @@ class UpdateService:
             if result.returncode != 0:
                 raise UpdateFetchListError(result.stderr.strip() or f"pip exited with code {result.returncode}")
 
+            if not result.stdout.strip():
+                raise UpdateFetchListError(
+                    f"pip returned empty output. stderr: {result.stderr.strip() or '(empty)'}. "
+                    f"One or more PyPI indexes may be unreachable."
+                )
+
             data = json.loads(result.stdout)
             version_info = VersionInfo(
                 versions=data.get("versions", []),
@@ -188,7 +194,9 @@ class UpdateService:
             logger.info(f"Found {len(version_info.versions)} available versions.")
             return version_info
 
-        except (subprocess.TimeoutExpired, json.JSONDecodeError, Exception) as e:
+        except UpdateFetchListError:
+            raise
+        except Exception as e:
             raise UpdateFetchListError(str(e)) from e
 
     def _check_compatibility(self, target_version: str) -> Optional[str]:

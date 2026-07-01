@@ -34,6 +34,10 @@ class ConfigService:
         self.load()
         logger.info("Configuration reloaded from disk.")
 
+    def set_config(self, config: KaaConfig) -> None:
+        """设置当前内存中的 profile 配置（不写盘）。"""
+        self._config = config
+
     def get_config(self) -> KaaConfig:
         """返回当前 profile 配置。"""
         if self._config is None:

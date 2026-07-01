@@ -141,33 +141,7 @@ Dialog {
                     onClicked: {
                         var oldName = renameDialog.targetConfigName
                         var newName = renameDialog.newName.trim()
-                        var isCurrent = root.tabManager.isTabOpen(oldName)
-                        // 重命名逻辑通过配置服务处理
-                        var runner = function() {
-                            try {
-                                // 如果当前已打开，先关闭 tab
-                                if (isCurrent) {
-                                    // 找到 index 并关闭
-                                    var tabs = JSON.parse(TabManager.tabsJson())
-                                    for (var i = 0; i < tabs.length; i++) {
-                                        if (tabs[i].configName === oldName) {
-                                            TabManager.closeTab(i)
-                                            break
-                                        }
-                                    }
-                                }
-                                // 执行重命名
-                                var module = Qt.createQmlObject("import QtQml; QtObject {}", root)
-                                // 使用 Python 侧的配置管理器
-                                // 通过 ProfileStore 后端桥接
-                                // 简化处理：在 Python 层通过 renameProfile 方法
-                                // 目前暂不支持 Python 重命名桥接，输出警告
-                                console.warn("Rename not yet bridged to Python. Please use config files directly.")
-                            } catch(e) {
-                                console.error("Rename failed:", e)
-                            }
-                        }
-                        runner()
+                        root.tabManager.renameProfile(oldName, newName)
                         renameDialog.close()
                     }
                 }
@@ -205,12 +179,7 @@ Dialog {
                             deleteConfirmDialog.close()
                             return
                         }
-                        try {
-                            // 文件删除通过 Python 侧实现
-                            console.warn("Delete not yet bridged to Python. Please use config files directly.")
-                        } catch(e) {
-                            console.error("Delete failed:", e)
-                        }
+                        root.tabManager.deleteProfile(name)
                         deleteConfirmDialog.close()
                     }
                 }

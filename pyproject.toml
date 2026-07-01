@@ -17,14 +17,7 @@ dependencies = [
     # Adb Control
     "adbutils~=2.8",
     "uiautomator2~=3.2",
-    # Visual Debugger
-    "fastapi~=0.115.6",
-    "uvicorn~=0.34.0",
-    "python-multipart~=0.0.20",
-    "websockets~=14.1",
-    "psutil~=6.1",
     # GUI
-    "gradio~=6.0",
     "PySide6~=6.7",
     # Configuration
     "pydantic~=2.10",
