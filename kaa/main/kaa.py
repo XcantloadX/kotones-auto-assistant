@@ -20,7 +20,7 @@ from kotonebot.primitives.geometry import Size
 from kotonebot.ui import user
 from kotonebot.util import is_windows
 from kaa.errors import WindowsOnlyError
-from kaa.constants import PLAYCOVER_BUNDLE_ID
+from kaa.constants import GAME_PACKAGE_NAME, PLAYCOVER_BUNDLE_ID
 from ..util.paths import get_ahk_path
 from ..kaa_context import _set_instance
 from kaa.tasks import POST_TASK_REGISTRY, TASK_FUNCTIONS
@@ -240,7 +240,7 @@ class KaaDeviceFactory:
                 if lc.mumu_background_mode:
                     args = {
                         "display_id": None,
-                        "target_package_name": config.tasks.start_game.game_package_name,
+                        "target_package_name": GAME_PACKAGE_NAME,
                         "app_index": 0
                     }
                 host_conf = MuMu12HostConfig(timeout=timeout, **args)
