@@ -77,6 +77,15 @@ class ProduceSolutionService:
         logger.info(f"Duplicated produce solution '{new_solution.name}' from {solution_id}")
         return new_solution
 
+    def check_name_exists(self, name: str, exclude_id: str | None = None) -> bool:
+        """检查指定名称是否已被其他方案使用。
+
+        :param name: 要检查的名称。
+        :param exclude_id: 排除的方案 ID。
+        :return: 名称已存在返回 True。
+        """
+        return self._manager.name_exists(name, exclude_id)
+
     def update_solution_data(self, solution_id: str, name: str, description: str, data: ProduceData) -> ProduceSolution:
         """
         Updates an existing produce solution with new data and saves it.

@@ -270,3 +270,17 @@ class ProduceSolutionManager:
         )
 
         return new_solution
+
+    def name_exists(self, name: str, exclude_id: str | None = None) -> bool:
+        """检查指定名称是否已被其他方案使用。
+
+        :param name: 要检查的名称。
+        :param exclude_id: 排除的方案 ID（用于重命名时排除自身）。
+        :return: 名称已存在返回 True。
+        """
+        solutions = self.list()
+        for sol in solutions:
+            if sol.name == name:
+                if exclude_id is None or sol.id != exclude_id:
+                    return True
+        return False

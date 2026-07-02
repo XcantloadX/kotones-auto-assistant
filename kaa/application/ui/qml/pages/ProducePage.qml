@@ -85,6 +85,11 @@ PageContainer {
 
     function save() {
         if (!produceCtrl || !currentSolution) return
+        if (root.solutionNameExists(currentSolution.name, currentSolution.id)) {
+            // 重名时弹出警告
+            renameConflictDialog.open()
+            return
+        }
         if (produceCtrl.saveSolution(JSON.stringify(currentSolution))) markClean()
     }
 
@@ -92,6 +97,11 @@ PageContainer {
         if (!produceCtrl || !id) return
         produceCtrl.deleteSolution(id)
         if (currentSolution && currentSolution.id === id) { currentSolution = null; markClean() }
+    }
+
+    function solutionNameExists(name, excludeId) {
+        if (!produceCtrl || !name) return false
+        return produceCtrl.checkSolutionNameExists(name, excludeId || "")
     }
 
     function idolDisplayText(card) {
@@ -194,18 +204,55 @@ PageContainer {
         id: createDialog
         title: "新建培育方案"
         modal: true; anchors.centerIn: parent; width: 320
-        standardButtons: Dialog.Ok | Dialog.Cancel
-        onOpened: { createNameField.text = "新培育方案"; createNameField.selectAll(); createNameField.forceActiveFocus() }
+
+        footer: DialogButtonBox {
+            Button { text: "取消"; onClicked: createDialog.close() }
+            Button {
+                text: "确定"; highlighted: true
+                enabled: createNameField.text.trim().length > 0
+                onClicked: {
+                    var name = createNameField.text.trim()
+                    if (!name || !produceCtrl) return
+                    if (root.solutionNameExists(name, "")) {
+                        createNameError.visible = true
+                        return
+                    }
+                    createDialog.accept()
+                }
+            }
+        }
+
+        onOpened: {
+            createNameField.text = "新培育方案"
+            createNameField.selectAll()
+            createNameField.forceActiveFocus()
+            createNameError.visible = false
+        }
         onAccepted: {
             var name = createNameField.text.trim()
             if (!name || !produceCtrl) return
             var raw = produceCtrl.createSolution(name)
             if (raw && raw !== '{}') { root.currentSolution = JSON.parse(raw); root.markClean() }
         }
+
         ColumnLayout {
             spacing: 8; width: parent.width
             Label { text: "请输入方案名称：" }
-            TextField { id: createNameField; Layout.fillWidth: true; Keys.onReturnPressed: createDialog.accept() }
+            TextField {
+                id: createNameField
+                Layout.fillWidth: true
+                onTextChanged: createNameError.visible = false
+                Keys.onReturnPressed: {
+                    var name = createNameField.text.trim()
+                    if (name && produceCtrl && !root.solutionNameExists(name, ""))
+                        createDialog.accept()
+                }
+            }
+            Label {
+                id: createNameError
+                text: "该名称已被其他方案使用"
+                color: "red"; visible: false; font.pixelSize: 12
+            }
         }
     }
 
@@ -213,9 +260,32 @@ PageContainer {
         id: duplicateDialog
         title: "复制培育方案"
         modal: true; anchors.centerIn: parent; width: 320
-        standardButtons: Dialog.Ok | Dialog.Cancel
         property string sourceName: ""
-        onOpened: { duplicateNameField.text = sourceName + " 副本"; duplicateNameField.selectAll(); duplicateNameField.forceActiveFocus() }
+        property string sourceId: ""
+
+        footer: DialogButtonBox {
+            Button { text: "取消"; onClicked: duplicateDialog.close() }
+            Button {
+                text: "确定"; highlighted: true
+                enabled: duplicateNameField.text.trim().length > 0
+                onClicked: {
+                    var name = duplicateNameField.text.trim()
+                    if (!produceCtrl || !root.currentSolution) return
+                    if (root.solutionNameExists(name, "")) {
+                        duplicateNameError.visible = true
+                        return
+                    }
+                    duplicateDialog.accept()
+                }
+            }
+        }
+
+        onOpened: {
+            duplicateNameField.text = sourceName + " 副本"
+            duplicateNameField.selectAll()
+            duplicateNameField.forceActiveFocus()
+            duplicateNameError.visible = false
+        }
         onAccepted: {
             if (!produceCtrl || !root.currentSolution) return
             var raw = produceCtrl.duplicateSolution(root.currentSolution.id)
@@ -226,10 +296,25 @@ PageContainer {
                 root.currentSolution = sol; root.markClean()
             }
         }
+
         ColumnLayout {
             spacing: 8; width: parent.width
             Label { text: "请输入新方案名称：" }
-            TextField { id: duplicateNameField; Layout.fillWidth: true; Keys.onReturnPressed: duplicateDialog.accept() }
+            TextField {
+                id: duplicateNameField
+                Layout.fillWidth: true
+                onTextChanged: duplicateNameError.visible = false
+                Keys.onReturnPressed: {
+                    var name = duplicateNameField.text.trim()
+                    if (produceCtrl && root.currentSolution && !root.solutionNameExists(name, ""))
+                        duplicateDialog.accept()
+                }
+            }
+            Label {
+                id: duplicateNameError
+                text: "该名称已被其他方案使用"
+                color: "red"; visible: false; font.pixelSize: 12
+            }
         }
     }
 
@@ -245,6 +330,18 @@ PageContainer {
             wrapMode: Text.Wrap; width: parent.width
         }
         onAccepted: root.deleteSolution(targetId)
+    }
+
+    Dialog {
+        id: renameConflictDialog
+        title: "名称冲突"
+        modal: true; anchors.centerIn: parent; width: 360
+        standardButtons: Dialog.Ok
+        Label {
+            text: "该名称已被其他方案使用，请使用不同的名称后重试。"
+            wrapMode: Text.Wrap; width: parent.width
+            leftPadding: 8; topPadding: 4
+        }
     }
 
     // ── 布局 ──────────────────────────────────────────

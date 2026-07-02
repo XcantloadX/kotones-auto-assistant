@@ -89,6 +89,22 @@ class ProduceController(QObject):
             logger.exception("Failed to list produce solutions")
             return '[]'
 
+    @Slot(str, str, result=bool)
+    def checkSolutionNameExists(self, name: str, exclude_id: str) -> bool:
+        """检查方案名称是否已被其他方案使用。
+
+        :param name: 要检查的名称。
+        :param exclude_id: 排除的方案 ID（为空字符串时不排除）。
+        :return: 名称已存在返回 True。
+        """
+        try:
+            if self._ps is None:
+                return False
+            return self._ps.check_name_exists(name, exclude_id or None)
+        except Exception:
+            logger.exception("Failed to check solution name existence")
+            return False
+
     # ── 单方案读写 ───────────────────────────────────────
 
     @Slot(str, result=str)
