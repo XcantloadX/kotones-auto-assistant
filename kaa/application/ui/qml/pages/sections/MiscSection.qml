@@ -27,22 +27,22 @@ Item {
     FormBinder {
         id: idle
         data: root._idle
-        onCommitted: root._commit("profile.idle", key, value)
+        onCommitted: function(key, value) { root._commit("profile.idle", key, value) }
     }
     FormBinder {
         id: trace
         data: root._trace
-        onCommitted: root._commit("profile.trace", key, value)
+        onCommitted: function(key, value) { root._commit("profile.trace", key, value) }
     }
     FormBinder {
         id: shared
         data: root._shared
-        onCommitted: root._commit("shared.misc", key, value)
+        onCommitted: function(key, value) { root._commit("shared.misc", key, value) }
     }
     FormBinder {
         id: telemetry
         data: root._telemetry
-        onCommitted: root._commit("shared.telemetry", key, value)
+        onCommitted: function(key, value) { root._commit("shared.telemetry", key, value) }
     }
 
     ScrollView {

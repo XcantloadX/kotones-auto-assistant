@@ -43,17 +43,17 @@ Item {
     FormBinder {
         id: purchase
         data: root._purchase
-        onCommitted: root._commit("profile.tasks.purchase", key, value)
+        onCommitted: function(key, value) { root._commit("profile.tasks.purchase", key, value) }
     }
     FormBinder {
         id: assignment
         data: root._assignment
-        onCommitted: root._commit("profile.tasks.assignment", key, value)
+        onCommitted: function(key, value) { root._commit("profile.tasks.assignment", key, value) }
     }
     FormBinder {
         id: contest
         data: root._contest
-        onCommitted: root._commit("profile.tasks.contest", key, value)
+        onCommitted: function(key, value) { root._commit("profile.tasks.contest", key, value) }
     }
 
     ScrollView {
