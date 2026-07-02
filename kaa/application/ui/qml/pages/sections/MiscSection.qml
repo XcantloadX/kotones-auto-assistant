@@ -8,6 +8,7 @@ import "../../components/form"
 Item {
     id: root
     property var settingsCtrl
+    property bool _checking: false
     signal modified()
 
     readonly property var _idle:      settingsCtrl?.config?.profile?.idle     ?? {}
@@ -169,24 +170,52 @@ Item {
                     label: "自动发送匿名错误报告"
                 }
 
-                Button {
-                    text: "立即检查游戏资源"
-                    onClicked: if (settingsCtrl) settingsCtrl.checkGameDataAsync()
+                RowLayout {
+                    Layout.fillWidth: true
+
+                    Button {
+                        id: checkBtn
+                        text: "立即检查游戏资源"
+                        enabled: !root._checking
+                        onClicked: {
+                            root._checking = true
+                            if (settingsCtrl) settingsCtrl.checkGameDataAsync()
+                        }
+                    }
+
+                    BusyIndicator {
+                        id: spinner
+                        running: root._checking
+                        visible: root._checking
+                        implicitWidth: 20
+                        implicitHeight: 20
+                    }
                 }
 
-                TextArea {
-                    id: gameDataOutput
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: 120
-                    readOnly: true
-                    visible: text.length > 0
-                    wrapMode: TextArea.Wrap
+                Dialog {
+                    id: resultDialog
+                    modal: true
+                    title: "游戏资源"
+                    width: 360
+                    standardButtons: Dialog.Ok
+                    closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+                    anchors.centerIn: Overlay.overlay
+
+                    property string resultText: ""
+
+                    contentItem: Label {
+                        text: resultDialog.resultText
+                        wrapMode: Text.Wrap
+                    }
                 }
 
                 Connections {
                     target: settingsCtrl
-                    function onGameDataProgress(text) { gameDataOutput.text += text + "\n" }
-                    function onGameDataDone() { gameDataOutput.text += "完成\n" }
+                    function onGameDataResult(text) {
+                        root._checking = false
+                        resultDialog.resultText = text
+                        resultDialog.open()
+                    }
                 }
             }
         }

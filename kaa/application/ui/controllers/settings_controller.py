@@ -26,6 +26,7 @@ class SettingsController(QObject):
     emulatorInstancesReady = Signal(str, str)   # (emulator_type, json)
     emulatorNotInstalled = Signal(str)           # (emulator_type)
     gameDataProgress = Signal(str)
+    gameDataResult = Signal(str)
     gameDataDone = Signal()
 
     def __init__(self, session: KaaSession, parent: QObject | None = None) -> None:
@@ -175,15 +176,28 @@ class SettingsController(QObject):
 
     @Slot()
     def checkGameDataAsync(self) -> None:
-        """触发游戏资源检查，流式 emit gameDataProgress。"""
+        """触发游戏资源检查，完成后 emit gameDataResult。"""
         def _run() -> None:
+            result = "完成"
             try:
                 from kaa.game_data.updater import GameDataUpdater
                 updater = GameDataUpdater()
-                updater.check_and_update(progress_cb=self.gameDataProgress.emit)
+                last_msg = ""
+                def progress_cb(text: str) -> None:
+                    nonlocal last_msg
+                    last_msg = text
+                    self.gameDataProgress.emit(text)
+                updated = updater.check_and_update(progress_cb=progress_cb)
+                if updated:
+                    result = "游戏数据更新完成"
+                elif last_msg:
+                    result = last_msg
+                else:
+                    result = "目前已是最新版本，无需更新。"
             except Exception as e:
-                self.gameDataProgress.emit(f"错误：{e}")
+                result = f"检查失败：{e}"
             finally:
+                self.gameDataResult.emit(result)
                 self.gameDataDone.emit()
 
         threading.Thread(target=_run, daemon=True).start()
