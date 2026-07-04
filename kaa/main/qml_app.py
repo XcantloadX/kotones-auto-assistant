@@ -17,6 +17,7 @@ from PySide6.QtCore import QUrl, QObject, Property, Signal, Slot
 from kaa.application.ui.error_bridge import ErrorDialogBridge, set_bridge
 from kaa.application.core.hotkeys import HotkeyManager
 from kaa.application.ui.controllers import TabManager, ProfileStoreBackend
+from kaa.application.ui.controllers.notice_backend import NoticeBackend
 from PySide6.QtGui import QFont, QIcon
 from PySide6.QtWidgets import QApplication
 from PySide6.QtQml import QQmlApplicationEngine
@@ -352,6 +353,7 @@ def main() -> None:
     # ── 2. 创建 controllers ─────────────────────────────────────
     tab_manager = TabManager()
     profile_store = ProfileStoreBackend(tab_manager)
+    notice = NoticeBackend()
     hotkey_mgr = HotkeyManager(
         request_stop=lambda: _hotkey_stop(tab_manager),
         get_pause_status=lambda: _hotkey_get_pause(tab_manager),
@@ -379,6 +381,7 @@ def main() -> None:
     engine.rootContext().setContextProperty("errorDialog", error_bridge)
     engine.rootContext().setContextProperty("TabManager", tab_manager)
     engine.rootContext().setContextProperty("ProfileStore", profile_store)
+    engine.rootContext().setContextProperty("Notice", notice)
     engine.rootContext().setContextProperty('maxHoverBridge', max_hover_bridge)
     engine.rootContext().setContextProperty('tabBarBridge', tab_bar_bridge)
     engine.rootContext().setContextProperty('fluentFontPath',

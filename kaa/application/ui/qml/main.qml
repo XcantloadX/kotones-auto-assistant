@@ -373,6 +373,10 @@ ApplicationWindow {
         tabManager: TabManager
     }
 
+    NoticeHost {
+        id: noticeHost
+    }
+
     onClosing: function(close) {
         if (window.allowImmediateClose) {
             window.allowImmediateClose = false

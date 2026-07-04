@@ -11,6 +11,7 @@ from .log_bridge import LogBridge
 from .produce_controller import ProduceController
 from .update_controller import UpdateController
 from .feedback_controller import FeedbackController
+from .notice_backend import NoticeBackend
 
 __all__ = [
     "TabManager",
@@ -22,4 +23,5 @@ __all__ = [
     "ProduceController",
     "UpdateController",
     "FeedbackController",
+    "NoticeBackend",
 ]

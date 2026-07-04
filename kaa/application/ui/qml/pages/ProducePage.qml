@@ -118,6 +118,8 @@ PageContainer {
         function onSolutionsChanged() { root.loadSolutions() }
         function onSaveRequested()    { root.save() }
         function onDiscardRequested() { root.selectSolution(root.currentSolution ? root.currentSolution.id : "") }
+        function onOperationSucceeded(msg) { Notice.show("success", msg) }
+        function onOperationFailed(msg) { Notice.show("error", msg) }
     }
 
     // ── 未保存确认对话框 ─────────────────────────────

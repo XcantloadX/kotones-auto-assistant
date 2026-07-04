@@ -72,6 +72,8 @@ PageContainer {
         target: settingsCtrl
         function onDirtyChanged(isDirty) { root.dirty = isDirty }
         function onConfigLoaded() { root.dirty = false }
+        function onOperationSucceeded(msg) { Notice.show("success", msg) }
+        function onOperationFailed(msg) { Notice.show("error", msg) }
     }
 
     ColumnLayout {
