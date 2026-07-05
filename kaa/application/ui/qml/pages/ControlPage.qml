@@ -18,16 +18,6 @@ PageContainer {
     readonly property bool ctrl_paused:   runCtrl ? runCtrl.isPaused : false
     readonly property string ctrl_task:   runCtrl ? runCtrl.currentTaskName : ""
 
-    property var tasks: []
-
-    function reloadTasks() {
-        if (runCtrl) {
-            tasks = JSON.parse(runCtrl.tasksJson())
-        } else {
-            tasks = []
-        }
-    }
-
     function statusText(status) {
         var map = {
             pending: "等待",
@@ -36,14 +26,6 @@ PageContainer {
             error: "出错"
         }
         return map[status] || status
-    }
-
-    Component.onCompleted: reloadTasks()
-
-    Connections {
-        target: runCtrl
-        function onTasksChanged() { reloadTasks() }
-        function onStateChanged() { reloadTasks() }
     }
 
     ScrollView {
@@ -84,23 +66,21 @@ PageContainer {
                         Select {
                             id: endActionCombo
                             Layout.minimumWidth: 190
-                            model: ["完成后什么都不做", "完成后关机", "完成后休眠"]
-                            onActivated: {
-                                var actions = ["nothing", "shutdown", "hibernate"]
-                                runCtrl.setEndAction(actions[currentIndex])
+                            textRole: "label"
+                            valueRole: "value"
+                            model: [
+                                { label: "完成后什么都不做", value: "nothing" },
+                                { label: "完成后关机", value: "shutdown" },
+                                { label: "完成后休眠", value: "hibernate" }
+                            ]
+                            onCurrentValueChanged: {
+                                if (currentValue) runCtrl.setEndAction(currentValue)
                             }
-                            Component.onCompleted: {
-                                var actions = ["nothing", "shutdown", "hibernate"]
-                                var idx = actions.indexOf(runCtrl ? runCtrl.endAction : "nothing")
-                                if (idx >= 0) currentIndex = idx
-                            }
+                            Component.onCompleted: currentValue = runCtrl ? runCtrl.endAction : "nothing"
                             Connections {
                                 target: runCtrl
-                                function onStateChanged() {
-                                    var actions = ["nothing", "shutdown", "hibernate"]
-                                    var idx = actions.indexOf(runCtrl ? runCtrl.endAction : "nothing")
-                                    if (idx >= 0 && idx !== endActionCombo.currentIndex)
-                                        endActionCombo.currentIndex = idx
+                                function onEndActionChanged() {
+                                    endActionCombo.currentValue = runCtrl.endAction
                                 }
                             }
                         }
@@ -173,11 +153,11 @@ PageContainer {
                         spacing: 8
 
                         Repeater {
-                            model: root.tasks
+                            model: runCtrl.taskModel
                             CheckBox {
-                                text: modelData.shortName ?? modelData.name
-                                checked: modelData.enabled
-                                onToggled: runCtrl.setTaskEnabled(modelData.path, checked)
+                                text: model.shortName
+                                checked: model.enabled
+                                onToggled: runCtrl.setTaskEnabled(model.path, checked)
                             }
                         }
                     }
@@ -211,7 +191,7 @@ PageContainer {
                     implicitHeight: contentHeight
                     width: parent.width
                     clip: true
-                    model: root.tasks
+                    model: runCtrl.taskModel
                     spacing: 4
 
                     delegate: ItemDelegate {
@@ -220,14 +200,14 @@ PageContainer {
                         contentItem: RowLayout {
                             width: parent.availableWidth
                             Label {
-                                text: modelData.name
+                                text: model.name
                                 Layout.fillWidth: true
                                 elide: Text.ElideRight
                             }
                             Label {
-                                text: root.statusText(modelData.status)
-                                color: modelData.status === "running" ? "#1976d2"
-                                         : modelData.status === "error" ? "#d32f2f"
+                                text: root.statusText(model.statusText)
+                                color: model.statusText === "running" ? "#1976d2"
+                                         : model.statusText === "error" ? "#d32f2f"
                                          : palette.placeholderText
                             }
                         }

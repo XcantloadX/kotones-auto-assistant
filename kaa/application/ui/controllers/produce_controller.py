@@ -1,12 +1,12 @@
 """ProduceController — 培育方案的 CRUD 控制器。
 
-数据层只做 JSON 传输，QML 持有完整方案对象副本进行编辑。
+用共享 ProduceSolutionsModel，通过 Q_PROPERTY 暴露给 QML。
 """
 import json
 import logging
 from typing import TYPE_CHECKING
 
-from PySide6.QtCore import QObject, Signal, Slot
+from PySide6.QtCore import QObject, Property, Signal, Slot
 
 if TYPE_CHECKING:
     from kaa.application.ui.kaa_session import KaaSession
@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 class ProduceController(QObject):
-    """培育方案的 CRUD 控制器，通过 JSON 与 QML 交换数据。"""
+    """培育方案的 CRUD 控制器，共享 ProduceSolutionsModel。"""
 
     solutionsChanged = Signal()
     dirtyChanged = Signal(bool)
@@ -23,15 +23,52 @@ class ProduceController(QObject):
     discardRequested = Signal()
     operationSucceeded = Signal(str)
     operationFailed = Signal(str)
+    selectedSolutionIdChanged = Signal()
 
     def __init__(self, session: 'KaaSession', parent: QObject | None = None) -> None:
         super().__init__(parent)
         self._session = session
         self._dirty: bool = False
+        self._model_ref = None
+
+        ps = session.produce_solution_service
+        if ps is not None:
+            from kaa.application.ui.models.produce_solutions_model import ProduceSolutionsModel
+            self._model_ref = ProduceSolutionsModel(ps)
+
+        cs = session.config_service
+        if cs is not None:
+            cs.bus().configChanged.connect(self.selectedSolutionIdChanged)
+
+    @property
+    def _model(self):
+        return self._model_ref
 
     @property
     def _ps(self):
         return self._session.produce_solution_service
+
+    # ── Q_PROPERTY: selectedSolutionId ─────────────────────
+
+    def _get_selected_solution_id(self) -> str:
+        cs = self._session.config_service
+        if cs is None:
+            return ''
+        return cs.get_config().tasks.produce.selected_solution_id or ''
+
+    def _set_selected_solution_id(self, sid: str) -> None:
+        cs = self._session.config_service
+        if cs is None:
+            return
+        cs.apply_field('tasks.produce.selected_solution_id', sid)
+
+    selectedSolutionId = Property(str, _get_selected_solution_id, _set_selected_solution_id, notify=selectedSolutionIdChanged)
+
+    # ── Q_PROPERTY: solutionsModel ─────────────────────────
+
+    @Property(QObject, constant=True)
+    def solutionsModel(self):
+        return self._model
 
     # ── Dirty 状态 ───────────────────────────────────────
 
@@ -53,14 +90,12 @@ class ProduceController(QObject):
 
     @Slot(result=bool)
     def save(self) -> bool:
-        """通知 QML ProducePage 保存当前方案。"""
         if self._dirty:
             self.saveRequested.emit()
         return True
 
     @Slot()
     def discard(self) -> None:
-        """通知 QML ProducePage 丢弃当前方案的编辑。"""
         self._dirty = False
         self.dirtyChanged.emit(False)
         self.discardRequested.emit()
@@ -69,20 +104,12 @@ class ProduceController(QObject):
 
     @Slot(result=str)
     def solutionsJson(self) -> str:
-        """返回所有方案的摘要列表 JSON。
-
-        :return: ``[{"id": ..., "name": ..., "description": ...}, ...]``
-        """
         try:
             if self._ps is None:
                 return '[]'
             solutions = self._ps.list_solutions()
             return json.dumps([
-                {
-                    'id': s.id,
-                    'name': s.name,
-                    'description': s.description or '',
-                }
+                {'id': s.id, 'name': s.name, 'description': s.description or ''}
                 for s in solutions
             ], ensure_ascii=False)
         except Exception:
@@ -91,16 +118,10 @@ class ProduceController(QObject):
 
     @Slot(str, str, result=bool)
     def checkSolutionNameExists(self, name: str, exclude_id: str) -> bool:
-        """检查方案名称是否已被其他方案使用。
-
-        :param name: 要检查的名称。
-        :param exclude_id: 排除的方案 ID（为空字符串时不排除）。
-        :return: 名称已存在返回 True。
-        """
         try:
-            if self._ps is None:
+            if self._model is None:
                 return False
-            return self._ps.check_name_exists(name, exclude_id or None)
+            return self._model.check_name_exists(name, exclude_id or None)
         except Exception:
             logger.exception("Failed to check solution name existence")
             return False
@@ -109,31 +130,28 @@ class ProduceController(QObject):
 
     @Slot(str, result=str)
     def solutionJson(self, solution_id: str) -> str:
-        """返回指定方案的完整 JSON。"""
         try:
-            if self._ps is None:
+            if self._model is None:
                 return '{}'
-            solution = self._ps.get_solution(solution_id)
-            return solution.model_dump_json()
+            sol = self._model.get_solution(solution_id)
+            if sol is None:
+                return '{}'
+            return sol.model_dump_json()
         except Exception:
             logger.exception("Failed to get produce solution: %s", solution_id)
             return '{}'
 
     @Slot(str, result=bool)
     def saveSolution(self, json_str: str) -> bool:
-        """保存方案（接收完整 ProduceSolution JSON，含 id）。
-
-        :param json_str: 完整的 ProduceSolution JSON。
-        :return: 成功返回 True。
-        """
         try:
-            if self._ps is None:
+            if self._model is None:
                 return False
             from kaa.config.produce import ProduceSolution
             solution = ProduceSolution.model_validate_json(json_str)
-            self._ps.save_solution(solution)
+            self._model.save_solution(solution)
             self.solutionsChanged.emit()
             self.operationSucceeded.emit(f"方案 '{solution.name}' 已保存")
+            self.selectedSolutionIdChanged.emit()
             return True
         except Exception as exc:
             logger.exception("Failed to save produce solution")
@@ -144,13 +162,12 @@ class ProduceController(QObject):
 
     @Slot(str, result=str)
     def createSolution(self, name: str) -> str:
-        """创建新方案，返回新方案的完整 JSON，emit solutionsChanged。"""
         try:
-            if self._ps is None:
+            if self._model is None:
                 return '{}'
             if not name:
                 name = "新培育方案"
-            solution = self._ps.create_solution(name)
+            solution = self._model.create_solution(name)
             self.solutionsChanged.emit()
             self.operationSucceeded.emit(f"已创建方案: {name}")
             return solution.model_dump_json()
@@ -161,18 +178,13 @@ class ProduceController(QObject):
 
     @Slot(str, result=bool)
     def deleteSolution(self, solution_id: str) -> bool:
-        """删除指定方案。"""
         try:
-            if self._ps is None:
+            if self._model is None:
                 return False
-            # Prevent deleting the currently selected solution
-            cs = self._session.config_service
-            if cs is not None:
-                selected_id = cs.get_config().tasks.produce.selected_solution_id
-                if solution_id == selected_id:
-                    self.operationFailed.emit("不可删除当前正在使用的培育方案。")
-                    return False
-            self._ps.delete_solution(solution_id)
+            if solution_id == self._get_selected_solution_id():
+                self.operationFailed.emit("不可删除当前正在使用的培育方案。")
+                return False
+            self._model.delete_solution(solution_id)
             self.solutionsChanged.emit()
             self.operationSucceeded.emit("方案已删除")
             return True
@@ -186,11 +198,10 @@ class ProduceController(QObject):
 
     @Slot(str, result=str)
     def duplicateSolution(self, solution_id: str) -> str:
-        """复制方案，返回新方案的完整 JSON，emit solutionsChanged。"""
         try:
-            if self._ps is None:
+            if self._model is None:
                 return '{}'
-            solution = self._ps.duplicate_solution(solution_id)
+            solution = self._model.duplicate_solution(solution_id)
             self.solutionsChanged.emit()
             self.operationSucceeded.emit(f"已复制方案: {solution.name}")
             return solution.model_dump_json()
@@ -203,10 +214,6 @@ class ProduceController(QObject):
 
     @Slot(result=str)
     def idolCardsJson(self) -> str:
-        """返回所有偶像卡数据 JSON。
-
-        :return: ``[{"skin_id": ..., "name": ..., "another_name": ..., "is_another": bool, "character_id": ..., "character_name": ..., "image_path": ...}, ...]``
-        """
         try:
             from kaa.db.idol_card import IdolCard
             from kaa.game_data.paths import sprites_path
@@ -230,17 +237,10 @@ class ProduceController(QObject):
 
     @Slot(result=str)
     def produceActionsJson(self) -> str:
-        """返回所有培育行动枚举 JSON。
-
-        :return: ``[{"value": ..., "display_name": ...}, ...]``
-        """
         try:
             from kaa.config.const import ProduceAction
             return json.dumps([
-                {
-                    'value': a.value,
-                    'display_name': a.display_name,
-                }
+                {'value': a.value, 'display_name': a.display_name}
                 for a in ProduceAction
             ], ensure_ascii=False)
         except Exception:
@@ -249,17 +249,10 @@ class ProduceController(QObject):
 
     @Slot(result=str)
     def detectModesJson(self) -> str:
-        """返回推荐卡检测模式枚举 JSON。
-
-        :return: ``[{"value": ..., "display_name": ...}, ...]``
-        """
         try:
             from kaa.config.const import RecommendCardDetectionMode
             return json.dumps([
-                {
-                    'value': m.value,
-                    'display_name': m.display_name,
-                }
+                {'value': m.value, 'display_name': m.display_name}
                 for m in RecommendCardDetectionMode
             ], ensure_ascii=False)
         except Exception:

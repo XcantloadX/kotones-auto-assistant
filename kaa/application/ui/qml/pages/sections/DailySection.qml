@@ -5,14 +5,9 @@ import "../../components/controls"
 import "../../components/form"
 
 // 日常设置：商店 / 工作 / 竞赛 / 奖励
-//
-// 金币/AP 物品枚举值参考 kaa/config/const.py：
-//   DailyMoneyShopItems.value → int
-//   APShopItems.value         → int
 Item {
     id: root
     property var settingsCtrl
-    signal modified()
 
     property var moneyItemModel: []
     property var apItemModel: []
@@ -31,11 +26,12 @@ Item {
     }
 
     function _commit(path, key, value) {
-        var c = JSON.parse(JSON.stringify(settingsCtrl.config))
-        var ref = path.split(".").reduce(function(o, k) { return o[k] }, c)
-        ref[key] = value
-        settingsCtrl.commitConfig(JSON.stringify(c))
-        modified()
+        if (path.startsWith("shared.")) {
+            settingsCtrl.sharedCtrl.setField(path.substring(7) + "." + key, value)
+        } else {
+            var p = path.startsWith("profile.") ? path : "profile." + path
+            settingsCtrl.setField(p + "." + key, value)
+        }
     }
 
     Component.onCompleted: loadStaticData()
@@ -43,17 +39,17 @@ Item {
     FormBinder {
         id: purchase
         data: root._purchase
-        onCommitted: function(key, value) { root._commit("profile.tasks.purchase", key, value) }
+        onCommitted: function(key, value) { root._commit("tasks.purchase", key, value) }
     }
     FormBinder {
         id: assignment
         data: root._assignment
-        onCommitted: function(key, value) { root._commit("profile.tasks.assignment", key, value) }
+        onCommitted: function(key, value) { root._commit("tasks.assignment", key, value) }
     }
     FormBinder {
         id: contest
         data: root._contest
-        onCommitted: function(key, value) { root._commit("profile.tasks.contest", key, value) }
+        onCommitted: function(key, value) { root._commit("tasks.contest", key, value) }
     }
 
     ScrollView {
@@ -97,7 +93,7 @@ Item {
                             label: "金币商店购买物品"
                             model: root.moneyItemModel
                             selectedValues: root._purchase.money_items ?? []
-                            onSelectionChanged: root._commit("profile.tasks.purchase", "money_items", selectedValues)
+                            onSelectionChanged: root._commit("tasks.purchase", "money_items", selectedValues)
                         }
 
                         FormCheckBox {
@@ -122,7 +118,7 @@ Item {
                             label: "AP商店购买物品"
                             model: root.apItemModel
                             selectedValues: root._purchase.ap_items ?? []
-                            onSelectionChanged: root._commit("profile.tasks.purchase", "ap_items", selectedValues)
+                            onSelectionChanged: root._commit("tasks.purchase", "ap_items", selectedValues)
                         }
                     }
 
@@ -215,7 +211,6 @@ Item {
             }
 
             // ── 奖励 ──────────────────────────────────────
-            // 各字段指向 _tasks 下不同的子路径，不适合单一 binder，保留显式写法
             GroupBox {
                 title: "奖励"
                 Layout.fillWidth: true
@@ -226,12 +221,12 @@ Item {
                     FormCheckBox {
                         label: "领取任务奖励"
                         value: root._tasks.mission_reward?.enabled ?? false
-                        onUserToggled: function(checked) { root._commit("profile.tasks.mission_reward", "enabled", checked) }
+                        onUserToggled: function(checked) { root._commit("tasks.mission_reward", "enabled", checked) }
                     }
                     FormCheckBox {
                         label: "领取社团奖励"
                         value: root._tasks.club_reward?.enabled ?? false
-                        onUserToggled: function(checked) { root._commit("profile.tasks.club_reward", "enabled", checked) }
+                        onUserToggled: function(checked) { root._commit("tasks.club_reward", "enabled", checked) }
                     }
                     FormComboBox {
                         Layout.leftMargin: 24
@@ -239,27 +234,27 @@ Item {
                         label: "社团奖励笔记选择"
                         options: root.noteModel.map(function(note) { return { label: note.text, value: note.value } })
                         value: root._tasks.club_reward?.selected_note ?? 3
-                        onUserSelected: function(v) { root._commit("profile.tasks.club_reward", "selected_note", v) }
+                        onUserSelected: function(v) { root._commit("tasks.club_reward", "selected_note", v) }
                     }
                     FormCheckBox {
                         label: "收取礼物"
                         value: root._tasks.presents?.enabled ?? false
-                        onUserToggled: function(checked) { root._commit("profile.tasks.presents", "enabled", checked) }
+                        onUserToggled: function(checked) { root._commit("tasks.presents", "enabled", checked) }
                     }
                     FormCheckBox {
                         label: "收取活动费"
                         value: root._tasks.activity_funds?.enabled ?? false
-                        onUserToggled: function(checked) { root._commit("profile.tasks.activity_funds", "enabled", checked) }
+                        onUserToggled: function(checked) { root._commit("tasks.activity_funds", "enabled", checked) }
                     }
                     FormCheckBox {
                         label: "扭蛋机"
                         value: root._tasks.capsule_toys?.enabled ?? false
-                        onUserToggled: function(checked) { root._commit("profile.tasks.capsule_toys", "enabled", checked) }
+                        onUserToggled: function(checked) { root._commit("tasks.capsule_toys", "enabled", checked) }
                     }
                     FormCheckBox {
                         label: "升级支援卡"
                         value: root._tasks.upgrade_support_card?.enabled ?? false
-                        onUserToggled: function(checked) { root._commit("profile.tasks.upgrade_support_card", "enabled", checked) }
+                        onUserToggled: function(checked) { root._commit("tasks.upgrade_support_card", "enabled", checked) }
                     }
                 }
             }

@@ -4,29 +4,35 @@ import QtQuick.Layouts
 import "../../components/controls"
 import "../../components/form"
 
-// 培育设置：当前使用哪个方案等
+// 培育设置：方案下拉使用共享 solutionsModel 判定空状态，
+// options 列表通过 JSON 桥接（FormComboBox 尚未支持直接绑定 model）
 Item {
     id: root
     property var settingsCtrl
-    signal modified()
+
+    readonly property var produceCtrl: typeof TabManager !== "undefined" ? TabManager.activeProduceController : null
+    readonly property var _produce: settingsCtrl?.config?.profile?.tasks?.produce ?? {}
 
     property var solutions: []
 
-    readonly property var _produce: settingsCtrl?.config?.profile?.tasks?.produce ?? {}
+    function _commit(path, key, value) {
+        if (path.startsWith("shared.")) {
+            settingsCtrl.sharedCtrl.setField(path.substring(7) + "." + key, value)
+        } else {
+            var p = path.startsWith("profile.") ? path : "profile." + path
+            settingsCtrl.setField(p + "." + key, value)
+        }
+    }
 
     function loadSolutions() {
         if (settingsCtrl) solutions = JSON.parse(settingsCtrl.produceSolutionsJson())
     }
 
     Component.onCompleted: loadSolutions()
-    Connections {
-        target: settingsCtrl
-        function onConfigChanged() { loadSolutions() }
-    }
 
-    // 方案页创建/删除方案后刷新方案列表
+    // 当 model 变化时刷新
     Connections {
-        target: typeof TabManager !== "undefined" ? TabManager.activeProduceController : null
+        target: produceCtrl
         function onSolutionsChanged() { loadSolutions() }
     }
 
@@ -34,10 +40,7 @@ Item {
         id: pb
         data: root._produce
         onCommitted: function(key, value) {
-            var c = JSON.parse(JSON.stringify(settingsCtrl.config))
-            c.profile.tasks.produce[key] = value
-            settingsCtrl.commitConfig(JSON.stringify(c))
-            modified()
+            root._commit("tasks.produce", key, value)
         }
     }
 

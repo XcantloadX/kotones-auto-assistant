@@ -47,31 +47,22 @@ PageContainer {
     headerActions: Button {
         text: "保存"
         highlighted: true
-        enabled: !root.scriptRunning
+        enabled: !root.scriptRunning && root.dirty
         onClicked: root.save()
     }
 
     required property var settingsCtrl
     property var runCtrl: null
     readonly property bool scriptRunning: runCtrl ? (runCtrl.running || runCtrl.isStopping) : false
-
     property bool dirty: false
 
     function save() {
         if (settingsCtrl) settingsCtrl.save()
     }
 
-    function markDirty() {
-        dirty = true
-        if (settingsCtrl) settingsCtrl.markDirty()
-    }
-
-    Component.onCompleted: settingsCtrl.loadConfig()
-
     Connections {
         target: settingsCtrl
         function onDirtyChanged(isDirty) { root.dirty = isDirty }
-        function onConfigLoaded() { root.dirty = false }
         function onOperationSucceeded(msg) { Notice.show("success", msg) }
         function onOperationFailed(msg) { Notice.show("error", msg) }
     }
@@ -98,19 +89,15 @@ PageContainer {
 
             EmulatorSection {
                 settingsCtrl: root.settingsCtrl
-                onModified: root.markDirty()
             }
             DailySection {
                 settingsCtrl: root.settingsCtrl
-                onModified: root.markDirty()
             }
             ProduceSection {
                 settingsCtrl: root.settingsCtrl
-                onModified: root.markDirty()
             }
             MiscSection {
                 settingsCtrl: root.settingsCtrl
-                onModified: root.markDirty()
             }
         }
     }

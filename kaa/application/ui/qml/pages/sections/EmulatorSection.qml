@@ -9,7 +9,6 @@ import "../../components/form"
 Item {
     id: root
     property var settingsCtrl
-    signal modified()
 
     property var emulatorInstances: []
     property bool enumerationLoading: false
@@ -43,27 +42,28 @@ Item {
     readonly property var validMethods: validScreenshotMethods[emuType] || [{ value: "adb", label: "adb" }]
 
     function _commit(path, key, value) {
-        var c = JSON.parse(JSON.stringify(settingsCtrl.config))
-        var ref = path.split(".").reduce(function(o, k) { return o[k] }, c)
-        ref[key] = value
-        settingsCtrl.commitConfig(JSON.stringify(c))
-        modified()
+        if (path.startsWith("shared.")) {
+            settingsCtrl.sharedCtrl.setField(path.substring(7) + "." + key, value)
+        } else {
+            var p = path.startsWith("profile.") ? path : "profile." + path
+            settingsCtrl.setField(p + "." + key, value)
+        }
     }
 
     function onEmulatorTypeSelected(type) {
-        var c = JSON.parse(JSON.stringify(settingsCtrl.config))
-        c.profile.backend.lifecycle.type = type
+        _commit("backend.lifecycle", "type", type)
         if (type === "mumu12" || type === "mumu12v5") {
-            c.profile.backend.connection = { type: "auto" }
+            _commit("backend.connection", "type", "auto")
         } else if (type !== "dmm" && type !== "playcover") {
-            var conn = c.profile.backend.connection || {}
-            c.profile.backend.connection = { type: "tcp", ip: conn.ip || "127.0.0.1", port: conn.port || 5555 }
+            var ip = settingsCtrl?.config?.profile?.backend?.connection?.ip ?? "127.0.0.1"
+            var port = settingsCtrl?.config?.profile?.backend?.connection?.port ?? 5555
+            _commit("backend.connection", "type", "tcp")
+            _commit("backend.connection", "ip", ip)
+            _commit("backend.connection", "port", port)
         }
         var valid = validScreenshotMethods[type]
-        if (valid && !valid.some(function(o) { return o.value === c.profile.backend.screenshot_impl }))
-            c.profile.backend.screenshot_impl = valid[0].value
-        settingsCtrl.commitConfig(JSON.stringify(c))
-        modified()
+        if (valid && !valid.some(function(o) { return o.value === root.backend.screenshot_impl }))
+            _commit("backend", "screenshot_impl", valid[0].value)
         root.emulatorNotInstalled = false
         root.enumerationLoading = true
         if (settingsCtrl) settingsCtrl.listEmulatorInstancesAsync(type)
@@ -85,22 +85,22 @@ Item {
     FormBinder {
         id: lifecycle_b
         data: root.lifecycle
-        onCommitted: function(key, value) { root._commit("profile.backend.lifecycle", key, value) }
+        onCommitted: function(key, value) { root._commit("backend.lifecycle", key, value) }
     }
     FormBinder {
         id: backend_b
         data: root.backend
-        onCommitted: function(key, value) { root._commit("profile.backend", key, value) }
+        onCommitted: function(key, value) { root._commit("backend", key, value) }
     }
     FormBinder {
         id: startGame_b
         data: root.startGame
-        onCommitted: function(key, value) { root._commit("profile.tasks.start_game", key, value) }
+        onCommitted: function(key, value) { root._commit("tasks.start_game", key, value) }
     }
     FormBinder {
         id: endGame_b
         data: root.endGame
-        onCommitted: function(key, value) { root._commit("profile.tasks.end_game", key, value) }
+        onCommitted: function(key, value) { root._commit("tasks.end_game", key, value) }
     }
 
     // 模拟器实例选项（MuMu / 雷电复用）
@@ -277,12 +277,12 @@ Item {
                 FormTextField {
                     label: "ADB IP 地址"
                     value: root.connection.ip ?? "127.0.0.1"
-                    onUserEdited: function(v) { root._commit("profile.backend.connection", "ip", v) }
+                    onUserEdited: function(v) { root._commit("backend.connection", "ip", v) }
                 }
                 FormTextField {
                     label: "ADB 端口"
                     value: (root.connection.port ?? 5555).toString()
-                    onUserEdited: function(v) { root._commit("profile.backend.connection", "port", parseInt(v, 10) || 5555) }
+                    onUserEdited: function(v) { root._commit("backend.connection", "port", parseInt(v, 10) || 5555) }
                 }
             }
         }
@@ -336,7 +336,7 @@ Item {
                     onUserEdited: function(v) {
                         var n = parseFloat(v)
                         if (!isNaN(n) && n >= 0)
-                            root._commit("profile.backend", "target_screenshot_interval", n)
+                            root._commit("backend", "target_screenshot_interval", n)
                     }
                 }
 
@@ -458,4 +458,3 @@ Item {
     }
     } // ScrollView
 }
-

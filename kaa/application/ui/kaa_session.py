@@ -26,6 +26,7 @@ class KaaSession:
         self._config_service = None
         self._task_service = None
         self._produce_solution_service = None
+        self._produce_solutions_model = None
         self._update_service = None
         self._feedback_service = None
         self._instance_service = None
@@ -64,6 +65,7 @@ class KaaSession:
         self._config_service = None
         self._task_service = None
         self._produce_solution_service = None
+        self._produce_solutions_model = None
         self._update_service = None
         self._feedback_service = None
         self._instance_service = None
@@ -89,6 +91,10 @@ class KaaSession:
     @property
     def produce_solution_service(self):
         return self._produce_solution_service
+
+    @property
+    def produce_solutions_model(self):
+        return self._produce_solutions_model
 
     @property
     def update_service(self):

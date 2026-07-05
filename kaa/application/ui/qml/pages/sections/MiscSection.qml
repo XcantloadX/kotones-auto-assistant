@@ -9,7 +9,6 @@ Item {
     id: root
     property var settingsCtrl
     property bool _checking: false
-    signal modified()
 
     readonly property var _idle:      settingsCtrl?.config?.profile?.idle     ?? {}
     readonly property var _trace:     settingsCtrl?.config?.profile?.trace    ?? {}
@@ -18,22 +17,23 @@ Item {
     readonly property var _profile:   settingsCtrl?.config?.profile           ?? {}
 
     function _commit(path, key, value) {
-        var c = JSON.parse(JSON.stringify(settingsCtrl.config))
-        var ref = path.split(".").reduce(function(o, k) { return o[k] }, c)
-        ref[key] = value
-        settingsCtrl.commitConfig(JSON.stringify(c))
-        modified()
+        if (path.startsWith("shared.")) {
+            settingsCtrl.sharedCtrl.setField(path.substring(7) + "." + key, value)
+        } else {
+            var p = path.startsWith("profile.") ? path : "profile." + path
+            settingsCtrl.setField(p + "." + key, value)
+        }
     }
 
     FormBinder {
         id: idle
         data: root._idle
-        onCommitted: function(key, value) { root._commit("profile.idle", key, value) }
+        onCommitted: function(key, value) { root._commit("idle", key, value) }
     }
     FormBinder {
         id: trace
         data: root._trace
-        onCommitted: function(key, value) { root._commit("profile.trace", key, value) }
+        onCommitted: function(key, value) { root._commit("trace", key, value) }
     }
     FormBinder {
         id: shared
@@ -78,7 +78,6 @@ Item {
             }
 
             // ── 调试 ────────────────────────────────────────
-            // 第一个字段无 field: 属性，自动回退到显式 value/onValueChanged
             FormGroupBox {
                 title: "调试"
                 binder: trace
@@ -163,7 +162,6 @@ Item {
                     textFormat: Text.RichText
                 }
 
-                // telemetry 来自不同 binder，显式覆盖
                 FormCheckBox {
                     binder: telemetry
                     field: "sentry"

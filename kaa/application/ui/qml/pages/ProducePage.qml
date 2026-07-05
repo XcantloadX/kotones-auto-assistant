@@ -5,7 +5,7 @@ import "../components"
 import "../components/controls"
 import "../components/form"
 
-// 培育方案管理：左侧方案列表 + 右侧编辑表单
+// 培育方案管理：左侧方案列表（使用 ProduceSolutionsModel）+ 右侧编辑表单
 PageContainer {
     id: root
     title: "培育方案"
@@ -33,7 +33,6 @@ PageContainer {
     required property var produceCtrl
 
     // ── 数据 ──────────────────────────────────────────
-    property var solutions: []
     property var currentSolution: null
     property bool dirty: false
 
@@ -52,7 +51,6 @@ PageContainer {
     }
 
     // 方案顶层 binder：绑定 ProduceSolution 顶层（name、description 等）
-    // name/description 不在 data 子对象里，需要独立的顶层 binder
     FormBinder {
         id: sb_top
         data: root.currentSolution ?? null
@@ -70,10 +68,6 @@ PageContainer {
         detectModes    = JSON.parse(produceCtrl.detectModesJson())
     }
 
-    function loadSolutions() {
-        solutions = produceCtrl ? JSON.parse(produceCtrl.solutionsJson()) : []
-    }
-
     function markClean() { dirty = false; if (produceCtrl) produceCtrl.markClean() }
     function markDirty() { dirty = true;  if (produceCtrl) produceCtrl.markDirty() }
 
@@ -86,7 +80,6 @@ PageContainer {
     function save() {
         if (!produceCtrl || !currentSolution) return
         if (root.solutionNameExists(currentSolution.name, currentSolution.id)) {
-            // 重名时弹出警告
             renameConflictDialog.open()
             return
         }
@@ -111,11 +104,10 @@ PageContainer {
             : card.name
     }
 
-    Component.onCompleted: { loadStaticData(); loadSolutions() }
+    Component.onCompleted: loadStaticData()
 
     Connections {
         target: produceCtrl
-        function onSolutionsChanged() { root.loadSolutions() }
         function onSaveRequested()    { root.save() }
         function onDiscardRequested() { root.selectSolution(root.currentSolution ? root.currentSolution.id : "") }
         function onOperationSucceeded(msg) { Notice.show("success", msg) }
@@ -188,7 +180,6 @@ PageContainer {
             sb.set("idol", skinId)
         }
         onOpened: {
-            // 打开时同步当前已选中的 skin_id
             selectedSkinId = sb.get("idol", "")
             if (selectedSkinId) {
                 for (var i = 0; i < root.idolCards.length; i++) {
@@ -350,7 +341,7 @@ PageContainer {
 
     Item {
         anchors.fill: parent
-        visible: root.solutions.length === 0
+        visible: solutionList.count === 0
 
         ColumnLayout {
             anchors.centerIn: parent
@@ -374,9 +365,9 @@ PageContainer {
     RowLayout {
         anchors.fill: parent
         spacing: 8
-        visible: root.solutions.length > 0
+        visible: solutionList.count > 0
 
-        // ── 左侧：方案列表 ────────────────────────────
+        // ── 左侧：方案列表（使用 ProduceSolutionsModel）───
         ColumnLayout {
             Layout.preferredWidth: 220; Layout.maximumWidth: 220
             Layout.fillWidth: false; Layout.fillHeight: true
@@ -387,23 +378,23 @@ PageContainer {
             ListView {
                 id: solutionList
                 Layout.fillWidth: true; Layout.fillHeight: true
-                clip: true; model: root.solutions; spacing: 4
+                clip: true; model: produceCtrl.solutionsModel; spacing: 4
 
                 delegate: ItemDelegate {
                     id: delegateItem
                     width: solutionList.width
-                    highlighted: root.currentSolution && root.currentSolution.id === modelData.id
+                    highlighted: root.currentSolution && root.currentSolution.id === model.id
 
                     contentItem: RowLayout {
                         spacing: 4
                         ColumnLayout {
                             Layout.fillWidth: true; spacing: 2
                             Label {
-                                text: modelData.name; font.bold: delegateItem.highlighted
+                                text: model.name; font.bold: delegateItem.highlighted
                                 Layout.fillWidth: true; elide: Text.ElideRight
                             }
                             Label {
-                                text: modelData.description || ""; font.pixelSize: 11
+                                text: model.description || ""; font.pixelSize: 11
                                 color: palette.placeholderText; visible: text.length > 0
                                 elide: Text.ElideRight; Layout.fillWidth: true
                             }
@@ -413,25 +404,25 @@ PageContainer {
                             ToolButton {
                                 text: "⧉"; font.pixelSize: 14; implicitWidth: 28; implicitHeight: 28
                                 ToolTip.text: "复制"; ToolTip.visible: hovered; ToolTip.delay: 500
-                                onClicked: { duplicateDialog.sourceName = modelData.name; duplicateDialog.open() }
+                                onClicked: { duplicateDialog.sourceName = model.name; duplicateDialog.open() }
                             }
                             ToolButton {
                                 text: "✕"; font.pixelSize: 13; implicitWidth: 28; implicitHeight: 28
                                 ToolTip.text: "删除"; ToolTip.visible: hovered; ToolTip.delay: 500
                                 onClicked: {
-                                    deleteDialog.targetId = modelData.id
-                                    deleteDialog.targetName = modelData.name
+                                    deleteDialog.targetId = model.id
+                                    deleteDialog.targetName = model.name
                                     deleteDialog.open()
                                 }
                             }
                         }
                     }
                     onClicked: {
-                        if (root.dirty && root.currentSolution && root.currentSolution.id !== modelData.id) {
-                            root.pendingSolutionId = modelData.id
+                        if (root.dirty && root.currentSolution && root.currentSolution.id !== model.id) {
+                            root.pendingSolutionId = model.id
                             unsavedConfirmDialog.open()
                         } else {
-                            root.selectSolution(modelData.id)
+                            root.selectSolution(model.id)
                         }
                     }
                 }
@@ -502,7 +493,6 @@ PageContainer {
                                 { label: "MASTER", value: "master" }
                             ]
                         }
-                        // 自定义行：左侧 label + 右侧选择按钮（替换 FormComboBox）
                         RowLayout {
                             Layout.fillWidth: true
                             spacing: 6
@@ -618,7 +608,6 @@ PageContainer {
                     }
 
                     // ── 行动优先级 ────────────────────────────
-                    // 直接操作数组，不通过 binder，保留原有写法
                     GroupBox {
                         title: "行动优先级"
                         Layout.fillWidth: true
