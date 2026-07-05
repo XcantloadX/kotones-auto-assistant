@@ -19,8 +19,7 @@ Item {
         if (path.startsWith("shared.")) {
             settingsCtrl.sharedCtrl.setField(path.substring(7) + "." + key, value)
         } else {
-            var p = path.startsWith("profile.") ? path : "profile." + path
-            settingsCtrl.setField(p + "." + key, value)
+            settingsCtrl.setField(path ? path + "." + key : key, value)
         }
     }
 

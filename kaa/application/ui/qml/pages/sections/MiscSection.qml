@@ -20,8 +20,7 @@ Item {
         if (path.startsWith("shared.")) {
             settingsCtrl.sharedCtrl.setField(path.substring(7) + "." + key, value)
         } else {
-            var p = path.startsWith("profile.") ? path : "profile." + path
-            settingsCtrl.setField(p + "." + key, value)
+            settingsCtrl.setField(path ? path + "." + key : key, value)
         }
     }
 
@@ -92,7 +91,7 @@ Item {
                 FormCheckBox {
                     label: "保留截图数据"
                     value: root._profile.keep_screenshots ?? false
-                    onUserToggled: function(checked) { root._commit("profile", "keep_screenshots", checked) }
+                    onUserToggled: function(checked) { settingsCtrl.setField("keep_screenshots", checked) }
                 }
                 FormCheckBox {
                     field: "recommend_card_detection"

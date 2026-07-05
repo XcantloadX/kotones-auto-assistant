@@ -3,10 +3,10 @@ import logging
 
 from kaa.application.services.config_service import (
     ConfigService,
-    _set_dot_path,
     _set_dict_path,
     _get_dict_path,
 )
+from kaa.config.schema import KaaConfig
 
 logger = logging.getLogger(__name__)
 
@@ -58,13 +58,16 @@ class ConfigDraft:
     def commit(self) -> bool:
         """合并 dirty 到 live，整体校验，写盘。
 
-        重读 live config 作 base，只叠 dirty 路径，非 dirty 字段不受影响。
+        先将 live config 序列化为 dict，叠 dirty 路径后再反序列化回模型。
+        这样可以正确触发 Pydantic discriminated union 的重新构造，
+        避免切换 backend.lifecycle.type 后成员类型不变导致的字段不兼容问题。
         校验失败时 live 不变。
         """
-        candidate = copy.deepcopy(self._cs.get_config())
+        data = self._cs.get_config().model_dump(mode='json')
         for path, value in self._dirty.items():
-            _set_dot_path(candidate, path, value)
+            _set_dict_path(data, path, value)
         try:
+            candidate = KaaConfig.model_validate(data)
             self._cs.validate(candidate)
         except Exception:
             logger.exception("ConfigDraft commit validation failed")

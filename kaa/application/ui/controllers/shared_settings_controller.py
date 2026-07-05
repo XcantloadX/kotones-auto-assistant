@@ -20,7 +20,7 @@ class SharedSettingsController(QObject):
         super().__init__(parent)
         self._session = session
 
-    @Slot(str, object)
+    @Slot(str, 'QVariant')
     def setField(self, path: str, value) -> None:
         """即时写入 shared 字段。path 如 "misc.check_update"（不含 shared. 前缀）。"""
         cs = self._session.config_service

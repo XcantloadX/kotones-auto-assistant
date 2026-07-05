@@ -52,7 +52,7 @@ class SettingsController(QObject):
         shared = self._draft.view_shared() if self._draft is not None else {}
         return {'profile': profile, 'shared': shared}
 
-    @Slot(str, object)
+    @Slot(str, 'QVariant')
     def setField(self, path: str, value) -> None:
         """profile 字段进草稿。path 不含前缀，相对 profile 根。"""
         if self._draft is None:
