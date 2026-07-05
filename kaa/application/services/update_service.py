@@ -29,16 +29,29 @@ def get_changelogs_since(since_version: str | None) -> str | None:
     pattern = re.compile(r"^### ", re.MULTILINE)
     sections = [s for s in pattern.split(CHANGELOG) if s.strip()]
 
+    def _is_version_section(section: str) -> bool:
+        first_line = section.split("\n", 1)[0].strip().lstrip('v')
+        try:
+            _compare_versions(first_line, "0.0.0")
+            return True
+        except Exception:
+            return False
+
     def _section_text(section: str) -> str:
         first_line = section.split("\n", 1)[0].strip()
         body = section.split("\n", 1)[1].strip() if "\n" in section else ""
         return f"### {first_line}\n{body}" if body else f"### {first_line}"
 
+    version_sections = [s for s in sections if _is_version_section(s)]
+
+    if not version_sections:
+        return None
+
     if since_version is None:
-        return _section_text(sections[0]) if sections else None
+        return _section_text(version_sections[0])
 
     collected = []
-    for section in sections:
+    for section in version_sections:
         ver = section.split("\n", 1)[0].strip().lstrip('v')
         try:
             if _compare_versions(ver, since_version) > 0:
@@ -46,10 +59,7 @@ def get_changelogs_since(since_version: str | None) -> str | None:
         except Exception:
             continue
 
-    if not collected:
-        return _section_text(sections[0]) if sections else None
-
-    return "\n\n".join(collected)
+    return "\n\n".join(collected) if collected else None
 
 
 class VersionInfo(BaseModel):
