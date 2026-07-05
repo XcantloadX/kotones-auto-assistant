@@ -19,7 +19,7 @@ class KaaGenerator(EntityGenerator):
     def render_header(self):
         super().render_header()
         self.writer.write("from kaa.common import sprite_path")
-        self.writer.write("from kaa.game_ui.elements import GakumasPrimaryButtonPrefab")
+        self.writer.write("from kaa.game_ui.elements import GakumasPrimaryButtonPrefab, GakumasCheckboxPrefab")
 
 def scan_files(path: str) -> list[str]:
     files = []

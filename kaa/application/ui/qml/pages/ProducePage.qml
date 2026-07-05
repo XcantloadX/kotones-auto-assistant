@@ -559,11 +559,6 @@ PageContainer {
                             to: 20
                             enabled: !sb.get("auto_set_support_card", false)
                         }
-                        FormNotice {
-                            style: "info"
-                            title: ""
-                            content: "目前只能自动编成支援卡，无论是否勾选「自动编成支援卡」，队伍编制均不受此开关影响"
-                        }
                     }
 
                     // ── 强化设置 ──────────────────────────────

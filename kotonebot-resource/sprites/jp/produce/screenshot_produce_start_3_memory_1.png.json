@@ -12,10 +12,26 @@
           "y1": 848,
           "x2": 256,
           "y2": 887
-        }
+        },
+        "fixed": true
       },
       "prefab_id": "TemplateMatchPrefab",
       "variant_policy": {}
+    },
+    "c065edca-a72e-468c-83e5-bd77c5193b53": {
+      "type": "prefab",
+      "prefab_id": "GakumasPrimaryButtonPrefab",
+      "name": "Produce.RentAvailableConfirmButton",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 390.3076321441913,
+          "y1": 1130.4869520253972,
+          "x2": 584.2765739233683,
+          "y2": 1184.4518646723736
+        },
+        "fixed": true
+      }
     }
   }
 }
