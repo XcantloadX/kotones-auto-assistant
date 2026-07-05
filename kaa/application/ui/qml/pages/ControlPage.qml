@@ -22,7 +22,7 @@ PageContainer {
         var map = {
             pending: "等待",
             running: "运行中",
-            done: "完成",
+            finished: "完成",
             error: "出错"
         }
         return map[status] || status
