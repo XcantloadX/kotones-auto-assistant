@@ -14,7 +14,7 @@ Item {
     function show(kind, text) {
         if (toastModel.count >= root._maxCount)
             toastModel.remove(0)
-        toastModel.append({ kind: kind, text: text })
+        toastModel.append({ kind: kind, msg: text })
     }
 
     function removeToast(index) {
@@ -55,13 +55,13 @@ Item {
         delegate: Item {
             required property int index
             required property string kind
-            required property string text
+            required property string msg
 
             width: 340
             height: toastCard.implicitHeight
 
             readonly property color accentColor: {
-                switch (toastItem.kind) {
+                switch (kind) {
                     case "success": return root._dark ? "#6ccb5f" : "#107c10"
                     case "warning": return root._dark ? "#fce100" : "#c05a00"
                     case "error":   return root._dark ? "#ff99a4" : "#c42b1c"
@@ -70,7 +70,7 @@ Item {
             }
             readonly property color iconColor: accentColor
             readonly property string icon: {
-                switch (toastItem.kind) {
+                switch (kind) {
                     case "success": return "\uF298"
                     case "warning": return "\uF869"
                     case "error":   return "\uF3F1"
@@ -81,7 +81,7 @@ Item {
             Timer {
                 interval: root._duration
                 running: true
-                onTriggered: root.removeToast(toastItem.index)
+                onTriggered: root.removeToast(index)
             }
 
             Rectangle {
@@ -100,7 +100,7 @@ Item {
                     anchors.margins: 1
                     width: 3
                     radius: 2
-                    color: toastItem.accentColor
+                    color: accentColor
                 }
 
                 RowLayout {
@@ -113,8 +113,8 @@ Item {
                     spacing: 8
 
                     Label {
-                        text: toastItem.icon
-                        color: toastItem.iconColor
+                        text: icon
+                        color: iconColor
                         font.family: "FluentSystemIcons-Regular"
                         font.pixelSize: 16
                         Layout.alignment: Qt.AlignVCenter
@@ -122,7 +122,7 @@ Item {
 
                     Label {
                         Layout.fillWidth: true
-                        text: toastItem.text
+                        text: msg
                         color: root._dark ? "#ffffff" : "#000000"
                         wrapMode: Text.Wrap
                         font.pixelSize: 13
@@ -158,7 +158,7 @@ Item {
                             anchors.fill: parent
                             hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
-                            onClicked: root.removeToast(toastItem.index)
+                            onClicked: root.removeToast(index)
                         }
                     }
                 }
