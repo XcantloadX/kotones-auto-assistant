@@ -178,38 +178,6 @@ class EndGameConfig(ConfigBaseModel):
     （目前仅对 DMM 版有效。）
     """
 
-class MiscConfig(ConfigBaseModel):
-    check_update: Literal['never', 'startup'] = 'startup'
-    """
-    检查更新时机。
-
-    * never: 从不检查更新。
-    * startup: 启动时检查更新。
-    """
-    auto_install_update: bool = True
-    """
-    是否自动安装更新。
-
-    若启用，则每次自动检查更新时若有新版本会自动安装，否则只是会提示。
-    """
-    expose_to_lan: bool = False
-    """
-    是否允许局域网访问 Web 界面。
-
-    启用后，局域网内的其他设备可以通过本机 IP 地址访问 Web 界面。
-    """
-    update_channel: Literal['release', 'beta'] = 'release'
-    """
-    更新通道。
-
-    * release: 只使用稳定版。
-    * beta: 包含预发布版本（如 alpha/beta/rc）。
-    """
-    log_level: Literal['debug', 'verbose'] = 'debug'
-    """
-    日志等级。
-    """
-
 class IdleModeConfig(ConfigBaseModel):
     enabled: bool = False
     """是否启用闲置挂机（任意键暂停、闲置自动恢复）"""

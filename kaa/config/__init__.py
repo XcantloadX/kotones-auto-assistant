@@ -13,7 +13,6 @@ from .schema import (
     TraceConfig,
     StartGameConfig,
     EndGameConfig,
-    MiscConfig,
     IdleModeConfig,
     CONFIG_VERSION_CODE,
 )
@@ -48,7 +47,6 @@ __all__ = [
     "TraceConfig",
     "StartGameConfig",
     "EndGameConfig",
-    "MiscConfig",
     "IdleModeConfig",
     "CONFIG_VERSION_CODE",
     # shared 导出

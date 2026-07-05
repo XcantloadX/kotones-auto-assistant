@@ -11,6 +11,8 @@ class IdolCard:
     is_another: bool
     another_name: str | None
     name: str
+    character_id: str
+    character_name: str
 
     @classmethod
     def from_skin_id(cls, sid: str) -> 'IdolCard | None':
@@ -23,7 +25,9 @@ class IdolCard:
             ICS.id AS skinId,
             Char.lastName || ' ' || Char.firstName || '　' || IC.name AS name,
             NOT (IC.originalIdolCardSkinId = ICS.id) AS isAnotherVer,
-            ICS.name AS anotherVerName
+            ICS.name AS anotherVerName,
+            Char.id AS characterId,
+            Char.lastName || ' ' || Char.firstName AS characterName
         FROM IdolCard IC
         JOIN Character Char ON characterId = Char.id
         JOIN IdolCardSkin ICS ON IC.id = ICS.idolCardId
@@ -31,8 +35,8 @@ class IdolCard:
         """, sid)
         if row is None:
             return None
-        card_id, skin_id, name, is_another, another_name = row
-        return cls(card_id, skin_id, is_another, another_name, name)
+        card_id, skin_id, name, is_another, another_name, char_id, char_name = row
+        return cls(card_id, skin_id, is_another, another_name, name, char_id, char_name)
     
     @classmethod
     def all(cls) -> list['IdolCard']:
@@ -43,15 +47,17 @@ class IdolCard:
             ICS.id AS skinId,
             Char.lastName || ' ' || Char.firstName || '　' || IC.name AS name,
             NOT (IC.originalIdolCardSkinId = ICS.id) AS isAnotherVer,
-            ICS.name AS anotherVerName
+            ICS.name AS anotherVerName,
+            Char.id AS characterId,
+            Char.lastName || ' ' || Char.firstName AS characterName
         FROM IdolCard IC
         JOIN Character Char ON characterId = Char.id
         JOIN IdolCardSkin ICS ON IC.id = ICS.idolCardId;
         """)
         results = []
         for row in rows:
-            card_id, skin_id, name, is_another, another_name = row
-            results.append(cls(card_id, skin_id, is_another, another_name, name))
+            card_id, skin_id, name, is_another, another_name, char_id, char_name = row
+            results.append(cls(card_id, skin_id, is_another, another_name, name, char_id, char_name))
         return results
 
 if __name__ == '__main__':

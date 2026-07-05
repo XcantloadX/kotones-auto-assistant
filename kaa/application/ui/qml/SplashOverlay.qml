@@ -49,7 +49,7 @@ Rectangle {
 
         BusyIndicator {
             anchors.horizontalCenter: parent.horizontalCenter
-            running: splash.gradioUrl.length === 0
+            running: !splash.ready
             implicitWidth: 48
             implicitHeight: 48
         }

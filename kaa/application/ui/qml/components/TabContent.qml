@@ -1,34 +1,64 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import "."
+import "../pages"
 
-// 单 tab 占位组件。
-// 注意：WebEngineView 不能放在单独的 .qml 文件中作为 Repeater 的 delegate，
-// 会导致 PySide6 段错误 (Qt bug: QQmlComponent 创建 WebEngineView 时崩溃)。
-// WebEngineView 应在 main.qml 的 Repeater delegate 中内联创建。
+// 单 tab 内容容器：SideNavigationBar + StackLayout（多页面切换）
 Item {
     id: root
 
-    required property int index
+    required property var runCtrl
+    property var settingsCtrl: null
+    property var progressCtrl: null
+    property var logBridge: null
+    property var produceCtrl: null
+    property var updateCtrl: null
+    property var feedbackCtrl: null
+    property var navigation: null
+    property bool prefsMode: false
 
-    readonly property string gradioUrl: TabManager.gradioUrlAt(index)
+    Connections {
+        target: TabManager
+        function onCapturePageRequested(navIndex) { sideNav.currentIndex = navIndex }
+    }
 
-    Column {
-        anchors.centerIn: parent
-        spacing: 8
+    readonly property int sideNavIndex: sideNav.currentIndex
 
-        Text {
-            anchors.horizontalCenter: parent.horizontalCenter
-            text: "Tab #" + root.index
-            font.pixelSize: 18
-            font.bold: true
+    RowLayout {
+        anchors.fill: parent
+        spacing: 0
+
+        SideNavigationBar {
+            id: sideNav
+            Layout.fillHeight: true
+            visible: !root.prefsMode
+            model: ["控制", "任务", "设置", "方案", "更新", "日志", "反馈"]
+
+            onCurrentChanging: function(index, previousIndex) {
+                if (root.navigation) {
+                    root.navigation.requestGuardedAction("切换页面", function() {
+                        sideNav.confirmSwitch(index)
+                    })
+                } else {
+                    sideNav.confirmSwitch(index)
+                }
+            }
         }
 
-        Text {
-            anchors.horizontalCenter: parent.horizontalCenter
-            text: root.gradioUrl
-            font.pixelSize: 13
-            opacity: 0.6
+        StackLayout {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            visible: !root.prefsMode
+            currentIndex: sideNav.currentIndex
+
+            ControlPage  { id: controlPage;   runCtrl: root.runCtrl; progressCtrl: root.progressCtrl; keepScreenshots: (root.settingsCtrl?.config?.profile?.keep_screenshots) ?? false }
+            TaskPage     { id: taskPage;      runCtrl: root.runCtrl }
+            SettingsPage { id: settingsPage;  settingsCtrl: root.settingsCtrl; runCtrl: root.runCtrl }
+            ProducePage  { id: producePage;   produceCtrl: root.produceCtrl }
+            UpdatePage   { id: updatePage;    updateCtrl: root.updateCtrl }
+            LogPage      { id: logPage;       logBridge: root.logBridge }
+            FeedbackPage { id: feedbackPage;  feedbackCtrl: root.feedbackCtrl }
         }
     }
 }

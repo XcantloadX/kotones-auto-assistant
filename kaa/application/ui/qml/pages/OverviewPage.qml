@@ -1,10 +1,13 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import "../components"
 
 // 总览页：品牌 + 启动按钮 + 配置卡片网格。
-Item {
+PageContainer {
     id: root
+    showTitle: false
+    padding: 0
 
     required property var configManagerDialog
 
@@ -262,15 +265,64 @@ Item {
                 spacing: 12
 
                 Label {
-                    text: "还没有创建任何配置"
+                    text: "你还没有创建任何配置"
                     font.pixelSize: 14
                     opacity: 0.7
                 }
 
-                Button {
-                    highlighted: true
-                    text: "创建配置"
-                    onClicked: root.configManagerDialog.open()
+                Row {
+                    spacing: 5
+
+                    Label {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: "点击"
+                        font.pixelSize: 14
+                        opacity: 0.7
+                    }
+
+                    Button {
+                        id: createBtn
+                        highlighted: true
+                        text: "创建配置"
+                        font.pixelSize: 14
+                        topPadding: 4
+                        bottomPadding: 4
+                        leftPadding: 10
+                        rightPadding: 10
+                        anchors.verticalCenter: parent.verticalCenter
+                        onClicked: root.configManagerDialog.open()
+                    }
+
+                    Label {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: "或顶部标签栏的"
+                        font.pixelSize: 14
+                        opacity: 0.7
+                    }
+
+                    Rectangle {
+                        width: 22
+                        height: 22
+                        radius: 4
+                        color: root._hover
+                        anchors.verticalCenter: parent.verticalCenter
+
+                        Text {
+                            anchors.centerIn: parent
+                            font.family: "FluentSystemIcons-Regular"
+                            font.pixelSize: 13
+                            text: ""   
+                            color: root._fg
+                            opacity: 0.7
+                        }
+                    }
+
+                    Label {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: "号创建新配置"
+                        font.pixelSize: 14
+                        opacity: 0.7
+                    }
                 }
             }
         }

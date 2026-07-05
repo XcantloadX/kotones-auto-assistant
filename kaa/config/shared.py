@@ -10,7 +10,6 @@ class ProfilesConfig(BaseModel):
 class SharedMiscConfig(BaseModel):
     check_update: Literal['never', 'startup'] = 'startup'
     auto_install_update: bool = True
-    expose_to_lan: bool = False
     update_channel: Literal['release', 'beta'] = 'release'
     log_level: Literal['debug', 'verbose'] = 'debug'
     game_data_check: Literal['manual', 'startup', 'daily', 'weekly'] = 'startup'

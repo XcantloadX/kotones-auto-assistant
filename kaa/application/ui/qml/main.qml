@@ -1,7 +1,6 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
-import QtWebEngine
 import "components"
 import "pages"
 import "dialogs"
@@ -9,9 +8,9 @@ import "dialogs"
 ApplicationWindow {
     id: window
     title: "琴音小助手"
-    visible: Window.Maximized
-    width: 1280
-    height: 800
+    width: 1100
+    height: 680
+    visible: true
     minimumWidth: 800
     minimumHeight: 600
     font.family: Qt.platform.os === "windows"
@@ -36,16 +35,22 @@ ApplicationWindow {
     property bool prefsMode: false
     property int _prevTitleBarIndex: 0
     property bool allowImmediateClose: false
+    property var activeSettingsCtrl: null
+    property var activeProduceCtrl: null
 
     function _onTabsChanged() {
         tabList = JSON.parse(TabManager.tabsJson())
         activeTabIndex = TabManager.activeTabIndex
+        activeSettingsCtrl = TabManager.activeSettingsController
+        activeProduceCtrl = TabManager.activeProduceController
         if (tabList.length === 0) titleBar.setCurrentIndex(0)
         else if (activeTabIndex >= 0) titleBar.setCurrentIndex(1)
     }
 
     function _onActiveTabChanged() {
         activeTabIndex = TabManager.activeTabIndex
+        activeSettingsCtrl = TabManager.activeSettingsController
+        activeProduceCtrl = TabManager.activeProduceController
         if (activeTabIndex < 0) titleBar.setCurrentIndex(0)
     }
 
@@ -76,7 +81,7 @@ ApplicationWindow {
             taskErrorDialog.open()
             return
         }
-        closeRunner()
+        navigation.requestGuardedAction("关闭窗口", closeRunner)
     }
 
     Connections {
@@ -149,10 +154,12 @@ ApplicationWindow {
                         highlighted: index === taskErrorDialog.buttons.length - 1
                         onClicked: {
                             if (modelData.id === "confirm") {
-                                // 关闭确认：直接关闭窗口
+                                // 关闭确认：通过守卫检查未保存更改
                                 taskErrorDialog.close()
-                                window.allowImmediateClose = true
-                                window.close()
+                                navigation.requestGuardedAction("关闭窗口", function() {
+                                    window.allowImmediateClose = true
+                                    window.close()
+                                })
                             } else if (modelData.id !== undefined) {
                                 errorDialog.onButtonClicked(modelData.id)
                                 taskErrorDialog.close()
@@ -235,11 +242,19 @@ ApplicationWindow {
     }
 
     // ── Splash（启动时显示） ─────────────────────────────────────
-    SplashOverlay { visible: splash.gradioUrl.length === 0 }
+    SplashOverlay { visible: !splash.ready }
+
+    // ── NavigationCoordinator（页面切换守卫，不可见） ──────────
+    NavigationCoordinator {
+        id: navigation
+        unsavedChangesDialog: unsavedChangesDialog
+        settingsCtrl: window.activeSettingsCtrl
+        produceCtrl: window.activeProduceCtrl
+    }
 
     // ── 主内容区（Splash 隐藏后显示） ──────────────────────────
     ColumnLayout {
-        visible: splash.gradioUrl.length > 0
+        visible: splash.ready
         anchors.fill: parent
         spacing: 0
 
@@ -247,6 +262,9 @@ ApplicationWindow {
             id: titleBar
             Layout.fillWidth: true
             configManagerDialog: configManagerDialog
+            prefsMode: window.prefsMode
+            onSettingsRequested: window.enterPrefsMode()
+            onBackRequested: window.exitPrefsMode()
             onMinimizeRequested: window.showMinimized()
             onCloseRequested: window.requestAppClose()
         }
@@ -272,108 +290,17 @@ ApplicationWindow {
 
                     Repeater {
                         model: window.tabList
-                        delegate: Item {
+                        delegate: TabContent {
                             required property int index
-                            property string gradioUrl: ""
-
-                            RowLayout {
-                                anchors.fill: parent
-                                spacing: 0
-
-                                SideNavigationBar {
-                                    id: sideNav
-                                    Layout.fillHeight: true
-                                    model: ["状态", "任务", "设置", "方案", "反馈", "更新"]
-
-                                    onCurrentChanging: function(idx, prevIdx) {
-                                        sideNav.confirmSwitch(idx)
-                                        // webView.runJavaScript(
-                                        //     "(function(){" +
-                                        //     "  var b = document.querySelectorAll('button[role=\"tab\"]')[" + idx + "];" +
-                                        //     "  if (b) b.click();" +
-                                        //     "})()"
-                                        // )
-                                        webView.runJavaScript("document.querySelectorAll('button[role=tab]')[" + idx + "].click()");
-                                        webView.runJavaScript("console.log(document.querySelectorAll('button[role=tab]'))");
-                                    }
-                                }
-
-                                // WebEngineView 区域
-                                Item {
-                                    Layout.fillWidth: true
-                                    Layout.fillHeight: true
-
-                                    WebEngineView {
-                                        id: webView
-                                        anchors.fill: parent
-                                        url: gradioUrl
-
-                                        onLoadingChanged: function(loadRequest) {
-                                            if (loadRequest.status === WebEngineView.LoadSucceededStatus) {
-                                                // 隐藏 Gradio tab-wrapper（导航栏）与 header markdown（#kaa-header）
-                                                runJavaScript(
-                                                    "(function(){" +
-                                                    "  var s = document.getElementById('__kaa_hide_chrome__');" +
-                                                    "  if (s) return;" +
-                                                    "  s = document.createElement('style');" +
-                                                    "  s.id = '__kaa_hide_chrome__';" +
-                                                    "  s.textContent = '#kaa-header + .tabs > .tab-wrapper {position:absolute!important;visibility:hidden!important;pointer-events:none!important;width:9999px!important;}" +
-                                                    "#kaa-header{display:none!important;}';" +
-                                                    "  document.head.appendChild(s);" +
-                                                    "})()"
-                                                )
-                                            }
-                                            if (loadRequest.status === WebEngineView.LoadFailedStatus) {
-                                                loadError.text = "加载失败\nURL: " + gradioUrl
-                                            }
-                                        }
-                                    }
-
-                                    // 加载中覆盖层
-                                    Rectangle {
-                                        anchors.fill: parent
-                                        color: "white"
-                                        visible: gradioUrl === "" || webView.loadingProgress < 100
-
-                                        Column {
-                                            anchors.centerIn: parent
-                                            spacing: 12
-
-                                            BusyIndicator {
-                                                anchors.horizontalCenter: parent.horizontalCenter
-                                                running: true
-                                            }
-
-                                            Text {
-                                                anchors.horizontalCenter: parent.horizontalCenter
-                                                text: "加载中…"
-                                                font.pixelSize: 14
-                                                opacity: 0.6
-                                            }
-                                        }
-                                    }
-
-                                    Text {
-                                        id: loadError
-                                        anchors.centerIn: parent
-                                        color: "#d32f2f"
-                                        font.pixelSize: 14
-                                        horizontalAlignment: Text.AlignHCenter
-                                        visible: text.length > 0
-                                        z: 100
-                                    }
-                                }
-                            }
-
-                            // mount 完成后 tabsChanged 会再次触发，届时更新 URL
-                            Connections {
-                                target: TabManager
-                                function onTabsChanged() {
-                                    gradioUrl = TabManager.gradioUrlAt(index)
-                                }
-                            }
-
-                            Component.onCompleted: gradioUrl = TabManager.gradioUrlAt(index)
+                            runCtrl: TabManager.runCtrlAt(index)
+                            settingsCtrl: TabManager.settingsCtrlAt(index)
+                            progressCtrl: TabManager.progressBridgeAt(index)
+                            logBridge: TabManager.logBridgeAt(index)
+                            produceCtrl: TabManager.produceCtrlAt(index)
+                            updateCtrl: TabManager.updateCtrlAt(index)
+                            feedbackCtrl: TabManager.feedbackCtrlAt(index)
+                            navigation: navigation
+                            prefsMode: window.prefsMode
                         }
                     }
                 }
@@ -394,9 +321,60 @@ ApplicationWindow {
         }
     }
 
+    // ── 未保存更改确认对话框 ──────────────────────────────────
+    Dialog {
+        id: unsavedChangesDialog
+        modal: true
+        title: "未保存的更改"
+        standardButtons: Dialog.NoButton
+        width: 420
+        anchors.centerIn: Overlay.overlay
+
+        property string actionLabel: "继续此操作"
+
+        contentItem: ColumnLayout {
+            spacing: 12
+            Label {
+                Layout.fillWidth: true
+                wrapMode: Text.Wrap
+                text: "当前有未保存的更改。在继续" + unsavedChangesDialog.actionLabel + "之前，请保存或放弃。"
+            }
+            RowLayout {
+                Layout.alignment: Qt.AlignRight
+                spacing: 8
+                Button {
+                    text: "取消"
+                    onClicked: {
+                        navigation.clearPendingGuardedAction()
+                        unsavedChangesDialog.close()
+                    }
+                }
+                Button {
+                    text: "放弃并继续"
+                    onClicked: {
+                        unsavedChangesDialog.close()
+                        navigation.discardAndContinuePendingAction()
+                    }
+                }
+                Button {
+                    text: "保存并继续"
+                    highlighted: true
+                    onClicked: {
+                        unsavedChangesDialog.close()
+                        navigation.saveAndContinuePendingAction()
+                    }
+                }
+            }
+        }
+    }
+
     ConfigManagerDialog {
         id: configManagerDialog
         tabManager: TabManager
+    }
+
+    NoticeHost {
+        id: noticeHost
     }
 
     onClosing: function(close) {
