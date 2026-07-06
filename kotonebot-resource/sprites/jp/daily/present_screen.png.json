@@ -1,0 +1,21 @@
+{
+  "version": 3,
+  "definitions": {
+    "d8e5a015-db57-4d62-8680-44e97721d0ad": {
+      "type": "prefab",
+      "prefab_id": "TemplateMatchPrefab",
+      "name": "Daily.ButtonClaimAllNoIcon",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 250.01152993355717,
+          "y1": 1063.772518619078,
+          "x2": 453.01665493768206,
+          "y2": 1111.6361112255297
+        },
+        "fixed": true
+      },
+      "displayName": "一括受取"
+    }
+  }
+}

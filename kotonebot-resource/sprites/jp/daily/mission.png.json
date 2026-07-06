@@ -1,0 +1,21 @@
+{
+  "version": 3,
+  "definitions": {
+    "e7fd4ac0-4397-4eb7-a8dd-f53e4d96b0a2": {
+      "type": "prefab",
+      "prefab_id": "TemplateMatchPrefab",
+      "name": "Daily.ButtonIconPass",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 523.4023185157952,
+          "y1": 1075.191445112127,
+          "x2": 549.4928638641776,
+          "y2": 1095.9591070751437
+        },
+        "fixed": true
+      },
+      "displayName": "ミッションパス 按钮图标"
+    }
+  }
+}

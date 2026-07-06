@@ -1,0 +1,67 @@
+{
+  "version": 3,
+  "definitions": {
+    "b62bf889-da3c-495a-8707-f3bde73efe92": {
+      "name": "Produce.TextStepIndicator4",
+      "displayName": "4.開始確認",
+      "type": "prefab",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 140,
+          "y1": 35,
+          "x2": 244,
+          "y2": 63
+        }
+      },
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {}
+    },
+    "da684cc4-e5db-4857-b1f2-eb8a22e16336": {
+      "type": "prefab",
+      "prefab_id": "GakumasPrimaryButtonPrefab",
+      "name": "Produce.Step4.ButtonProduceStart",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 250.82180454217453,
+          "y1": 1060.644979212639,
+          "x2": 473.4485440965107,
+          "y2": 1096.1386013549584
+        },
+        "fixed": true
+      },
+      "displayName": "STEP4 培育开始按钮"
+    },
+    "3d3582aa-551d-4bbd-8029-6f1bf4b46417": {
+      "type": "prefab",
+      "prefab_id": "GakumasCheckboxPrefab",
+      "name": "Produce.Step4.CheckboxNoteBoost",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 516.2383771777419,
+          "y1": 1009.3545031677265,
+          "x2": 589.9347430215068,
+          "y2": 1044.3198226429877
+        },
+        "fixed": true
+      }
+    },
+    "e234b430-9b8a-48e7-bdd1-daa76800b27e": {
+      "type": "prefab",
+      "prefab_id": "GakumasCheckboxPrefab",
+      "name": "Produce.Step4.CheckboxPtBoost",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 605.327021963559,
+          "y1": 1011.2193202064071,
+          "x2": 675.758358940828,
+          "y2": 1043.8536183833176
+        },
+        "fixed": true
+      }
+    }
+  }
+}

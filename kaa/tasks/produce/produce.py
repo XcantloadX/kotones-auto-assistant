@@ -14,11 +14,12 @@ from kaa.tasks import R
 from kaa.config import conf
 from kaa.game_ui import dialog
 from ..actions.scenes import at_home, goto_home
-from kotonebot.backend.loop import Loop, StatedLoop
-from kotonebot.util import Countdown, Throttler
-from kaa.game_ui.idols_overview import locate_idol, match_idol
+from kotonebot.backend.loop import Loop
+from kotonebot.util import Countdown
+from kaa.game_ui.idols_overview import locate_idol
 from kotonebot import device, ocr, task, action, sleep
 from kaa.errors import IdolCardNotFoundError
+from .prepare import prepare
 
 logger = logging.getLogger(__name__)
 
@@ -266,106 +267,10 @@ def do_produce(
             R.InPurodyuusu.ButtonCancel.wait().click()
             return False
 
-    idol_located = False
-    memory_set_selected = False
-    support_auto_set_done = False
-    next_throttler = Throttler(interval=4)
-    for lp in StatedLoop[Literal[0, 1, 2, 3]]():
-        if R.Produce.TextStepIndicator1.exists():
-            lp.state = 1
+    prepare()
 
-        if lp.state == 0:
-            pass
-        # 1. 选择 PIdol [screenshots/produce/screenshot_produce_start_1_p_idol.png]
-        if lp.state == 1:
-            if R.Produce.TextStepIndicator2.exists():
-                lp.state = 2
-                continue
-            if R.Produce.TextAnotherIdolAvailableDialog.exists():
-                dialog.no(msg='Closed another idol available dialog.')
-                continue
-            # 首先判断是否已选中目标偶像
-            img = lp.screenshot
-            x, y, w, h = R.Produce.BoxSelectedIdol.xywh
-            if img is not None and match_idol(idol_skin_id, img[y:y+h, x:x+w]):
-                logger.info('Idol %s selected.', idol_skin_id)
-                idol_located = True
-            # 如果没有，才选择
-            if not idol_located:
-                select_idol(idol_skin_id)
-                idol_located = True
-
-            # 下一步「次へ」
-            if (
-                idol_located and
-                R.Common.ButtonNextNoIcon.q(enabled=True).try_click() and
-                next_throttler.request()
-            ):
-                pass
-        # 2. 选择支援卡 自动编成 [screenshots/produce/screenshot_produce_start_2_support_card.png]
-        elif lp.state == 2:
-            if R.Produce.TextStepIndicator3.exists():
-                lp.state = 3
-                continue
-
-            # 下一步「次へ」
-            if R.Common.ButtonNextNoIcon.q(enabled=True).try_click() and next_throttler.request():
-                pass
-            # 今天仍然有租用回忆次数提示（第三步的提示）
-            # （第二步选完之后点「次へ」大概率会卡几秒钟，这个时候脚本很可能会重复点击，
-            # 卡住时候的点击就会在第三步生效，出现这个提示。而此时脚本仍然处于第二步，
-            # 这样就会报错，或者出现误自动编成。因此需要在第二步里处理掉这个对话框。
-            # 理论上应该避免这种情况，但是没找到办法，只能这样 workaround 了。）
-            elif R.Produce.TextRentAvailable.exists():
-                dialog.no(msg='Closed rent available dialog. (Step 2)')
-            # 确认自动编成提示
-            elif R.Produce.TextAutoSet.exists():
-                dialog.yes(msg='Confirmed auto set.')
-                sleep(1) # 等对话框消失
-            elif not support_auto_set_done and R.Produce.ButtonAutoSet.exists():
-                device.click()
-                support_auto_set_done = True
-                sleep(1)
-        # 3. 选择回忆 自动编成 [screenshots/produce/screenshot_produce_start_3_memory.png]
-        elif lp.state == 3:
-            if R.Produce.TextStepIndicator4.exists():
-                break
-
-            # 确认自动编成提示
-            if R.Produce.TextAutoSet.exists():
-                dialog.yes(msg='Confirmed auto set.')
-                continue
-            # 今天仍然有租用回忆次数提示
-            elif R.Produce.TextRentAvailable.exists():
-                dialog.yes(msg='Confirmed rent available. (Step 3)')
-                continue
-
-            if not memory_set_selected:
-                # 自动编成
-                if memory_set_index is None:
-                    R.Produce.ButtonAutoSet.try_click()
-                # 指定编号
-                else:
-                    # dialog.no() # TODO: 这是什么？
-                    select_set(memory_set_index)
-                memory_set_selected = True
-            # 下一步「次へ」
-            if R.Common.ButtonNextNoIcon.q(enabled=True).try_click() and next_throttler.request():
-                continue
-        else:
-            assert False, f'Invalid state of {lp.state}.'
-
-    # 4. 选择道具 [screenshots/produce/screenshot_produce_start_4_end.png]
-    # TODO: 如果道具不足，这里加入推送提醒
-    if produce_solution().data.use_note_boost:
-        if R.Produce.CheckboxIconNoteBoost.exists():
-            device.click()
-            sleep(0.1)
-    if produce_solution().data.use_pt_boost:
-        if R.Produce.CheckboxIconSupportPtBoost.exists():
-            device.click()
-            sleep(0.1)
     R.Produce.ButtonProduceStart.wait().click()
+
     # 5. 相关设置弹窗 [screenshots/produce/skip_commu.png]
     cd = Countdown(5).start()
     for _ in Loop():

@@ -1,0 +1,21 @@
+{
+  "version": 3,
+  "definitions": {
+    "5f0801a8-ec37-4553-89fe-e53f0200acc8": {
+      "type": "prefab",
+      "prefab_id": "GakumasPrimaryButtonPrefab",
+      "name": "Daily.ButtonContestChallengeStart",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 249.9048144229368,
+          "y1": 1137.4929241330137,
+          "x2": 449.71897201874003,
+          "y2": 1184.8583183710489
+        },
+        "fixed": true
+      },
+      "displayName": "対戦開始"
+    }
+  }
+}

@@ -86,6 +86,86 @@
         "fixed": true
       },
       "displayName": "お仕事 按钮"
+    },
+    "fc0fa204-4586-47c3-99c3-7d6b98f81260": {
+      "type": "prefab",
+      "prefab_id": "TemplateMatchPrefab",
+      "name": "Daily.ButtonShop",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 605.931022133974,
+          "y1": 901.0401420113521,
+          "x2": 664.8672290715479,
+          "y2": 952.6938442989582
+        },
+        "fixed": true
+      },
+      "displayName": "ショップ 按钮"
+    },
+    "0e51af90-42af-4f11-89b8-6d7b60035bbd": {
+      "type": "prefab",
+      "prefab_id": "TemplateMatchPrefab",
+      "name": "Daily.ButtonPass",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 582.7878206921928,
+          "y1": 776.4314485267804,
+          "x2": 621.0837295191743,
+          "y2": 804.2200297724895
+        },
+        "fixed": true
+      },
+      "displayName": "パス"
+    },
+    "03179dd4-9ee0-403f-ba34-5d983216afb3": {
+      "type": "prefab",
+      "prefab_id": "TemplateMatchPrefab",
+      "name": "Daily.ButtonMission",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 629.0180404723116,
+          "y1": 560.9914459004218,
+          "x2": 672.3185282937283,
+          "y2": 583.422667438886
+        },
+        "fixed": true
+      },
+      "displayName": "ミッション 按钮图标"
+    },
+    "3b5d6ff0-e89e-497b-9cf5-16a6dde88246": {
+      "type": "prefab",
+      "prefab_id": "TemplateMatchPrefab",
+      "name": "Daily.ButtonPresentsPartial",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 631.0113880061151,
+          "y1": 448.3751416507874,
+          "x2": 669.979848950926,
+          "y2": 471.5388920479658
+        },
+        "fixed": true
+      },
+      "displayName": "プレゼント 按钮图标"
+    },
+    "44816fcf-7a8a-4796-8588-2512d97a5a87": {
+      "type": "prefab",
+      "prefab_id": "TemplateMatchPrefab",
+      "name": "Daily.ButtonHomeCurrent",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 332.6690245450701,
+          "y1": 1130.2672275369061,
+          "x2": 387.95874291402475,
+          "y2": 1180.0950283912812
+        },
+        "fixed": true
+      },
+      "displayName": "ホ一ム 按钮图标 高亮"
     }
   }
 }

@@ -17,20 +17,6 @@
       "prefab_id": "TemplateMatchPrefab",
       "variant_policy": {}
     },
-    "b71165dd-7285-45a7-bb8c-d4fccee2b0ba": {
-      "name": "Produce.KbIdolOverviewName",
-      "displayName": "P偶像总览界面偶像名称",
-      "type": "hint-box",
-      "props": {
-        "image": {
-          "kind": "rect",
-          "x1": 140,
-          "y1": 16,
-          "x2": 615,
-          "y2": 97
-        }
-      }
-    },
     "46607060-cefc-43a0-abaf-9d4887d46cb8": {
       "name": "Produce.BoxIdolOverviewIdols",
       "displayName": "偶像总览 偶像列表区域",
@@ -43,6 +29,21 @@
           "x2": 696,
           "y2": 992
         }
+      }
+    },
+    "f0040cf2-f17f-4ff1-bd73-0e56ea7f18bf": {
+      "type": "prefab",
+      "prefab_id": "GakumasPrimaryButtonPrefab",
+      "name": "Produce.IdolOverview.ButtonConfirm",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 275.9689100096055,
+          "y1": 1071.9844991315101,
+          "x2": 437.9429747942792,
+          "y2": 1129.9468127152995
+        },
+        "fixed": true
       }
     }
   }

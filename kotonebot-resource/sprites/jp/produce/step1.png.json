@@ -47,6 +47,21 @@
           "y2": 1006
         }
       }
+    },
+    "8b70832d-9cbf-43f2-b8c0-cdf791ad1a2f": {
+      "type": "prefab",
+      "prefab_id": "GakumasPrimaryButtonPrefab",
+      "name": "Produce.Step1.ButtonNext",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 250.3300452932387,
+          "y1": 1066.6584901957349,
+          "x2": 456.2970659453546,
+          "y2": 1120.6234028427111
+        },
+        "fixed": true
+      }
     }
   }
 }

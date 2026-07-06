@@ -1,0 +1,37 @@
+{
+  "version": 3,
+  "definitions": {
+    "f6a4a896-a742-4e55-bc31-cf72b2a7e077": {
+      "type": "prefab",
+      "prefab_id": "TemplateMatchPrefab",
+      "name": "Daily.ButtonDailyShop",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 72.53182844383747,
+          "y1": 921.0081627688514,
+          "x2": 125.79741655174196,
+          "y2": 973.9691501143536
+        },
+        "fixed": true
+      },
+      "displayName": "デイリー交換所 按钮图标"
+    },
+    "6c8d5f2b-614d-4be9-870a-28cc98a896a8": {
+      "type": "prefab",
+      "prefab_id": "TemplateMatchPrefab",
+      "name": "Daily.IconShopTitle",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 14.17893959558645,
+          "y1": 34.761837275914786,
+          "x2": 59.675112272269075,
+          "y2": 77.23771213010369
+        },
+        "fixed": true
+      },
+      "displayName": "ショップ 标题图标"
+    }
+  }
+}

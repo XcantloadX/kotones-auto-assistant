@@ -54,6 +54,38 @@
       },
       "prefab_id": "TemplateMatchPrefab",
       "variant_policy": {}
+    },
+    "14004676-5755-4b1d-adf7-85263919ad2f": {
+      "type": "prefab",
+      "prefab_id": "GakumasPrimaryButtonPrefab",
+      "name": "Produce.Step2.ButtonNext",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 250.3300452932387,
+          "y1": 1066.6584901957349,
+          "x2": 456.2970659453546,
+          "y2": 1120.6234028427111
+        },
+        "fixed": true
+      }
+    },
+    "76947045-7625-470a-bff7-7c31f4be4ef5": {
+      "name": "Produce.Step2.EmptySupportCardSlot",
+      "displayName": "空支援卡槽位",
+      "type": "prefab",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 481,
+          "y1": 844,
+          "x2": 692,
+          "y2": 962
+        },
+        "fixed": true
+      },
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {}
     }
   }
 }

@@ -24,8 +24,8 @@ def run_script(script_path: str) -> None:
     conf().device.default_logic_resolution = Size(720, 1280)
     logging.getLogger('kotonebot').setLevel(logging.DEBUG)
     logging.getLogger('kaa').setLevel(logging.DEBUG)
-    init_context(target_device=KaaDeviceFactory()())
-    manual_context().begin()
+    # init_context(target_device=KaaDeviceFactory()())
+    # manual_context().begin()
     runpy.run_module(module_name, run_name="__main__")
 
 def main():

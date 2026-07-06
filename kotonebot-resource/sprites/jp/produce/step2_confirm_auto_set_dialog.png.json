@@ -1,0 +1,37 @@
+{
+  "version": 3,
+  "definitions": {
+    "b47ab9d2-2644-4b27-8691-dfe64262632e": {
+      "type": "prefab",
+      "prefab_id": "TemplateMatchPrefab",
+      "name": "Produce.Step2.AutoSet.ConfirmTitle",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 58.36078332621804,
+          "y1": 914.6922780171651,
+          "x2": 250.3300452932387,
+          "y2": 962.6610892589218
+        },
+        "fixed": true
+      },
+      "displayName": "STEP2 自动编成对话框标题"
+    },
+    "46ae67b1-97ce-436b-93a0-5759c0ce4bfe": {
+      "type": "prefab",
+      "prefab_id": "GakumasPrimaryButtonPrefab",
+      "name": "Produce.Step2.AutoSet.ConfirmButton",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 391.30747205026955,
+          "y1": 1134.5493295418837,
+          "x2": 581.2770542051337,
+          "y2": 1187.5148919546568
+        },
+        "fixed": true
+      },
+      "displayName": "STEP2 租借 确认按钮"
+    }
+  }
+}
