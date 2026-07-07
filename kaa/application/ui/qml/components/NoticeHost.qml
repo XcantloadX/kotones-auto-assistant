@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import ".." as App
 
 Item {
     id: root
@@ -8,8 +9,6 @@ Item {
 
     readonly property int _duration: 4000
     readonly property int _maxCount: 5
-
-    readonly property bool _dark: Application.styleHints.colorScheme === Qt.Dark
 
     function show(kind, text) {
         if (toastModel.count >= root._maxCount)
@@ -62,10 +61,10 @@ Item {
 
             readonly property color accentColor: {
                 switch (kind) {
-                    case "success": return root._dark ? "#6ccb5f" : "#107c10"
-                    case "warning": return root._dark ? "#fce100" : "#c05a00"
-                    case "error":   return root._dark ? "#ff99a4" : "#c42b1c"
-                    default:        return root._dark ? "#60cdff" : "#0067c0"
+                    case "success": return App.AppTheme.isDark ? "#6ccb5f" : "#107c10"
+                    case "warning": return App.AppTheme.isDark ? "#fce100" : "#c05a00"
+                    case "error":   return App.AppTheme.isDark ? "#ff99a4" : "#c42b1c"
+                    default:        return App.AppTheme.isDark ? "#60cdff" : "#0067c0"
                 }
             }
             readonly property color iconColor: accentColor
@@ -89,8 +88,8 @@ Item {
                 width: parent.width
                 implicitHeight: contentRow.implicitHeight + 20
                 radius: 6
-                color: root._dark ? "#2d2d2d" : "#ffffff"
-                border.color: root._dark ? Qt.rgba(1,1,1,0.12) : Qt.rgba(0,0,0,0.12)
+                color: App.AppTheme.isDark ? "#2d2d2d" : "#ffffff"
+                border.color: App.AppTheme.isDark ? Qt.rgba(1,1,1,0.12) : Qt.rgba(0,0,0,0.12)
                 border.width: 1
 
                 Rectangle {
@@ -123,7 +122,7 @@ Item {
                     Label {
                         Layout.fillWidth: true
                         text: msg
-                        color: root._dark ? "#ffffff" : "#000000"
+                        color: App.AppTheme.isDark ? "#ffffff" : "#000000"
                         wrapMode: Text.Wrap
                         font.pixelSize: 13
                         lineHeightMode: Text.ProportionalHeight
@@ -139,7 +138,7 @@ Item {
                             anchors.fill: parent
                             radius: 4
                             color: closeMouse.containsMouse
-                                ? (root._dark ? Qt.rgba(1,1,1,0.08) : Qt.rgba(0,0,0,0.08))
+                                ? (App.AppTheme.isDark ? Qt.rgba(1,1,1,0.08) : Qt.rgba(0,0,0,0.08))
                                 : "transparent"
                         }
 
@@ -149,8 +148,8 @@ Item {
                             font.family: "FluentSystemIcons-Regular"
                             font.pixelSize: 12
                             color: closeMouse.containsMouse
-                                ? (root._dark ? "#ffffff" : "#000000")
-                                : (root._dark ? Qt.rgba(1,1,1,0.45) : Qt.rgba(0,0,0,0.45))
+                                ? (App.AppTheme.isDark ? "#ffffff" : "#000000")
+                                : (App.AppTheme.isDark ? Qt.rgba(1,1,1,0.45) : Qt.rgba(0,0,0,0.45))
                         }
 
                         MouseArea {

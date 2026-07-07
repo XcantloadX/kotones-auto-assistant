@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import ".." as App
 
 // 独立页面的标题行：返回按钮 + 图标 + 标题文本 + 可拖动填充区。
 // 由 TitleBar 在 prefsMode 时切入。
@@ -14,9 +15,6 @@ Item {
 
     // 供 TitleBar 同步给 Win32 hit-test：返回按钮右边界即交互区终点
     readonly property real interactiveEnd: backBtn.width + 4
-
-    readonly property color _fg:    Application.styleHints.colorScheme === Qt.Light ? "#000000" : "#ffffff"
-    readonly property color _hover: Application.styleHints.colorScheme === Qt.Light ? Qt.rgba(0,0,0,0.08) : Qt.rgba(1,1,1,0.08)
 
     RowLayout {
         anchors.fill: parent
@@ -34,7 +32,7 @@ Item {
                 anchors.fill: parent
                 anchors.margins: 4
                 radius: 5
-                color: backHover.hovered ? root._hover : "transparent"
+                color: backHover.hovered ? App.AppTheme.hover : "transparent"
             }
 
             Text {
@@ -42,7 +40,7 @@ Item {
                 font.family: "FluentSystemIcons-Regular"
                 font.pixelSize: 13
                 text: "\uF2AA"   // chevron_left_20
-                color: root._fg
+                color: App.AppTheme.fg
             }
 
             MouseArea {
@@ -85,7 +83,7 @@ Item {
 
                 Text {
                     text: root.title
-                    color: root._fg
+                    color: App.AppTheme.fg
                     font.pixelSize: 12
                 }
             }

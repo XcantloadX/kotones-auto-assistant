@@ -7,6 +7,12 @@ class ProfilesConfig(BaseModel):
     open_tabs: list[str] = []
 
 
+class InterfaceConfig(BaseModel):
+    window_style: str = ''
+    theme_color: str | None = None
+    color_scheme: Literal['auto', 'light', 'dark'] = 'auto'
+
+
 class SharedMiscConfig(BaseModel):
     check_update: Literal['never', 'startup'] = 'startup'
     auto_install_update: bool = True
@@ -30,5 +36,6 @@ class TelemetryConfig(BaseModel):
 class SharedConfig(BaseModel):
     version: int = 1
     profiles: ProfilesConfig = ProfilesConfig()
+    interface: InterfaceConfig = InterfaceConfig()
     misc: SharedMiscConfig = SharedMiscConfig()
     telemetry: TelemetryConfig = TelemetryConfig()

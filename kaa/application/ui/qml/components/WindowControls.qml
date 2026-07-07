@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Window
+import ".." as App
 
 // 窗口控件（最小化 / 最大化 / 关闭）。
 // hit-test 布局（从右到左，各 46px）：
@@ -19,10 +20,6 @@ Row {
     visible: Qt.platform.os === "windows"
     spacing: 0
 
-    readonly property color _hover: Application.styleHints.colorScheme === Qt.Light
-        ? Qt.rgba(0,0,0,0.08) : Qt.rgba(1,1,1,0.08)
-    readonly property color _fg:   Application.styleHints.colorScheme === Qt.Light ? "#000000" : "#ffffff"
-
     readonly property string _iconFont: "FluentSystemIcons-Regular"
     property bool _maxHoveredByOS: false
 
@@ -36,14 +33,14 @@ Row {
     Rectangle {
         width: 46; height: root.height
         color: _minHover.containsMouse
-            ? root._hover
+            ? App.AppTheme.hover
             : "transparent"
         Text {
             anchors.centerIn: parent
             font.family: root._iconFont
             font.pixelSize: 16
             text: "\uEBD0"
-            color: root._fg
+            color: App.AppTheme.fg
         }
         MouseArea {
             id: _minHover
@@ -60,14 +57,14 @@ Row {
             ? root._maxHoveredByOS
             : _maxHover.containsMouse
         color: _hovered
-            ? root._hover
+            ? App.AppTheme.hover
             : "transparent"
         Text {
             anchors.centerIn: parent
             font.family: root._iconFont
             font.pixelSize: 16
             text: root.window.visibility === Window.Maximized ? "\uEB96" : "\uE7EB"
-            color: root._fg
+            color: App.AppTheme.fg
         }
         MouseArea {
             id: _maxHover
@@ -90,7 +87,7 @@ Row {
             font.family: root._iconFont
             font.pixelSize: 16
             text: "\uF369"
-            color: _closeHover.containsMouse ? "white" : root._fg
+            color: _closeHover.containsMouse ? "white" : App.AppTheme.fg
         }
         MouseArea {
             id: _closeHover

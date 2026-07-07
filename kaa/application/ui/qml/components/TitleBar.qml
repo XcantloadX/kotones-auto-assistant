@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import QtQuick.Window
+import ".." as App
 
 // 主窗口标题栏：TabStrip + PageHeader（双模式）+ WindowControls。
 Item {
@@ -10,12 +11,6 @@ Item {
     readonly property int _stripH: 8   // 顶部纯拖拽条高度
     readonly property int _tabH: 34    // tab 行高度
     height: _stripH + _tabH
-
-    readonly property color _titleBg: Application.styleHints.colorScheme === Qt.Light ? "#f3f3f3" : "#202020"
-    readonly property color _hover:    Application.styleHints.colorScheme === Qt.Light ? Qt.rgba(0,0,0,0.08) : Qt.rgba(1,1,1,0.08)
-    readonly property color _hoverStrong: Application.styleHints.colorScheme === Qt.Light ? Qt.rgba(0,0,0,0.15) : Qt.rgba(1,1,1,0.15)
-    readonly property color _fg:       Application.styleHints.colorScheme === Qt.Light ? "#000000" : "#ffffff"
-    readonly property color _tabCardBg: Application.styleHints.colorScheme === Qt.Light ? "#ffffff" : "#2d2d2d"
 
     required property var configManagerDialog
 
@@ -68,9 +63,13 @@ Item {
     }
 
     // ── 背景 ────────────────────────────────────────────────────
+    // 颜色由 AppTheme 统一管理（避免散落的 palette / colorScheme 判断）。
+    // prefsMode + 非 solid：全透明，让 Mica/acrylic DWM 背景完整透出。
     Rectangle {
         anchors.fill: parent
-        color: root._titleBg
+        color: (root.prefsMode && !App.AppTheme.isSolid)
+            ? "transparent"
+            : App.AppTheme.titleBg
     }
 
     ColumnLayout {

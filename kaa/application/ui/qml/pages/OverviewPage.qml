@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import "../components"
+import ".." as App
 
 // 总览页：品牌 + 启动按钮 + 配置卡片网格。
 PageContainer {
@@ -10,12 +11,6 @@ PageContainer {
     padding: 0
 
     required property var configManagerDialog
-
-    readonly property color _fg:           Application.styleHints.colorScheme === Qt.Light ? "#000000" : "#ffffff"
-    readonly property color _hover:        Application.styleHints.colorScheme === Qt.Light ? Qt.rgba(0,0,0,0.06) : Qt.rgba(1,1,1,0.06)
-    readonly property color _cardBorder:   Application.styleHints.colorScheme === Qt.Light ? Qt.rgba(0,0,0,0.1) : Qt.rgba(1,1,1,0.1)
-    readonly property color _cardBg:       Application.styleHints.colorScheme === Qt.Light ? Qt.rgba(0,0,0,0.03) : Qt.rgba(1,1,1,0.03)
-    readonly property color _cardBgHover:  Application.styleHints.colorScheme === Qt.Light ? Qt.rgba(0,0,0,0.06) : Qt.rgba(1,1,1,0.06)
 
     property var _allConfigs: []
 
@@ -109,7 +104,7 @@ PageContainer {
                                 font.family: "FluentSystemIcons-Regular"
                                 font.pixelSize: 17
                                 text: seqBtn.isStopMode ? "\uF72A" : "\uF605"
-                                color: seqBtn.highlighted ? (Application.styleHints.colorScheme === Qt.Light ? "white" : "black") : root._fg
+                                color: seqBtn.highlighted ? (App.AppTheme.isDark ? "black" : "white") : App.AppTheme.fg
                             }
 
                             Label {
@@ -120,7 +115,7 @@ PageContainer {
                                     return "停止所有"
                                 }
                                 font.pixelSize: 14
-                                color: seqBtn.highlighted ? (Application.styleHints.colorScheme === Qt.Light ? "white" : "black") : root._fg
+                                color: seqBtn.highlighted ? (App.AppTheme.isDark ? "black" : "white") : App.AppTheme.fg
                             }
                         }
                     }
@@ -146,7 +141,7 @@ PageContainer {
                                 font.family: "FluentSystemIcons-Regular"
                                 font.pixelSize: 17
                                 text: parBtn.isStopMode ? "\uF72A" : "\uF100"
-                                color: parBtn.highlighted ? (Application.styleHints.colorScheme === Qt.Light ? "white" : "black") : root._fg
+                                color: parBtn.highlighted ? (App.AppTheme.isDark ? "black" : "white") : App.AppTheme.fg
                             }
 
                             Label {
@@ -157,7 +152,7 @@ PageContainer {
                                     return "停止所有"
                                 }
                                 font.pixelSize: 14
-                                color: parBtn.highlighted ? (Application.styleHints.colorScheme === Qt.Light ? "white" : "black") : root._fg
+                                color: parBtn.highlighted ? (App.AppTheme.isDark ? "black" : "white") : App.AppTheme.fg
                             }
                         }
                     }
@@ -194,9 +189,9 @@ PageContainer {
                             height: contentCol.implicitHeight + 32
                             radius: 8
                             color: cardHover.containsMouse
-                                ? root._cardBgHover
-                                : root._cardBg
-                            border.color: root._cardBorder
+                                ? App.AppTheme.isDark ? Qt.rgba(1,1,1,0.06) : Qt.rgba(0,0,0,0.06)
+                                : App.AppTheme.isDark ? Qt.rgba(1,1,1,0.03) : Qt.rgba(0,0,0,0.03)
+                            border.color: App.AppTheme.isDark ? Qt.rgba(1,1,1,0.1) : Qt.rgba(0,0,0,0.1)
                             border.width: 1
 
                             HoverHandler { id: cardHover }
@@ -304,7 +299,7 @@ PageContainer {
                         width: 22
                         height: 22
                         radius: 4
-                        color: root._hover
+                        color: App.AppTheme.hover
                         anchors.verticalCenter: parent.verticalCenter
 
                         Text {
@@ -312,7 +307,7 @@ PageContainer {
                             font.family: "FluentSystemIcons-Regular"
                             font.pixelSize: 13
                             text: ""   
-                            color: root._fg
+                            color: App.AppTheme.fg
                             opacity: 0.7
                         }
                     }

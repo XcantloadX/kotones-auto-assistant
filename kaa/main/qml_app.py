@@ -13,12 +13,16 @@ from dataclasses import asdict, dataclass, field
 from importlib.metadata import version as pkg_version, PackageNotFoundError
 from typing import cast
 from pathlib import Path
-from PySide6.QtCore import QUrl, QObject, Property, Signal, Slot
+from PySide6.QtCore import Qt, QUrl, QObject, Property, Signal, Slot
 from kaa.application.ui.error_bridge import ErrorDialogBridge, set_bridge
 from kaa.application.core.hotkeys import HotkeyManager
-from kaa.application.ui.controllers import TabManager, ProfileStoreBackend
+from kaa.application.ui.controllers import (
+    TabManager,
+    ProfileStoreBackend,
+    AppThemeController,
+)
 from kaa.application.ui.controllers.notice_backend import NoticeBackend
-from PySide6.QtGui import QFont, QIcon
+from PySide6.QtGui import QColor, QFont, QIcon, QPalette
 from PySide6.QtWidgets import QApplication
 from PySide6.QtQml import QQmlApplicationEngine
 from PySide6.QtQuickControls2 import QQuickStyle
@@ -29,6 +33,8 @@ if sys.platform == 'win32':
         MaxHoverBridge,
         TabBarHitTestBridge,
         WindowEventFilter,
+        apply_window_style,
+        resolve_window_style,
         setup_frameless_window,
     )
 
@@ -326,6 +332,39 @@ def _hotkey_resume(tab_manager: TabManager) -> None:
         ts.request_resume()
 
 
+def apply_color_scheme(app: QApplication, color_scheme: str) -> None:
+    if color_scheme not in ('auto', 'light', 'dark'):
+        return
+    style_hints = app.styleHints()
+    unset_color_scheme = getattr(style_hints, 'unsetColorScheme', None)
+    set_color_scheme = getattr(style_hints, 'setColorScheme', None)
+    if not callable(set_color_scheme) and not callable(unset_color_scheme):
+        return
+    if color_scheme == 'auto':
+        if callable(unset_color_scheme):
+            unset_color_scheme()
+        elif callable(set_color_scheme):
+            set_color_scheme(Qt.ColorScheme.Unknown)
+    elif color_scheme == 'light':
+        if callable(set_color_scheme):
+            set_color_scheme(Qt.ColorScheme.Light)
+    else:
+        if callable(set_color_scheme):
+            set_color_scheme(Qt.ColorScheme.Dark)
+
+
+def apply_theme_color(app: QApplication, color_value: str | None) -> None:
+    palette = QPalette()
+    if color_value:
+        color = QColor(color_value)
+        if color.isValid():
+            palette.setColor(QPalette.ColorRole.Highlight, color)
+            accent_role = getattr(QPalette.ColorRole, 'Accent', None)
+            if accent_role is not None:
+                palette.setColor(accent_role, color)
+    app.setPalette(palette)
+
+
 def main() -> None:
     """
     启动 QML 主窗口，Multi-Profile 架构。
@@ -354,6 +393,7 @@ def main() -> None:
     tab_manager = TabManager()
     profile_store = ProfileStoreBackend(tab_manager)
     notice = NoticeBackend()
+    app_theme = AppThemeController()
     hotkey_mgr = HotkeyManager(
         request_stop=lambda: _hotkey_stop(tab_manager),
         get_pause_status=lambda: _hotkey_get_pause(tab_manager),
@@ -387,17 +427,30 @@ def main() -> None:
     engine.rootContext().setContextProperty('fluentFontPath',
         str(_UI_DIR / "fonts" / "FluentSystemIcons-Regular.ttf").replace("\\", "/"))
 
+    # 注册 AppThemeController context property（供 AppTheme.qml 读取 windowStyle）
+    engine.rootContext().setContextProperty("AppThemeController", app_theme)
+
+    # 添加 QML 导入路径，使 qmldir 中注册的 AppTheme 单例对子目录组件可见
+    engine.addImportPath(str(_QML_DIR))
+
     engine.load(QUrl.fromLocalFile(str(qml_file)))
 
     if not engine.rootObjects():
         logger.error("Failed to load QML file. Exiting.")
         return
 
-    # ── 4. 无边框窗口 + Win32 event filter（仅 Windows）────────
+    # ── 4. 应用界面偏好（配色、主题色、窗口样式）──
+    from kaa.config import manager as config_manager
+    _shared = config_manager.read_shared()
+    apply_color_scheme(app, _shared.interface.color_scheme)
+    apply_theme_color(app, _shared.interface.theme_color)
+
+    # ── 5. 无边框窗口 + Win32 event filter + 窗口特效（仅 Windows）──
     if sys.platform == 'win32' and max_hover_bridge is not None and tab_bar_bridge is not None:
         window = cast(QQuickWindow, engine.rootObjects()[0])
         hwnd = int(window.winId())
         setup_frameless_window(hwnd)
+        apply_window_style(hwnd, resolve_window_style(_shared.interface.window_style))
         _win_event_filter = WindowEventFilter(window, max_hover_bridge, tab_bar_bridge)
         app.installNativeEventFilter(_win_event_filter)
 

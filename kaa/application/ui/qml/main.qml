@@ -142,7 +142,7 @@ ApplicationWindow {
             color: sysPalette.window
             Rectangle {
                 width: parent.width; height: 1
-                color: Application.styleHints.colorScheme === Qt.Light ? "#0F000000" : "#15FFFFFF"
+                color: AppTheme.isDark ? "#15FFFFFF" : "#0F000000"
             }
             Row {
                 anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter

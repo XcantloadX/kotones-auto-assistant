@@ -11,6 +11,7 @@ from .log_bridge import LogBridge
 from .produce_controller import ProduceController
 from .update_controller import UpdateController
 from .feedback_controller import FeedbackController
+from .app_theme_controller import AppThemeController
 from .notice_backend import NoticeBackend
 
 __all__ = [
@@ -23,5 +24,6 @@ __all__ = [
     "ProduceController",
     "UpdateController",
     "FeedbackController",
+    "AppThemeController",
     "NoticeBackend",
 ]
