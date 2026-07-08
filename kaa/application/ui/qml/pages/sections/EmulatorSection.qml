@@ -150,6 +150,13 @@ Item {
                     content: "模拟器「" + (root.emulatorTypeNames[root.emuType] ?? root.emuType) + "」未安装。如果这是 bug，请向开发者反馈。"
                 }
 
+                FormNotice {
+                    Layout.fillWidth: true
+                    visible: root.emuType === "mumu12"
+                    style: "warning"
+                    content: "MuMu 12 v4.x 已废弃，将在后续版本中移除。请升级模拟器到 MuMu 12 v5.x。"
+                }
+
                 // MuMu12 / MuMu12v5 专属
                 Loader {
                     active: (root.emuType === "mumu12" || root.emuType === "mumu12v5") && !root.emulatorNotInstalled
