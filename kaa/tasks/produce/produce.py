@@ -267,7 +267,7 @@ def do_produce(
 
     prepare()
 
-    R.Produce.ButtonProduceStart.wait().click()
+    R.Produce.Step4.ButtonProduceStart.wait().click()
 
     # 5. 相关设置弹窗 [screenshots/produce/skip_commu.png]
     cd = Countdown(5).start()
