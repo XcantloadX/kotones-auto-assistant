@@ -314,10 +314,10 @@ Item {
             }
         }
 
-        // ── ⚙ 偏好（已隐藏，保留代码）──────────────────────────
+        // ── ⚙ 偏好 ────────────────────────────────────────────
         Item {
-            visible: false
-            width: 64
+            id: settingsBtn
+            width: settingsRow.implicitWidth + 16
             height: parent.height
 
             HoverHandler { id: settingsBtnHover }
@@ -331,6 +331,7 @@ Item {
             }
 
             Row {
+                id: settingsRow
                 anchors.centerIn: parent
                 spacing: 4
 

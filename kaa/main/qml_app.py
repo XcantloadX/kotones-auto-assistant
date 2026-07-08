@@ -21,6 +21,7 @@ from kaa.application.ui.controllers import (
     ProfileStoreBackend,
     AppThemeController,
 )
+from kaa.application.ui.controllers.preferences_controller import PreferencesController
 from kaa.application.ui.controllers.notice_backend import NoticeBackend
 from PySide6.QtGui import QColor, QFont, QIcon, QPalette
 from PySide6.QtWidgets import QApplication
@@ -394,6 +395,7 @@ def main() -> None:
     profile_store = ProfileStoreBackend(tab_manager)
     notice = NoticeBackend()
     app_theme = AppThemeController()
+    prefs_ctrl = PreferencesController()
     hotkey_mgr = HotkeyManager(
         request_stop=lambda: _hotkey_stop(tab_manager),
         get_pause_status=lambda: _hotkey_get_pause(tab_manager),
@@ -427,8 +429,8 @@ def main() -> None:
     engine.rootContext().setContextProperty('fluentFontPath',
         str(_UI_DIR / "fonts" / "FluentSystemIcons-Regular.ttf").replace("\\", "/"))
 
-    # 注册 AppThemeController context property（供 AppTheme.qml 读取 windowStyle）
     engine.rootContext().setContextProperty("AppThemeController", app_theme)
+    engine.rootContext().setContextProperty("PreferencesController", prefs_ctrl)
 
     # 添加 QML 导入路径，使 qmldir 中注册的 AppTheme 单例对子目录组件可见
     engine.addImportPath(str(_QML_DIR))

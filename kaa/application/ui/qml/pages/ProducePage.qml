@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QtQml.Models
 import "../components"
 import "../components/controls"
 import "../components/form"
@@ -39,6 +40,49 @@ PageContainer {
     property var idolCards: []
     property var produceActions: []
     property var detectModes: []
+
+    // 拖拽排序状态（行动优先级列表）
+    property int _dragCurrentIndex: -1
+    property var _currentOrder: []
+    readonly property bool _dragging: _dragCurrentIndex >= 0
+    property real _autoScrollVelocity: 0
+
+    ListModel { id: actionsModel }
+
+    function _rebuildModel() {
+        actionsModel.clear()
+        if (!root.currentSolution) return
+        var order = root.currentSolution.data.actions_order
+        for (var i = 0; i < order.length; ++i) {
+            var found = root.produceActions.find(function(a) { return a.value === order[i] })
+            actionsModel.append({ value: order[i], label: found ? found.display_name : order[i] })
+        }
+    }
+
+    function _moveDelegateItem(from, to) {
+        if (from === to) return
+        actionsDelegateModel.items.move(from, to)
+        let arr = root._currentOrder.slice()
+        let item = arr.splice(from, 1)[0]
+        arr.splice(to, 0, item)
+        root._currentOrder = arr
+    }
+
+    function _updateAutoScroll(rootY) {
+        let svY = root.mapToItem(actionsScrollView, 0, rootY).y
+        let threshold = 30
+        let maxSpeed  = 8
+        let svh = actionsScrollView.height
+        if (svY < threshold) {
+            root._autoScrollVelocity = -((threshold - Math.max(0, svY)) / threshold) * maxSpeed
+        } else if (svY > svh - threshold) {
+            root._autoScrollVelocity = ((Math.min(svh, svY) - (svh - threshold)) / threshold) * maxSpeed
+        } else {
+            root._autoScrollVelocity = 0
+        }
+    }
+
+    onCurrentSolutionChanged: _rebuildModel()
 
     // 方案数据 binder：绑定 ProduceData 子对象（mode、idol、actions_order 等）
     FormBinder {
@@ -607,46 +651,166 @@ PageContainer {
                         title: "行动优先级"
                         Layout.fillWidth: true
                         visible: root.currentSolution !== null
+
+                        Timer {
+                            id: autoScrollTimer
+                            interval: 16
+                            repeat: true
+                            running: root._dragging && root._autoScrollVelocity !== 0
+                            onTriggered: {
+                                let f = actionsScrollView.contentItem
+                                let maxY = Math.max(0, f.contentHeight - f.height)
+                                f.contentY = Math.max(0, Math.min(f.contentY + root._autoScrollVelocity, maxY))
+                            }
+                        }
+
+                        DelegateModel {
+                            id: actionsDelegateModel
+                            model: actionsModel
+
+                            delegate: Item {
+                                id: delegateRoot
+                                required property int index
+                                required property var modelData
+
+                                property int visualIndex: DelegateModel.itemsIndex
+
+                                readonly property bool isDragSource:
+                                    root._dragging && root._dragCurrentIndex === delegateRoot.visualIndex
+
+                                width: ListView.view.width
+                                height: rowContent.implicitHeight
+
+                                ItemDelegate {
+                                    id: rowContent
+                                    width: parent.width
+                                    highlighted: delegateRoot.isDragSource
+                                    topPadding: 0
+                                    bottomPadding: 0
+                                    leftPadding: 8
+                                    rightPadding: 4
+
+                                    contentItem: RowLayout {
+                                        spacing: 6
+
+                                        // Drag grip handle
+                                        Item {
+                                            id: gripHandle
+                                            implicitWidth: 20
+                                            implicitHeight: 28
+                                            Layout.alignment: Qt.AlignVCenter
+                                            opacity: delegateRoot.isDragSource ? 0.4 : 1.0
+
+                                            // Three short bars as a visual grip indicator
+                                            Column {
+                                                anchors.centerIn: parent
+                                                spacing: 3
+                                                Repeater {
+                                                    model: 3
+                                                    delegate: Rectangle {
+                                                        required property int index
+                                                        width: 12
+                                                        height: 2
+                                                        radius: 1
+                                                        color: rowContent.palette.mid
+                                                    }
+                                                }
+                                            }
+
+                                            MouseArea {
+                                                anchors.fill: parent
+                                                cursorShape: Qt.SizeVerCursor
+                                                preventStealing: true
+
+                                                onPressed: (mouse) => {
+                                                    root._currentOrder = root.currentSolution.data.actions_order.slice()
+                                                    root._dragCurrentIndex = delegateRoot.visualIndex
+                                                    mouse.accepted = true
+                                                }
+
+                                                onPositionChanged: (mouse) => {
+                                                    if (!root._dragging) return
+                                                    // Reorder
+                                                    let lv = delegateRoot.ListView.view
+                                                    let pt = mapToItem(lv, mouseX, mouseY)
+                                                    let h = delegateRoot.height
+                                                    let mouseIdx = Math.max(0, Math.min(
+                                                        Math.floor(pt.y / h), lv.count - 1))
+                                                    if (mouseIdx !== root._dragCurrentIndex) {
+                                                        root._moveDelegateItem(root._dragCurrentIndex, mouseIdx)
+                                                        root._dragCurrentIndex = mouseIdx
+                                                    }
+                                                    // Edge auto-scroll
+                                                    root._updateAutoScroll(mapToItem(root, mouseX, mouseY).y)
+                                                }
+
+                                                onReleased: {
+                                                    root._autoScrollVelocity = 0
+                                                    let order = root._currentOrder
+                                                    root._dragCurrentIndex = -1
+                                                    root._currentOrder = []
+                                                    root.currentSolution.data.actions_order = order
+                                                    root.markDirty()
+                                                }
+
+                                                onCanceled: {
+                                                    root._autoScrollVelocity = 0
+                                                    let order = root._currentOrder
+                                                    root._dragCurrentIndex = -1
+                                                    root._currentOrder = []
+                                                    root.currentSolution.data.actions_order = order
+                                                    root.markDirty()
+                                                }
+                                            }
+                                        }
+
+                                        Label {
+                                            Layout.fillWidth: true
+                                            text: delegateRoot.modelData.label
+                                        }
+
+                                        Button {
+                                            text: "✕"
+                                            onClicked: {
+                                                root.currentSolution.data.actions_order.splice(delegateRoot.visualIndex, 1)
+                                                root._rebuildModel()
+                                                root.markDirty()
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
                         ColumnLayout {
                             width: parent.width; spacing: 4
 
                             Label { text: "从上到下依次尝试"; color: palette.placeholderText; font.pixelSize: 11 }
 
-                            ListView {
-                                id: actionsList
-                                Layout.fillWidth: true; implicitHeight: contentHeight; clip: true; spacing: 2
-                                model: root.currentSolution ? root.currentSolution.data.actions_order : []
+                            ScrollView {
+                                id: actionsScrollView
+                                Layout.fillWidth: true
+                                implicitHeight: Math.min(contentHeight, 300)
+                                clip: true
+                                ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
 
-                                delegate: RowLayout {
-                                    width: actionsList.width; spacing: 4
-                                    Label {
-                                        text: {
-                                            var found = root.produceActions.find(function(a) { return a.value === modelData })
-                                            return found ? found.display_name : modelData
-                                        }
+                                ColumnLayout {
+                                    width: actionsScrollView.availableWidth
+                                    spacing: 0
+
+                                    ListView {
+                                        id: actionsListView
                                         Layout.fillWidth: true
-                                    }
-                                    Button {
-                                        text: "↑"; enabled: index > 0
-                                        onClicked: {
-                                            var arr = root.currentSolution.data.actions_order
-                                            var tmp = arr[index - 1]; arr[index - 1] = arr[index]; arr[index] = tmp
-                                            root.markDirty(); actionsList.modelChanged()
+                                        implicitHeight: contentHeight
+                                        interactive: false
+                                        clip: false
+                                        model: actionsDelegateModel
+
+                                        move: Transition {
+                                            NumberAnimation { property: "y"; duration: 150; easing.type: Easing.OutQuad }
                                         }
-                                    }
-                                    Button {
-                                        text: "↓"; enabled: index < root.currentSolution.data.actions_order.length - 1
-                                        onClicked: {
-                                            var arr = root.currentSolution.data.actions_order
-                                            var tmp = arr[index + 1]; arr[index + 1] = arr[index]; arr[index] = tmp
-                                            root.markDirty(); actionsList.modelChanged()
-                                        }
-                                    }
-                                    Button {
-                                        text: "✕"
-                                        onClicked: {
-                                            root.currentSolution.data.actions_order.splice(index, 1)
-                                            root.markDirty(); actionsList.modelChanged()
+                                        moveDisplaced: Transition {
+                                            NumberAnimation { property: "y"; duration: 150; easing.type: Easing.OutQuad }
                                         }
                                     }
                                 }
@@ -667,7 +831,9 @@ PageContainer {
                                     text: "添加"; enabled: addActionCombo.currentValue !== undefined
                                     onClicked: {
                                         root.currentSolution.data.actions_order.push(addActionCombo.currentValue)
-                                        root.markDirty(); actionsList.modelChanged(); addActionCombo.currentIndex = 0
+                                        root._rebuildModel()
+                                        root.markDirty()
+                                        addActionCombo.currentIndex = 0
                                     }
                                 }
                             }

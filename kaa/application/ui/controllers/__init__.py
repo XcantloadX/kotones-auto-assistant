@@ -13,6 +13,7 @@ from .update_controller import UpdateController
 from .feedback_controller import FeedbackController
 from .app_theme_controller import AppThemeController
 from .notice_backend import NoticeBackend
+from .preferences_controller import PreferencesController
 
 __all__ = [
     "TabManager",
@@ -26,4 +27,5 @@ __all__ = [
     "FeedbackController",
     "AppThemeController",
     "NoticeBackend",
+    "PreferencesController",
 ]

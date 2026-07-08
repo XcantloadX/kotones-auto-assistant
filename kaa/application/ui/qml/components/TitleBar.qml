@@ -35,12 +35,11 @@ Item {
     }
     Component.onCompleted: _reloadTabs()
 
-    // ── 同步 tab 交互区右边界给 Win32 hit-test ─────────
+    // ── 同步交互区右边界给 Win32 hit-test ─────────
     Binding {
-        target: (typeof tabBarBridge !== "undefined") ? tabBarBridge : null
+        target: (typeof tabBarBridge !== 'undefined' && tabBarBridge) ? tabBarBridge : null
         property: "tabInteractiveEnd"
-        value: tabStrip.interactiveEnd
-        when: !root.prefsMode
+        value: root.prefsMode ? pageHeader.interactiveEnd : tabStrip.interactiveEnd
     }
 
     Connections {

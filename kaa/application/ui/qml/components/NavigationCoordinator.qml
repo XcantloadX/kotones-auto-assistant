@@ -9,6 +9,7 @@ Item {
     // 当前活跃 tab 的 controller（由 main.qml 绑定，tab 切换时自动更新）
     property var settingsCtrl: null
     property var produceCtrl: null
+    property var prefsCtrl: null
 
     property var pendingActionRunner: null
     property string pendingActionLabel: ""
@@ -16,7 +17,8 @@ Item {
     function isDirty() {
         var settingsDirty = root.settingsCtrl ? root.settingsCtrl.isDirty() : false
         var produceDirty  = root.produceCtrl  ? root.produceCtrl.isDirty()  : false
-        return settingsDirty || produceDirty
+        var prefsDirty    = root.prefsCtrl    ? root.prefsCtrl.isDirty()    : false
+        return settingsDirty || produceDirty || prefsDirty
     }
 
     function clearPendingGuardedAction() {
@@ -53,6 +55,9 @@ Item {
         if (root.produceCtrl && root.produceCtrl.isDirty()) {
             root.produceCtrl.save()
         }
+        if (root.prefsCtrl && root.prefsCtrl.isDirty()) {
+            root.prefsCtrl.save()
+        }
         root.runPendingAction()
     }
 
@@ -62,6 +67,9 @@ Item {
         }
         if (root.produceCtrl) {
             root.produceCtrl.discard()
+        }
+        if (root.prefsCtrl) {
+            root.prefsCtrl.discard()
         }
         root.runPendingAction()
     }

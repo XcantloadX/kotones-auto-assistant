@@ -250,6 +250,7 @@ ApplicationWindow {
         unsavedChangesDialog: unsavedChangesDialog
         settingsCtrl: window.activeSettingsCtrl
         produceCtrl: window.activeProduceCtrl
+        prefsCtrl: PreferencesController
     }
 
     // ── 主内容区（Splash 隐藏后显示） ──────────────────────────
@@ -306,16 +307,11 @@ ApplicationWindow {
                 }
 
                 // ── prefsMode 覆盖层 ────────────────
-                Rectangle {
+                PreferencesPage {
+                    id: preferencesPage
                     anchors.fill: parent
                     visible: window.prefsMode
-                    color: sysPalette.window
-                    Label {
-                        anchors.centerIn: parent
-                        text: "偏好设置"
-                        font.pixelSize: 16
-                        opacity: 0.6
-                    }
+                    prefsCtrl: PreferencesController
                 }
             }
         }
