@@ -1,0 +1,20 @@
+{
+  "version": 3,
+  "definitions": {
+    "dc02dc5e-40d7-4ce8-8e36-798f5ffaf854": {
+      "type": "prefab",
+      "prefab_id": "TemplateMatchPrefab",
+      "name": "Produce.RadioTextSkipCommu",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 99.0675348453627,
+          "y1": 793.4245937366939,
+          "x2": 332.6207720478144,
+          "y2": 837.1090517580102
+        },
+        "fixed": true
+      }
+    }
+  }
+}

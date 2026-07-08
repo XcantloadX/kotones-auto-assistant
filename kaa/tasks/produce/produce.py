@@ -228,10 +228,8 @@ def do_produce(
     find_target_button = lambda: next((b for b in target_buttons if b.find()), None)  # noqa: E731
     result = None
     for _ in Loop():
-        if R.Produce.ButtonProduce.try_click():
-            pass
         # 强化月间处理
-        elif conf().tasks.produce.enable_fever_month == 'on' and R.Produce.SwitchEventModeOff.exists():
+        if conf().tasks.produce.enable_fever_month == 'on' and R.Produce.SwitchEventModeOff.exists():
             logger.info('Fever month checked on.')
             device.click()
             sleep(0.5)

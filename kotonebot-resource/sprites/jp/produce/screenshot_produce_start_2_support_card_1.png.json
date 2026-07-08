@@ -1,4 +1,21 @@
 {
   "version": 3,
-  "definitions": {}
+  "definitions": {
+    "17b0fd62-2c70-49db-a7d0-4a5b7db652c3": {
+      "type": "prefab",
+      "prefab_id": "GakumasSecondaryButtonPrefab",
+      "name": "Produce.ButtonAutoSet",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 569.336689653004,
+          "y1": 982.0847175208672,
+          "x2": 662.199211657742,
+          "y2": 1006.6663966671114
+        },
+        "fixed": true
+      },
+      "displayName": "おまかせ"
+    }
+  }
 }
