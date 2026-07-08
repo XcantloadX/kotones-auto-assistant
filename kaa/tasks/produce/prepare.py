@@ -240,10 +240,10 @@ def step4(note_boost: bool, pt_boost: bool) -> bool:
         logger.debug('Not at step4, returning False')
         return False
     
-    if R.Produce.Step4.CheckboxNoteBoost.require().set_checked(note_boost):
-        sleep(0.5)
-    if R.Produce.Step4.CheckboxPtBoost.require().set_checked(pt_boost):
-        sleep(0.5)
+    if R.Produce.Step4.CheckboxNoteBoost.q(threshold=0.6).require().set_checked(note_boost):
+        sleep(1)
+    if R.Produce.Step4.CheckboxPtBoost.q(threshold=0.6).require().set_checked(pt_boost):
+        sleep(1)
 
     return True
 
