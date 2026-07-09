@@ -17,6 +17,7 @@ from ._util import (
     parse_rows,
     register_cache_clear,
 )
+from .produce_enums import ProduceEffectType, ProduceResourceType, ProduceStepType
 from .sqlite import select_many
 
 _SCHOOL_EVENT_DETAIL_SELECT = """
@@ -43,10 +44,10 @@ class ProduceEffectRow(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
     id: str
-    produce_effect_type: str = Field(alias='produceEffectType')
+    produce_effect_type: ProduceEffectType = Field(alias='produceEffectType')
     effect_value_min: int | None = Field(None, alias='effectValueMin')
     effect_value_max: int | None = Field(None, alias='effectValueMax')
-    produce_resource_type: str | None = Field(None, alias='produceResourceType')
+    produce_resource_type: ProduceResourceType | None = Field(None, alias='produceResourceType')
 
 
 class ProduceStepEventSuggestionRow(BaseModel):
@@ -58,14 +59,14 @@ class ProduceStepEventSuggestionRow(BaseModel):
     produce_card_id: str | None = Field(None, alias='produceCardId')
     produce_card_upgrade_count: int | None = Field(None, alias='produceCardUpgradeCount')
     produce_effect_ids_raw: str | None = Field(None, alias='produceEffectIds')
-    step_type: str | None = Field(None, alias='stepType')
+    step_type: ProduceStepType | None = Field(None, alias='stepType')
     step_id: str | None = Field(None, alias='stepId')
     success_probability_permyriad: int | None = Field(None, alias='successProbabilityPermyriad')
     success_produce_effect_ids_raw: str | None = Field(None, alias='successProduceEffectIds')
-    success_step_type: str | None = Field(None, alias='successStepType')
+    success_step_type: ProduceStepType | None = Field(None, alias='successStepType')
     success_step_id: str | None = Field(None, alias='successStepId')
     fail_produce_effect_ids_raw: str | None = Field(None, alias='failProduceEffectIds')
-    fail_step_type: str | None = Field(None, alias='failStepType')
+    fail_step_type: ProduceStepType | None = Field(None, alias='failStepType')
     fail_step_id: str | None = Field(None, alias='failStepId')
     always_successful: int | None = Field(None, alias='alwaysSuccessful')
     produce_effect_fire_step: int | None = Field(None, alias='produceEffectFireStep')
@@ -154,7 +155,7 @@ class SchoolEventOption:
     name: str
     stamina: int
     produce_point: int
-    step_type: str | None
+    step_type: ProduceStepType | None
     step_id: str | None
     is_always_successful: bool
     success_probability: int | None

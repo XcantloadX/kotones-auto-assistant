@@ -3,8 +3,11 @@
 import json
 import logging
 import threading
+from enum import Enum
 
 from PySide6.QtCore import QObject, Signal, Slot
+
+from kaa.db.produce_enums import ProduceEffectType, ProduceResourceType
 
 logger = logging.getLogger(__name__)
 
@@ -59,6 +62,10 @@ class DebugInspectorController(QObject):
             self.schoolEventDetailReady.emit(json.dumps({'error': '加载详情失败，请查看日志'}, ensure_ascii=False))
 
 
+def _enum_value(value: Enum | None) -> str | None:
+    return value.value if value is not None else None
+
+
 def _event_to_dict(e) -> dict:
     return {
         'id': e.event_id,
@@ -75,7 +82,7 @@ def _option_to_dict(o) -> dict:
         'name': o.name,
         'stamina': o.stamina,
         'produce_point': o.produce_point,
-        'step_type': o.step_type,
+        'step_type': _enum_value(o.step_type),
         'step_id': o.step_id,
         'is_always_successful': o.is_always_successful,
         'success_probability': o.success_probability,
@@ -87,121 +94,143 @@ def _option_to_dict(o) -> dict:
     }
 
 
-_EFFECT_TYPE_LABELS: dict[str, str] = {
-    'VocalAddition': 'Vo',
-    'DanceAddition': 'Da',
-    'VisualAddition': 'Vi',
-    'VocalGrowthRateAddition': 'Vo成长率',
-    'DanceGrowthRateAddition': 'Da成长率',
-    'VisualGrowthRateAddition': 'Vi成长率',
-    'StarAddition': '星',
-    'StarPermilUp': '星出现率',
-    'ParameterLimitUp': '参数上限',
-    'HighScoreGoldAddition': '金',
-    'StaminaRecoverFix': '体力回复',
-    'StaminaRecoverMultiple': '体力回复',
-    'StaminaReduceFix': '体力减少',
-    'MaxStaminaAddition': '最大体力',
-    'MaxStaminaReduceFix': '最大体力',
-    'BeforeAuditionRefreshStaminaUp': '试镜前体力回复',
-    'BeforeAuditionRefreshStaminaDown': '试镜前体力减少',
-    'EventSchoolStaminaUp': '授業体力回复',
-    'EventSchoolStaminaDown': '授業体力减少',
-    'ProducePointAddition': 'SP',
-    'ProducePointAdditionDisableTrigger': 'SP(不可触发)',
-    'ProducePointReduceFix': 'SP',
-    'EventActivityProducePointUp': '活动SP',
-    'EventActivityProducePointDown': '活动SP',
-    'CustomizeProduceCardProducePointDownMultiple': '自定义卡SP折扣',
-    'LessonPresentProducePointUp': '授课礼物SP',
-    'ProduceCardChange': '替换卡片',
-    'ProduceCardChangeSelect': '选择替换卡片',
-    'ProduceCardChangeUpgrade': '替换为强化版',
-    'ProduceCardDelete': '删除卡片',
-    'ProduceCardDuplicate': '复制卡片',
-    'ProduceCardUpgrade': '强化卡片',
-    'ProduceCardExcludeCountUp': '除外栏位',
-    'ProduceCardSelectRerollCountUp': '卡牌重roll次数',
-    'IdolCardProduceCardCustomizeEnable': '自定义偶像卡',
-    'ProduceCustomizeItemUpgrade': '升级自定义物品',
-    'ProduceDrinkPossessLimitUp': '饮料持有上限',
-    'AuditionVoteCountUp': '试镜得票率',
-    'AuditionParameterBonusMultiple': '试镜参数倍率',
-    'AuditionNpcEnhance': '试镜对手强化',
-    'AuditionNpcWeaken': '试镜对手弱化',
-    'EventBusinessVoteCountUp': '营业得票率',
-    'VoteCountAddition': '票数',
-    'ExamTurnDown': '考试回合减少',
-    'ExamStatusEnchant': '考试附魔',
-    'ExamPermanentAuditionStatusEnchant': '考试试镜附魔(常驻)',
-    'ExamPermanentLessonStatusEnchant': '考试授课附魔(常驻)',
-    'LessonSpChangeRatePermilAddition': '授课SP倍率',
-    'LessonDanceSpChangeRatePermilAddition': '授课DaSP倍率',
-    'LessonVocalSpChangeRatePermilAddition': '授课VoSP倍率',
-    'LessonVisualSpChangeRatePermilAddition': '授课ViSP倍率',
-    'LessonPresentProduceCardRewardCountUp': '授课礼物卡牌数',
-    'ProduceReward': '获得物品',
-    'ProduceRewardSet': '选择物品',
-    'ShopProduceCardPriceDiscountMultiple': '商店卡牌折扣',
-    'ShopProduceCardPriceDiscountMultiplePermanent': '商店卡牌折扣(常驻)',
-    'ShopProduceCardUpgradePriceDiscountMultiple': '卡牌强化折扣',
-    'ShopProduceCardDeletePriceDiscountMultiple': '卡牌删除折扣',
-    'ShopProduceDrinkPriceDiscountMultiple': '商店饮料折扣',
-    'ShopPriceDiscountMultiple': '商店折扣',
-    'ShopPriceUpMultiple': '商店涨价',
-    'ShopRerollCountUp': '商店重roll次数',
-    'SupportCardProduceCardUpgradeProbabilityUp': '支援卡强化概率',
-    'SupportCardEventParameterAdditionValueUp': '支援事件参数倍率',
-    'SupportCardEventProducePointAdditionValueUp': '支援事件SP倍率',
-    'SupportCardEventStaminaRecoverUp': '支援事件体力回复',
+_EFFECT_TYPE_LABELS: dict[ProduceEffectType, str] = {
+    ProduceEffectType.VocalAddition: 'Vo',
+    ProduceEffectType.DanceAddition: 'Da',
+    ProduceEffectType.VisualAddition: 'Vi',
+    ProduceEffectType.VocalGrowthRateAddition: 'Vo成长率',
+    ProduceEffectType.DanceGrowthRateAddition: 'Da成长率',
+    ProduceEffectType.VisualGrowthRateAddition: 'Vi成长率',
+    ProduceEffectType.StarAddition: '星',
+    ProduceEffectType.StarPermilUp: '星出现率',
+    ProduceEffectType.ParameterLimitUp: '参数上限',
+    ProduceEffectType.HighScoreGoldAddition: '金',
+    ProduceEffectType.StaminaRecoverFix: '体力回复',
+    ProduceEffectType.StaminaRecoverMultiple: '体力回复',
+    ProduceEffectType.StaminaReduceFix: '体力减少',
+    ProduceEffectType.MaxStaminaAddition: '最大体力',
+    ProduceEffectType.MaxStaminaReduceFix: '最大体力',
+    ProduceEffectType.BeforeAuditionRefreshStaminaUp: '试镜前体力回复',
+    ProduceEffectType.BeforeAuditionRefreshStaminaDown: '试镜前体力减少',
+    ProduceEffectType.EventSchoolStaminaUp: '授業体力回复',
+    ProduceEffectType.EventSchoolStaminaDown: '授業体力减少',
+    ProduceEffectType.ProducePointAddition: 'SP',
+    ProduceEffectType.ProducePointAdditionDisableTrigger: 'SP(不可触发)',
+    ProduceEffectType.ProducePointReduceFix: 'SP',
+    ProduceEffectType.EventActivityProducePointUp: '活动SP',
+    ProduceEffectType.EventActivityProducePointDown: '活动SP',
+    ProduceEffectType.CustomizeProduceCardProducePointDownMultiple: '自定义卡SP折扣',
+    ProduceEffectType.LessonPresentProducePointUp: '授课礼物SP',
+    ProduceEffectType.ProduceCardChange: '替换卡片',
+    ProduceEffectType.ProduceCardChangeSelect: '选择替换卡片',
+    ProduceEffectType.ProduceCardChangeUpgrade: '替换为强化版',
+    ProduceEffectType.ProduceCardDelete: '删除卡片',
+    ProduceEffectType.ProduceCardDuplicate: '复制卡片',
+    ProduceEffectType.ProduceCardUpgrade: '强化卡片',
+    ProduceEffectType.ProduceCardExcludeCountUp: '除外栏位',
+    ProduceEffectType.ProduceCardSelectRerollCountUp: '卡牌重roll次数',
+    ProduceEffectType.IdolCardProduceCardCustomizeEnable: '自定义偶像卡',
+    ProduceEffectType.ProduceCustomizeItemUpgrade: '升级自定义物品',
+    ProduceEffectType.ProduceDrinkPossessLimitUp: '饮料持有上限',
+    ProduceEffectType.AuditionVoteCountUp: '试镜得票率',
+    ProduceEffectType.AuditionParameterBonusMultiple: '试镜参数倍率',
+    ProduceEffectType.AuditionNpcEnhance: '试镜对手强化',
+    ProduceEffectType.AuditionNpcWeaken: '试镜对手弱化',
+    ProduceEffectType.EventBusinessVoteCountUp: '营业得票率',
+    ProduceEffectType.VoteCountAddition: '票数',
+    ProduceEffectType.ExamTurnDown: '考试回合减少',
+    ProduceEffectType.ExamStatusEnchant: '考试附魔',
+    ProduceEffectType.ExamPermanentAuditionStatusEnchant: '考试试镜附魔(常驻)',
+    ProduceEffectType.ExamPermanentLessonStatusEnchant: '考试授课附魔(常驻)',
+    ProduceEffectType.LessonSpChangeRatePermilAddition: '授课SP倍率',
+    ProduceEffectType.LessonDanceSpChangeRatePermilAddition: '授课DaSP倍率',
+    ProduceEffectType.LessonVocalSpChangeRatePermilAddition: '授课VoSP倍率',
+    ProduceEffectType.LessonVisualSpChangeRatePermilAddition: '授课ViSP倍率',
+    ProduceEffectType.LessonPresentProduceCardRewardCountUp: '授课礼物卡牌数',
+    ProduceEffectType.ProduceReward: '获得物品',
+    ProduceEffectType.ProduceRewardSet: '选择物品',
+    ProduceEffectType.ShopProduceCardPriceDiscountMultiple: '商店卡牌折扣',
+    ProduceEffectType.ShopProduceCardPriceDiscountMultiplePermanent: '商店卡牌折扣(常驻)',
+    ProduceEffectType.ShopProduceCardUpgradePriceDiscountMultiple: '卡牌强化折扣',
+    ProduceEffectType.ShopProduceCardDeletePriceDiscountMultiple: '卡牌删除折扣',
+    ProduceEffectType.ShopProduceDrinkPriceDiscountMultiple: '商店饮料折扣',
+    ProduceEffectType.ShopPriceDiscountMultiple: '商店折扣',
+    ProduceEffectType.ShopPriceUpMultiple: '商店涨价',
+    ProduceEffectType.ShopRerollCountUp: '商店重roll次数',
+    ProduceEffectType.SupportCardProduceCardUpgradeProbabilityUp: '支援卡强化概率',
+    ProduceEffectType.SupportCardEventParameterAdditionValueUp: '支援事件参数倍率',
+    ProduceEffectType.SupportCardEventProducePointAdditionValueUp: '支援事件SP倍率',
+    ProduceEffectType.SupportCardEventStaminaRecoverUp: '支援事件体力回复',
 }
 
-_RESOURCE_LABELS: dict[str, str] = {
-    'ProduceResourceType_ProduceCard': '卡牌',
-    'ProduceResourceType_ProduceDrink': '饮料',
-    'ProduceResourceType_ProduceItem': '物品',
-    'ProduceResourceType_ProduceCustomizeItem': '自定义物品',
+_RESOURCE_LABELS: dict[ProduceResourceType, str] = {
+    ProduceResourceType.ProduceCard: '卡牌',
+    ProduceResourceType.ProduceDrink: '饮料',
+    ProduceResourceType.ProduceItem: '物品',
+    ProduceResourceType.ProduceCustomizeItem: '自定义物品',
 }
 
 
 def _effect_display_text(ef) -> str:
-    label = _EFFECT_TYPE_LABELS.get(ef.produce_effect_type, ef.produce_effect_type)
+    label = _EFFECT_TYPE_LABELS.get(ef.produce_effect_type, ef.produce_effect_type.value)
 
     vmin = ef.effect_value_min
     vmax = ef.effect_value_max
 
     # Enchant effects — the value is the enchant id
-    if ef.produce_effect_type in ('ExamStatusEnchant', 'ExamPermanentAuditionStatusEnchant', 'ExamPermanentLessonStatusEnchant'):
+    if ef.produce_effect_type in (
+        ProduceEffectType.ExamStatusEnchant,
+        ProduceEffectType.ExamPermanentAuditionStatusEnchant,
+        ProduceEffectType.ExamPermanentLessonStatusEnchant,
+    ):
         return f"{label} ({ef.id})"
 
     # Reward effects — show resource type
-    if ef.produce_effect_type in ('ProduceReward', 'ProduceRewardSet'):
-        rsrc = _RESOURCE_LABELS.get(ef.produce_resource_type, ef.produce_resource_type or '?')
+    if ef.produce_effect_type in (ProduceEffectType.ProduceReward, ProduceEffectType.ProduceRewardSet):
+        rsrc = (
+            _RESOURCE_LABELS.get(ef.produce_resource_type, ef.produce_resource_type.value)
+            if ef.produce_resource_type is not None
+            else '?'
+        )
         return f"{label}({rsrc}) ({ef.id})"
 
     # Card manipulation — show search scope
-    if ef.produce_effect_type in ('ProduceCardChange', 'ProduceCardChangeSelect', 'ProduceCardChangeUpgrade',
-                          'ProduceCardDelete', 'ProduceCardDuplicate', 'ProduceCardUpgrade'):
+    if ef.produce_effect_type in (
+        ProduceEffectType.ProduceCardChange,
+        ProduceEffectType.ProduceCardChangeSelect,
+        ProduceEffectType.ProduceCardChangeUpgrade,
+        ProduceEffectType.ProduceCardDelete,
+        ProduceEffectType.ProduceCardDuplicate,
+        ProduceEffectType.ProduceCardUpgrade,
+    ):
         return f"{label} ({ef.id})"
 
     # Percentage values (permil → percent)
     if ef.produce_effect_type in (
-        'AuditionVoteCountUp', 'AuditionParameterBonusMultiple', 'StarPermilUp',
-        'ShopProduceCardPriceDiscountMultiple', 'ShopProduceCardPriceDiscountMultiplePermanent',
-        'ShopProduceCardUpgradePriceDiscountMultiple', 'ShopProduceCardDeletePriceDiscountMultiple',
-        'ShopProduceDrinkPriceDiscountMultiple', 'ShopPriceDiscountMultiple', 'ShopPriceUpMultiple',
-        'CustomizeProduceCardProducePointDownMultiple',
-        'StaminaRecoverMultiple',
-        'EventSchoolStaminaUp', 'EventSchoolStaminaDown',
-        'BeforeAuditionRefreshStaminaUp', 'BeforeAuditionRefreshStaminaDown',
-        'LessonSpChangeRatePermilAddition',
-        'LessonDanceSpChangeRatePermilAddition',
-        'LessonVocalSpChangeRatePermilAddition',
-        'LessonVisualSpChangeRatePermilAddition',
-        'SupportCardProduceCardUpgradeProbabilityUp',
-        'SupportCardEventParameterAdditionValueUp',
-        'SupportCardEventProducePointAdditionValueUp',
-        'SupportCardEventStaminaRecoverUp',
+        ProduceEffectType.AuditionVoteCountUp,
+        ProduceEffectType.AuditionParameterBonusMultiple,
+        ProduceEffectType.StarPermilUp,
+        ProduceEffectType.ShopProduceCardPriceDiscountMultiple,
+        ProduceEffectType.ShopProduceCardPriceDiscountMultiplePermanent,
+        ProduceEffectType.ShopProduceCardUpgradePriceDiscountMultiple,
+        ProduceEffectType.ShopProduceCardDeletePriceDiscountMultiple,
+        ProduceEffectType.ShopProduceDrinkPriceDiscountMultiple,
+        ProduceEffectType.ShopPriceDiscountMultiple,
+        ProduceEffectType.ShopPriceUpMultiple,
+        ProduceEffectType.CustomizeProduceCardProducePointDownMultiple,
+        ProduceEffectType.StaminaRecoverMultiple,
+        ProduceEffectType.EventSchoolStaminaUp,
+        ProduceEffectType.EventSchoolStaminaDown,
+        ProduceEffectType.BeforeAuditionRefreshStaminaUp,
+        ProduceEffectType.BeforeAuditionRefreshStaminaDown,
+        ProduceEffectType.LessonSpChangeRatePermilAddition,
+        ProduceEffectType.LessonDanceSpChangeRatePermilAddition,
+        ProduceEffectType.LessonVocalSpChangeRatePermilAddition,
+        ProduceEffectType.LessonVisualSpChangeRatePermilAddition,
+        ProduceEffectType.SupportCardProduceCardUpgradeProbabilityUp,
+        ProduceEffectType.SupportCardEventParameterAdditionValueUp,
+        ProduceEffectType.SupportCardEventProducePointAdditionValueUp,
+        ProduceEffectType.SupportCardEventStaminaRecoverUp,
     ):
         if vmin is not None and vmin == vmax:
             return f"{label} +{vmin/10:.0f}% ({ef.id})"
@@ -210,7 +239,11 @@ def _effect_display_text(ef) -> str:
         return f"{label} ({ef.id})"
 
     # Growth rates (1-100 permil = 0.1%-10%)
-    if ef.produce_effect_type in ('VocalGrowthRateAddition', 'DanceGrowthRateAddition', 'VisualGrowthRateAddition'):
+    if ef.produce_effect_type in (
+        ProduceEffectType.VocalGrowthRateAddition,
+        ProduceEffectType.DanceGrowthRateAddition,
+        ProduceEffectType.VisualGrowthRateAddition,
+    ):
         if vmin is not None and vmin == vmax:
             return f"{label} +{vmin/10:.1f}% ({ef.id})"
         elif vmin is not None and vmax is not None:
@@ -218,7 +251,7 @@ def _effect_display_text(ef) -> str:
         return f"{label} ({ef.id})"
 
     # Npc enhance/weaken (permil)
-    if ef.produce_effect_type in ('AuditionNpcEnhance', 'AuditionNpcWeaken'):
+    if ef.produce_effect_type in (ProduceEffectType.AuditionNpcEnhance, ProduceEffectType.AuditionNpcWeaken):
         if vmin is not None and vmin == vmax:
             return f"{label} {vmin/10:.0f}% ({ef.id})"
         return f"{label} ({ef.id})"
@@ -236,9 +269,9 @@ def _effect_display_text(ef) -> str:
 def _effect_to_dict(ef) -> dict:
     return {
         'id': ef.id,
-        'effect_type': ef.produce_effect_type,
+        'effect_type': _enum_value(ef.produce_effect_type),
         'effect_value_min': ef.effect_value_min,
         'effect_value_max': ef.effect_value_max,
-        'resource_type': ef.produce_resource_type,
+        'resource_type': _enum_value(ef.produce_resource_type),
         'display': _effect_display_text(ef),
     }
