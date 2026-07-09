@@ -3,7 +3,17 @@ from functools import cached_property, lru_cache
 import json
 from typing import Any
 
+from pydantic import BaseModel, ConfigDict, Field
+
 from .constants import ProduceExamEffectType
+from ._util import (
+    load_by_ids,
+    log_missing_ids,
+    parse_id_list,
+    parse_json_list,
+    register_cache_clear,
+    row_dict,
+)
 from .sqlite import select, select_many
 
 PRODUCE_CARD_COLUMNS = """
@@ -49,7 +59,7 @@ PRODUCE_CARD_COLUMNS = """
     "order"
 """.strip()
 
-PRODUCE_CARD_SELECT = f"SELECT {PRODUCE_CARD_COLUMNS} FROM ProduceCard"
+PRODUCE_CARD_SELECT = f'SELECT {PRODUCE_CARD_COLUMNS} FROM ProduceCard'
 
 PRODUCE_EXAM_EFFECT_COLUMNS = """
     id,
@@ -75,7 +85,77 @@ PRODUCE_EXAM_EFFECT_COLUMNS = """
     customizeProduceDescriptions
 """.strip()
 
-PRODUCE_EXAM_EFFECT_SELECT = f"SELECT {PRODUCE_EXAM_EFFECT_COLUMNS} FROM ProduceExamEffect"
+
+class ProduceExamEffectRow(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    id: str
+    effect_type: str | None = Field(None, alias='effectType')
+    effect_value1: int | None = Field(None, alias='effectValue1')
+    effect_value2: int | None = Field(None, alias='effectValue2')
+    effect_count: int | None = Field(None, alias='effectCount')
+    effect_turn: int | None = Field(None, alias='effectTurn')
+    target_produce_card_id: str | None = Field(None, alias='targetProduceCardId')
+    target_upgrade_count: int | None = Field(None, alias='targetUpgradeCount')
+    target_exam_effect_type: str | None = Field(None, alias='targetExamEffectType')
+    produce_card_search_id: str | None = Field(None, alias='produceCardSearchId')
+    move_position_type: str | None = Field(None, alias='movePositionType')
+    pick_range_type: str | None = Field(None, alias='pickRangeType')
+    pick_count_min: int | None = Field(None, alias='pickCountMin')
+    pick_count_max: int | None = Field(None, alias='pickCountMax')
+    chain_produce_exam_effect_id: str | None = Field(None, alias='chainProduceExamEffectId')
+    produce_exam_status_enchant_id: str | None = Field(None, alias='produceExamStatusEnchantId')
+    produce_card_status_enchant_id: str | None = Field(None, alias='produceCardStatusEnchantId')
+    produce_card_grow_effect_ids: str | None = Field(None, alias='produceCardGrowEffectIds')
+    effect_group_ids: str | None = Field(None, alias='effectGroupIds')
+    produce_descriptions: str | None = Field(None, alias='produceDescriptions')
+    customize_produce_descriptions: str | None = Field(None, alias='customizeProduceDescriptions')
+
+
+class ProduceCardRow(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    id: str
+    upgrade_count: int | None = Field(None, alias='upgradeCount')
+    name: str
+    asset_id: str | None = Field(None, alias='assetId')
+    is_character_asset: bool = Field(False, alias='isCharacterAsset')
+    rarity: str | None = None
+    plan_type: str | None = Field(None, alias='planType')
+    category: str | None = None
+    stamina: int | None = None
+    force_stamina: int | None = Field(None, alias='forceStamina')
+    cost_type: str | None = Field(None, alias='costType')
+    cost_value: int | None = Field(None, alias='costValue')
+    play_produce_exam_trigger_id: str | None = Field(None, alias='playProduceExamTriggerId')
+    play_effects_raw: str = Field('', alias='playEffects')
+    play_move_position_type: str | None = Field(None, alias='playMovePositionType')
+    move_effect_trigger_type: str | None = Field(None, alias='moveEffectTriggerType')
+    move_produce_exam_effect_ids_raw: str | None = Field(None, alias='moveProduceExamEffectIds')
+    is_end_turn_lost: bool = Field(False, alias='isEndTurnLost')
+    is_initial: bool = Field(False, alias='isInitial')
+    is_restrict: bool = Field(False, alias='isRestrict')
+    produce_card_status_enchant_id: str | None = Field(None, alias='produceCardStatusEnchantId')
+    search_tag: str | None = Field(None, alias='searchTag')
+    library_hidden: bool = Field(False, alias='libraryHidden')
+    no_deck_duplication: bool = Field(False, alias='noDeckDuplication')
+    is_reward: bool = Field(False, alias='isReward')
+    produce_descriptions: str | None = Field(None, alias='produceDescriptions')
+    unlock_producer_level: int | None = Field(None, alias='unlockProducerLevel')
+    rental_unlock_producer_level: int | None = Field(None, alias='rentalUnlockProducerLevel')
+    evaluation: int | None = None
+    origin_idol_card_id: str | None = Field(None, alias='originIdolCardId')
+    origin_support_card_id: str | None = Field(None, alias='originSupportCardId')
+    is_initial_deck_produce_card: bool = Field(False, alias='isInitialDeckProduceCard')
+    effect_group_ids: str | None = Field(None, alias='effectGroupIds')
+    produce_card_customize_ids: str | None = Field(None, alias='produceCardCustomizeIds')
+    max_customize_count: int | None = Field(None, alias='maxCustomizeCount')
+    is_conversion: bool = Field(False, alias='isConversion')
+    move_produce_exam_trigger_ids: str | None = Field(None, alias='moveProduceExamTriggerIds')
+    view_start_time: str | None = Field(None, alias='viewStartTime')
+    is_limited: bool = Field(False, alias='isLimited')
+    order: str | None = Field(None, alias='order')
+
 
 @dataclass
 class ProduceExamEffect:
@@ -116,30 +196,34 @@ class ProduceExamEffect:
     customize_produce_descriptions: str | None
 
     @classmethod
-    def from_row(cls, row) -> 'ProduceExamEffect':
-        data = dict(row)
+    def from_row(cls, row: ProduceExamEffectRow) -> 'ProduceExamEffect':
+        effect_type = (
+            ProduceExamEffectType(row.effect_type)
+            if row.effect_type is not None
+            else None
+        )
         return cls(
-            str(data.get('id') or ''),
-            ProduceExamEffectType(data.get('effectType')) if data.get('effectType') is not None else None,
-            data.get('effectValue1'),
-            data.get('effectValue2'),
-            data.get('effectCount'),
-            data.get('effectTurn'),
-            data.get('targetProduceCardId'),
-            data.get('targetUpgradeCount'),
-            data.get('targetExamEffectType'),
-            data.get('produceCardSearchId'),
-            data.get('movePositionType'),
-            data.get('pickRangeType'),
-            data.get('pickCountMin'),
-            data.get('pickCountMax'),
-            data.get('chainProduceExamEffectId'),
-            data.get('produceExamStatusEnchantId'),
-            data.get('produceCardStatusEnchantId'),
-            data.get('produceCardGrowEffectIds'),
-            data.get('effectGroupIds'),
-            data.get('produceDescriptions'),
-            data.get('customizeProduceDescriptions'),
+            row.id,
+            effect_type,
+            row.effect_value1,
+            row.effect_value2,
+            row.effect_count,
+            row.effect_turn,
+            row.target_produce_card_id,
+            row.target_upgrade_count,
+            row.target_exam_effect_type,
+            row.produce_card_search_id,
+            row.move_position_type,
+            row.pick_range_type,
+            row.pick_count_min,
+            row.pick_count_max,
+            row.chain_produce_exam_effect_id,
+            row.produce_exam_status_enchant_id,
+            row.produce_card_status_enchant_id,
+            row.produce_card_grow_effect_ids,
+            row.effect_group_ids,
+            row.produce_descriptions,
+            row.customize_produce_descriptions,
         )
 
 
@@ -244,58 +328,56 @@ class SkillCard:
 
     @classmethod
     def _from_row(cls, row, effect_map: dict[str, ProduceExamEffect]) -> 'SkillCard':
-        play_effects_raw = row['playEffects']
-        play_effect_items = _parse_json_list(play_effects_raw)
+        card = ProduceCardRow.model_validate(row_dict(row))
         play_effects: list[PlayEffect] = []
-        for item in play_effect_items:
+        for item in parse_json_list(card.play_effects_raw, context=f'ProduceCard {card.id}.playEffects'):
             if isinstance(item, dict):
                 play_effects.append(PlayEffect.from_dict(item, effect_map))
-
-        move_effect_ids = _parse_id_list(row['moveProduceExamEffectIds'])
+        move_effect_ids = parse_id_list(card.move_produce_exam_effect_ids_raw)
         move_effects = [effect_map[eid] for eid in move_effect_ids if eid in effect_map]
         return cls(
-            row['id'],
-            row['upgradeCount'],
-            row['name'],
-            row['assetId'],
-            bool(row['isCharacterAsset']),
-            row['rarity'],
-            row['planType'],
-            row['category'],
-            row['stamina'],
-            row['forceStamina'],
-            row['costType'],
-            row['costValue'],
-            row['playProduceExamTriggerId'],
-            row['playEffects'],
+            card.id,
+            card.upgrade_count,
+            card.name,
+            card.asset_id,
+            card.is_character_asset,
+            card.rarity,
+            card.plan_type,
+            card.category,
+            card.stamina,
+            card.force_stamina,
+            card.cost_type,
+            card.cost_value,
+            card.play_produce_exam_trigger_id,
+            card.play_effects_raw,
             play_effects,
-            row['playMovePositionType'],
-            row['moveEffectTriggerType'],
-            row['moveProduceExamEffectIds'],
+            card.play_move_position_type,
+            card.move_effect_trigger_type,
+            card.move_produce_exam_effect_ids_raw,
             move_effects,
-            bool(row['isEndTurnLost']),
-            bool(row['isInitial']),
-            bool(row['isRestrict']),
-            row['produceCardStatusEnchantId'],
-            row['searchTag'],
-            bool(row['libraryHidden']),
-            bool(row['noDeckDuplication']),
-            bool(row['isReward']),
-            row['produceDescriptions'],
-            row['unlockProducerLevel'],
-            row['rentalUnlockProducerLevel'],
-            row['evaluation'],
-            row['originIdolCardId'],
-            row['originSupportCardId'],
-            bool(row['isInitialDeckProduceCard']),
-            row['effectGroupIds'],
-            row['produceCardCustomizeIds'],
-            row['maxCustomizeCount'],
-            bool(row['isConversion']),
-            row['moveProduceExamTriggerIds'],
-            row['viewStartTime'],
-            bool(row['isLimited']),
-            row['order'],
+            card.is_end_turn_lost,
+            card.is_initial,
+            card.is_restrict,
+            card.produce_card_status_enchant_id,
+            card.search_tag,
+            card.library_hidden,
+            card.no_deck_duplication,
+            card.is_reward,
+            card.produce_descriptions,
+            card.unlock_producer_level,
+            card.rental_unlock_producer_level,
+            card.evaluation,
+            card.origin_idol_card_id,
+            card.origin_support_card_id,
+            card.is_initial_deck_produce_card,
+            card.effect_group_ids,
+            card.produce_card_customize_ids,
+            card.max_customize_count,
+            card.is_conversion,
+            card.move_produce_exam_trigger_ids,
+            card.view_start_time,
+            card.is_limited,
+            card.order,
         )
 
     @classmethod
@@ -303,7 +385,7 @@ class SkillCard:
         """
         根据 asset_id 查询 SkillCard。
         """
-        row = select(f"{PRODUCE_CARD_SELECT} WHERE assetId = ?;", asset_id)
+        row = select(f'{PRODUCE_CARD_SELECT} WHERE assetId = ?;', asset_id)
         if row is None:
             return None
         effect_map = _load_exam_effects_from_rows([row])
@@ -312,7 +394,7 @@ class SkillCard:
     @classmethod
     def from_id(cls, card_id: str) -> 'SkillCard | None':
         """根据 id 查询 SkillCard。"""
-        row = select(f"{PRODUCE_CARD_SELECT} WHERE id = ?;", card_id)
+        row = select(f'{PRODUCE_CARD_SELECT} WHERE id = ?;', card_id)
         if row is None:
             return None
         effect_map = _load_exam_effects_from_rows([row])
@@ -321,50 +403,44 @@ class SkillCard:
     @classmethod
     def all(cls) -> list['SkillCard']:
         """获取所有技能卡"""
-        rows = select_many(f"{PRODUCE_CARD_SELECT};")
-        effect_map = _load_exam_effects_from_rows(rows)
-        return [cls._from_row(row, effect_map) for row in rows]
+        return list(_all_cached())
 
 
-def _parse_json_list(raw: str | None) -> list:
-    if not raw:
-        return []
-    try:
-        data = json.loads(raw)
-    except json.JSONDecodeError:
-        return []
-    return data if isinstance(data, list) else []
-
-
-def _parse_id_list(raw: str | None) -> list[str]:
-    items = _parse_json_list(raw)
-    return [item for item in items if isinstance(item, str) and item]
-
-def _load_exam_effects_from_rows(rows) -> dict[str, ProduceExamEffect]:
+def _collect_exam_effect_ids(rows) -> set[str]:
     ids: set[str] = set()
     for row in rows:
-        ids.update(_parse_id_list(row['moveProduceExamEffectIds']))
-        for item in _parse_json_list(row['playEffects']):
-            if isinstance(item, dict):
-                effect_id = item.get('produceExamEffectId')
-                if isinstance(effect_id, str) and effect_id:
-                    ids.add(effect_id)
+        card_id = row['id']
+        ids.update(parse_id_list(
+            row['moveProduceExamEffectIds'],
+            context=f'ProduceCard {card_id}.moveProduceExamEffectIds',
+        ))
+        for item in parse_json_list(row['playEffects'], context=f'ProduceCard {card_id}.playEffects'):
+            if not isinstance(item, dict):
+                continue
+            effect_id = item.get('produceExamEffectId')
+            if isinstance(effect_id, str) and effect_id:
+                ids.add(effect_id)
+    return ids
+
+
+def _load_exam_effects_from_rows(rows) -> dict[str, ProduceExamEffect]:
+    ids = _collect_exam_effect_ids(rows)
     if not ids:
         return {}
-    id_list = sorted(ids)
-    placeholders = ','.join('?' for _ in id_list)
-    query = f"{PRODUCE_EXAM_EFFECT_SELECT} WHERE id IN ({placeholders});"
-    effects = select_many(query, *id_list)
+    effect_rows = load_by_ids('ProduceExamEffect', ids, columns=PRODUCE_EXAM_EFFECT_COLUMNS)
     result: dict[str, ProduceExamEffect] = {}
-    for row in effects:
-        data = dict(row)
-        effect_id = data.get('id')
-        if isinstance(effect_id, str) and effect_id:
-            result[effect_id] = ProduceExamEffect.from_row(data)
+    for row in effect_rows:
+        parsed = ProduceExamEffectRow.model_validate(row_dict(row))
+        result[parsed.id] = ProduceExamEffect.from_row(parsed)
+    log_missing_ids('ProduceExamEffect for skill cards', ids, result)
     return result
 
 
-if __name__ == '__main__':
-    from pprint import pprint as print
-    c=SkillCard.from_asset_id('img_general_skillcard_ido-3_102')
-    print(c)
+@lru_cache(maxsize=1)
+def _all_cached() -> tuple[SkillCard, ...]:
+    rows = select_many(f'{PRODUCE_CARD_SELECT};')
+    effect_map = _load_exam_effects_from_rows(rows)
+    return tuple(SkillCard._from_row(row, effect_map) for row in rows)
+
+
+register_cache_clear(_all_cached.cache_clear)

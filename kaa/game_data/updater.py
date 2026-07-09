@@ -336,7 +336,10 @@ class GameDataUpdater:
                         (cat_dir / fname).write_bytes(z.read(member))
             log(f"{category}: 解压完成")
 
-        # 5. 写入版本号
+        # 7. 写入版本号
         ver_file.write_text(manifest.version)
+        if needs_db:
+            from kaa.db._util import clear_db_caches
+            clear_db_caches()
         log("游戏数据更新完成")
         return True

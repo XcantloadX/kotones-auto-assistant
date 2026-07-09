@@ -40,3 +40,14 @@ def select(query: str, *args) -> Optional[sqlite3.Row]:
     c = db.cursor()
     c.execute(query, args)
     return c.fetchone()
+
+
+def invalidate_connections() -> None:
+    """关闭所有线程的数据库连接（game.db 更新后调用）。"""
+    global _db_dict
+    for conn in _db_dict.values():
+        try:
+            conn.close()
+        except Exception:
+            pass
+    _db_dict = {}

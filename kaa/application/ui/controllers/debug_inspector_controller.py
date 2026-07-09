@@ -48,13 +48,12 @@ class DebugInspectorController(QObject):
     def _load_school_event_detail(self, event_id: str) -> None:
         try:
             from kaa.db.school_event import SchoolEvent
-            events = SchoolEvent.load_all()
-            for e in events:
-                if e.event_id == event_id:
-                    data = _event_to_dict(e)
-                    self.schoolEventDetailReady.emit(json.dumps(data, ensure_ascii=False))
-                    return
-            self.schoolEventDetailReady.emit(json.dumps({'error': f'未找到事件: {event_id}'}, ensure_ascii=False))
+            event = SchoolEvent.get(event_id)
+            if event is None:
+                self.schoolEventDetailReady.emit(json.dumps({'error': f'未找到事件: {event_id}'}, ensure_ascii=False))
+                return
+            data = _event_to_dict(event)
+            self.schoolEventDetailReady.emit(json.dumps(data, ensure_ascii=False))
         except Exception:
             logger.exception("Failed to load school event detail")
             self.schoolEventDetailReady.emit(json.dumps({'error': '加载详情失败，请查看日志'}, ensure_ascii=False))
@@ -83,6 +82,8 @@ def _option_to_dict(o) -> dict:
         'success_effect_ids': o.success_effect_ids,
         'fail_effect_ids': o.fail_effect_ids,
         'effects': [_effect_to_dict(ef) for ef in o.effects],
+        'success_effects': [_effect_to_dict(ef) for ef in o.success_effects],
+        'fail_effects': [_effect_to_dict(ef) for ef in o.fail_effects],
     }
 
 
@@ -164,27 +165,27 @@ _RESOURCE_LABELS: dict[str, str] = {
 
 
 def _effect_display_text(ef) -> str:
-    label = _EFFECT_TYPE_LABELS.get(ef.effect_type, ef.effect_type)
+    label = _EFFECT_TYPE_LABELS.get(ef.produce_effect_type, ef.produce_effect_type)
 
-    vmin = ef.value_min
-    vmax = ef.value_max
+    vmin = ef.effect_value_min
+    vmax = ef.effect_value_max
 
     # Enchant effects — the value is the enchant id
-    if ef.effect_type in ('ExamStatusEnchant', 'ExamPermanentAuditionStatusEnchant', 'ExamPermanentLessonStatusEnchant'):
-        return f"{label} ({ef.effect_id})"
+    if ef.produce_effect_type in ('ExamStatusEnchant', 'ExamPermanentAuditionStatusEnchant', 'ExamPermanentLessonStatusEnchant'):
+        return f"{label} ({ef.id})"
 
     # Reward effects — show resource type
-    if ef.effect_type in ('ProduceReward', 'ProduceRewardSet'):
-        rsrc = _RESOURCE_LABELS.get(ef.resource_type, ef.resource_type or '?')
-        return f"{label}({rsrc}) ({ef.effect_id})"
+    if ef.produce_effect_type in ('ProduceReward', 'ProduceRewardSet'):
+        rsrc = _RESOURCE_LABELS.get(ef.produce_resource_type, ef.produce_resource_type or '?')
+        return f"{label}({rsrc}) ({ef.id})"
 
     # Card manipulation — show search scope
-    if ef.effect_type in ('ProduceCardChange', 'ProduceCardChangeSelect', 'ProduceCardChangeUpgrade',
+    if ef.produce_effect_type in ('ProduceCardChange', 'ProduceCardChangeSelect', 'ProduceCardChangeUpgrade',
                           'ProduceCardDelete', 'ProduceCardDuplicate', 'ProduceCardUpgrade'):
-        return f"{label} ({ef.effect_id})"
+        return f"{label} ({ef.id})"
 
     # Percentage values (permil → percent)
-    if ef.effect_type in (
+    if ef.produce_effect_type in (
         'AuditionVoteCountUp', 'AuditionParameterBonusMultiple', 'StarPermilUp',
         'ShopProduceCardPriceDiscountMultiple', 'ShopProduceCardPriceDiscountMultiplePermanent',
         'ShopProduceCardUpgradePriceDiscountMultiple', 'ShopProduceCardDeletePriceDiscountMultiple',
@@ -203,41 +204,41 @@ def _effect_display_text(ef) -> str:
         'SupportCardEventStaminaRecoverUp',
     ):
         if vmin is not None and vmin == vmax:
-            return f"{label} +{vmin/10:.0f}% ({ef.effect_id})"
+            return f"{label} +{vmin/10:.0f}% ({ef.id})"
         elif vmin is not None and vmax is not None:
-            return f"{label} +{vmin/10:.0f}~{vmax/10:.0f}% ({ef.effect_id})"
-        return f"{label} ({ef.effect_id})"
+            return f"{label} +{vmin/10:.0f}~{vmax/10:.0f}% ({ef.id})"
+        return f"{label} ({ef.id})"
 
     # Growth rates (1-100 permil = 0.1%-10%)
-    if ef.effect_type in ('VocalGrowthRateAddition', 'DanceGrowthRateAddition', 'VisualGrowthRateAddition'):
+    if ef.produce_effect_type in ('VocalGrowthRateAddition', 'DanceGrowthRateAddition', 'VisualGrowthRateAddition'):
         if vmin is not None and vmin == vmax:
-            return f"{label} +{vmin/10:.1f}% ({ef.effect_id})"
+            return f"{label} +{vmin/10:.1f}% ({ef.id})"
         elif vmin is not None and vmax is not None:
-            return f"{label} +{vmin/10:.1f}~{vmax/10:.1f}% ({ef.effect_id})"
-        return f"{label} ({ef.effect_id})"
+            return f"{label} +{vmin/10:.1f}~{vmax/10:.1f}% ({ef.id})"
+        return f"{label} ({ef.id})"
 
     # Npc enhance/weaken (permil)
-    if ef.effect_type in ('AuditionNpcEnhance', 'AuditionNpcWeaken'):
+    if ef.produce_effect_type in ('AuditionNpcEnhance', 'AuditionNpcWeaken'):
         if vmin is not None and vmin == vmax:
-            return f"{label} {vmin/10:.0f}% ({ef.effect_id})"
-        return f"{label} ({ef.effect_id})"
+            return f"{label} {vmin/10:.0f}% ({ef.id})"
+        return f"{label} ({ef.id})"
 
     # Fixed integer values
     if vmin is not None and vmin == vmax:
-        return f"{label} +{vmin} ({ef.effect_id})"
+        return f"{label} +{vmin} ({ef.id})"
     elif vmin is not None and vmax is not None:
-        return f"{label} +{vmin}~{vmax} ({ef.effect_id})"
+        return f"{label} +{vmin}~{vmax} ({ef.id})"
 
     # Fallback
-    return f"{label} ({ef.effect_id})"
+    return f"{label} ({ef.id})"
 
 
 def _effect_to_dict(ef) -> dict:
     return {
-        'id': ef.effect_id,
-        'effect_type': ef.effect_type,
-        'effect_value_min': ef.value_min,
-        'effect_value_max': ef.value_max,
-        'resource_type': ef.resource_type,
+        'id': ef.id,
+        'effect_type': ef.produce_effect_type,
+        'effect_value_min': ef.effect_value_min,
+        'effect_value_max': ef.effect_value_max,
+        'resource_type': ef.produce_resource_type,
         'display': _effect_display_text(ef),
     }

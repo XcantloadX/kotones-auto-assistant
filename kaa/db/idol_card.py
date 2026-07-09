@@ -1,7 +1,37 @@
 from dataclasses import dataclass
+from functools import lru_cache
 
-from .sqlite import select, select_many
-from .constants import CharacterId
+from pydantic import BaseModel, ConfigDict, Field
+
+from kaa.db._util import register_cache_clear, row_dict
+from kaa.db.sqlite import select, select_many
+
+_IDOL_CARD_SELECT = """
+SELECT
+    IC.id AS cardId,
+    ICS.id AS skinId,
+    Char.lastName || ' ' || Char.firstName || '　' || IC.name AS name,
+    NOT (IC.originalIdolCardSkinId = ICS.id) AS isAnotherVer,
+    ICS.name AS anotherVerName,
+    Char.id AS characterId,
+    Char.lastName || ' ' || Char.firstName AS characterName
+FROM IdolCard IC
+JOIN Character Char ON characterId = Char.id
+JOIN IdolCardSkin ICS ON IC.id = ICS.idolCardId
+""".strip()
+
+
+class IdolCardRow(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    card_id: str = Field(alias='cardId')
+    skin_id: str = Field(alias='skinId')
+    name: str
+    is_another: bool = Field(alias='isAnotherVer')
+    another_name: str | None = Field(None, alias='anotherVerName')
+    character_id: str = Field(alias='characterId')
+    character_name: str = Field(alias='characterName')
+
 
 @dataclass
 class IdolCard:
@@ -16,51 +46,35 @@ class IdolCard:
 
     @classmethod
     def from_skin_id(cls, sid: str) -> 'IdolCard | None':
-        """
-        根据 skin_id 查询 IdolCard。
-        """
-        row = select("""
-        SELECT
-            IC.id AS cardId,
-            ICS.id AS skinId,
-            Char.lastName || ' ' || Char.firstName || '　' || IC.name AS name,
-            NOT (IC.originalIdolCardSkinId = ICS.id) AS isAnotherVer,
-            ICS.name AS anotherVerName,
-            Char.id AS characterId,
-            Char.lastName || ' ' || Char.firstName AS characterName
-        FROM IdolCard IC
-        JOIN Character Char ON characterId = Char.id
-        JOIN IdolCardSkin ICS ON IC.id = ICS.idolCardId
-        WHERE ICS.id = ?;
-        """, sid)
+        """根据 skin_id 查询 IdolCard。"""
+        row = select(f'{_IDOL_CARD_SELECT} WHERE ICS.id = ?;', sid)
         if row is None:
             return None
-        card_id, skin_id, name, is_another, another_name, char_id, char_name = row
-        return cls(card_id, skin_id, is_another, another_name, name, char_id, char_name)
-    
+        return cls._from_row(row)
+
     @classmethod
     def all(cls) -> list['IdolCard']:
         """获取所有偶像卡"""
-        rows = select_many("""
-        SELECT
-            IC.id AS cardId,
-            ICS.id AS skinId,
-            Char.lastName || ' ' || Char.firstName || '　' || IC.name AS name,
-            NOT (IC.originalIdolCardSkinId = ICS.id) AS isAnotherVer,
-            ICS.name AS anotherVerName,
-            Char.id AS characterId,
-            Char.lastName || ' ' || Char.firstName AS characterName
-        FROM IdolCard IC
-        JOIN Character Char ON characterId = Char.id
-        JOIN IdolCardSkin ICS ON IC.id = ICS.idolCardId;
-        """)
-        results = []
-        for row in rows:
-            card_id, skin_id, name, is_another, another_name, char_id, char_name = row
-            results.append(cls(card_id, skin_id, is_another, another_name, name, char_id, char_name))
-        return results
+        return list(_all_cached())
 
-if __name__ == '__main__':
-    from pprint import pprint as print
-    print(IdolCard.from_skin_id('i_card-skin-fktn-3-006'))
-    print(IdolCard.all())
+    @classmethod
+    def _from_row(cls, row) -> 'IdolCard':
+        parsed = IdolCardRow.model_validate(row_dict(row))
+        return cls(
+            parsed.card_id,
+            parsed.skin_id,
+            parsed.is_another,
+            parsed.another_name,
+            parsed.name,
+            parsed.character_id,
+            parsed.character_name,
+        )
+
+
+@lru_cache(maxsize=1)
+def _all_cached() -> tuple[IdolCard, ...]:
+    rows = select_many(f'{_IDOL_CARD_SELECT};')
+    return tuple(IdolCard._from_row(row) for row in rows)
+
+
+register_cache_clear(_all_cached.cache_clear)
