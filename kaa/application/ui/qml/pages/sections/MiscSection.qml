@@ -3,6 +3,7 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import "../../components/controls"
 import "../../components/form"
+import "../../dialogs"
 
 // 杂项设置：idle / debug / shared 设置
 Item {
@@ -97,6 +98,16 @@ Item {
                     field: "recommend_card_detection"
                     label: "跟踪推荐卡检测"
                 }
+
+                Button {
+                    text: "Inspect 授業"
+                    onClicked: schoolEventInspector.open()
+                }
+            }
+
+            SchoolEventInspectorDialog {
+                id: schoolEventInspector
+                debugInspectorCtrl: DebugInspector
             }
 
             // ── 全局设置 (shared) ───────────────────────────

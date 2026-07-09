@@ -22,6 +22,7 @@ from kaa.application.ui.controllers import (
     AppThemeController,
 )
 from kaa.application.ui.controllers.preferences_controller import PreferencesController
+from kaa.application.ui.controllers.debug_inspector_controller import DebugInspectorController
 from kaa.application.ui.controllers.notice_backend import NoticeBackend
 from PySide6.QtGui import QColor, QFont, QIcon, QPalette
 from PySide6.QtWidgets import QApplication
@@ -431,6 +432,9 @@ def main() -> None:
 
     engine.rootContext().setContextProperty("AppThemeController", app_theme)
     engine.rootContext().setContextProperty("PreferencesController", prefs_ctrl)
+
+    debug_inspector = DebugInspectorController()
+    engine.rootContext().setContextProperty("DebugInspector", debug_inspector)
 
     # 添加 QML 导入路径，使 qmldir 中注册的 AppTheme 单例对子目录组件可见
     engine.addImportPath(str(_QML_DIR))
