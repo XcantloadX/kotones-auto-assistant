@@ -1,8 +1,8 @@
 import logging
-from typing import Optional, Literal
-from typing_extensions import assert_never
+from typing import Optional
 
-from kaa.kaa_context import produce_solution
+from kaa.kaa_context import produce_solution, init_produce_session, clear_produce_session
+from kaa.tasks.produce.session import ProduceSession, HajimeScenario
 from kaa.tasks.produce.shared.common import resume_produce_pre
 from kaa.tasks.produce.new.controller import ProduceController
 from kaa.tasks.produce.legacy.in_purodyuusu import (
@@ -124,7 +124,7 @@ def select_set(index: int):
     
 @action('继续当前培育.继续培育', screenshot_mode='manual-inherit')
 def resume_produce_lst(
-    mode: Literal['regular', 'pro', 'master'],
+    scenario: HajimeScenario,
     current_week: int
 ):
     """
@@ -134,18 +134,16 @@ def resume_produce_lst(
     前置条件：培育中的任意一个页面\n
     结束状态：游戏首页
 
-    :param mode: 培育模式
+    :param scenario: 培育方案类型
     :param current_week: 培育的周数
     """
-    match mode:
-        case 'regular':
+    match scenario:
+        case HajimeScenario.REGULAR:
             resume_regular_produce(current_week)
-        case 'pro':
+        case HajimeScenario.PRO:
             resume_pro_produce(current_week)
-        case 'master':
+        case HajimeScenario.MASTER:
             resume_master_produce(current_week)
-        case _:
-            assert_never(mode)
 
 @action('继续当前培育', screenshot_mode='manual-inherit')
 def resume_produce():
@@ -156,17 +154,22 @@ def resume_produce():
     结束状态：游戏首页
     """
 
-    mode, current_week = resume_produce_pre()
+    scenario, current_week, idol_card = resume_produce_pre()
 
-    if conf().tasks.produce.produce_engine == 'legacy':
-        resume_produce_lst(mode, current_week)
-    else:
-        ProduceController(mode=mode).run()
+    session = ProduceSession(idol_card=idol_card, scenario=scenario, is_resumed=True)
+    init_produce_session(session)
+    try:
+        if conf().tasks.produce.produce_engine == 'legacy':
+            resume_produce_lst(scenario, current_week)
+        else:
+            ProduceController(scenario=scenario).run()
+    finally:
+        clear_produce_session()
 
 @action('执行培育', screenshot_mode='manual-inherit')
 def do_produce(
     idol_skin_id: str,
-    mode: Literal['regular', 'pro', 'master'],
+    scenario: HajimeScenario,
     memory_set_index: Optional[int] = None
 ) -> bool:
     """
@@ -177,7 +180,7 @@ def do_produce(
 
     :param memory_set_index: 回忆编成编号。
     :param idol_skin_id: 要培育的偶像。如果为 None，则使用配置文件中的偶像。
-    :param mode: 培育模式。
+    :param scenario: 培育方案类型。
     :return: 是否因为 AP 不足而跳过本次培育。
     :raises ValueError: 如果 `memory_set_index` 不在 [1, 20] 的范围内。
     """
@@ -215,16 +218,13 @@ def do_produce(
             sleep(2)
 
     # 0. 进入培育页面
-    logger.info(f'Enter produce page. Mode: {mode}')
-    match mode:
-        case 'regular':
-            target_buttons = [R.Produce.ButtonHajime0Regular, R.Produce.ButtonHajime1Regular]
-        case 'pro':
-            target_buttons = [R.Produce.ButtonHajime0Pro, R.Produce.ButtonHajime1Pro]
-        case 'master':
-            target_buttons = [R.Produce.ButtonHajime1Master]
-        case _:
-            assert_never(mode)
+    logger.info(f'Enter produce page. Scenario: {scenario.value}')
+    if scenario == HajimeScenario.REGULAR:
+        target_buttons = [R.Produce.ButtonHajime0Regular, R.Produce.ButtonHajime1Regular]
+    elif scenario == HajimeScenario.PRO:
+        target_buttons = [R.Produce.ButtonHajime0Pro, R.Produce.ButtonHajime1Pro]
+    else:
+        target_buttons = [R.Produce.ButtonHajime1Master]
     find_target_button = lambda: next((b for b in target_buttons if b.find()), None)  # noqa: E731
     result = None
     for _ in Loop():
@@ -279,19 +279,22 @@ def do_produce(
             pass
         if R.Common.ButtonConfirmNoIcon.try_click():
             pass
-    if conf().tasks.produce.produce_engine == 'legacy':
-        match mode:
-            case 'regular':
-                hajime_regular()
-            case 'pro':
-                hajime_pro()
-            case 'master':
-                hajime_master()
-            case _:
-                assert_never(mode)
-    else:
-        c = ProduceController(mode=mode)
-        c.run()
+    session = ProduceSession(idol_card=idol_skin_id, scenario=scenario, is_resumed=False)
+    init_produce_session(session)
+    try:
+        if conf().tasks.produce.produce_engine == 'legacy':
+            match scenario:
+                case HajimeScenario.REGULAR:
+                    hajime_regular()
+                case HajimeScenario.PRO:
+                    hajime_pro()
+                case HajimeScenario.MASTER:
+                    hajime_master()
+        else:
+            c = ProduceController(scenario=scenario)
+            c.run()
+    finally:
+        clear_produce_session()
     return True
 
 @task('培育')
@@ -307,7 +310,8 @@ def produce():
     idol = produce_solution().data.idol
     memory_set = produce_solution().data.memory_set
     support_card_set = produce_solution().data.support_card_set
-    mode = produce_solution().data.mode
+    raw_mode = produce_solution().data.mode
+    scenario = HajimeScenario(f'hajime_{raw_mode}')
     # 数据验证
     if count < 0:
         user.warning('配置有误', '培育次数不能小于 0。将跳过本次培育。')
@@ -328,9 +332,9 @@ def produce():
             support_card_set_to_use = support_card_set
         logger.info(
             f'Produce start with: '
-            f'idol: {idol}, mode: {mode}, memory_set: #{memory_set_to_use}, support_card_set: #{support_card_set_to_use}'
+            f'idol: {idol}, scenario: {scenario.value}, memory_set: #{memory_set_to_use}, support_card_set: #{support_card_set_to_use}'
         )
-        if not do_produce(idol, mode, memory_set_to_use):
+        if not do_produce(idol, scenario, memory_set_to_use):
             user.info('AP 不足', f'由于 AP 不足，跳过了 {count - i} 次培育。')
             logger.info('%d produce(s) skipped because of insufficient AP.', count - i)
             break

@@ -17,6 +17,7 @@ from kotonebot.util import Countdown
 from kotonebot.primitives import Rect
 from kaa.tasks import R
 from kaa.tasks.common import skip
+from kaa.tasks.produce.session import HajimeScenario, Scenario, identify_idol_card
 from .p_drink import acquire_p_drink
 from kotonebot.util import measure_time
 from kotonebot.backend.core import Image
@@ -161,13 +162,15 @@ def handle_skill_card_removal():
     logger.debug("Handle skill card removal finished.")
 
 @action('继续当前培育.进入培育', screenshot_mode='manual-inherit')
-def resume_produce_pre() -> tuple[Literal['regular', 'pro', 'master'], int]:
+def resume_produce_pre() -> tuple[HajimeScenario, int, str]:
     """
     继续当前培育.进入培育\n
     该函数用于处理‘日期变更’等情况；单独执行此函数时，要确保代码已经处于培育状态。
 
     前置条件：游戏首页，且当前有进行中培育\n
     结束状态：培育中的任意一个页面
+
+    :return: (scenario, current_week, idol_card_skin_id)
     """
     device.screenshot()
     # 点击 プロデュース中
@@ -182,14 +185,29 @@ def resume_produce_pre() -> tuple[Literal['regular', 'pro', 'master'], int]:
         R.Produce.ResumeDialogMaster
     ].find()
     if not mode_result:
-        raise ValueError('Failed to detect produce mode.')
+        raise ValueError('Failed to detect produce scenario.')
     if mode_result.prefab == R.Produce.ResumeDialogRegular:
-        mode = 'regular'
+        scenario = HajimeScenario.REGULAR
     elif mode_result.prefab == R.Produce.ResumeDialogPro:
-        mode = 'pro'
+        scenario = HajimeScenario.PRO
     else:
-        mode = 'master'
-    logger.info(f'Produce mode: {mode}')
+        scenario = HajimeScenario.MASTER
+    logger.info(f'Produce scenario: {scenario}')
+
+    # 识别偶像卡
+    device.screenshot()
+    idol_card_skin_id = None
+    for box in (R.Produce.BoxResumeDialogIdolCard, R.Produce.BoxResumeDialogIdolCard_Saving):
+        img = device.screenshot()
+        x, y, w, h = box.xywh
+        crop = img[y:y+h, x:x+w]
+        idol_card_skin_id = identify_idol_card(crop)
+        if idol_card_skin_id is not None:
+            break
+    if idol_card_skin_id is None:
+        raise UnrecoverableError('Failed to identify idol card from resume dialog.')
+    logger.info(f'Resume produce for idol: {idol_card_skin_id}')
+
     retry_count = 0
     max_retries = 5
     current_week = None
@@ -224,7 +242,7 @@ def resume_produce_pre() -> tuple[Literal['regular', 'pro', 'master'], int]:
     logger.info('Click resume button.')
     device.click(btn_resume)
 
-    return mode, current_week
+    return scenario, current_week, idol_card_skin_id
 
 AcquisitionType = Literal[
     "PDrinkAcquire", # P饮料被动领取

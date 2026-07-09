@@ -1,6 +1,7 @@
 from typing import Callable
 from typing_extensions import assert_never
 
+from kaa.tasks.produce.session import HajimeScenario
 from kaa.tasks.produce.shared.common import ProduceInterrupt
 from kotonebot import logging, Loop, action, sleep, device, Countdown
 
@@ -20,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 
 class ProduceController:
-    def __init__(self, *, mode: str) -> None:
+    def __init__(self, *, scenario: HajimeScenario) -> None:
         self.page = ProducePage()
         self.strategy = StandardStrategy(self)
         self.running: bool = True
@@ -216,5 +217,5 @@ class ProduceController:
 
     
 if __name__ == '__main__':
-    c = ProduceController(mode='')
+    c = ProduceController(scenario=HajimeScenario.REGULAR)
     c.run()
