@@ -87,84 +87,149 @@ PRODUCE_EXAM_EFFECT_COLUMNS = """
 
 
 class ProduceExamEffectRow(BaseModel):
+    """ProduceExamEffect 表行。"""
+
     model_config = ConfigDict(populate_by_name=True)
 
     id: str
+    """考试效果 ID（ProduceExamEffect.id）。"""
     effect_type: str | None = Field(None, alias='effectType')
+    """效果类型（ProduceExamEffect.effectType，ProduceExamEffectType 枚举值）。"""
     effect_value1: int | None = Field(None, alias='effectValue1')
+    """效果参数 1。"""
     effect_value2: int | None = Field(None, alias='effectValue2')
+    """效果参数 2。"""
     effect_count: int | None = Field(None, alias='effectCount')
+    """效果触发次数限制。"""
     effect_turn: int | None = Field(None, alias='effectTurn')
+    """效果持续回合数，-1 表示永久。"""
     target_produce_card_id: str | None = Field(None, alias='targetProduceCardId')
+    """目标技能卡 ID（ProduceCard.id）。"""
     target_upgrade_count: int | None = Field(None, alias='targetUpgradeCount')
+    """目标技能卡强化次数，与 target_produce_card_id 配套。"""
     target_exam_effect_type: str | None = Field(None, alias='targetExamEffectType')
+    """目标考试效果类型（ProduceExamEffectType 枚举值）。"""
     produce_card_search_id: str | None = Field(None, alias='produceCardSearchId')
+    """卡牌检索范围 ID（ProduceCardSearch.id）。"""
     move_position_type: str | None = Field(None, alias='movePositionType')
+    """卡牌移动位置类型（ProduceCardMovePositionType 枚举值）。"""
     pick_range_type: str | None = Field(None, alias='pickRangeType')
+    """选牌范围类型枚举值。"""
     pick_count_min: int | None = Field(None, alias='pickCountMin')
+    """选牌数量下限。"""
     pick_count_max: int | None = Field(None, alias='pickCountMax')
+    """选牌数量上限。"""
     chain_produce_exam_effect_id: str | None = Field(None, alias='chainProduceExamEffectId')
+    """链式后续效果 ID（ProduceExamEffect.id）。"""
     produce_exam_status_enchant_id: str | None = Field(None, alias='produceExamStatusEnchantId')
+    """考试状态附魔 ID（ProduceExamStatusEnchant.id）。"""
     produce_card_status_enchant_id: str | None = Field(None, alias='produceCardStatusEnchantId')
+    """卡牌状态附魔 ID（ProduceCardStatusEnchant.id）。"""
     produce_card_grow_effect_ids: str | None = Field(None, alias='produceCardGrowEffectIds')
+    """卡牌成长效果 ID 列表 JSON（元素为 ProduceCardGrowEffect.id）。"""
     effect_group_ids: str | None = Field(None, alias='effectGroupIds')
+    """效果组 ID 列表 JSON（元素为 EffectGroup.id）。"""
     produce_descriptions: str | None = Field(None, alias='produceDescriptions')
+    """效果描述 JSON（ProduceDescription 数组）。"""
     customize_produce_descriptions: str | None = Field(None, alias='customizeProduceDescriptions')
+    """自定义效果描述 JSON（ProduceDescription 数组）。"""
 
 
 class ProduceCardRow(BaseModel):
+    """ProduceCard 表行。"""
+
     model_config = ConfigDict(populate_by_name=True)
 
     id: str
+    """技能卡 ID（ProduceCard.id）。"""
     upgrade_count: int | None = Field(None, alias='upgradeCount')
+    """强化次数（ProduceCard.upgradeCount）。"""
     name: str
+    """卡牌名称（ProduceCard.name）。"""
     asset_id: str | None = Field(None, alias='assetId')
+    """资源标识（ProduceCard.assetId）。"""
     is_character_asset: bool = Field(False, alias='isCharacterAsset')
+    """是否为角色专属资源。"""
     rarity: str | None = None
+    """稀有度（ProduceCardRarity 枚举值）。"""
     plan_type: str | None = Field(None, alias='planType')
+    """计划类型（ProducePlanType 枚举值）。"""
     category: str | None = None
+    """卡牌类别（ProduceCardCategory 枚举值）。"""
     stamina: int | None = None
+    """元气/体力消耗（绿色）。"""
     force_stamina: int | None = Field(None, alias='forceStamina')
+    """体力消耗（红色）。"""
     cost_type: str | None = Field(None, alias='costType')
+    """额外消耗类型（ProduceCardCostType 枚举值）。"""
     cost_value: int | None = Field(None, alias='costValue')
+    """额外消耗数值。"""
     play_produce_exam_trigger_id: str | None = Field(None, alias='playProduceExamTriggerId')
+    """出牌触发条件 ID（ProduceExamTrigger.id）。"""
     play_effects_raw: str = Field('', alias='playEffects')
+    """出牌效果 JSON 数组。"""
     play_move_position_type: str | None = Field(None, alias='playMovePositionType')
+    """出牌后卡牌移动位置（ProduceCardMovePositionType 枚举值）。"""
     move_effect_trigger_type: str | None = Field(None, alias='moveEffectTriggerType')
+    """移动效果触发类型枚举值。"""
     move_produce_exam_effect_ids_raw: str | None = Field(None, alias='moveProduceExamEffectIds')
+    """移动时触发的考试效果 ID 列表 JSON（元素为 ProduceExamEffect.id）。"""
     is_end_turn_lost: bool = Field(False, alias='isEndTurnLost')
+    """回合结束时是否失去。"""
     is_initial: bool = Field(False, alias='isInitial')
+    """是否为初始卡组卡牌。"""
     is_restrict: bool = Field(False, alias='isRestrict')
+    """是否为限制卡。"""
     produce_card_status_enchant_id: str | None = Field(None, alias='produceCardStatusEnchantId')
+    """卡牌状态附魔 ID（ProduceCardStatusEnchant.id）。"""
     search_tag: str | None = Field(None, alias='searchTag')
+    """检索标签。"""
     library_hidden: bool = Field(False, alias='libraryHidden')
+    """是否在图鉴中隐藏。"""
     no_deck_duplication: bool = Field(False, alias='noDeckDuplication')
+    """是否禁止卡组重复。"""
     is_reward: bool = Field(False, alias='isReward')
+    """是否为奖励卡。"""
     produce_descriptions: str | None = Field(None, alias='produceDescriptions')
+    """卡牌描述 JSON。"""
     unlock_producer_level: int | None = Field(None, alias='unlockProducerLevel')
+    """解锁所需制作人等级。"""
     rental_unlock_producer_level: int | None = Field(None, alias='rentalUnlockProducerLevel')
+    """租赁解锁所需制作人等级。"""
     evaluation: int | None = None
+    """卡牌评价分。"""
     origin_idol_card_id: str | None = Field(None, alias='originIdolCardId')
+    """来源偶像卡 ID（IdolCard.id）。"""
     origin_support_card_id: str | None = Field(None, alias='originSupportCardId')
+    """来源支援卡 ID（SupportCard.id）。"""
     is_initial_deck_produce_card: bool = Field(False, alias='isInitialDeckProduceCard')
+    """是否为初始牌组技能卡。"""
     effect_group_ids: str | None = Field(None, alias='effectGroupIds')
+    """效果组 ID 列表 JSON（元素为 EffectGroup.id）。"""
     produce_card_customize_ids: str | None = Field(None, alias='produceCardCustomizeIds')
+    """自定义项 ID 列表 JSON（元素为 ProduceCardCustomize.id）。"""
     max_customize_count: int | None = Field(None, alias='maxCustomizeCount')
+    """最大自定义次数。"""
     is_conversion: bool = Field(False, alias='isConversion')
+    """是否为转换卡。"""
     move_produce_exam_trigger_ids: str | None = Field(None, alias='moveProduceExamTriggerIds')
+    """移动时触发条件 ID 列表 JSON（元素为 ProduceExamTrigger.id）。"""
     view_start_time: str | None = Field(None, alias='viewStartTime')
+    """可见开始时间。"""
     is_limited: bool = Field(False, alias='isLimited')
+    """是否为限定卡。"""
     order: str | None = Field(None, alias='order')
+    """排序权重。"""
 
 
 @dataclass
 class ProduceExamEffect:
-    """
-    考试效果
+    """考试效果（业务用）。
 
     卡牌发动后的 buff 都存放在此类中，比如好印象、元气、回合追加等所有效果。
     """
     _id: str
+    """考试效果 ID（ProduceExamEffect.id）。"""
     effect_type: ProduceExamEffectType | None
     """效果类型"""
     effect_value1: int | None
@@ -180,20 +245,35 @@ class ProduceExamEffect:
     一般逐回合衰减的效果会有这个参数，表示持续回合数。-1 表示永久。
     """
     _target_produce_card_id: str | None
+    """目标技能卡 ID（ProduceCard.id）。"""
     target_upgrade_count: int | None
+    """目标技能卡强化次数，与 _target_produce_card_id 配套。"""
     target_exam_effect_type: str | None
+    """目标考试效果类型（ProduceExamEffectType 枚举值）。"""
     _produce_card_search_id: str | None
+    """卡牌检索范围 ID（ProduceCardSearch.id）。"""
     move_position_type: str | None
+    """卡牌移动位置类型（ProduceCardMovePositionType 枚举值）。"""
     pick_range_type: str | None
+    """选牌范围类型枚举值。"""
     pick_count_min: int | None
+    """选牌数量下限。"""
     pick_count_max: int | None
+    """选牌数量上限。"""
     _chain_produce_exam_effect_id: str | None
+    """链式后续效果 ID（ProduceExamEffect.id）。"""
     _produce_exam_status_enchant_id: str | None
+    """考试状态附魔 ID（ProduceExamStatusEnchant.id）。"""
     _produce_card_status_enchant_id: str | None
+    """卡牌状态附魔 ID（ProduceCardStatusEnchant.id）。"""
     _produce_card_grow_effect_ids: str | None
+    """卡牌成长效果 ID 列表 JSON（元素为 ProduceCardGrowEffect.id）。"""
     _effect_group_ids: str | None
+    """效果组 ID 列表 JSON（元素为 EffectGroup.id）。"""
     produce_descriptions: str | None
+    """效果描述 JSON（ProduceDescription 数组）。"""
     customize_produce_descriptions: str | None
+    """自定义效果描述 JSON（ProduceDescription 数组）。"""
 
     @classmethod
     def from_row(cls, row: ProduceExamEffectRow) -> 'ProduceExamEffect':
@@ -229,11 +309,15 @@ class ProduceExamEffect:
 
 @dataclass
 class PlayEffect:
-    """出牌后触发的考试效果"""
+    """出牌后触发的考试效果（playEffects JSON 单项解析结果）。"""
     _produce_exam_trigger_id: str
+    """触发条件 ID（ProduceExamTrigger.id）。"""
     _produce_exam_effect_id: str
+    """考试效果 ID（ProduceExamEffect.id）。"""
     produce_exam_effect: ProduceExamEffect | None
+    """关联的考试效果实体。"""
     hide_icon: bool
+    """是否隐藏效果图标。"""
 
     @classmethod
     def from_dict(cls, data: dict, effect_map: dict[str, ProduceExamEffect]) -> 'PlayEffect':
@@ -248,15 +332,23 @@ class PlayEffect:
 
 @dataclass
 class SkillCard:
-    """技能卡"""
+    """技能卡（业务用）。"""
     _id: str
+    """技能卡 ID（ProduceCard.id）。"""
     upgrade_count: int | None
+    """强化次数（ProduceCard.upgradeCount）。"""
     name: str
+    """卡牌名称（ProduceCard.name）。"""
     _asset_id: str | None
+    """资源标识（ProduceCard.assetId）。"""
     is_character_asset: bool
+    """是否为角色专属资源。"""
     rarity: str | None
+    """稀有度（ProduceCardRarity 枚举值）。"""
     plan_type: str | None
+    """计划类型（ProducePlanType 枚举值）。"""
     category: str | None
+    """卡牌类别（ProduceCardCategory 枚举值）。"""
     stamina: int | None
     """需要消耗的元气或体力值（绿色）。
     
@@ -268,43 +360,72 @@ class SkillCard:
     对于同一张卡片，stamina 和 force_stamina 只会有一个有值，另一个为 0。
     """
     cost_type: str | None
+    """额外消耗类型（ProduceCardCostType 枚举值）。"""
     cost_value: int | None
     """消耗数值
     
     部分卡片会消耗好印象、集中等非元气或体力值的 buff，即此字段的值。
     """
     _play_produce_exam_trigger_id: str | None
+    """出牌触发条件 ID（ProduceExamTrigger.id）。"""
     _play_effects_raw: str
     """出牌效果（JSON 字符串）"""
     play_effects: list[PlayEffect]
     """出牌效果（解析后的实体列表）"""
     play_move_position_type: str | None
+    """出牌后卡牌移动位置（ProduceCardMovePositionType 枚举值）。"""
     move_effect_trigger_type: str | None
+    """移动效果触发类型枚举值。"""
     _move_produce_exam_effect_ids_raw: str | None
+    """移动时触发的考试效果 ID 列表 JSON（元素为 ProduceExamEffect.id）。"""
     move_produce_exam_effects: list[ProduceExamEffect]
+    """移动时触发的考试效果实体列表。"""
     is_end_turn_lost: bool
+    """回合结束时是否失去。"""
     is_initial: bool
+    """是否为初始卡组卡牌。"""
     is_restrict: bool
+    """是否为限制卡。"""
     _produce_card_status_enchant_id: str | None
+    """卡牌状态附魔 ID（ProduceCardStatusEnchant.id）。"""
     search_tag: str | None
+    """检索标签。"""
     library_hidden: bool
+    """是否在图鉴中隐藏。"""
     no_deck_duplication: bool
+    """是否禁止卡组重复。"""
     is_reward: bool
+    """是否为奖励卡。"""
     produce_descriptions: str | None
+    """卡牌描述 JSON。"""
     unlock_producer_level: int | None
+    """解锁所需制作人等级。"""
     rental_unlock_producer_level: int | None
+    """租赁解锁所需制作人等级。"""
     evaluation: int | None
+    """卡牌评价分。"""
     _origin_idol_card_id: str | None
+    """来源偶像卡 ID（IdolCard.id）。"""
     _origin_support_card_id: str | None
+    """来源支援卡 ID（SupportCard.id）。"""
     is_initial_deck_produce_card: bool
+    """是否为初始牌组技能卡。"""
     _effect_group_ids: str | None
+    """效果组 ID 列表 JSON（元素为 EffectGroup.id）。"""
     _produce_card_customize_ids: str | None
+    """自定义项 ID 列表 JSON（元素为 ProduceCardCustomize.id）。"""
     max_customize_count: int | None
+    """最大自定义次数。"""
     is_conversion: bool
+    """是否为转换卡。"""
     _move_produce_exam_trigger_ids: str | None
+    """移动时触发条件 ID 列表 JSON（元素为 ProduceExamTrigger.id）。"""
     view_start_time: str | None
+    """可见开始时间。"""
     is_limited: bool
+    """是否为限定卡。"""
     order: str | None
+    """排序权重。"""
 
     @cached_property
     def effect_display_text(self) -> str:

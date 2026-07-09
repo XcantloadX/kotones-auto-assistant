@@ -22,27 +22,43 @@ JOIN IdolCardSkin ICS ON IC.id = ICS.idolCardId
 
 
 class IdolCardRow(BaseModel):
+    """IdolCard + IdolCardSkin + Character 联结查询行。"""
+
     model_config = ConfigDict(populate_by_name=True)
 
     card_id: str = Field(alias='cardId')
+    """偶像卡 ID（IdolCard.id）。"""
     skin_id: str = Field(alias='skinId')
+    """皮肤 ID（IdolCardSkin.id）。"""
     name: str
+    """展示名称（角色名 + 卡名）。"""
     is_another: bool = Field(alias='isAnotherVer')
+    """是否为异画版本（非原始皮肤）。"""
     another_name: str | None = Field(None, alias='anotherVerName')
+    """异画皮肤名称（IdolCardSkin.name）。"""
     character_id: str = Field(alias='characterId')
+    """角色 ID（Character.id）。"""
     character_name: str = Field(alias='characterName')
+    """角色姓名（Character 表拼接）。"""
 
 
 @dataclass
 class IdolCard:
-    """偶像卡"""
+    """偶像卡（业务用）。"""
     id: str
+    """偶像卡 ID（IdolCard.id）。"""
     skin_id: str
+    """皮肤 ID（IdolCardSkin.id）。"""
     is_another: bool
+    """是否为异画版本（非原始皮肤）。"""
     another_name: str | None
+    """异画皮肤名称（IdolCardSkin.name）。"""
     name: str
+    """展示名称（角色名 + 卡名）。"""
     character_id: str
+    """角色 ID（Character.id）。"""
     character_name: str
+    """角色姓名（Character 表拼接）。"""
 
     @classmethod
     def from_skin_id(cls, sid: str) -> 'IdolCard | None':

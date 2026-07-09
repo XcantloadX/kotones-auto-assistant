@@ -11,6 +11,8 @@ from enum import Enum
 
 
 class ProduceEffectType(Enum):
+    """培育流程效果类型（ProduceEffect.produceEffectType）。"""
+
     AuditionNpcEnhance = 'ProduceEffectType_AuditionNpcEnhance'
     AuditionNpcWeaken = 'ProduceEffectType_AuditionNpcWeaken'
     AuditionParameterBonusMultiple = 'ProduceEffectType_AuditionParameterBonusMultiple'
@@ -117,6 +119,8 @@ class ProduceEffectType(Enum):
 
 
 class ProduceStepType(Enum):
+    """培育步骤类型（ProduceStepEventSuggestion.stepType 等）。"""
+
     AuditionFinal = 'ProduceStepType_AuditionFinal'
     AuditionMid1 = 'ProduceStepType_AuditionMid1'
     AuditionMid2 = 'ProduceStepType_AuditionMid2'
@@ -154,6 +158,8 @@ class ProduceStepType(Enum):
 
 
 class ProduceResourceType(Enum):
+    """培育奖励资源类型（ProduceEffect.produceResourceType）。"""
+
     ProduceCard = 'ProduceResourceType_ProduceCard'
     ProduceCustomizeItem = 'ProduceResourceType_ProduceCustomizeItem'
     ProduceDrink = 'ProduceResourceType_ProduceDrink'

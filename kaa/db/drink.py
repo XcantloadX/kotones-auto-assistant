@@ -16,19 +16,27 @@ FROM ProduceDrink
 
 
 class ProduceDrinkRow(BaseModel):
+    """ProduceDrink 表行。"""
+
     model_config = ConfigDict(populate_by_name=True)
 
     id: str
+    """饮料 ID（ProduceDrink.id）。"""
     asset_id: str = Field(alias='assetId')
+    """资源标识，用于图片路径匹配（ProduceDrink.assetId）。"""
     name: str
+    """饮料名称（ProduceDrink.name）。"""
 
 
 @dataclass
 class Drink:
-    """饮品"""
+    """饮品（业务用）。"""
     id: str
+    """饮料 ID（ProduceDrink.id）。"""
     asset_id: str
+    """资源标识，用于图片路径匹配（ProduceDrink.assetId）。"""
     name: str
+    """饮料名称（ProduceDrink.name）。"""
 
     @classmethod
     def from_asset_id(cls, asset_id: str) -> 'Drink | None':
