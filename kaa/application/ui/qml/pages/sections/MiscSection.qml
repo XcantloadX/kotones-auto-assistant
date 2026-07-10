@@ -98,6 +98,10 @@ Item {
                     field: "recommend_card_detection"
                     label: "跟踪推荐卡检测"
                 }
+                FormCheckBox {
+                    field: "commu_event_buttons"
+                    label: "跟踪 CommuEventButtons"
+                }
 
                 Button {
                     text: "Inspect 授業"

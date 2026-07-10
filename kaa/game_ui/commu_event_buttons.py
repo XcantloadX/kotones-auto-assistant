@@ -1,6 +1,12 @@
+import random
+import uuid
 from dataclasses import dataclass
 from typing import Sequence
 
+import cv2
+
+from kaa.config import conf
+from kaa.util.trace import trace_named
 from kotonebot.primitives import Rect, RectTuple
 from kotonebot.backend.core import HintBox
 from kotonebot.backend.color import HsvColor
@@ -63,6 +69,29 @@ class CommuEventButtonUI:
         self.color_ranges = selected_colors
         self.rect = rect or R.InPurodyuusu.BoxCommuEventButtonsArea
 
+    def _trace_all(self, img, rects: list[Rect]) -> None:
+        if not conf().trace.commu_event_buttons:
+            return
+        if rects:
+            should_trace = True
+        else:
+            should_trace = random.random() < 0.2
+        if not should_trace:
+            return
+        trace_id = uuid.uuid4().hex
+        n = len(rects)
+        images = {f'rect_{n}_1_{trace_id}': img}
+        if rects:
+            annotated_img = img.copy()
+            for rect in rects:
+                x, y, w, h = rect.xywh
+                cv2.rectangle(annotated_img, (x, y), (x + w, y + h), (0, 0, 255), 3)
+            images[f'rect_{n}_2_{trace_id}'] = annotated_img
+        trace_named('commu-event-buttons', images, {
+            'rect_count': n,
+            'rects': [rect.xywh for rect in rects],
+        })
+
     @action('交流事件按钮.识别选中', screenshot_mode='manual-inherit')
     def selected(self, description: bool = True, title: bool = False) -> EventButton | None:
         img = device.screenshot()
@@ -87,6 +116,7 @@ class CommuEventButtonUI:
         """
         img = device.screenshot()
         rects = filter_rectangles(img, (WHITE_LOW, WHITE_HIGH), 7, 500, width_threshold=WIDTH_THRESHOLD, rect=self.rect)
+        self._trace_all(img, rects)
         if not rects:
             return []
         selected = self.selected()

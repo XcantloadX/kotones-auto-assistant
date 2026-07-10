@@ -132,6 +132,8 @@ class CapsuleToysConfig(ConfigBaseModel):
 class TraceConfig(ConfigBaseModel):
     recommend_card_detection: bool = False
     """跟踪推荐卡检测"""
+    commu_event_buttons: bool = False
+    """跟踪 CommuEventButtons"""
 
 class StartGameConfig(ConfigBaseModel):
     enabled: bool = True
