@@ -28,6 +28,7 @@ Dialog {
     property string _currentCharacterId: ""
     property string _searchText: ""
     property bool _showAfter: false
+    property bool _sortReversed: true   // 默认按数据库顺序倒序展示
     property var _characters: []    // [{character_id, character_name, count}]
 
     // 根据分类+搜索过滤后的卡片列表
@@ -48,6 +49,13 @@ Dialog {
                     || c.character_name.toLowerCase().indexOf(search) >= 0
             })
         }
+        // 按 idolCards 中的默认顺序排序
+        cards = cards.slice()
+        cards.sort(function(a, b) {
+            var idxA = root._findCardIndex(a.skin_id)
+            var idxB = root._findCardIndex(b.skin_id)
+            return root._sortReversed ? idxB - idxA : idxA - idxB
+        })
         return cards
     }
 
@@ -102,6 +110,7 @@ Dialog {
         root.selectedDisplayName = ""
         root._currentCharacterId = ""
         root._searchText = ""
+        root._sortReversed = true
         _buildCharacters()
     }
 
@@ -171,6 +180,33 @@ Dialog {
                 Layout.fillWidth: true
                 placeholderText: "搜索卡片名称或偶像名称..."
                 onTextChanged: root._searchText = text
+            }
+
+            Button {
+                id: sortBtn
+                flat: false
+                implicitWidth: 36
+                implicitHeight: 36
+                topPadding: 0
+                bottomPadding: 0
+                leftPadding: 0
+                rightPadding: 0
+                ToolTip.text: root._sortReversed ? "倒序（点击切换为正序）" : "正序（点击切换为倒序）"
+                ToolTip.visible: hovered
+                ToolTip.delay: 500
+                onClicked: root._sortReversed = !root._sortReversed
+
+                contentItem: Text {
+                    anchors.fill: parent
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                    font.family: "FluentSystemIcons-Regular"
+                    font.pixelSize: 16
+                    lineHeight: font.pixelSize
+                    lineHeightMode: Text.FixedHeight
+                    text: root._sortReversed ? "\uF805" : "\uF812"   // arrow_sort_down_20 / arrow_sort_up_20
+                    color: sortBtn.palette.text
+                }
             }
 
             SegmentedButton {
