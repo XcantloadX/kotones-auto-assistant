@@ -61,6 +61,15 @@ class SettingsController(QObject):
         self.configChanged.emit()
         self.dirtyChanged.emit(self._draft.is_dirty())
 
+    @Slot(str, 'QVariantList')
+    def setListField(self, path: str, value) -> None:
+        """profile 列表字段进草稿。QML 数组应走此 Slot 以触发 Qt 类型转换。"""
+        if self._draft is None:
+            return
+        self._draft.set(path, list(value))
+        self.configChanged.emit()
+        self.dirtyChanged.emit(self._draft.is_dirty())
+
     @Slot(result=bool)
     def isDirty(self) -> bool:
         return self._draft is not None and self._draft.is_dirty()

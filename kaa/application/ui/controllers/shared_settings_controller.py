@@ -34,3 +34,18 @@ class SharedSettingsController(QObject):
         setattr(obj, parts[-1], value)
         cs.save_shared(shared)
         self.configChanged.emit()
+
+    @Slot(str, 'QVariantList')
+    def setListField(self, path: str, value) -> None:
+        """即时写入 shared 列表字段。"""
+        cs = self._session.config_service
+        if cs is None:
+            return
+        shared = cs.get_shared()
+        parts = path.split('.')
+        obj = shared
+        for part in parts[:-1]:
+            obj = getattr(obj, part)
+        setattr(obj, parts[-1], list(value))
+        cs.save_shared(shared)
+        self.configChanged.emit()

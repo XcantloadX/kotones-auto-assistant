@@ -33,6 +33,14 @@ Item {
         }
     }
 
+    function _commitList(path, key, value) {
+        if (path.startsWith("shared.")) {
+            settingsCtrl.sharedCtrl.setListField(path.substring(7) + "." + key, value)
+        } else {
+            settingsCtrl.setListField(path ? path + "." + key : key, value)
+        }
+    }
+
     Component.onCompleted: loadStaticData()
 
     FormBinder {
@@ -92,7 +100,7 @@ Item {
                             label: "金币商店购买物品"
                             model: root.moneyItemModel
                             selectedValues: root._purchase.money_items ?? []
-                            onSelectionChanged: root._commit("tasks.purchase", "money_items", selectedValues)
+                            onSelectionChanged: root._commitList("tasks.purchase", "money_items", selectedValues)
                         }
 
                         FormCheckBox {
@@ -117,7 +125,7 @@ Item {
                             label: "AP商店购买物品"
                             model: root.apItemModel
                             selectedValues: root._purchase.ap_items ?? []
-                            onSelectionChanged: root._commit("tasks.purchase", "ap_items", selectedValues)
+                            onSelectionChanged: root._commitList("tasks.purchase", "ap_items", selectedValues)
                         }
                     }
 
