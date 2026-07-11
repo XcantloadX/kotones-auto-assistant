@@ -228,16 +228,20 @@ class SettingsController(QObject):
         def _run() -> None:
             result = "完成"
             try:
-                from kaa.game_data.updater import GameDataUpdater
+                from kaa.game_data.updater import GameDataUpdater, UpdateOutcome
                 updater = GameDataUpdater()
                 last_msg = ""
                 def progress_cb(text: str) -> None:
                     nonlocal last_msg
                     last_msg = text
                     self.gameDataProgress.emit(text)
-                updated = updater.check_and_update(progress_cb=progress_cb)
-                if updated:
+                outcome = updater.check_and_update(progress_cb=progress_cb)
+                if outcome == UpdateOutcome.UPDATED:
                     result = "游戏数据更新完成"
+                elif outcome == UpdateOutcome.CANCELLED:
+                    result = "已跳过本次更新，将使用当前已安装的游戏资源。"
+                elif outcome == UpdateOutcome.CHECK_FAILED:
+                    result = "检查失败，无法获取游戏资源版本信息。"
                 elif last_msg:
                     result = last_msg
                 else:

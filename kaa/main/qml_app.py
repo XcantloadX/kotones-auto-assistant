@@ -106,9 +106,11 @@ class _SplashBridge(QObject):
     通过 ``engine.rootContext().setContextProperty("splash", bridge)`` 暴露给 QML。
     """
 
-    statusTextChanged     = Signal(str)
-    gameDataActiveChanged = Signal(bool)
-    downloadFilesChanged  = Signal(list)
+    statusTextChanged          = Signal(str)
+    gameDataCheckingChanged    = Signal(bool)
+    gameDataDownloadingChanged = Signal(bool)
+    gameDataSkippableChanged   = Signal(bool)
+    downloadFilesChanged       = Signal(list)
     showChangelogDialog   = Signal(str, str)
     showMigrationDialog   = Signal(list)
     readyChanged          = Signal(bool)
@@ -118,8 +120,11 @@ class _SplashBridge(QObject):
 
     def __init__(self) -> None:
         super().__init__()
-        self._status_text     = "正在初始化…"
-        self._gd_active       = False
+        self._status_text       = "正在初始化…"
+        self._gd_checking       = False
+        self._gd_downloading    = False
+        self._gd_skippable      = False
+        self._cancel_event      = threading.Event()
         self._download_files: list = []
         self._files: dict[str, _FileProgress] = {}
         self._speed_state: dict[str, _SpeedState] = {}
@@ -137,13 +142,29 @@ class _SplashBridge(QObject):
             self._status_text = v
             self.statusTextChanged.emit(v)
 
-    def _get_game_data_active(self) -> bool:
-        return self._gd_active
+    def _get_game_data_checking(self) -> bool:
+        return self._gd_checking
 
-    def _set_game_data_active(self, v: bool) -> None:
-        if self._gd_active != v:
-            self._gd_active = v
-            self.gameDataActiveChanged.emit(v)
+    def _set_game_data_checking(self, v: bool) -> None:
+        if self._gd_checking != v:
+            self._gd_checking = v
+            self.gameDataCheckingChanged.emit(v)
+
+    def _get_game_data_downloading(self) -> bool:
+        return self._gd_downloading
+
+    def _set_game_data_downloading(self, v: bool) -> None:
+        if self._gd_downloading != v:
+            self._gd_downloading = v
+            self.gameDataDownloadingChanged.emit(v)
+
+    def _get_game_data_skippable(self) -> bool:
+        return self._gd_skippable
+
+    def _set_game_data_skippable(self, v: bool) -> None:
+        if self._gd_skippable != v:
+            self._gd_skippable = v
+            self.gameDataSkippableChanged.emit(v)
 
     def _get_download_files(self) -> list:
         return self._download_files
@@ -152,9 +173,11 @@ class _SplashBridge(QObject):
         self._download_files = v
         self.downloadFilesChanged.emit(v)
 
-    statusText     = Property(str,  _get_status_text,      _set_status_text,      notify=statusTextChanged)
-    gameDataActive = Property(bool, _get_game_data_active, _set_game_data_active, notify=gameDataActiveChanged)
-    downloadFiles  = Property(list, _get_download_files,   _set_download_files,   notify=downloadFilesChanged)
+    statusText          = Property(str,  _get_status_text,             _set_status_text,             notify=statusTextChanged)
+    gameDataChecking    = Property(bool, _get_game_data_checking,    _set_game_data_checking,    notify=gameDataCheckingChanged)
+    gameDataDownloading = Property(bool, _get_game_data_downloading, _set_game_data_downloading, notify=gameDataDownloadingChanged)
+    gameDataSkippable   = Property(bool, _get_game_data_skippable,   _set_game_data_skippable,   notify=gameDataSkippableChanged)
+    downloadFiles       = Property(list, _get_download_files,        _set_download_files,        notify=downloadFilesChanged)
 
     def _get_ready(self) -> bool:
         return self._ready
@@ -215,14 +238,35 @@ class _SplashBridge(QObject):
         self._set_status_text(text)
 
     @Slot()
-    def onGameDataStarted(self) -> None:
-        self._set_game_data_active(True)
-        self._set_status_text("更新游戏资源中")
+    def onGameDataChecking(self) -> None:
+        self._cancel_event.clear()
+        self._set_game_data_checking(True)
+        self._set_game_data_downloading(False)
+        self._set_game_data_skippable(False)
+        self._set_status_text("正在检查游戏资源…")
+
+    @Slot(bool)
+    def onGameDataDownloading(self, skippable: bool) -> None:
+        self._set_game_data_checking(False)
+        self._set_game_data_downloading(True)
+        self._set_game_data_skippable(skippable)
+        self._set_status_text(
+            "正在更新游戏资源…" if skippable else "首次下载游戏资源，请稍候…"
+        )
+
+    @Slot()
+    def skipGameDataUpdate(self) -> None:
+        if self._gd_skippable:
+            self._cancel_event.set()
 
     @Slot()
     def onGameDataFinished(self) -> None:
         self._flush_progress()
-        self._set_game_data_active(False)
+        self._set_game_data_checking(False)
+        self._set_game_data_downloading(False)
+        self._set_game_data_skippable(False)
+        self._files.clear()
+        self._speed_state.clear()
 
     @Slot(str, int, int)
     def onFileProgress(self, name: str, downloaded: int, total: int) -> None:
@@ -273,16 +317,17 @@ def _startup_task(bridge: _SplashBridge, tab_manager: TabManager, hotkey_mgr: Ho
 
         shared = config_manager.read_shared()
         if should_check(shared.misc):
-            bridge.onGameDataStarted()
-            logger.info("Starting game data update (QML mode).")
+            logger.info("Starting game data check (QML mode).")
 
-            updater = GameDataUpdater()
-            updater.check_and_update(
+            updater = GameDataUpdater(cancel=bridge._cancel_event)
+            outcome = updater.check_and_update(
                 progress_cb=None,
                 file_progress_cb=lambda name, dl, total: bridge.onFileProgress(name, dl, total),
+                check_started_cb=bridge.onGameDataChecking,
+                download_started_cb=bridge.onGameDataDownloading,
             )
             bridge.onGameDataFinished()
-            logger.info("Game data update finished.")
+            logger.info("Game data check finished: %s", outcome.value)
         else:
             logger.info("Game data update skipped (not needed).")
     except BaseException:
