@@ -179,12 +179,10 @@ Item {
                             radius: 4
                             color: tabCloseMouseArea.containsMouse ? App.AppTheme.hoverStrong : "transparent"
 
-                            Text {
+                            FluentIcon {
                                 anchors.centerIn: parent
-                                font.family: "FluentSystemIcons-Regular"
+                                glyph: App.FluentIcons.dismiss_20_regular
                                 font.pixelSize: 9
-                                text: "\uF369"   // dismiss_20
-                                color: App.AppTheme.fg
                                 opacity: tabDelegate._isActive ? 0.9 : 0.6
                             }
 
@@ -217,12 +215,10 @@ Item {
                 color: addBtnHover.hovered ? App.AppTheme.hover : "transparent"
             }
 
-            Text {
+            FluentIcon {
                 anchors.centerIn: parent
-                font.family: "FluentSystemIcons-Regular"
+                glyph: App.FluentIcons.add_20_regular
                 font.pixelSize: 13
-                text: "\uF109"   // add_20
-                color: App.AppTheme.fg
                 opacity: 0.7
             }
 
@@ -289,12 +285,10 @@ Item {
                 anchors.centerIn: parent
                 spacing: 4
 
-                Text {
+                FluentIcon {
                     anchors.verticalCenter: parent.verticalCenter
-                    font.family: "FluentSystemIcons-Regular"
+                    glyph: App.FluentIcons.navigation_20_regular
                     font.pixelSize: 14
-                    text: "\uF560"   // navigation_20
-                    color: App.AppTheme.fg
                     opacity: 0.7
                 }
 
@@ -335,12 +329,10 @@ Item {
                 anchors.centerIn: parent
                 spacing: 4
 
-                Text {
+                FluentIcon {
                     anchors.verticalCenter: parent.verticalCenter
-                    font.family: "FluentSystemIcons-Regular"
+                    glyph: App.FluentIcons.settings_20_regular
                     font.pixelSize: 14
-                    text: "\uF6A9"   // settings_20
-                    color: App.AppTheme.fg
                     opacity: 0.7
                 }
 

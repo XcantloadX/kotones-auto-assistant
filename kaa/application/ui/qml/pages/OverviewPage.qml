@@ -99,11 +99,12 @@ PageContainer {
                             spacing: 7
                             anchors.centerIn: parent
 
-                            Text {
+                            FluentIcon {
                                 anchors.verticalCenter: parent.verticalCenter
-                                font.family: "FluentSystemIcons-Regular"
+                                glyph: seqBtn.isStopMode
+                                    ? App.FluentIcons.stop_20_regular
+                                    : App.FluentIcons.play_20_regular
                                 font.pixelSize: 17
-                                text: seqBtn.isStopMode ? "\uF72A" : "\uF605"
                                 color: seqBtn.highlighted ? (App.AppTheme.isDark ? "black" : "white") : App.AppTheme.fg
                             }
 
@@ -136,11 +137,12 @@ PageContainer {
                             spacing: 7
                             anchors.centerIn: parent
 
-                            Text {
+                            FluentIcon {
                                 anchors.verticalCenter: parent.verticalCenter
-                                font.family: "FluentSystemIcons-Regular"
+                                glyph: parBtn.isStopMode
+                                    ? App.FluentIcons.stop_20_regular
+                                    : App.FluentIcons.play_multiple_16_regular
                                 font.pixelSize: 17
-                                text: parBtn.isStopMode ? "\uF72A" : "\uF100"
                                 color: parBtn.highlighted ? (App.AppTheme.isDark ? "black" : "white") : App.AppTheme.fg
                             }
 
@@ -302,12 +304,10 @@ PageContainer {
                         color: App.AppTheme.hover
                         anchors.verticalCenter: parent.verticalCenter
 
-                        Text {
+                        FluentIcon {
                             anchors.centerIn: parent
-                            font.family: "FluentSystemIcons-Regular"
+                            glyph: App.FluentIcons.add_20_regular
                             font.pixelSize: 13
-                            text: ""   
-                            color: App.AppTheme.fg
                             opacity: 0.7
                         }
                     }

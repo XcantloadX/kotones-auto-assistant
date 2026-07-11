@@ -70,10 +70,10 @@ Item {
             readonly property color iconColor: accentColor
             readonly property string icon: {
                 switch (kind) {
-                    case "success": return "\uF298"
-                    case "warning": return "\uF869"
-                    case "error":   return "\uF3F1"
-                    default:        return "\uF4A3"
+                    case "success": return App.FluentIcons.checkmark_circle_20_regular
+                    case "warning": return App.FluentIcons.warning_20_regular
+                    case "error":   return App.FluentIcons.error_circle_20_regular
+                    default:        return App.FluentIcons.info_20_regular
                 }
             }
 
@@ -111,11 +111,9 @@ Item {
                     anchors.verticalCenter: parent.verticalCenter
                     spacing: 8
 
-                    Label {
-                        text: icon
+                    FluentIcon {
+                        glyph: icon
                         color: iconColor
-                        font.family: "FluentSystemIcons-Regular"
-                        font.pixelSize: 16
                         Layout.alignment: Qt.AlignVCenter
                     }
 
@@ -142,10 +140,9 @@ Item {
                                 : "transparent"
                         }
 
-                        Label {
+                        FluentIcon {
                             anchors.centerIn: parent
-                            text: "\uF369"
-                            font.family: "FluentSystemIcons-Regular"
+                            glyph: App.FluentIcons.dismiss_20_regular
                             font.pixelSize: 12
                             color: closeMouse.containsMouse
                                 ? (App.AppTheme.isDark ? "#ffffff" : "#000000")

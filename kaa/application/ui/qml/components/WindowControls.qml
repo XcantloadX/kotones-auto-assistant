@@ -20,7 +20,6 @@ Row {
     visible: Qt.platform.os === "windows"
     spacing: 0
 
-    readonly property string _iconFont: "FluentSystemIcons-Regular"
     property bool _maxHoveredByOS: false
 
     Connections {
@@ -29,18 +28,15 @@ Row {
         function onHoveredChanged(hovered) { root._maxHoveredByOS = hovered }
     }
 
-    // ── Minimize（FluentSystemIcons subtract_20 = \uEBD0）──────────────────
+    // ── Minimize ─────────────────────────────────────────────────────────
     Rectangle {
         width: 46; height: root.height
         color: _minHover.containsMouse
             ? App.AppTheme.hover
             : "transparent"
-        Text {
+        FluentIcon {
             anchors.centerIn: parent
-            font.family: root._iconFont
-            font.pixelSize: 16
-            text: "\uEBD0"
-            color: App.AppTheme.fg
+            glyph: App.FluentIcons.subtract_20_regular
         }
         MouseArea {
             id: _minHover
@@ -50,7 +46,7 @@ Row {
         }
     }
 
-    // ── Maximize / Restore（maximize_20 = \uE7EB / square_multiple_20 = \uEB96）──
+    // ── Maximize / Restore ───────────────────────────────────────────────
     Rectangle {
         width: 46; height: root.height
         readonly property bool _hovered: Qt.platform.os === "windows"
@@ -59,12 +55,11 @@ Row {
         color: _hovered
             ? App.AppTheme.hover
             : "transparent"
-        Text {
+        FluentIcon {
             anchors.centerIn: parent
-            font.family: root._iconFont
-            font.pixelSize: 16
-            text: root.window.visibility === Window.Maximized ? "\uEB96" : "\uE7EB"
-            color: App.AppTheme.fg
+            glyph: root.window.visibility === Window.Maximized
+                ? App.FluentIcons.square_multiple_20_regular
+                : App.FluentIcons.maximize_20_regular
         }
         MouseArea {
             id: _maxHover
@@ -78,15 +73,13 @@ Row {
         }
     }
 
-    // ── Close（FluentSystemIcons dismiss_20 = \uF369）─────────────────
+    // ── Close ────────────────────────────────────────────────────────────
     Rectangle {
         width: 46; height: root.height
         color: _closeHover.containsMouse ? "#c42b1c" : "transparent"
-        Text {
+        FluentIcon {
             anchors.centerIn: parent
-            font.family: root._iconFont
-            font.pixelSize: 16
-            text: "\uF369"
+            glyph: App.FluentIcons.dismiss_20_regular
             color: _closeHover.containsMouse ? "white" : App.AppTheme.fg
         }
         MouseArea {

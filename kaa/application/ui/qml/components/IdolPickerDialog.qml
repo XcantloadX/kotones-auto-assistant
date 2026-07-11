@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import ".." as App
 import "./controls"
 
 // 偶像选择弹窗：搜索 + 分类列表 + 卡片网格。
@@ -196,16 +197,14 @@ Dialog {
                 ToolTip.delay: 500
                 onClicked: root._sortReversed = !root._sortReversed
 
-                contentItem: Text {
+                contentItem: FluentIcon {
                     anchors.fill: parent
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
-                    font.family: "FluentSystemIcons-Regular"
-                    font.pixelSize: 16
+                    glyph: root._sortReversed
+                        ? App.FluentIcons.arrow_sort_down_20_regular
+                        : App.FluentIcons.arrow_sort_up_20_regular
+                    color: sortBtn.palette.text
                     lineHeight: font.pixelSize
                     lineHeightMode: Text.FixedHeight
-                    text: root._sortReversed ? "\uF805" : "\uF812"   // arrow_sort_down_20 / arrow_sort_up_20
-                    color: sortBtn.palette.text
                 }
             }
 

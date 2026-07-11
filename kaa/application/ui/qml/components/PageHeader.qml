@@ -35,12 +35,10 @@ Item {
                 color: backHover.hovered ? App.AppTheme.hover : "transparent"
             }
 
-            Text {
+            FluentIcon {
                 anchors.centerIn: parent
-                font.family: "FluentSystemIcons-Regular"
+                glyph: App.FluentIcons.chevron_left_20_regular
                 font.pixelSize: 13
-                text: "\uF2AA"   // chevron_left_20
-                color: App.AppTheme.fg
             }
 
             MouseArea {
