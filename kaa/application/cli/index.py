@@ -66,11 +66,10 @@ def cli(ctx: click.Context, config: str | None, log_path: str | None, log_level:
         setup()
         add_file_logger(log_filename)
 
-        # Set log level from shared config (equivalent to kaa.set_log_level)
-        log_level_str = config_manager.read_shared().misc.log_level
-        log_level_val = logging.DEBUG if log_level_str == 'verbose' else logging.INFO
+        # Always use debug level
+        logging.getLogger().setLevel(logging.DEBUG)
         for handler in logging.getLogger().handlers:
-            handler.setLevel(log_level_val)
+            handler.setLevel(logging.DEBUG)
 
         from kaa.main.qml_app import main as qml_main
         qml_main()

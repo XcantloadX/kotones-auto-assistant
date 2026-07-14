@@ -18,7 +18,6 @@ class SharedMiscConfig(BaseModel):
     check_update: Literal['never', 'startup'] = 'startup'
     auto_install_update: bool = True
     update_channel: Literal['release', 'beta'] = 'release'
-    log_level: Literal['debug', 'verbose'] = 'debug'
     game_data_check: Literal['manual', 'startup', 'daily', 'weekly'] = 'startup'
     game_data_auto_update: bool = True
     game_data_last_checked: str | None = None

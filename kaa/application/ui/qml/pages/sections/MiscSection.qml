@@ -140,14 +140,6 @@ Item {
                     ]
                 }
                 FormSegmentedButton {
-                    field: "log_level"
-                    label: "日志等级"
-                    options: [
-                        { label: "普通", value: "debug" },
-                        { label: "详细", value: "verbose" }
-                    ]
-                }
-                FormSegmentedButton {
                     field: "game_data_check"
                     label: "游戏资源检查时机"
                     options: [
