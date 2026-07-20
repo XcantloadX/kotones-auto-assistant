@@ -57,7 +57,7 @@ class _Mirror:
 # 只收录 URL 格式已知且近期可用的镜像。
 # 探测时并发测试，选延迟最低且实际返回 2xx/3xx 的那个。
 _BUILTIN_MIRRORS: list[_Mirror] = [
-    _Mirror("直连 GitHub", _github),
+    # _Mirror("直连 GitHub", _github),
     _Mirror("ghfast.top",  _prefix_proxy("https://ghfast.top")),
 ]
 
