@@ -31,6 +31,20 @@
         }
       },
       "displayName": "引く  1回10"
+    },
+    "d017cf2b-47ff-4277-8e37-54c61ab12483": {
+      "type": "prefab",
+      "prefab_id": "GakumasScrollbarPrefab",
+      "name": "Daily.CapsuleToys.Scrollbar",
+      "props": {
+        "rect": {
+          "kind": "rect",
+          "x1": 689.8781247022764,
+          "y1": 305.99763067802866,
+          "x2": 703.7311776424353,
+          "y2": 1105.1961391631755
+        }
+      }
     }
   }
 }

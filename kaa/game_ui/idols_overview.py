@@ -8,7 +8,6 @@ from cv2.typing import MatLike
 from kaa.tasks import R
 from kaa.util import paths
 from kotonebot.primitives import RectTuple, Rect
-from kaa.game_ui import Scrollable
 from kotonebot import device, action
 from kotonebot.util import cv2_imread
 from kaa.image_db import ImageDatabase, HistDescriptor, FileDataSource, DatabaseQueryResult
@@ -137,7 +136,7 @@ def locate_idol(skin_id: str) -> Rect | None:
     logger.info('Locating idol %s', skin_id)
     x, y, w, h = R.Produce.BoxIdolOverviewIdols.xywh
     db = idols_db()
-    sc = Scrollable(color_schema='light')
+    sc = R.Produce.ScrollbarIdolOverview.require()
 
     sc.update()
     logger.debug('Idol preview pages count: %s', repr(sc.page_count))

@@ -35,11 +35,11 @@ def upgrade_support_card():
     for retry_idx in range(10):
         logger.debug(f'Scrolling down to find low-level support cards, attempt {retry_idx + 1}/10')
         # 往下滑，划到最底部
-        scrollbar = Scrollable()
+        scrollbar = R.Daily.SupportCard.Scrollbar.require()
         scrollbar.to(1)
         sleep(0.1)
         scrollbar.update()
-        if scrollbar.position >= 0.99:
+        if (scrollbar.position or 0) >= 0.99:
             logger.debug('Successfully scrolled to the bottom.')
             break
         sleep(0.5)

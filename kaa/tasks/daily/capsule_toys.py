@@ -108,7 +108,7 @@ def capsule_toys():
         draw_capsule_toys(buttons[1], conf().tasks.capsule_toys.sense_capsule_toys_count)
     
     # 划到第二页
-    sc = Scrollable()
+    sc = R.Daily.CapsuleToys.Scrollbar.require()
     sc.next(page=1)
 
     # 处理逻辑扭蛋扭蛋和非凡扭蛋

@@ -45,6 +45,20 @@
         },
         "fixed": true
       }
+    },
+    "198a4b8e-a39a-494b-82a2-a177ccdf8018": {
+      "type": "prefab",
+      "prefab_id": "GakumasScrollbarPrefab",
+      "name": "Produce.ScrollbarIdolOverview",
+      "props": {
+        "rect": {
+          "kind": "rect",
+          "x1": 701.757809584111,
+          "y1": 575.6763275078366,
+          "x2": 716.7554102239403,
+          "y2": 978.673271317547
+        }
+      }
     }
   }
 }

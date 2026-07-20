@@ -36,6 +36,20 @@
           "y": 432
         }
       }
+    },
+    "6d1ee083-68f9-45a4-bf84-57ab2b86aed3": {
+      "type": "prefab",
+      "prefab_id": "GakumasScrollbarPrefab",
+      "name": "Daily.SupportCard.Scrollbar",
+      "props": {
+        "rect": {
+          "kind": "rect",
+          "x1": 705.5536758482194,
+          "y1": 414.9703068510754,
+          "x2": 717.9701158908804,
+          "y2": 870.6006046968733
+        }
+      }
     }
   }
 }
