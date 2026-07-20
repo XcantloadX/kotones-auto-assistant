@@ -2,7 +2,7 @@
   "version": 3,
   "definitions": {
     "b3c9e526-de47-44c2-9bda-e9a8a79fdb5a": {
-      "name": "InPurodyuusu.BoxSelectPStuffComfirm",
+      "name": "InProduce.BoxSelectPStuffComfirm",
       "displayName": "选择奖励对话框 领取按钮",
       "type": "hint-box",
       "props": {
@@ -16,7 +16,7 @@
       }
     },
     "c948f136-416f-447e-8152-54a1cd1d1329": {
-      "name": "InPurodyuusu.TextClaim",
+      "name": "InProduce.TextClaim",
       "displayName": "文字「受け取る」",
       "type": "prefab",
       "description": "用于 P 物品、P 饮料、技能卡选择对话框",
@@ -33,7 +33,7 @@
       "variant_policy": {}
     },
     "0c0627be-4a09-4450-a078-1858d3ace532": {
-      "name": "InPurodyuusu.TextPItem",
+      "name": "InProduce.TextPItem",
       "displayName": "文字「Pアイテム」",
       "type": "prefab",
       "description": "用于 P 物品选择对话框",

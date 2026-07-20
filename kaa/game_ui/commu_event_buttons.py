@@ -67,7 +67,7 @@ class CommuEventButtonUI:
         """
         from ..tasks import R
         self.color_ranges = selected_colors
-        self.rect = rect or R.InPurodyuusu.BoxCommuEventButtonsArea
+        self.rect = rect or R.InProduce.BoxCommuEventButtonsArea
 
     def _trace_all(self, img, rects: list[Rect]) -> None:
         if not conf().trace.commu_event_buttons:

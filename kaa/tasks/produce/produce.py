@@ -262,7 +262,7 @@ def do_produce(
                     break
         else:
             logger.info('AP insufficient. Exiting produce.')
-            R.InPurodyuusu.ButtonCancel.wait().click()
+            R.InProduce.ButtonCancel.wait().click()
             return False
 
     prepare()

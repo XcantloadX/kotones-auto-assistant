@@ -48,14 +48,14 @@ def acquire_skill_card():
     for _ in Loop():
         # 是否显示技能卡选择指导的对话框
         # [kotonebot-resource/sprites/jp/in_purodyuusu/screenshot_show_skill_card_select_guide_dialog.png]
-        if R.InPurodyuusu.TextSkillCardSelectGuideDialogTitle.exists():
+        if R.InProduce.TextSkillCardSelectGuideDialogTitle.exists():
             # 默认就是显示，直接确认
             dialog.yes()
             continue
         if not cards:
             cards = AnyOf[
-                R.InPurodyuusu.A,
-                R.InPurodyuusu.M
+                R.InProduce.A,
+                R.InProduce.M
             ].find_all()
             if not cards:
                 logger.warning("No skill cards found. Skip acquire.")
@@ -63,7 +63,7 @@ def acquire_skill_card():
             cards = sorted(cards, key=lambda x: x.rect.top_left)
             logger.info(f"Found {len(cards)} skill cards")
             # 判断是否有推荐卡
-            rec_badges = R.InPurodyuusu.TextRecommend.find_all()
+            rec_badges = R.InProduce.TextRecommend.find_all()
             rec_badges = [card.rect for card in rec_badges]
             if rec_badges:
                 cards = [card.rect for card in cards]
@@ -85,7 +85,7 @@ def acquire_skill_card():
             card_clicked = True
             sleep(0.2)
             continue
-        if acquire_btn := R.InPurodyuusu.AcquireBtnDisabled.find():
+        if acquire_btn := R.InProduce.AcquireBtnDisabled.find():
             logger.debug("Click acquire button")
             device.click(acquire_btn)
             sleep(0.2)
@@ -121,8 +121,8 @@ def handle_skill_card_enhance():
     # 前置条件 [kotonebot-resource\sprites\jp\in_purodyuusu\screenshot_skill_card_enhane.png]
     # 结束状态 [screenshots/produce/in_produce/skill_card_enhance.png]
     cards = AnyOf[
-        R.InPurodyuusu.A,
-        R.InPurodyuusu.M
+        R.InProduce.A,
+        R.InProduce.M
     ].find_all()
     if cards is None:
         logger.info("No skill cards found")
@@ -133,7 +133,7 @@ def handle_skill_card_enhance():
         device.click(card)
         it.wait()
         device.screenshot()
-        if R.InPurodyuusu.ButtonEnhance.q(enabled=True).try_click():
+        if R.InProduce.ButtonEnhance.q(enabled=True).try_click():
             logger.debug("Enhance button clicked")
             it.wait()
             break
@@ -148,15 +148,15 @@ def handle_skill_card_removal():
     """
     # 前置条件 [kotonebot-resource\sprites\jp\in_purodyuusu\screenshot_remove_skill_card.png]
     card = AnyOf[
-        R.InPurodyuusu.A,
-        R.InPurodyuusu.M
+        R.InProduce.A,
+        R.InProduce.M
     ].find()
     if card is None:
         logger.info("No skill cards found")
         return False
     device.click(card)
     for _ in Loop():
-        if R.InPurodyuusu.ButtonRemove.try_click():
+        if R.InProduce.ButtonRemove.try_click():
             logger.debug("Remove button clicked.")
             break
     logger.debug("Handle skill card removal finished.")
@@ -317,20 +317,20 @@ class ProduceInterrupt:
         """检查P饮料到达上限"""
         logger.debug("Check PDrink max...")
         # TODO: 需要封装一个更好的实现方式。比如 wait_stable？
-        if R.InPurodyuusu.TextPDrinkMax.exists():
+        if R.InProduce.TextPDrinkMax.exists():
             logger.debug("PDrink max found")
             device.screenshot()
-            if R.InPurodyuusu.TextPDrinkMax.exists():
+            if R.InProduce.TextPDrinkMax.exists():
                 # 有对话框标题，但是没找到确认按钮
                 # 可能是需要勾选一个饮料
                 # 也有可能是对话框正在往下退出
-                if not R.InPurodyuusu.ButtonLeave.q(enabled=True).find():
+                if not R.InProduce.ButtonLeave.q(enabled=True).find():
                     logger.info("No leave button found, click checkbox")
                     if chk := R.Common.CheckboxUnchecked.q(colored=True).find():
                         device.click(chk)
                         sleep(0.2)
                         device.screenshot()
-                if R.InPurodyuusu.ButtonLeave.q(enabled=True).try_click():
+                if R.InProduce.ButtonLeave.q(enabled=True).try_click():
                     logger.info("Leave button clicked")
                     return "PDrinkMax"
         return None
@@ -339,10 +339,10 @@ class ProduceInterrupt:
     def _check_pdrink_max_confirm(img: MatLike) -> AcquisitionType | None:
         """检查P饮料到达上限确认提示框"""
         # [kotonebot-resource/sprites/jp/in_purodyuusu/screenshot_pdrink_max_confirm.png]
-        if R.InPurodyuusu.TextPDrinkMaxConfirmTitle.exists():
+        if R.InProduce.TextPDrinkMaxConfirmTitle.exists():
             logger.debug("PDrink max confirm found")
             device.screenshot()
-            if R.InPurodyuusu.TextPDrinkMaxConfirmTitle.exists():
+            if R.InProduce.TextPDrinkMaxConfirmTitle.exists():
                 if confirm := R.Common.ButtonConfirm.find():
                     logger.info("Confirm button found")
                     device.click(confirm)
@@ -352,7 +352,7 @@ class ProduceInterrupt:
     @staticmethod
     def _check_skill_card_enhance(img: MatLike) -> AcquisitionType | None:
         """检查技能卡自选强化"""
-        if R.InPurodyuusu.IconTitleSkillCardEnhance.exists():
+        if R.InProduce.IconTitleSkillCardEnhance.exists():
             if handle_skill_card_enhance():
                 return "PSkillCardEnhanceSelect"
         return None
@@ -360,7 +360,7 @@ class ProduceInterrupt:
     @staticmethod
     def _check_skill_card_removal(img: MatLike) -> AcquisitionType | None:
         """检查技能卡自选删除"""
-        if R.InPurodyuusu.IconTitleSkillCardRemoval.exists():
+        if R.InProduce.IconTitleSkillCardRemoval.exists():
             if handle_skill_card_removal():
                 return "PSkillCardRemoveSelect"
         return None
@@ -381,24 +381,24 @@ class ProduceInterrupt:
     def _check_award_select(img: MatLike) -> AcquisitionType | None:
         """检查物品选择对话框"""
         logger.debug("Check award select dialog...")
-        if R.InPurodyuusu.TextClaim.exists():
+        if R.InProduce.TextClaim.exists():
             logger.info("Award select dialog found.")
 
             # P饮料选择
             logger.debug("Check PDrink select...")
-            if R.InPurodyuusu.TextPDrink.exists():
+            if R.InProduce.TextPDrink.exists():
                 logger.info("PDrink select found")
                 acquire_p_drink()
                 return "PDrinkSelect"
             # 技能卡选择
             logger.debug("Check skill card select...")
-            if R.InPurodyuusu.TextSkillCard.exists():
+            if R.InProduce.TextSkillCard.exists():
                 logger.info("Acquire skill card found")
                 acquire_skill_card()
                 return "PSkillCardSelect"
             # P物品选择
             logger.debug("Check PItem select...")
-            if R.InPurodyuusu.TextPItem.exists():
+            if R.InProduce.TextPItem.exists():
                 logger.info("Acquire PItem found")
                 select_p_item()
                 return "PItemSelect"

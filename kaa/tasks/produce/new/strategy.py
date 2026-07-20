@@ -200,8 +200,8 @@ class StandardStrategy:
 
         def end_predicate():
             return not AnyOf[
-                R.InPurodyuusu.TextClearUntil,
-                R.InPurodyuusu.TextPerfectUntil
+                R.InProduce.TextClearUntil,
+                R.InProduce.TextPerfectUntil
             ].exists()
     
         do_cards(False, threshold_predicate, end_predicate, battle_strategy=_build_battle_strategy(threshold_predicate))
@@ -277,7 +277,7 @@ class StandardStrategy:
         from kotonebot import ocr, contains
         def end_predicate():
             return bool(
-                not ocr.find(contains('残りターン'), rect=R.InPurodyuusu.BoxExamTop)
+                not ocr.find(contains('残りターン'), rect=R.InProduce.BoxExamTop)
                 and R.Common.ButtonNext.find()
             )
 
@@ -289,7 +289,7 @@ class StandardStrategy:
 
         # 如果考试失败
         sleep(1) # 避免在动画未播放完毕时点击
-        if btn := R.InPurodyuusu.TextRechallengeEndProduce.try_wait(timeout=3):
+        if btn := R.InProduce.TextRechallengeEndProduce.try_wait(timeout=3):
             logger.info('Exam failed, end produce.')
             device.click(btn)
             is_exam_passed = False

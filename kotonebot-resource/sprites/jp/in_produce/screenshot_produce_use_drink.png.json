@@ -2,7 +2,7 @@
   "version": 3,
   "definitions": {
     "a3736105-b3e6-467b-888a-f93b8f4d37be": {
-      "name": "InPurodyuusu.ButtonUse",
+      "name": "InProduce.ButtonUse",
       "displayName": "使用按钮（使用饮料按钮）",
       "type": "prefab",
       "props": {

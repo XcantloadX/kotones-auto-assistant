@@ -2,7 +2,7 @@
   "version": 3,
   "definitions": {
     "b0283997-7931-476d-a92f-d7569f6ea34c": {
-      "name": "InPurodyuusu.TextRecommend",
+      "name": "InProduce.TextRecommend",
       "displayName": "おすすめ",
       "type": "prefab",
       "description": "技能卡选择对话框中的推荐卡片",

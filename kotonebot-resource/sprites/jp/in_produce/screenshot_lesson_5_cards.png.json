@@ -2,7 +2,7 @@
   "version": 3,
   "definitions": {
     "439c91c9-9a8d-48ae-a7ba-1ecdae3a40ca": {
-      "name": "InPurodyuusu.BoxLessonCards5_1",
+      "name": "InProduce.BoxLessonCards5_1",
       "displayName": "课程中手牌 1/5",
       "type": "hint-box",
       "props": {
@@ -26,7 +26,7 @@
           "y2": 113.3133745020667
         }
       },
-      "name": " InPurodyuusu.InLesson.BoxRemainingTurns",
+      "name": " InProduce.InLesson.BoxRemainingTurns",
       "displayName": "练习 左上角剩余回合数"
     },
     "816c61ae-58d5-492c-9daa-a5f64814aad7": {
@@ -40,7 +40,7 @@
           "y2": 209.89638463729352
         }
       },
-      "name": " InPurodyuusu.InLesson.BoxHp",
+      "name": " InProduce.InLesson.BoxHp",
       "displayName": "当前体力"
     },
     "83fdefac-8158-49ee-b9b8-b9e6a0b1de03": {
@@ -54,7 +54,7 @@
           "y2": 171.6103765245382
         }
       },
-      "name": "InPurodyuusu.InLesson.BoxGenki",
+      "name": "InProduce.InLesson.BoxGenki",
       "displayName": "当前元气值 "
     }
   }

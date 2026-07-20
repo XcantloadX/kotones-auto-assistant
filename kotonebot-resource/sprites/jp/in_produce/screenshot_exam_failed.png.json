@@ -2,7 +2,7 @@
   "version": 3,
   "definitions": {
     "207594fa-6a0b-45ec-aeff-b3e45348c508": {
-      "name": "InPurodyuusu.TextRechallengeEndProduce",
+      "name": "InProduce.TextRechallengeEndProduce",
       "displayName": "再挑战对话框的结束培育",
       "type": "prefab",
       "props": {

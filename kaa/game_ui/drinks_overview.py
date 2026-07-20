@@ -142,9 +142,9 @@ def locate_all_drinks_in_3_drink_slots(img: MatLike) -> list[tuple[Drink, RectTu
     """
     
     potential_rects: list[RectTuple] = [
-        R.InPurodyuusu.BoxDrink1.rect,
-        R.InPurodyuusu.BoxDrink2.rect,
-        R.InPurodyuusu.BoxDrink3.rect
+        R.InProduce.BoxDrink1.rect,
+        R.InProduce.BoxDrink2.rect,
+        R.InProduce.BoxDrink3.rect
     ]
 
     results = list[tuple[Drink, RectTuple]]()
@@ -164,11 +164,11 @@ if __name__ == '__main__':
     from logging import getLogger
     logging.basicConfig(level=logging.INFO, format='[%(asctime)s] [%(levelname)s] [%(name)s] %(message)s')
 
-    # img = R.InPurodyuusu.Screenshot5Cards.data # len = 2
-    # img = R.InPurodyuusu.ScreenshotSenseiTipConsult.data # len = 3
-    # img = R.InPurodyuusu.Screenshot1Cards.data # len = 2
-    # img = R.InPurodyuusu.ScreenshotDrinkTest.data # len = 2
-    # img = R.InPurodyuusu.Screenshot4Cards.data # len = 0
-    img = R.InPurodyuusu.ScreenshotDrinkTest3.data # len = 1
+    # img = R.InProduce.Screenshot5Cards.data # len = 2
+    # img = R.InProduce.ScreenshotSenseiTipConsult.data # len = 3
+    # img = R.InProduce.Screenshot1Cards.data # len = 2
+    # img = R.InProduce.ScreenshotDrinkTest.data # len = 2
+    # img = R.InProduce.Screenshot4Cards.data # len = 0
+    img = R.InProduce.ScreenshotDrinkTest3.data # len = 1
     results = locate_all_drinks_in_3_drink_slots(img)
     print(len(results), ":", results)

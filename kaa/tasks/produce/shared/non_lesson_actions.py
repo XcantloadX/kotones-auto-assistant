@@ -26,7 +26,7 @@ def allowance_available():
     """
     判断是否可以执行活動支給。
     """
-    return R.InPurodyuusu.ButtonTextAllowance.exists()
+    return R.InProduce.ButtonTextAllowance.exists()
 
 @action('检测是否可以执行授業')
 def study_available():
@@ -34,14 +34,14 @@ def study_available():
     判断是否可以执行授業。
     """
     # [screenshots/produce/action_study1.png]
-    return R.InPurodyuusu.ButtonIconStudy.exists()
+    return R.InProduce.ButtonIconStudy.exists()
 
 @action('检测是否可以执行相談')
 def consult_available():
     """
     判断是否可以执行相談。
     """
-    return R.InPurodyuusu.ButtonIconConsult.exists()
+    return R.InProduce.ButtonIconConsult.exists()
 
 # TODO: 把进入授業的逻辑和执行授業的逻辑分离
 @action('执行授業')
@@ -55,28 +55,28 @@ def enter_study():
     logger.info("Executing 授業.")
     # [screenshots/produce/action_study1.png]
     logger.debug("Double clicking on 授業.")
-    R.InPurodyuusu.ButtonIconStudy.wait().double_click()
+    R.InProduce.ButtonIconStudy.wait().double_click()
     # 等待进入页面。中间可能会出现未读交流
     # [screenshots/produce/action_study2.png]
-    ProduceInterrupt().until(R.InPurodyuusu.IconTitleStudy)
+    ProduceInterrupt().until(R.InProduce.IconTitleStudy)
     # 首先需要判断是不是自习课
     # [kotonebot-resource\sprites\jp\in_purodyuusu\screenshot_study_self_study.png]
     if AnyOf[
-        R.InPurodyuusu.TextSelfStudyDance,
-        R.InPurodyuusu.TextSelfStudyVisual,
-        R.InPurodyuusu.TextSelfStudyVocal
+        R.InProduce.TextSelfStudyDance,
+        R.InProduce.TextSelfStudyVisual,
+        R.InProduce.TextSelfStudyVocal
     ].exists():
         logger.info("授業 type: Self study.")
         target = produce_solution().data.self_study_lesson
         if target == 'dance':
             logger.debug("Clicking on lesson dance.")
-            R.InPurodyuusu.TextSelfStudyDance.wait().double_click()
+            R.InProduce.TextSelfStudyDance.wait().double_click()
         elif target == 'visual':
             logger.debug("Clicking on lesson visual.")
-            R.InPurodyuusu.TextSelfStudyVisual.wait().double_click()
+            R.InProduce.TextSelfStudyVisual.wait().double_click()
         elif target == 'vocal':
             logger.debug("Clicking on lesson vocal.")
-            R.InPurodyuusu.TextSelfStudyVocal.wait().double_click()
+            R.InProduce.TextSelfStudyVocal.wait().double_click()
         from ..produce.in_purodyuusu import until_practice_scene, practice
         logger.info("Entering practice scene.")
         until_practice_scene()
@@ -116,19 +116,19 @@ def enter_allowance():
     logger.info("Executing 活動支給.")
     # 点击活動支給 [screenshots\allowance\step_1.png]
     logger.info("Double clicking on 活動支給.")
-    R.InPurodyuusu.ButtonTextAllowance.wait(interval=1).double_click()
+    R.InProduce.ButtonTextAllowance.wait(interval=1).double_click()
     # 等待进入页面
-    ProduceInterrupt().until(R.InPurodyuusu.IconTitleAllowance)
+    ProduceInterrupt().until(R.InProduce.IconTitleAllowance)
     # 领取奖励
     pi = ProduceInterrupt()
     for _ in Loop():
         # TODO: 检测是否在行动页面应当单独一个函数
         if AnyOf[
-            R.InPurodyuusu.TextPDiary, # 普通周
-            R.InPurodyuusu.ButtonFinalPracticeDance # 离考试剩余一周
+            R.InProduce.TextPDiary, # 普通周
+            R.InProduce.ButtonFinalPracticeDance # 离考试剩余一周
         ].exists():
             break
-        if R.InPurodyuusu.LootboxSliverLock.try_click():
+        if R.InProduce.LootboxSliverLock.try_click():
             logger.info("Clicked on lootbox.")
             sleep(0.5) # 防止点击了第一个箱子后立马点击了第二个
             continue
@@ -148,28 +148,28 @@ def enter_consult():
     logger.info("Executing 相談.")
     logger.info("Double clicking on 相談.")
     device.screenshot()
-    R.InPurodyuusu.ButtonIconConsult.wait(interval=1).double_click()
+    R.InProduce.ButtonIconConsult.wait(interval=1).double_click()
     
     # 等待进入页面
-    ProduceInterrupt().until(R.InPurodyuusu.IconTitleConsult)
+    ProduceInterrupt().until(R.InProduce.IconTitleConsult)
     # # 尝试固定购买第一个物品
-    # device.click(R.InPurodyuusu.PointConsultFirstItem)
+    # device.click(R.InProduce.PointConsultFirstItem)
     # sleep(0.5)
-    # device.click(image.expect(R.InPurodyuusu.ButtonIconExchange))
+    # device.click(image.expect(R.InProduce.ButtonIconExchange))
     # # 等待弹窗
     # timeout_cd = Countdown(sec=5).start()
     # while not timeout_cd.expired():
     #     if dialog.yes():
     #         break
     # # 结束
-    # while not image.find(R.InPurodyuusu.ButtonEndConsult):
+    # while not image.find(R.InProduce.ButtonEndConsult):
     #     fast_acquisitions()
-    # device.click(image.expect_wait(R.InPurodyuusu.ButtonEndConsult))
+    # device.click(image.expect_wait(R.InProduce.ButtonEndConsult))
     # # 可能会弹出确认对话框
     # timeout_cd.reset().start()
     # while not timeout_cd.expired():
     #     dialog.yes()
-    device.click(R.InPurodyuusu.PointConsultFirstItem)
+    device.click(R.InProduce.PointConsultFirstItem)
     sleep(0.3)
     wait_purchase_cd = Countdown(sec=5)
     exit_cd = Countdown(sec=5)
@@ -189,10 +189,10 @@ def enter_consult():
                 continue
             elif exit_clicked:
                 break
-        if R.InPurodyuusu.ButtonIconExchange.q(enabled=True).try_click():
+        if R.InProduce.ButtonIconExchange.q(enabled=True).try_click():
             purchase_clicked = True
             continue
-        if purchase_confirmed and R.InPurodyuusu.ButtonEndConsult.try_click():
+        if purchase_confirmed and R.InProduce.ButtonEndConsult.try_click():
             exit_clicked = True
             exit_cd.start()
             continue
@@ -202,7 +202,7 @@ def enter_consult():
             break
 
         if not purchase_confirmed:
-            device.click(R.InPurodyuusu.PointConsultFirstItem)
+            device.click(R.InProduce.PointConsultFirstItem)
             # 处理不能购买的情况（超时）
             # TODO: 应当检测画面文字/图标而不是用超时
             wait_purchase_cd.start()
@@ -214,7 +214,7 @@ def is_rest_available():
     """
     判断是否可以休息。
     """
-    return R.InPurodyuusu.Rest.exists()
+    return R.InProduce.Rest.exists()
 
 
 @action('执行休息')
@@ -226,13 +226,13 @@ def rest():
     # 点击休息直到确认对话框出现
     # TODO: 需要一种方法简化这种 pattern
     for _ in Loop():
-        if R.InPurodyuusu.Rest.try_click():
+        if R.InProduce.Rest.try_click():
             sleep(0.5)
-        elif R.InPurodyuusu.RestConfirmBtn.exists():
+        elif R.InProduce.RestConfirmBtn.exists():
             break
     # 然后等消失
     for _ in Loop():
-        if R.InPurodyuusu.RestConfirmBtn.exists():
+        if R.InProduce.RestConfirmBtn.exists():
             device.click()
             sleep(0.5)
         else:
@@ -241,8 +241,8 @@ def rest():
 @action('判断是否处于行动页面')
 def at_action_scene():
     return AnyOf[
-        R.InPurodyuusu.TextPDiary, # 普通周
-        R.InPurodyuusu.ButtonFinalPracticeDance # 离考试剩余一周
+        R.InProduce.TextPDiary, # 普通周
+        R.InProduce.ButtonFinalPracticeDance # 离考试剩余一周
     ].exists()
 
 @action('判断是否可以外出')
@@ -250,7 +250,7 @@ def outing_available():
     """
     判断是否可以外出（おでかけ）。
     """
-    return R.InPurodyuusu.ButtonIconOuting.exists()
+    return R.InProduce.ButtonIconOuting.exists()
 
 @action('执行外出')
 def enter_outing():
@@ -263,9 +263,9 @@ def enter_outing():
     logger.info("Executing おでかけ.")
     # 点击外出
     logger.info("Double clicking on おでかけ.")
-    R.InPurodyuusu.ButtonIconOuting.wait().double_click()
+    R.InProduce.ButtonIconOuting.wait().double_click()
     # 等待进入页面
-    ProduceInterrupt().until(R.InPurodyuusu.TitleIconOuting)
+    ProduceInterrupt().until(R.InProduce.TitleIconOuting)
     # 固定选中第二个选项
     # TODO: 可能需要二次处理外出事件
     # [kotonebot-resource\sprites\jp\in_purodyuusu\screenshot_outing.png]

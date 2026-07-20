@@ -2,7 +2,7 @@
   "version": 3,
   "definitions": {
     "d271a24f-efe8-424d-8fd5-f6b3756ba4ca": {
-      "name": "InPurodyuusu.TextSkillCard",
+      "name": "InProduce.TextSkillCard",
       "displayName": "文字「スキルカード」",
       "type": "prefab",
       "description": "用于技能卡选择对话框",

@@ -2,7 +2,7 @@
   "version": 3,
   "definitions": {
     "c78c38cc-7b61-4dc4-820d-0a5b684ef52e": {
-      "name": "InPurodyuusu.TextSelfStudyVocal",
+      "name": "InProduce.TextSelfStudyVocal",
       "displayName": "文化课事件 自习 声乐",
       "type": "prefab",
       "props": {
@@ -18,7 +18,7 @@
       "variant_policy": {}
     },
     "83d0a033-466c-463a-bb8c-be0f2953e9b2": {
-      "name": "InPurodyuusu.TextSelfStudyDance",
+      "name": "InProduce.TextSelfStudyDance",
       "displayName": "文化课事件 自习 舞蹈",
       "type": "prefab",
       "props": {
@@ -34,7 +34,7 @@
       "variant_policy": {}
     },
     "4695f96b-c4f5-4bb6-a021-a13b6ceb2883": {
-      "name": "InPurodyuusu.TextSelfStudyVisual",
+      "name": "InProduce.TextSelfStudyVisual",
       "displayName": "文化课事件 自习 形象",
       "type": "prefab",
       "props": {

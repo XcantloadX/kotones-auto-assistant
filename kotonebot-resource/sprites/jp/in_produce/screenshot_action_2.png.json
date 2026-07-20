@@ -2,7 +2,7 @@
   "version": 3,
   "definitions": {
     "8ded6c98-85ea-4858-a66d-4fc8caecb7c5": {
-      "name": "InPurodyuusu.ButtonIconOuting",
+      "name": "InProduce.ButtonIconOuting",
       "displayName": "行动按钮图标 外出（おでかけ）",
       "type": "prefab",
       "props": {
@@ -18,7 +18,7 @@
       "variant_policy": {}
     },
     "d83f338d-dde3-494b-9bea-cae511e3517c": {
-      "name": "InPurodyuusu.ButtonIconConsult",
+      "name": "InProduce.ButtonIconConsult",
       "displayName": "行动按钮图标 咨询（相談）",
       "type": "prefab",
       "props": {
@@ -34,7 +34,7 @@
       "variant_policy": {}
     },
     "ce20a856-5629-4f8e-a8e1-d1bd14e18e4f": {
-      "name": "InPurodyuusu.TextMidExamRemaining",
+      "name": "InProduce.TextMidExamRemaining",
       "displayName": "中間まで",
       "type": "prefab",
       "props": {

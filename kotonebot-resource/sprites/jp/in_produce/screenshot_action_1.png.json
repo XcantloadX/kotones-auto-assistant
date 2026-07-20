@@ -2,7 +2,7 @@
   "version": 3,
   "definitions": {
     "be6836bd-ee42-432b-9166-469c74f32f0b": {
-      "name": "InPurodyuusu.BoxWeeksUntilExam",
+      "name": "InProduce.BoxWeeksUntilExam",
       "displayName": "考试剩余周",
       "type": "hint-box",
       "description": "培育中左上角的下次考试剩余周数",
@@ -17,7 +17,7 @@
       }
     },
     "d6b64759-26b7-45b1-bf8e-5c0d98611e0d": {
-      "name": "InPurodyuusu.TextActionVocal",
+      "name": "InProduce.TextActionVocal",
       "displayName": "Vo. レッスン",
       "type": "prefab",
       "description": "培育 行动页面 声乐课程按钮文字",
@@ -34,7 +34,7 @@
       "variant_policy": {}
     },
     "303cccc1-c674-4d3a-8c89-19ea729fdbef": {
-      "name": "InPurodyuusu.TextActionDance",
+      "name": "InProduce.TextActionDance",
       "displayName": "Da. レッスン",
       "type": "prefab",
       "description": "培育 行动页面 舞蹈课程按钮文字",
@@ -51,7 +51,7 @@
       "variant_policy": {}
     },
     "cc8a495d-330d-447d-8a80-a8a6ecc409c5": {
-      "name": "InPurodyuusu.TextActionVisual",
+      "name": "InProduce.TextActionVisual",
       "displayName": "Vi. レッスン",
       "type": "prefab",
       "description": "培育 行动页面 形象课程按钮文字",
@@ -68,7 +68,7 @@
       "variant_policy": {}
     },
     "d7667903-7149-4f2f-9c15-d8a4b5f4d347": {
-      "name": "InPurodyuusu.IconAsariSenseiAvatar",
+      "name": "InProduce.IconAsariSenseiAvatar",
       "displayName": "Asari 老师头像",
       "type": "prefab",
       "description": "用于检测培育行动页面提示",
@@ -85,7 +85,7 @@
       "variant_policy": {}
     },
     "75fdc1b6-5690-44d1-989e-95b6ab78e1dc": {
-      "name": "InPurodyuusu.BoxAsariSenseiTip",
+      "name": "InProduce.BoxAsariSenseiTip",
       "displayName": "Asari 老师提示文本区域",
       "type": "hint-box",
       "props": {
@@ -99,7 +99,7 @@
       }
     },
     "ce1d1d6f-38f2-48bf-98bd-6e091c7ca5b8": {
-      "name": "InPurodyuusu.ButtonPracticeVocal",
+      "name": "InProduce.ButtonPracticeVocal",
       "displayName": "行动页 声乐课程按钮图标",
       "type": "prefab",
       "props": {
@@ -115,7 +115,7 @@
       "variant_policy": {}
     },
     "b2e1bf3c-2c36-4fb5-9db7-c10a29563a37": {
-      "name": "InPurodyuusu.ButtonPracticeDance",
+      "name": "InProduce.ButtonPracticeDance",
       "displayName": "行动页 舞蹈课程按钮图标",
       "type": "prefab",
       "description": "",
@@ -132,7 +132,7 @@
       "variant_policy": {}
     },
     "adc533a7-970b-4c5b-a037-2181531a35d6": {
-      "name": "InPurodyuusu.ButtonPracticeVisual",
+      "name": "InProduce.ButtonPracticeVisual",
       "displayName": "行动页 形象课程按钮图标",
       "type": "prefab",
       "props": {
@@ -148,7 +148,7 @@
       "variant_policy": {}
     },
     "70898bf8-56c5-4f84-becb-629c9ab6a7da": {
-      "name": "InPurodyuusu.TextFinalExamRemaining",
+      "name": "InProduce.TextFinalExamRemaining",
       "displayName": "最終まで",
       "type": "prefab",
       "props": {
@@ -166,7 +166,7 @@
     "aa827983-7f27-4763-bcd6-4316e1b8e459": {
       "type": "prefab",
       "prefab_id": "TemplateMatchPrefab",
-      "name": "InPurodyuusu.TextReviewCriteria",
+      "name": "InProduce.TextReviewCriteria",
       "props": {
         "template": {
           "kind": "image",
@@ -180,7 +180,7 @@
       "variant_policy": {}
     },
     "3b9c9e2d-1a64-4a3d-9f2f-0b9d5d2a1c11": {
-      "name": "InPurodyuusu.CurVoValue",
+      "name": "InProduce.CurVoValue",
       "displayName": "行动页 当前 Vo 值",
       "type": "hint-box",
       "props": {
@@ -194,7 +194,7 @@
       }
     },
     "4d2f7b8e-6c3a-4f22-8d9a-2f7e6b4a2f22": {
-      "name": "InPurodyuusu.CurDaValue",
+      "name": "InProduce.CurDaValue",
       "displayName": "行动页 当前 Da 值",
       "type": "hint-box",
       "props": {
@@ -208,7 +208,7 @@
       }
     },
     "7a6e5c3b-2b11-4d8f-a9c3-1e4b8f9d3e33": {
-      "name": "InPurodyuusu.CurViValue",
+      "name": "InProduce.CurViValue",
       "displayName": "行动页 当前 Vi 值",
       "type": "hint-box",
       "props": {
@@ -222,7 +222,7 @@
       }
     },
     "9f8b6a2c-5d44-4c3e-b1a7-6c2d9e0f4b44": {
-      "name": "InPurodyuusu.MaxDaValue",
+      "name": "InProduce.MaxDaValue",
       "displayName": "行动页 最大 Da 值",
       "type": "hint-box",
       "props": {

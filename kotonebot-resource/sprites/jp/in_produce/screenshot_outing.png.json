@@ -2,7 +2,7 @@
   "version": 3,
   "definitions": {
     "ee4e512b-4982-49b6-9c71-31984b58e1d0": {
-      "name": "InPurodyuusu.TitleIconOuting",
+      "name": "InProduce.TitleIconOuting",
       "displayName": "外出（おでかけ）页面 标题图标",
       "type": "prefab",
       "props": {

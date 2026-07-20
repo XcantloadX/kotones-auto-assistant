@@ -2,7 +2,7 @@
   "version": 3,
   "definitions": {
     "6939bad1-8055-4fbe-97a4-59a3ce5be4e0": {
-      "name": "InPurodyuusu.BoxSkillCardAcquired",
+      "name": "InProduce.BoxSkillCardAcquired",
       "displayName": "スキルカード獲得",
       "type": "hint-box",
       "props": {

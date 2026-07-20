@@ -90,15 +90,15 @@ def _show_rects(title: str, img: MatLike, results: list[GameObject] | list[Rect]
 
 def _locate_letters(img: MatLike) -> list[Rect]:
     # letters = AnyOf[
-    #     R.InPurodyuusu.A,
-    #     R.InPurodyuusu.M,
-    #     R.InPurodyuusu.T,
+    #     R.InProduce.A,
+    #     R.InProduce.M,
+    #     R.InProduce.T,
     # ].find_all()
-    x, y, w, h = R.InPurodyuusu.BoxCardLetter.xywh
+    x, y, w, h = R.InProduce.BoxCardLetter.xywh
     img = img[y:y+h, x:x+w]
-    results = image.raw().find_all(img, R.InPurodyuusu.A.template)
-    results += image.raw().find_all(img, R.InPurodyuusu.M.template)
-    results += image.raw().find_all(img, R.InPurodyuusu.T.template)
+    results = image.raw().find_all(img, R.InProduce.A.template)
+    results += image.raw().find_all(img, R.InProduce.M.template)
+    results += image.raw().find_all(img, R.InProduce.T.template)
     # 需要还原为全图坐标
     results2 = []
     for res in results:

@@ -2,7 +2,7 @@
   "version": 3,
   "definitions": {
     "1fbb6008-7112-46ce-b6aa-413648acc5e5": {
-      "name": "InPurodyuusu.BoxExamTop",
+      "name": "InProduce.BoxExamTop",
       "displayName": "考试场景 最上方排名区域",
       "type": "hint-box",
       "props": {
@@ -16,7 +16,7 @@
       }
     },
     "621d24ca-ad72-4c10-a2a1-77b76dcff8f3": {
-      "name": "InPurodyuusu.BoxCardLetter",
+      "name": "InProduce.BoxCardLetter",
       "displayName": "手牌类型字母区域",
       "type": "hint-box",
       "props": {
@@ -30,7 +30,7 @@
       }
     },
     "69efda7b-9338-483a-a5d4-fba1acf1e7f1": {
-      "name": "InPurodyuusu.BoxDrink",
+      "name": "InProduce.BoxDrink",
       "displayName": "饮品区域",
       "type": "hint-box",
       "props": {
@@ -44,7 +44,7 @@
       }
     },
     "f37b6e21-b344-4e5d-9dbe-ae03eb5117bc": {
-      "name": "InPurodyuusu.BoxDrink1",
+      "name": "InProduce.BoxDrink1",
       "displayName": "第一个饮品区域",
       "type": "hint-box",
       "props": {
@@ -58,7 +58,7 @@
       }
     },
     "118d1a5e-73fa-428a-9c34-e58b2a208182": {
-      "name": "InPurodyuusu.BoxDrink2",
+      "name": "InProduce.BoxDrink2",
       "displayName": "第二个饮品区域",
       "type": "hint-box",
       "props": {
@@ -72,7 +72,7 @@
       }
     },
     "7c7ee88a-cff3-40fe-ac69-656621692e84": {
-      "name": "InPurodyuusu.BoxDrink3",
+      "name": "InProduce.BoxDrink3",
       "displayName": "第三个饮品区域",
       "type": "hint-box",
       "props": {
@@ -88,7 +88,7 @@
     "5c61b817-d39e-4f8a-bcb3-bbc953d73790": {
       "type": "prefab",
       "prefab_id": "TemplateMatchPrefab",
-      "name": "InPurodyuusu.TextExamRankSmallFirst",
+      "name": "InProduce.TextExamRankSmallFirst",
       "props": {
         "template": {
           "kind": "image",
@@ -103,7 +103,7 @@
       "variant_policy": {}
     },
     "a1b2c3d4-e5f6-7890-abcd-ef1234567890": {
-      "name": "InPurodyuusu.BoxDetectExamType",
+      "name": "InProduce.BoxDetectExamType",
       "displayName": "用于检测考试是其中还是期末的 box",
       "type": "hint-box",
       "props": {

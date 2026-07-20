@@ -2,7 +2,7 @@
   "version": 3,
   "definitions": {
     "c74f2151-74b0-4b47-bf80-356c48f431e0": {
-      "name": "InPurodyuusu.BoxNoSkillCard",
+      "name": "InProduce.BoxNoSkillCard",
       "displayName": "手札のスキルカ学ドが0枚です",
       "type": "hint-box",
       "props": {

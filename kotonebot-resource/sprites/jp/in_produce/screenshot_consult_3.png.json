@@ -2,7 +2,7 @@
   "version": 3,
   "definitions": {
     "25f00ee3-8dfe-42d1-a67e-191fa5c3df4b": {
-      "name": "InPurodyuusu.TextExchangeConfirm",
+      "name": "InProduce.TextExchangeConfirm",
       "displayName": "交換確認",
       "type": "prefab",
       "description": "咨询中，购买确认对话框的标题",

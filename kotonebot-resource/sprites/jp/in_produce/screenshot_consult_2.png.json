@@ -2,7 +2,7 @@
   "version": 3,
   "definitions": {
     "4096cffa-a889-4622-852e-760fc7022d93": {
-      "name": "InPurodyuusu.ButtonIconExchange",
+      "name": "InProduce.ButtonIconExchange",
       "displayName": "交换按钮的图标",
       "type": "prefab",
       "props": {

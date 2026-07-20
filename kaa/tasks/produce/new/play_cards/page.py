@@ -63,23 +63,23 @@ class LessonBattleContext:
     @eval_once
     def fetch_remaining_turns(self) -> int | None:
         """获取剩余回合数"""
-        return _fetch_int(R.InPurodyuusu.InLesson.BoxRemainingTurns)
+        return _fetch_int(R.InProduce.InLesson.BoxRemainingTurns)
     
     @eval_once
     def fetch_hp(self) -> int | None:
         """获取当前体力"""
-        return _fetch_int(R.InPurodyuusu.InLesson.BoxHp)
+        return _fetch_int(R.InProduce.InLesson.BoxHp)
     
     @eval_once
     def fetch_stamina(self) -> int | None:
         """获取当前元气值"""
-        return _fetch_int(R.InPurodyuusu.InLesson.BoxGenki)
+        return _fetch_int(R.InProduce.InLesson.BoxGenki)
     
     @eval_once
     def fetch_all(self):
-        remaining_turns = _fetch_int(R.InPurodyuusu.InLesson.BoxRemainingTurns)
-        hp = _fetch_int(R.InPurodyuusu.InLesson.BoxHp)
-        genki = _fetch_int(R.InPurodyuusu.InLesson.BoxGenki)
+        remaining_turns = _fetch_int(R.InProduce.InLesson.BoxRemainingTurns)
+        hp = _fetch_int(R.InProduce.InLesson.BoxHp)
+        genki = _fetch_int(R.InProduce.InLesson.BoxGenki)
         return HudInfo(remaining_turns, hp, genki)
     
     @eval_once
