@@ -32,6 +32,22 @@
         "fixed": true
       },
       "displayName": "ショップ 标题图标"
+    },
+    "2a359a7e-7aad-4e59-bf19-fad313b6963c": {
+      "type": "prefab",
+      "prefab_id": "TemplateMatchPrefab",
+      "name": "Daily.ButtonShopCapsuleToys",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 402.3966131445907,
+          "y1": 805.2618962239142,
+          "x2": 640.8486038962848,
+          "y2": 855.4936582344296
+        },
+        "fixed": true
+      },
+      "displayName": "コインガシャ"
     }
   }
 }

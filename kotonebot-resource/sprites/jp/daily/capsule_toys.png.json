@@ -1,22 +1,6 @@
 {
   "version": 3,
   "definitions": {
-    "8087385e-4812-4b6b-bc49-1dff0591453f": {
-      "type": "prefab",
-      "prefab_id": "TemplateMatchPrefab",
-      "name": "Daily.ButtonShopCapsuleToys",
-      "props": {
-        "template": {
-          "kind": "image",
-          "x1": 15.891683368530067,
-          "y1": 36.17332343610042,
-          "x2": 227.64832802850307,
-          "y2": 77.72104264113912
-        },
-        "fixed": true
-      },
-      "displayName": "コインガシャ"
-    },
     "4651e08e-48ec-497d-a5cc-993282b04eae": {
       "type": "prefab",
       "prefab_id": "TemplateMatchPrefab",
