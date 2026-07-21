@@ -2,10 +2,12 @@
   "version": 3,
   "definitions": {
     "e4683def-8d1d-472b-a5ab-bb3885c0c98e": {
+      "type": "prefab",
       "name": "InProduce.TextDontClaim",
       "displayName": "受け取らない",
-      "type": "prefab",
       "description": "用在不领取饮料上",
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {},
       "props": {
         "template": {
           "kind": "image",
@@ -14,9 +16,37 @@
           "x2": 437,
           "y2": 1023
         }
-      },
+      }
+    },
+    "b34b4459-c28c-4fbf-9984-cff1d7fe8d7a": {
+      "type": "prefab",
+      "name": "Common.CheckboxUnchecked",
+      "displayName": "checkbox_unchecked.png",
+      "prefab_id": "GakumasPrimaryButtonPrefab",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 242,
+          "y1": 997,
+          "x2": 265,
+          "y2": 1016
+        }
+      }
+    },
+    "2434ee5b-3001-46bc-b8b9-d1416957a420": {
+      "type": "prefab",
+      "name": "InProduce.TextOneWeekRemaining",
+      "displayName": "text_one_week_remaining.png",
       "prefab_id": "TemplateMatchPrefab",
-      "variant_policy": {}
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 83,
+          "y1": 97,
+          "x2": 145,
+          "y2": 140
+        }
+      }
     }
   }
 }

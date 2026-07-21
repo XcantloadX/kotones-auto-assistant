@@ -2,9 +2,9 @@
   "version": 3,
   "definitions": {
     "6939bad1-8055-4fbe-97a4-59a3ce5be4e0": {
+      "type": "hint-box",
       "name": "InProduce.BoxSkillCardAcquired",
       "displayName": "スキルカード獲得",
-      "type": "hint-box",
       "props": {
         "image": {
           "kind": "rect",
@@ -12,6 +12,21 @@
           "y1": 712,
           "x2": 528,
           "y2": 765
+        }
+      }
+    },
+    "1e3e1cf7-a60d-4807-be37-91be24724205": {
+      "type": "prefab",
+      "name": "InProduce.IconTitleAllowance",
+      "displayName": "icon_title_allowance.png",
+      "prefab_id": "TemplateMatchPrefab",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 88,
+          "y1": 68,
+          "x2": 136,
+          "y2": 124
         }
       }
     }

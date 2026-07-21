@@ -2,9 +2,9 @@
   "version": 3,
   "definitions": {
     "a85fbf42-f94c-4f53-8976-6e8d16be4d26": {
+      "type": "hint-box",
       "name": "Daily.Club.NoteRequestHintBox",
       "displayName": "日常 社团 笔记请求HintBox",
-      "type": "hint-box",
       "props": {
         "image": {
           "kind": "rect",
@@ -12,6 +12,51 @@
           "y1": 1071,
           "x2": 450,
           "y2": 1099
+        }
+      }
+    },
+    "d0ce9428-9f55-446a-827e-10fa8e021154": {
+      "type": "prefab",
+      "name": "Daily.ButtonClubSendGift",
+      "displayName": "button_club_send_gift.png",
+      "prefab_id": "TemplateMatchPrefab",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 494,
+          "y1": 932,
+          "x2": 637,
+          "y2": 959
+        }
+      }
+    },
+    "724d15c9-149d-41a2-beb7-51fffe813172": {
+      "type": "prefab",
+      "name": "Daily.ButtonClubSendGiftNext",
+      "displayName": "button_club_send_gift_next.png",
+      "prefab_id": "TemplateMatchPrefab",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 659,
+          "y1": 826,
+          "x2": 706,
+          "y2": 887
+        }
+      }
+    },
+    "8353e556-6b59-466f-afd9-cdd9fd93a537": {
+      "type": "prefab",
+      "name": "Daily.ButtonClubCollectReward",
+      "displayName": "button_club_collect_reward.png",
+      "prefab_id": "TemplateMatchPrefab",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 427,
+          "y1": 1039,
+          "x2": 494,
+          "y2": 1132
         }
       }
     }

@@ -2,9 +2,9 @@
   "version": 3,
   "definitions": {
     "1fbb6008-7112-46ce-b6aa-413648acc5e5": {
+      "type": "hint-box",
       "name": "InProduce.BoxExamTop",
       "displayName": "考试场景 最上方排名区域",
-      "type": "hint-box",
       "props": {
         "image": {
           "kind": "rect",
@@ -16,9 +16,9 @@
       }
     },
     "621d24ca-ad72-4c10-a2a1-77b76dcff8f3": {
+      "type": "hint-box",
       "name": "InProduce.BoxCardLetter",
       "displayName": "手牌类型字母区域",
-      "type": "hint-box",
       "props": {
         "image": {
           "kind": "rect",
@@ -30,9 +30,9 @@
       }
     },
     "69efda7b-9338-483a-a5d4-fba1acf1e7f1": {
+      "type": "hint-box",
       "name": "InProduce.BoxDrink",
       "displayName": "饮品区域",
-      "type": "hint-box",
       "props": {
         "image": {
           "kind": "rect",
@@ -44,9 +44,9 @@
       }
     },
     "f37b6e21-b344-4e5d-9dbe-ae03eb5117bc": {
+      "type": "hint-box",
       "name": "InProduce.BoxDrink1",
       "displayName": "第一个饮品区域",
-      "type": "hint-box",
       "props": {
         "image": {
           "kind": "rect",
@@ -58,9 +58,9 @@
       }
     },
     "118d1a5e-73fa-428a-9c34-e58b2a208182": {
+      "type": "hint-box",
       "name": "InProduce.BoxDrink2",
       "displayName": "第二个饮品区域",
-      "type": "hint-box",
       "props": {
         "image": {
           "kind": "rect",
@@ -72,9 +72,9 @@
       }
     },
     "7c7ee88a-cff3-40fe-ac69-656621692e84": {
+      "type": "hint-box",
       "name": "InProduce.BoxDrink3",
       "displayName": "第三个饮品区域",
-      "type": "hint-box",
       "props": {
         "image": {
           "kind": "rect",
@@ -87,8 +87,10 @@
     },
     "5c61b817-d39e-4f8a-bcb3-bbc953d73790": {
       "type": "prefab",
-      "prefab_id": "TemplateMatchPrefab",
       "name": "InProduce.TextExamRankSmallFirst",
+      "displayName": "考试顶部 1st（小）",
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {},
       "props": {
         "template": {
           "kind": "image",
@@ -98,14 +100,12 @@
           "y2": 36.386734264761174
         },
         "fixed": true
-      },
-      "displayName": "考试顶部 1st（小）",
-      "variant_policy": {}
+      }
     },
     "a1b2c3d4-e5f6-7890-abcd-ef1234567890": {
+      "type": "hint-box",
       "name": "InProduce.BoxDetectExamType",
       "displayName": "用于检测考试是其中还是期末的 box",
-      "type": "hint-box",
       "props": {
         "image": {
           "kind": "rect",
@@ -113,6 +113,51 @@
           "y1": 4,
           "x2": 214,
           "y2": 50
+        }
+      }
+    },
+    "5d6bce10-6b80-4c61-aef7-e1d94f04e611": {
+      "type": "prefab",
+      "name": "InProduce.A",
+      "displayName": "A.png",
+      "prefab_id": "TemplateMatchPrefab",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 135,
+          "y1": 1083,
+          "x2": 152,
+          "y2": 1098
+        }
+      }
+    },
+    "11bd0392-050b-43d1-986d-b5cb645dc917": {
+      "type": "prefab",
+      "name": "InProduce.M",
+      "displayName": "M.png",
+      "prefab_id": "TemplateMatchPrefab",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 569,
+          "y1": 1084,
+          "x2": 585,
+          "y2": 1098
+        }
+      }
+    },
+    "7ee20ee8-b164-45f6-8181-0425d732baf3": {
+      "type": "prefab",
+      "name": "InProduce.TextButtonExamSkipTurn",
+      "displayName": "text_button_exam_skip_turn.png",
+      "prefab_id": "TemplateMatchPrefab",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 642,
+          "y1": 793,
+          "x2": 687,
+          "y2": 809
         }
       }
     }

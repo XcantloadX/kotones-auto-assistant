@@ -2,10 +2,12 @@
   "version": 3,
   "definitions": {
     "8c179a21-be6f-4db8-a9b0-9afeb5c36b1c": {
+      "type": "prefab",
       "name": "InProduce.TextPDrink",
       "displayName": "文本「Pドリンク」",
-      "type": "prefab",
       "description": "用于 P 饮料选择对话框",
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {},
       "props": {
         "template": {
           "kind": "image",
@@ -15,9 +17,22 @@
           "y2": 641
         },
         "fixed": true
-      },
+      }
+    },
+    "3ce53fbd-06f9-47ed-b79b-b024bda5c20f": {
+      "type": "prefab",
+      "name": "InProduce.TextPleaseSelectPDrink",
+      "displayName": "text_please_select_p_drink.png",
       "prefab_id": "TemplateMatchPrefab",
-      "variant_policy": {}
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 149,
+          "y1": 618,
+          "x2": 557,
+          "y2": 640
+        }
+      }
     }
   }
 }

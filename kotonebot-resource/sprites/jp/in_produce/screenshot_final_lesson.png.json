@@ -1,0 +1,65 @@
+{
+  "version": 3,
+  "definitions": {
+    "00ecdb7a-8a58-4d81-8da6-af312cbcc88e": {
+      "type": "prefab",
+      "name": "InProduce.ButtonFinalPracticeVisual",
+      "displayName": "button_final_practice_visual.png",
+      "prefab_id": "TemplateMatchPrefab",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 128,
+          "y1": 887,
+          "x2": 438,
+          "y2": 916
+        }
+      }
+    },
+    "3e946aee-8742-4b61-a06c-5e21bd665410": {
+      "type": "prefab",
+      "name": "InProduce.ButtonFinalPracticeVocal",
+      "displayName": "button_final_practice_vocal.png",
+      "prefab_id": "TemplateMatchPrefab",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 124,
+          "y1": 684,
+          "x2": 409,
+          "y2": 713
+        }
+      }
+    },
+    "95a59284-ead4-4150-96f8-66e0dcba1afc": {
+      "type": "prefab",
+      "name": "InProduce.ButtonFinalPracticeDance",
+      "displayName": "button_final_practice_dance.png",
+      "prefab_id": "TemplateMatchPrefab",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 125,
+          "y1": 784,
+          "x2": 377,
+          "y2": 815
+        }
+      }
+    },
+    "22daa453-6f6e-4d7e-b24f-3d7bbc75cd1e": {
+      "type": "prefab",
+      "name": "InProduce.ButtonIconStudyVisual",
+      "displayName": "button_icon_study_visual.png",
+      "prefab_id": "TemplateMatchPrefab",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 73,
+          "y1": 884,
+          "x2": 106,
+          "y2": 918
+        }
+      }
+    }
+  }
+}

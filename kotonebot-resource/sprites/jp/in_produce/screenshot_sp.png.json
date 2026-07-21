@@ -2,9 +2,11 @@
   "version": 3,
   "definitions": {
     "d982d2b5-4bc0-4ae9-a516-f29c2848d64b": {
+      "type": "prefab",
       "name": "InProduce.IconSp",
       "displayName": "SP 课程图标",
-      "type": "prefab",
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {},
       "props": {
         "template": {
           "kind": "image",
@@ -13,9 +15,52 @@
           "x2": 220,
           "y2": 952
         }
-      },
+      }
+    },
+    "51fd7c13-d4f8-476e-926c-af3e870f78e1": {
+      "type": "prefab",
+      "name": "InProduce.ButtonIconStudy",
+      "displayName": "button_icon_study.png",
       "prefab_id": "TemplateMatchPrefab",
-      "variant_policy": {}
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 582,
+          "y1": 974,
+          "x2": 658,
+          "y2": 1028
+        }
+      }
+    },
+    "8620a691-5305-44d4-a341-ec9cc9a9296b": {
+      "type": "prefab",
+      "name": "InProduce.TextSenseiTipVisual",
+      "displayName": "text_sensei_tip_visual.png",
+      "prefab_id": "TemplateMatchPrefab",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 263,
+          "y1": 200,
+          "x2": 358,
+          "y2": 218
+        }
+      }
+    },
+    "21f679e4-26bd-4b9d-b9ad-9e9b98b30e15": {
+      "type": "prefab",
+      "name": "InProduce.TextVisual",
+      "displayName": "text_visual.png",
+      "prefab_id": "TemplateMatchPrefab",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 263,
+          "y1": 199,
+          "x2": 358,
+          "y2": 218
+        }
+      }
     }
   }
 }

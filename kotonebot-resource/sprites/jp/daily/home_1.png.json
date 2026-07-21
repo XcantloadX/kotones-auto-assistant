@@ -2,9 +2,9 @@
   "version": 3,
   "definitions": {
     "85c24a02-dac3-4e6c-978e-b11963e0e92d": {
+      "type": "hint-box",
       "name": "Produce.BoxProduceOngoing",
       "displayName": "首页开始培育按钮（当前有培育）",
-      "type": "hint-box",
       "props": {
         "image": {
           "kind": "rect",
@@ -16,9 +16,9 @@
       }
     },
     "4fe748c8-a535-4824-aefc-244e3ad34bd4": {
+      "type": "hint-box",
       "name": "Daily.BoxHomeAssignment",
       "displayName": "首页工作按钮",
-      "type": "hint-box",
       "props": {
         "image": {
           "kind": "rect",
@@ -30,9 +30,9 @@
       }
     },
     "469f7f21-067c-476c-9bfc-c3ec83b935ea": {
+      "type": "hint-box",
       "name": "Daily.BoxHomeAP",
       "displayName": "首页体力",
-      "type": "hint-box",
       "props": {
         "image": {
           "kind": "rect",
@@ -44,9 +44,9 @@
       }
     },
     "565df1a0-d494-41a4-a3bf-603857bd8dec": {
+      "type": "hint-box",
       "name": "Daily.BoxHomeJewel",
       "displayName": "首页珠宝数量",
-      "type": "hint-box",
       "props": {
         "image": {
           "kind": "rect",
@@ -58,9 +58,9 @@
       }
     },
     "76c92bd0-496b-403e-b545-92eb1f2f941f": {
+      "type": "hint-box",
       "name": "Daily.BoxHomeActivelyFunds",
       "displayName": "首页活动费按钮",
-      "type": "hint-box",
       "props": {
         "image": {
           "kind": "rect",
@@ -73,8 +73,9 @@
     },
     "98c3720d-5976-47d3-9ae0-ef709c960284": {
       "type": "prefab",
-      "prefab_id": "TemplateMatchPrefab",
       "name": "Daily.ButtonAssignmentPartial",
+      "displayName": "お仕事 按钮",
+      "prefab_id": "TemplateMatchPrefab",
       "props": {
         "template": {
           "kind": "image",
@@ -84,13 +85,13 @@
           "y2": 691.8363409400961
         },
         "fixed": true
-      },
-      "displayName": "お仕事 按钮"
+      }
     },
     "fc0fa204-4586-47c3-99c3-7d6b98f81260": {
       "type": "prefab",
-      "prefab_id": "TemplateMatchPrefab",
       "name": "Daily.ButtonShop",
+      "displayName": "ショップ 按钮",
+      "prefab_id": "TemplateMatchPrefab",
       "props": {
         "template": {
           "kind": "image",
@@ -100,13 +101,13 @@
           "y2": 952.6938442989582
         },
         "fixed": true
-      },
-      "displayName": "ショップ 按钮"
+      }
     },
     "0e51af90-42af-4f11-89b8-6d7b60035bbd": {
       "type": "prefab",
-      "prefab_id": "TemplateMatchPrefab",
       "name": "Daily.ButtonPass",
+      "displayName": "パス",
+      "prefab_id": "TemplateMatchPrefab",
       "props": {
         "template": {
           "kind": "image",
@@ -116,13 +117,13 @@
           "y2": 804.2200297724895
         },
         "fixed": true
-      },
-      "displayName": "パス"
+      }
     },
     "03179dd4-9ee0-403f-ba34-5d983216afb3": {
       "type": "prefab",
-      "prefab_id": "TemplateMatchPrefab",
       "name": "Daily.ButtonMission",
+      "displayName": "ミッション 按钮图标",
+      "prefab_id": "TemplateMatchPrefab",
       "props": {
         "template": {
           "kind": "image",
@@ -132,13 +133,13 @@
           "y2": 583.422667438886
         },
         "fixed": true
-      },
-      "displayName": "ミッション 按钮图标"
+      }
     },
     "3b5d6ff0-e89e-497b-9cf5-16a6dde88246": {
       "type": "prefab",
-      "prefab_id": "TemplateMatchPrefab",
       "name": "Daily.ButtonPresentsPartial",
+      "displayName": "プレゼント 按钮图标",
+      "prefab_id": "TemplateMatchPrefab",
       "props": {
         "template": {
           "kind": "image",
@@ -148,13 +149,13 @@
           "y2": 471.5388920479658
         },
         "fixed": true
-      },
-      "displayName": "プレゼント 按钮图标"
+      }
     },
     "44816fcf-7a8a-4796-8588-2512d97a5a87": {
       "type": "prefab",
-      "prefab_id": "TemplateMatchPrefab",
       "name": "Daily.ButtonHomeCurrent",
+      "displayName": "ホ一ム 按钮图标 高亮",
+      "prefab_id": "TemplateMatchPrefab",
       "props": {
         "template": {
           "kind": "image",
@@ -164,8 +165,67 @@
           "y2": 1180.0950283912812
         },
         "fixed": true
-      },
-      "displayName": "ホ一ム 按钮图标 高亮"
+      }
+    },
+    "234e5c6f-0336-43ec-a880-65e6cd18539d": {
+      "type": "prefab",
+      "name": "Common.ButtonToolbarMenu",
+      "displayName": "button_toolbar_menu.png",
+      "prefab_id": "TemplateMatchPrefab",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 635,
+          "y1": 1196,
+          "x2": 672,
+          "y2": 1230
+        }
+      }
+    },
+    "761edcff-d34b-470c-bfbd-fab2bb18049b": {
+      "type": "prefab",
+      "name": "Common.ButtonIdol",
+      "displayName": "button_idol.png",
+      "prefab_id": "TemplateMatchPrefab",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 211,
+          "y1": 1111,
+          "x2": 258,
+          "y2": 1162
+        }
+      }
+    },
+    "18682004-32b8-42c4-987c-c5651f30ac0f": {
+      "type": "prefab",
+      "name": "Common.ButtonContest",
+      "displayName": "button_contest.png",
+      "prefab_id": "TemplateMatchPrefab",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 460,
+          "y1": 1114,
+          "x2": 499,
+          "y2": 1161
+        }
+      }
+    },
+    "e4a42ec1-07e8-4b8d-b180-62a53e209f49": {
+      "type": "prefab",
+      "name": "Daily.ButtonProduce",
+      "displayName": "button_produce.png",
+      "prefab_id": "TemplateMatchPrefab",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 266,
+          "y1": 983,
+          "x2": 454,
+          "y2": 1016
+        }
+      }
     }
   }
 }

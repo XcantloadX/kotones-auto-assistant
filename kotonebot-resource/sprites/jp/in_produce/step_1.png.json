@@ -1,0 +1,98 @@
+{
+  "version": 3,
+  "definitions": {
+    "28959fc6-bf01-45b1-97b3-68e4a80d0ccc": {
+      "type": "prefab",
+      "name": "InProduce.ButtonIconOuting",
+      "displayName": "行动按钮图标 外出（おでかけ）",
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {},
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 147.0137563316449,
+          "y1": 962.9993502342033,
+          "x2": 230.0137563316449,
+          "y2": 1037.9993502342036
+        }
+      }
+    },
+    "f4d2860d-19cd-4af9-b7ac-1c68d5a412d7": {
+      "type": "prefab",
+      "name": "InProduce.ButtonTextActionOuting",
+      "displayName": "button_text_action_outing.png",
+      "prefab_id": "TemplateMatchPrefab",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 140.8934474700824,
+          "y1": 1071.7272343056698,
+          "x2": 232.8934474700824,
+          "y2": 1092.7272343056698
+        }
+      }
+    },
+    "00d6ad15-9550-4bc2-b77d-b027d758ace4": {
+      "type": "prefab",
+      "name": "InProduce.ButtonIconConsult",
+      "displayName": "行动按钮图标 咨询（相談）",
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {},
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 320.19404383128955,
+          "y1": 963.8476441084912,
+          "x2": 403.19404383128955,
+          "y2": 1043.8476441084913
+        }
+      }
+    },
+    "a0cf0ea3-5d96-4797-b19c-70711746d413": {
+      "type": "prefab",
+      "name": "InProduce.TextMidExamRemaining",
+      "displayName": "中間まで",
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {},
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 67,
+          "y1": 48,
+          "x2": 156,
+          "y2": 77
+        }
+      }
+    },
+    "fade8355-d5c7-4bfb-8961-3ff62af89dd1": {
+      "type": "prefab",
+      "name": "InProduce.ButtonTextConsult",
+      "displayName": "button_text_consult.png",
+      "prefab_id": "TemplateMatchPrefab",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 337,
+          "y1": 1071,
+          "x2": 383,
+          "y2": 1093
+        }
+      }
+    },
+    "5fd0daa8-2a33-49f1-8844-278459af3f3c": {
+      "type": "prefab",
+      "name": "InProduce.ButtonTextAllowance",
+      "displayName": "button_text_allowance.png",
+      "prefab_id": "TemplateMatchPrefab",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 486,
+          "y1": 1071,
+          "x2": 581,
+          "y2": 1093
+        }
+      }
+    }
+  }
+}

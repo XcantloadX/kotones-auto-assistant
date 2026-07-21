@@ -2,9 +2,11 @@
   "version": 3,
   "definitions": {
     "30a6f399-6999-4f04-bb77-651e0214112f": {
+      "type": "prefab",
       "name": "Produce.IconPIdolLevel",
       "displayName": "P偶像卡上的等级图标",
-      "type": "prefab",
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {},
       "props": {
         "template": {
           "kind": "image",
@@ -13,14 +15,12 @@
           "x2": 248,
           "y2": 753
         }
-      },
-      "prefab_id": "TemplateMatchPrefab",
-      "variant_policy": {}
+      }
     },
     "46607060-cefc-43a0-abaf-9d4887d46cb8": {
+      "type": "hint-box",
       "name": "Produce.BoxIdolOverviewIdols",
       "displayName": "偶像总览 偶像列表区域",
-      "type": "hint-box",
       "props": {
         "image": {
           "kind": "rect",
@@ -33,8 +33,8 @@
     },
     "f0040cf2-f17f-4ff1-bd73-0e56ea7f18bf": {
       "type": "prefab",
-      "prefab_id": "GakumasPrimaryButtonPrefab",
       "name": "Produce.IdolOverview.ButtonConfirm",
+      "prefab_id": "GakumasPrimaryButtonPrefab",
       "props": {
         "template": {
           "kind": "image",
@@ -48,8 +48,8 @@
     },
     "198a4b8e-a39a-494b-82a2-a177ccdf8018": {
       "type": "prefab",
-      "prefab_id": "GakumasScrollbarPrefab",
       "name": "Produce.ScrollbarIdolOverview",
+      "prefab_id": "GakumasScrollbarPrefab",
       "props": {
         "rect": {
           "kind": "rect",
@@ -57,6 +57,36 @@
           "y1": 575.6763275078366,
           "x2": 716.7554102239403,
           "y2": 978.673271317547
+        }
+      }
+    },
+    "409fd260-b935-4da9-9fe2-dd7540f7dfb6": {
+      "type": "prefab",
+      "name": "InProduce.TextDance",
+      "displayName": "text_dance.png",
+      "prefab_id": "TemplateMatchPrefab",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 171,
+          "y1": 110,
+          "x2": 228,
+          "y2": 128
+        }
+      }
+    },
+    "aa0ef01b-9cba-46d0-9d1e-de5df09a9694": {
+      "type": "prefab",
+      "name": "InProduce.TextSenseiTipDance",
+      "displayName": "text_sensei_tip_dance.png",
+      "prefab_id": "TemplateMatchPrefab",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 171,
+          "y1": 110,
+          "x2": 229,
+          "y2": 128
         }
       }
     }

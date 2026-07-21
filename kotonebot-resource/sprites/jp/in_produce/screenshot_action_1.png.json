@@ -2,9 +2,9 @@
   "version": 3,
   "definitions": {
     "be6836bd-ee42-432b-9166-469c74f32f0b": {
+      "type": "hint-box",
       "name": "InProduce.BoxWeeksUntilExam",
       "displayName": "考试剩余周",
-      "type": "hint-box",
       "description": "培育中左上角的下次考试剩余周数",
       "props": {
         "image": {
@@ -17,10 +17,12 @@
       }
     },
     "d6b64759-26b7-45b1-bf8e-5c0d98611e0d": {
+      "type": "prefab",
       "name": "InProduce.TextActionVocal",
       "displayName": "Vo. レッスン",
-      "type": "prefab",
       "description": "培育 行动页面 声乐课程按钮文字",
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {},
       "props": {
         "template": {
           "kind": "image",
@@ -29,15 +31,15 @@
           "x2": 255,
           "y2": 1097
         }
-      },
-      "prefab_id": "TemplateMatchPrefab",
-      "variant_policy": {}
+      }
     },
     "303cccc1-c674-4d3a-8c89-19ea729fdbef": {
+      "type": "prefab",
       "name": "InProduce.TextActionDance",
       "displayName": "Da. レッスン",
-      "type": "prefab",
       "description": "培育 行动页面 舞蹈课程按钮文字",
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {},
       "props": {
         "template": {
           "kind": "image",
@@ -46,15 +48,15 @@
           "x2": 431,
           "y2": 1096
         }
-      },
-      "prefab_id": "TemplateMatchPrefab",
-      "variant_policy": {}
+      }
     },
     "cc8a495d-330d-447d-8a80-a8a6ecc409c5": {
+      "type": "prefab",
       "name": "InProduce.TextActionVisual",
       "displayName": "Vi. レッスン",
-      "type": "prefab",
       "description": "培育 行动页面 形象课程按钮文字",
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {},
       "props": {
         "template": {
           "kind": "image",
@@ -63,15 +65,15 @@
           "x2": 606,
           "y2": 1096
         }
-      },
-      "prefab_id": "TemplateMatchPrefab",
-      "variant_policy": {}
+      }
     },
     "d7667903-7149-4f2f-9c15-d8a4b5f4d347": {
+      "type": "prefab",
       "name": "InProduce.IconAsariSenseiAvatar",
       "displayName": "Asari 老师头像",
-      "type": "prefab",
       "description": "用于检测培育行动页面提示",
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {},
       "props": {
         "template": {
           "kind": "image",
@@ -80,14 +82,12 @@
           "x2": 679,
           "y2": 220
         }
-      },
-      "prefab_id": "TemplateMatchPrefab",
-      "variant_policy": {}
+      }
     },
     "75fdc1b6-5690-44d1-989e-95b6ab78e1dc": {
+      "type": "hint-box",
       "name": "InProduce.BoxAsariSenseiTip",
       "displayName": "Asari 老师提示文本区域",
-      "type": "hint-box",
       "props": {
         "image": {
           "kind": "rect",
@@ -99,9 +99,11 @@
       }
     },
     "ce1d1d6f-38f2-48bf-98bd-6e091c7ca5b8": {
+      "type": "prefab",
       "name": "InProduce.ButtonPracticeVocal",
       "displayName": "行动页 声乐课程按钮图标",
-      "type": "prefab",
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {},
       "props": {
         "template": {
           "kind": "image",
@@ -110,15 +112,15 @@
           "x2": 201,
           "y2": 1038
         }
-      },
-      "prefab_id": "TemplateMatchPrefab",
-      "variant_policy": {}
+      }
     },
     "b2e1bf3c-2c36-4fb5-9db7-c10a29563a37": {
+      "type": "prefab",
       "name": "InProduce.ButtonPracticeDance",
       "displayName": "行动页 舞蹈课程按钮图标",
-      "type": "prefab",
       "description": "",
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {},
       "props": {
         "template": {
           "kind": "image",
@@ -127,14 +129,14 @@
           "x2": 390,
           "y2": 1030
         }
-      },
-      "prefab_id": "TemplateMatchPrefab",
-      "variant_policy": {}
+      }
     },
     "adc533a7-970b-4c5b-a037-2181531a35d6": {
+      "type": "prefab",
       "name": "InProduce.ButtonPracticeVisual",
       "displayName": "行动页 形象课程按钮图标",
-      "type": "prefab",
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {},
       "props": {
         "template": {
           "kind": "image",
@@ -143,14 +145,14 @@
           "x2": 561,
           "y2": 1031
         }
-      },
-      "prefab_id": "TemplateMatchPrefab",
-      "variant_policy": {}
+      }
     },
     "70898bf8-56c5-4f84-becb-629c9ab6a7da": {
+      "type": "prefab",
       "name": "InProduce.TextFinalExamRemaining",
       "displayName": "最終まで",
-      "type": "prefab",
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {},
       "props": {
         "template": {
           "kind": "image",
@@ -159,14 +161,14 @@
           "x2": 156,
           "y2": 64
         }
-      },
-      "prefab_id": "TemplateMatchPrefab",
-      "variant_policy": {}
+      }
     },
     "aa827983-7f27-4763-bcd6-4316e1b8e459": {
       "type": "prefab",
-      "prefab_id": "TemplateMatchPrefab",
       "name": "InProduce.TextReviewCriteria",
+      "displayName": "審査基準",
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {},
       "props": {
         "template": {
           "kind": "image",
@@ -175,14 +177,12 @@
           "x2": 652.8062121718203,
           "y2": 62.78861016191536
         }
-      },
-      "displayName": "審査基準",
-      "variant_policy": {}
+      }
     },
     "3b9c9e2d-1a64-4a3d-9f2f-0b9d5d2a1c11": {
+      "type": "hint-box",
       "name": "InProduce.CurVoValue",
       "displayName": "行动页 当前 Vo 值",
-      "type": "hint-box",
       "props": {
         "image": {
           "kind": "rect",
@@ -194,9 +194,9 @@
       }
     },
     "4d2f7b8e-6c3a-4f22-8d9a-2f7e6b4a2f22": {
+      "type": "hint-box",
       "name": "InProduce.CurDaValue",
       "displayName": "行动页 当前 Da 值",
-      "type": "hint-box",
       "props": {
         "image": {
           "kind": "rect",
@@ -208,9 +208,9 @@
       }
     },
     "7a6e5c3b-2b11-4d8f-a9c3-1e4b8f9d3e33": {
+      "type": "hint-box",
       "name": "InProduce.CurViValue",
       "displayName": "行动页 当前 Vi 值",
-      "type": "hint-box",
       "props": {
         "image": {
           "kind": "rect",
@@ -222,9 +222,9 @@
       }
     },
     "9f8b6a2c-5d44-4c3e-b1a7-6c2d9e0f4b44": {
+      "type": "hint-box",
       "name": "InProduce.MaxDaValue",
       "displayName": "行动页 最大 Da 值",
-      "type": "hint-box",
       "props": {
         "image": {
           "kind": "rect",
@@ -232,6 +232,51 @@
           "y1": 720,
           "x2": 430,
           "y2": 750
+        }
+      }
+    },
+    "f10246ec-334d-4e5c-9f2f-6622e232de4c": {
+      "type": "prefab",
+      "name": "InProduce.Rest",
+      "displayName": "rest.png",
+      "prefab_id": "TemplateMatchPrefab",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 621,
+          "y1": 822,
+          "x2": 671,
+          "y2": 859
+        }
+      }
+    },
+    "5224dfd7-8e69-4fda-bfa1-ebdd1513c815": {
+      "type": "prefab",
+      "name": "InProduce.TextPDiary",
+      "displayName": "text_p_diary.png",
+      "prefab_id": "TemplateMatchPrefab",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 615,
+          "y1": 709,
+          "x2": 666,
+          "y2": 728
+        }
+      }
+    },
+    "f5d778dd-530a-40a0-bbd6-c600e151f093": {
+      "type": "prefab",
+      "name": "InProduce.TextSenseiTipVocal",
+      "displayName": "text_sensei_tip_vocal.png",
+      "prefab_id": "TemplateMatchPrefab",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 280,
+          "y1": 200,
+          "x2": 358,
+          "y2": 219
         }
       }
     }
