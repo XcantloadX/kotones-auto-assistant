@@ -79,6 +79,13 @@ class ProduceData(ConfigBaseModel):
     """
     skip_commu: bool = True
     """检测并跳过交流"""
+    card_deck_id: str | None = None
+    """
+    卡组配置 ID。
+
+    为 None 时使用默认卡组（deck_defaults.py 中的系统预设）。
+    自定义卡组请放到 conf/decks/ 目录下。
+    """
 
 class ProduceSolution(ConfigBaseModel):
     """培育方案"""

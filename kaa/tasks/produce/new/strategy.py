@@ -117,11 +117,36 @@ class StandardStrategy:
 
     def on_select_card(self, ctx: 'CardSelectContext'):
         """选择技能卡"""
-        card_idx = ctx.fetch_recommend_card()
-        if card_idx is None:
-            ctx.commit(0)
+        from kaa.kaa_context import produce_session
+        session = produce_session()
+        if session is not None and session.archetype is not None and session.deck is not None:
+            deck = session.deck
+            cards = ctx.fetch_cards()
+            if cards:
+                cards.sort(key=lambda c: deck.query_priority(c.card) if c.card else 999)
+                best = cards[0]
+                if best.card is not None and deck.query_priority(best.card) < 999:
+                    logger.info('Selecting card %s (%s, priority=%d) by archetype priority.',
+                                 best.card._id, best.card.name, deck.query_priority(best.card))
+                    ctx.commit(best)
+                    return
+
+        recommend = ctx.fetch_recommend_card()
+        if recommend:
+            id = recommend.card._id if recommend.card else 'unknown'
+            name = recommend.card.name if recommend.card else 'unknown'
+            logger.info('Selecting recommended card %s (%s).', id, name)
+            ctx.commit(recommend)
         else:
-            ctx.commit(card_idx)
+            cards = ctx.fetch_cards()
+            if cards:
+                card = cards[0]
+                id = card.card._id if card.card else 'unknown'
+                name = card.card.name if card.card else 'unknown'
+                logger.info('Selecting card #1 %s (%s) by default.', id, name)
+                ctx.commit(card)
+            else:
+                logger.warning('No cards available to select.')
 
     def on_select_pitem(self, ctx: 'PItemSelectContext'):
         """选择P道具"""

@@ -258,3 +258,16 @@ class ProduceController(QObject):
         except Exception:
             logger.exception("Failed to load detect modes")
             return '[]'
+
+    @Slot(result=str)
+    def cardDecksJson(self) -> str:
+        try:
+            from kaa.config.deck import CardDeckManager
+            decks = CardDeckManager().list()
+            return json.dumps([
+                {'value': d.id, 'name': d.name, 'description': d.description or ''}
+                for d in decks
+            ], ensure_ascii=False)
+        except Exception:
+            logger.exception("Failed to load card decks")
+            return '[]'

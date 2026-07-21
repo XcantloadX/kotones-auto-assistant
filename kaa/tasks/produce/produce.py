@@ -2,7 +2,7 @@ import logging
 from typing import Optional
 
 from kaa.kaa_context import produce_solution, init_produce_session, clear_produce_session
-from kaa.tasks.produce.session import ProduceSession, HajimeScenario
+from kaa.tasks.produce.session import ProduceSession, HajimeScenario, resolve_deck
 from kaa.tasks.produce.shared.common import resume_produce_pre
 from kaa.tasks.produce.new.controller import ProduceController
 from kaa.tasks.produce.legacy.in_purodyuusu import (
@@ -156,7 +156,8 @@ def resume_produce():
 
     scenario, current_week, idol_card = resume_produce_pre()
 
-    session = ProduceSession(idol_card=idol_card, scenario=scenario, is_resumed=True)
+    session = ProduceSession(idol_card=idol_card, scenario=scenario, is_resumed=True,
+        deck=resolve_deck(idol_card, produce_solution().data.card_deck_id))
     init_produce_session(session)
     try:
         if conf().tasks.produce.produce_engine == 'legacy':
@@ -279,7 +280,8 @@ def do_produce(
             pass
         if R.Common.ButtonConfirmNoIcon.try_click():
             pass
-    session = ProduceSession(idol_card=idol_skin_id, scenario=scenario, is_resumed=False)
+    session = ProduceSession(idol_card=idol_skin_id, scenario=scenario, is_resumed=False,
+        deck=resolve_deck(idol_skin_id, produce_solution().data.card_deck_id))
     init_produce_session(session)
     try:
         if conf().tasks.produce.produce_engine == 'legacy':

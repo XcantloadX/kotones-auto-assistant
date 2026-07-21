@@ -5,6 +5,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from kaa.db._util import register_cache_clear, row_dict
 from kaa.db.sqlite import select, select_many
+from kaa.db.constants import ProduceExamEffectType, ShowExamEffectType
 
 _IDOL_CARD_SELECT = """
 SELECT
@@ -14,7 +15,9 @@ SELECT
     NOT (IC.originalIdolCardSkinId = ICS.id) AS isAnotherVer,
     ICS.name AS anotherVerName,
     Char.id AS characterId,
-    Char.lastName || ' ' || Char.firstName AS characterName
+    Char.lastName || ' ' || Char.firstName AS characterName,
+    IC.examEffectType AS examEffectType,
+    IC.showExamEffectType AS showExamEffectType
 FROM IdolCard IC
 JOIN Character Char ON characterId = Char.id
 JOIN IdolCardSkin ICS ON IC.id = ICS.idolCardId
@@ -40,6 +43,10 @@ class IdolCardRow(BaseModel):
     """角色 ID（Character.id）。"""
     character_name: str = Field(alias='characterName')
     """角色姓名（Character 表拼接）。"""
+    exam_effect_type: str | None = Field(None, alias='examEffectType')
+    """考试流派（ProduceExamEffectType 枚举值）。"""
+    show_exam_effect_type: str | None = Field(None, alias='showExamEffectType')
+    """显示考试流派。当此值与 exam_effect_type 不同时，表示推荐流派显示为「温存」。"""
 
 
 @dataclass
@@ -59,6 +66,10 @@ class IdolCard:
     """角色 ID（Character.id）。"""
     character_name: str
     """角色姓名（Character 表拼接）。"""
+    exam_effect_type: ProduceExamEffectType | None
+    """考试流派。"""
+    show_exam_effect_type: ShowExamEffectType | None
+    """显示考试流派。当此值与 exam_effect_type 不同时，表示推荐流派显示为「温存」。"""
 
     @classmethod
     def from_skin_id(cls, sid: str) -> 'IdolCard | None':
@@ -76,6 +87,8 @@ class IdolCard:
     @classmethod
     def _from_row(cls, row) -> 'IdolCard':
         parsed = IdolCardRow.model_validate(row_dict(row))
+        exam = ProduceExamEffectType(parsed.exam_effect_type) if parsed.exam_effect_type else None
+        show = ShowExamEffectType(parsed.show_exam_effect_type) if parsed.show_exam_effect_type else None
         return cls(
             parsed.card_id,
             parsed.skin_id,
@@ -84,6 +97,8 @@ class IdolCard:
             parsed.name,
             parsed.character_id,
             parsed.character_name,
+            exam,
+            show,
         )
 
 

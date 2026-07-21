@@ -40,6 +40,7 @@ PageContainer {
     property var idolCards: []
     property var produceActions: []
     property var detectModes: []
+    property var cardDecks: []
 
     // 拖拽排序状态（行动优先级列表）
     property int _dragCurrentIndex: -1
@@ -110,6 +111,7 @@ PageContainer {
         idolCards      = JSON.parse(produceCtrl.idolCardsJson())
         produceActions = JSON.parse(produceCtrl.produceActionsJson())
         detectModes    = JSON.parse(produceCtrl.detectModesJson())
+        cardDecks      = JSON.parse(produceCtrl.cardDecksJson())
     }
 
     function markClean() { dirty = false; if (produceCtrl) produceCtrl.markClean() }
@@ -570,6 +572,18 @@ PageContainer {
                                 { label: "游戏 AI", value: "bandai" },
                                 { label: "脚本简单 AI（实验性）", value: "expert" }
                             ]
+                        }
+                        FormComboBox {
+                            field: "card_deck_id"
+                            label: "技能卡组"
+                            options: {
+                                var items = [{ label: "自动", value: "" }]
+                                for (var i = 0; i < root.cardDecks.length; ++i) {
+                                    var d = root.cardDecks[i]
+                                    items.push({ label: d.name, value: d.value })
+                                }
+                                return items
+                            }
                         }
                     }
 

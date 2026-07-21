@@ -31,6 +31,10 @@ from ..kaa_context import conf
 from .migrations import LATEST_VERSION, upgrade_config
 from .migration import get_deferred_messages, MigrationMessage
 
+# 卡组配置
+from .deck import CardDeck, CardDeckManager
+from .deck_defaults import DEFAULT_DECKS, get_default_deck
+
 __all__ = [
     # schema 导出
     "KaaConfig",
@@ -66,4 +70,9 @@ __all__ = [
     "LATEST_VERSION",
     "get_deferred_messages",
     "MigrationMessage",
+    # deck 导出
+    "CardDeck",
+    "CardDeckManager",
+    "DEFAULT_DECKS",
+    "get_default_deck",
 ]

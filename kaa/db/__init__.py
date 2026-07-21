@@ -1,4 +1,4 @@
-from .constants import CharacterId, ProduceExamEffectType
+from .constants import CharacterId, ProduceExamEffectType, ShowExamEffectType
 from .drink import Drink
 from .idol_card import IdolCard
 from .produce_enums import ProduceEffectType, ProduceResourceType, ProduceStepType
@@ -12,6 +12,7 @@ __all__ = [
     'ProduceEffectType',
     'ProduceExamEffectType',
     'ProduceResourceType',
+    'ShowExamEffectType',
     'ProduceStepType',
     'SchoolEvent',
     'SchoolEventOption',

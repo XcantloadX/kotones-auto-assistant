@@ -3,6 +3,7 @@ from typing import Any, Callable, Literal, TypeVar, ParamSpec, cast, TYPE_CHECKI
 
 import cv2
 import numpy as np
+from kaa.db.skill_card import SkillCard
 from kotonebot.primitives import Rect
 from kotonebot.core import BoundPrefab, GameObject, AnyOf, Prefab
 from kotonebot.errors import UnrecoverableError
@@ -299,42 +300,94 @@ class DrinkSelectContext(Context):
         logger.debug("Clicked Acquire button for PDrink.")
 
 
+class CardOption:
+    """选卡对话框中的一张可选卡：位置 + 身份。"""
+    def __init__(self, rect: Rect, card: 'SkillCard | None' = None):
+        self.rect = rect
+        self.card = card
+
+    def __repr__(self) -> str:
+        name = self.card.name if self.card else '?'
+        return f"CardOption({self.rect}, {name})"
+
 class CardSelectContext(Context):
     @eval_once
-    def fetch_cards(self):
-        cards = AnyOf[
-            R.InProduce.A,
-            R.InProduce.M
-        ].find_all()
-        cards.sort(key=lambda x: x.rect.top_left)
-        logger.info(f"Found {len(cards)} skill cards")
-        return cards
+    def fetch_cards(self) -> list[CardOption]:
+        # letters = AnyOf[
+        #     R.InProduce.A.q(threshold=0.6),
+        #     R.InProduce.M.q(threshold=0.6)
+        # ].find_all()
+        letters = (
+            R.InProduce.A.q(threshold=0.65, region=R.InProduce.SkillCardSelect.CardsBox).find_all()
+            + R.InProduce.M.q(threshold=0.65, region=R.InProduce.SkillCardSelect.CardsBox).find_all()
+        )
+        if not letters:
+            return []
+        letters.sort(key=lambda x: x.rect.top_left)
+        # x 差距小于 30 的视为重复
+        filtered_letters = []
+        for go in letters:
+            for fgo in filtered_letters:
+                if abs(go.rect.center.x - fgo.rect.center.x) < 30:
+                    break
+            else:
+                filtered_letters.append(go)
+        logger.info(f"Found {len(letters)} -> {len(filtered_letters)} skill cards.")
+        letters = filtered_letters
+
+        if False:
+            # draw boxes
+            img2 = device.screenshot()
+            for go in letters:
+                cv2.rectangle(img2, go.rect.top_left.xy, go.rect.bottom_right.xy, (0, 255, 0), 2)
+            cv2.imshow('Skill Cards', cv2.resize(img2, None, fx=0.5, fy=0.5))
+            cv2.waitKey(0)
+            cv2.destroyAllWindows()
+
+        from kaa.game_ui.skill_card_select import match_card_region
+        img = device.screenshot()
+        results = []
+        for go in letters:
+            letter_rect = go.rect
+            x1 = letter_rect.center.x - 60
+            y1 = letter_rect.y1 - 105
+            x2 = letter_rect.center.x + 60
+            y2 = letter_rect.y2
+            if y1 < 0 or x1 < 0:
+                results.append(CardOption(rect=go.rect, card=None))
+                continue
+            crop = img[y1:y2, x1:x2]
+            card = match_card_region(crop)
+            if card:
+                logger.debug('Card matched: %s', card.name)
+            results.append(CardOption(rect=go.rect, card=card))
+        return results
 
     @eval_once
-    def fetch_recommend_card(self) -> int | None:
-        rec_badges = R.InProduce.TextRecommend.find_all()
-        rec_badges = [card.rect for card in rec_badges]
+    def fetch_recommend_card(self) -> CardOption | None:
         cards = self.fetch_cards()
-        if rec_badges:
-            cards = [card.rect for card in cards]
-            matches = badge.match(cards, rec_badges, 'mb')
-            logger.debug("Recommend card badge matches: %s", matches)
-            for i, match in enumerate(matches):
-                if match.badge is not None:
-                    return i
+        if not cards:
             return None
+        rec_badges = R.InProduce.TextRecommend.find_all()
+        if not rec_badges:
+            return None
+        card_rects = [c.rect for c in cards]
+        badge_rects = [b.rect for b in rec_badges]
+        matches = badge.match(card_rects, badge_rects, 'mb')
+        logger.debug("Recommend card badge matches: %s", matches)
+        for i, m in enumerate(matches):
+            if m.badge is not None:
+                return cards[i]
         return None
 
-    def commit(self, index: int):
-        cards = self.fetch_cards()
-        target = cards[index]
+    def commit(self, card_option: CardOption):
         for _ in Loop():
-            device.click(target)
+            device.click(card_option.rect)
             btn = R.InProduce.AcquireBtnDisabled.find()
             if btn:
                 btn.click()
                 sleep(0.5)
-                logger.debug(f"Clicked Acquire button for skill card index {index}.")
+                logger.debug("Clicked Acquire button for skill card.")
             else:
                 break
 

@@ -18,6 +18,20 @@
       },
       "prefab_id": "TemplateMatchPrefab",
       "variant_policy": {}
+    },
+    "ccfde71e-df6a-4582-aef6-1c34f41003fb": {
+      "type": "hint-box",
+      "name": "InProduce.SkillCardSelect.CardsBox",
+      "props": {
+        "rect": {
+          "kind": "rect",
+          "x1": 82.17075278592799,
+          "y1": 926.1481018903384,
+          "x2": 637.7680468541723,
+          "y2": 948.1457457646634
+        }
+      },
+      "displayName": "技能卡选择对话框 卡片区域"
     }
   }
 }

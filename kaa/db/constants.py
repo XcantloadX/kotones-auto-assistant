@@ -467,6 +467,20 @@ class ProduceExamEffectType(Enum):
     `effect_turn`：持续回合数。
     """
 
+
+class ShowExamEffectType(Enum):
+    """
+    显示考试流派（IdolCard.showExamEffectType）。
+
+    若为 ExamPreservation，则偶像卡推荐流派显示为「温存」。
+    目前有 全力-温存 和 强气-温存 两种，选择卡牌还是根据 exam_effect_type 来选择。
+    """
+    Unknown = "ProduceExamEffectType_Unknown"
+    """推荐流派与 exam_effect_type 一致。"""
+    Conservation = "ProduceExamEffectType_ExamPreservation"
+    """推荐流派显示为「温存」。"""
+
+
 """
 附 查询 SQL
 
