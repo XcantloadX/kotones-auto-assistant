@@ -77,9 +77,10 @@ def draw_idol_preview(img: MatLike, rects: list[RectTuple], db: ImageDatabase, i
     for rect in rects:
         x, y, w, h = rect
         idol_img = img[y:y+h, x:x+w]
-        match = db.match(idol_img, 20)
-        if not match:
+        results = db.query(idol_img, k=1, threshold=20)
+        if not results:
             continue
+        match = results[0]
         file = os.path.join(idol_path, match.key)
         found_img = cv2_imread(file)
         
@@ -102,8 +103,10 @@ def idols_db() -> ImageDatabase:
     if _db is None:
         logger.info('Loading idols database...')
         path = paths.resource('idol_cards')
-        db_path = paths.cache('idols.pkl')
-        _db = ImageDatabase(FileDataSource(str(path)), db_path, HistDescriptor(8), name='idols')
+        db_dir = paths.cache('idols')
+        _db = ImageDatabase(FileDataSource(str(path)), db_dir, HistDescriptor(8), name='idols')
+        if not _db.is_built:
+            _db.build()
     return _db
 
 def match_idol(skin_id: str, idol_img: MatLike) -> DatabaseQueryResult | None:
@@ -115,8 +118,11 @@ def match_idol(skin_id: str, idol_img: MatLike) -> DatabaseQueryResult | None:
     :return: 若匹配成功，则返回匹配结果，否则返回 None。
     """
     db = idols_db()
-    match = db.match(idol_img, 20)
-    if match and match.key.startswith(skin_id):
+    results = db.query(idol_img, k=1, threshold=20)
+    if not results:
+        return None
+    match = results[0]
+    if match.key.startswith(skin_id):
         return match
     else:
         return None
@@ -164,7 +170,8 @@ def locate_idol(skin_id: str) -> Rect | None:
         for rect in rects:
             rx, ry, rw, rh = rect
             idol_img = img[ry:ry+rh, rx:rx+rw]
-            match = db.match(idol_img, 20)
+            results = db.query(idol_img, k=1, threshold=20)
+            match = results[0] if results else None
             logger.debug('Result rect: %s, match: %s', repr(rect), repr(match))
             # Key 格式：{skin_id}_{index}
             # 同一张卡升级前后图片不一样，index 分别为 0 和 1

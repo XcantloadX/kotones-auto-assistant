@@ -2,13 +2,30 @@ import cv2
 import numpy as np
 from cv2.typing import MatLike
 
+from .base import MetricType
+
+
 class HistDescriptor:
+    """HSV 直方图全局描述子。
+
+    将图像转为 HSV 空间，均分为 3x3 共 9 个区域，
+    分别计算每个区域的 HSV 三通道直方图并拼接。
+    """
+
+    metric_type = MetricType.CHI2
+
     def __init__(self, bin_count: int):
+        """
+        :param bin_count: 每个通道的直方图 bin 数量
+        """
         self.bin_count = bin_count
 
-    def __call__(self, image: MatLike):
+    @property
+    def dimension(self):
+        return (self.bin_count ** 3) * 9
+
+    def compute(self, image: MatLike):
         img = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
-        # 将图像均分为九个区域
         masks = []
         height, width = img.shape[:2]
         for i in range(3):
@@ -18,7 +35,6 @@ class HistDescriptor:
                 mask = np.zeros(img.shape[:2], dtype=np.uint8)
                 mask[start_row:end_row, start_col:end_col] = 255
                 masks.append(mask)
-        # 依次计算九个区域的直方图
         features = np.array([])
         for mask in masks:
             hist = cv2.calcHist(
@@ -30,7 +46,11 @@ class HistDescriptor:
             )
             hist = cv2.normalize(hist, hist)
             features = np.append(features, hist.flatten())
-        return features
+        return features.reshape(1, -1)
+
+    def __call__(self, image: MatLike):
+        return self.compute(image)
+
 
 if __name__ == '__main__':
     from kotonebot.backend.core import cv2_imread

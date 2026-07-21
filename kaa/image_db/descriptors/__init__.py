@@ -1,5 +1,6 @@
+from .base import BaseDescriptor, MetricType
 from .hist import HistDescriptor
 from .hog import HogDescriptor
-from .base import BaseDescriptor
+from .sift import SiftDescriptor
 
-__all__ = ['HistDescriptor', 'HogDescriptor', 'BaseDescriptor']
+__all__ = ['BaseDescriptor', 'MetricType', 'HistDescriptor', 'HogDescriptor', 'SiftDescriptor']

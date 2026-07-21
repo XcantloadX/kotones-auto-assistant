@@ -78,8 +78,10 @@ def drinks_db() -> ImageDatabase:
     if _db is None:
         logger.info('Loading drinks database...')
         path = paths.resource('drinks')
-        db_path = paths.cache('drinks.pkl')
-        _db = ImageDatabase(FileDataSource(str(path)), db_path, HistDescriptor(8), name='drinks')
+        db_dir = paths.cache('drinks')
+        _db = ImageDatabase(FileDataSource(str(path)), db_dir, HistDescriptor(8), name='drinks')
+        if not _db.is_built:
+            _db.build()
     return _db
 
 def match_first_drinks(img: MatLike, delta_threshold: float = 0.7) -> Drink | None:
@@ -99,7 +101,7 @@ def match_first_drinks(img: MatLike, delta_threshold: float = 0.7) -> Drink | No
     # cv2.destroyAllWindows()
     
     db = drinks_db()
-    matches = db.match_all(img, threshold=114514)
+    matches = db.query(img, k=3)
     if len(matches) == 0:
         return None
 
@@ -112,7 +114,6 @@ def match_first_drinks(img: MatLike, delta_threshold: float = 0.7) -> Drink | No
         logger.info("Only 1 drink match result: %s", str(drink.name))
         return drink
     
-    matches = matches[:3]
     matches_distance = [round(m.distance, 2) for m in matches]
 
     if matches[1].distance - matches[0].distance <= delta_threshold:

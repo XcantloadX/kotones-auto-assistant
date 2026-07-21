@@ -43,36 +43,42 @@ class CardGameObject(GameObject):
 
 class CardImageDatabase(ImageDatabase):
     @override
-    def insert(self, key, image, *, overwrite = False):
-        if isinstance(image, str):
-            img = cv2.imread(image)
-            if img is None:
-                raise ValueError(f'Cannot read image from path: {image}')
-        else:
-            img = image
-        # 截取从下边缘中点为右下角，
-        # 到 CARD_OFFSET * CARD_SCALE 为左上角的区域
-        h, w, _ = img.shape
-        x2, y2 = w // 2, h  # 右下角
-        x1 = int(x2 - CARD_OFFSET[0] / CARD_SCALE)
-        y1 = int(y2 - CARD_OFFSET[1] / CARD_SCALE)
-        half_img = img[y1:y2, x1:x2]
-
-        # if DEBUG:
-        #     debug_img = img.copy()
-        #     cv2.rectangle(debug_img, (x1, y1), (x2, y2), (0, 255, 0), 2)
-        #     cv2.imshow('original_with_rect', cv2.resize(debug_img, (0,0), fx=0.5, fy=0.5))
-        #     cv2.imshow('half_img', cv2.resize(half_img, (0,0), fx=2, fy=2))
-        #     cv2.waitKey(0)
-        return super().insert(key, half_img, overwrite=overwrite)
+    def build(self):
+        """构建时对每张卡片图像进行裁剪预处理。"""
+        class PreprocessingSource:
+            def __init__(self, source):
+                self._source = source
+            
+            def __iter__(self):
+                for key, img in self._source:
+                    # 截取从下边缘中点为右下角，
+                    # 到 CARD_OFFSET * CARD_SCALE 为左上角的区域
+                    h, w, _ = img.shape
+                    x2, y2 = w // 2, h  # 右下角
+                    x1 = int(x2 - CARD_OFFSET[0] / CARD_SCALE)
+                    y1 = int(y2 - CARD_OFFSET[1] / CARD_SCALE)
+                    half_img = img[y1:y2, x1:x2]
+                    
+                    # if DEBUG:
+                    #     debug_img = img.copy()
+                    #     cv2.rectangle(debug_img, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                    #     cv2.imshow('original_with_rect', cv2.resize(debug_img, (0,0), fx=0.5, fy=0.5))
+                    #     cv2.imshow('half_img', cv2.resize(half_img, (0,0), fx=2, fy=2))
+                    #     cv2.waitKey(0)
+                    yield key, half_img
+        
+        self.source = PreprocessingSource(self.source)
+        super().build()
 
 def skill_cards_db() -> ImageDatabase:
     global _db
     if _db is None:
         logger.info('Loading skill_cards database...')
         path = paths.resource('skill_cards')
-        db_path = paths.cache('skill_cards.pkl')
-        _db = CardImageDatabase(FileDataSource(str(path)), db_path, HogDescriptor(), name='skill_cards')
+        db_dir = paths.cache('skill_cards')
+        _db = CardImageDatabase(FileDataSource(str(path)), db_dir, HogDescriptor(), name='skill_cards')
+        if not _db.is_built:
+            _db.build()
     return _db
 
 
@@ -125,7 +131,8 @@ def locate_cards(img: MatLike):
     for region, letter in zip(card_regions, letters):
         x, y, w, h = region.xywh
         card_img = img[y:y+h, x:x+w]
-        result = skill_cards_db().match(card_img, threshold=150)
+        result_list = skill_cards_db().query(card_img, k=1, threshold=150)
+        result = result_list[0] if result_list else None
         available = color.find(img, '#7a7d7d', rect=letter) is None
         if result is not None:
             # 从资源名称中提取 asset_id
