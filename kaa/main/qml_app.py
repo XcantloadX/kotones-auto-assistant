@@ -309,8 +309,9 @@ class _SplashBridge(QObject):
 
 
 def _startup_task(bridge: _SplashBridge, tab_manager: TabManager, hotkey_mgr: HotkeyManager) -> None:
-    """后台线程入口：游戏数据更新 → 还原 tabs → 标记就绪。"""
+    """后台线程入口：游戏数据更新 → 构建图像索引 → 还原 tabs → 标记就绪。"""
     # ── Phase 1: 游戏数据更新 ────────────────────────────────
+    outcome = None
     try:
         from kaa.config import manager as config_manager
         from kaa.game_data.updater import GameDataUpdater, should_check
@@ -333,6 +334,15 @@ def _startup_task(bridge: _SplashBridge, tab_manager: TabManager, hotkey_mgr: Ho
     except BaseException:
         logger.exception("Game data update failed; continuing.")
         bridge.onGameDataFinished()
+
+    # ── Phase 1a: 构建图像数据索引 ────────────────────────────
+    try:
+        from kaa.image_db.prebuild import ensure_all_image_dbs_built
+        was_updated = outcome is not None and outcome.value == "updated"
+        bridge.onStatusChanged("正在构建图像数据索引，可能需要若干分钟")
+        ensure_all_image_dbs_built(status_cb=bridge.onStatusChanged, force=was_updated)
+    except BaseException:
+        logger.exception("Image db rebuild failed; continuing.")
 
     # ── Phase 2: 还原已保存 tabs ────────────────────────────
     try:

@@ -1,5 +1,6 @@
 import logging
 from collections import deque
+from typing import Callable
 
 import cv2
 import numpy as np
@@ -73,15 +74,21 @@ def preprocess_drink_slot_img(img: MatLike) -> MatLike:
 
     return img
 
+def build_db(progress_cb: Callable[[int, int], None] | None = None):
+    global _db
+    path = paths.resource('drinks')
+    db_dir = paths.cache('drinks')
+    _db = ImageDatabase(FileDataSource(str(path)), db_dir, HistDescriptor(8), name='drinks')
+    if not _db.is_built:
+        _db.build(progress_cb=progress_cb)
+
+
 def drinks_db() -> ImageDatabase:
     global _db
     if _db is None:
         logger.info('Loading drinks database...')
-        path = paths.resource('drinks')
-        db_dir = paths.cache('drinks')
-        _db = ImageDatabase(FileDataSource(str(path)), db_dir, HistDescriptor(8), name='drinks')
-        if not _db.is_built:
-            _db.build()
+        build_db()
+    assert _db is not None
     return _db
 
 def match_first_drinks(img: MatLike, delta_threshold: float = 0.7) -> Drink | None:

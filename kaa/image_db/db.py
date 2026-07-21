@@ -3,7 +3,7 @@ import pickle
 import logging
 from dataclasses import dataclass
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import Any, NamedTuple
+from typing import Any, Callable, NamedTuple
 
 import numpy as np
 from cv2.typing import MatLike
@@ -115,10 +115,12 @@ class ImageDatabase:
             return 0
         return len(self._meta.key_to_id)
 
-    def build(self):
+    def build(self, progress_cb: Callable[[int, int], None] | None = None):
         """构建数据库索引。
 
         遍历数据源，提取所有图像的特征向量，训练索引并持久化。
+
+        :param progress_cb: 进度回调，每处理 100 张图像调用一次，参数 (processed, total)
         """
         logger.info('Building database from source...')
         key_to_id: dict[str, int] = {}
@@ -156,6 +158,8 @@ class ImageDatabase:
                 completed += 1
                 if completed % 100 == 0:
                     logger.info('  Progress: %d/%d', completed, total_items)
+                    if progress_cb:
+                        progress_cb(completed, total_items)
                 if features is None:
                     continue
                 image_id = next_id

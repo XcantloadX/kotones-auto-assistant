@@ -1,5 +1,6 @@
 import os
 import logging
+from typing import Callable
 
 import cv2
 import numpy as np
@@ -98,15 +99,21 @@ def draw_idol_preview(img: MatLike, rects: list[RectTuple], db: ImageDatabase, i
                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
     return preview_img
 
+def build_db(progress_cb: Callable[[int, int], None] | None = None):
+    global _db
+    path = paths.resource('idol_cards')
+    db_dir = paths.cache('idols')
+    _db = ImageDatabase(FileDataSource(str(path)), db_dir, HistDescriptor(8), name='idols')
+    if not _db.is_built:
+        _db.build(progress_cb=progress_cb)
+
+
 def idols_db() -> ImageDatabase:
     global _db
     if _db is None:
         logger.info('Loading idols database...')
-        path = paths.resource('idol_cards')
-        db_dir = paths.cache('idols')
-        _db = ImageDatabase(FileDataSource(str(path)), db_dir, HistDescriptor(8), name='idols')
-        if not _db.is_built:
-            _db.build()
+        build_db()
+    assert _db is not None
     return _db
 
 def match_idol(skin_id: str, idol_img: MatLike) -> DatabaseQueryResult | None:

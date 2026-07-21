@@ -237,6 +237,9 @@ class SettingsController(QObject):
                     self.gameDataProgress.emit(text)
                 outcome = updater.check_and_update(progress_cb=progress_cb)
                 if outcome == UpdateOutcome.UPDATED:
+                    self.gameDataProgress.emit("正在构建图像数据索引，可能需要若干分钟")
+                    from kaa.image_db.prebuild import ensure_all_image_dbs_built
+                    ensure_all_image_dbs_built(status_cb=self.gameDataProgress.emit, force=True)
                     result = "游戏数据更新完成"
                 elif outcome == UpdateOutcome.CANCELLED:
                     result = "已跳过本次更新，将使用当前已安装的游戏资源。"

@@ -3,6 +3,7 @@ from functools import cached_property
 import os
 import cv2
 import logging
+from typing import Callable
 from typing_extensions import override
 
 from cv2.typing import MatLike
@@ -43,7 +44,7 @@ class CardGameObject(GameObject):
 
 class CardImageDatabase(ImageDatabase):
     @override
-    def build(self):
+    def build(self, progress_cb=None):
         """构建时对每张卡片图像进行裁剪预处理。"""
         class PreprocessingSource:
             def __init__(self, source):
@@ -68,17 +69,23 @@ class CardImageDatabase(ImageDatabase):
                     yield key, half_img
         
         self.source = PreprocessingSource(self.source)
-        super().build()
+        super().build(progress_cb=progress_cb)
+
+def build_db(progress_cb: Callable[[int, int], None] | None = None):
+    global _db
+    path = paths.resource('skill_cards')
+    db_dir = paths.cache('skill_cards')
+    _db = CardImageDatabase(FileDataSource(str(path)), db_dir, HogDescriptor(), name='skill_cards')
+    if not _db.is_built:
+        _db.build(progress_cb=progress_cb)
+
 
 def skill_cards_db() -> ImageDatabase:
     global _db
     if _db is None:
         logger.info('Loading skill_cards database...')
-        path = paths.resource('skill_cards')
-        db_dir = paths.cache('skill_cards')
-        _db = CardImageDatabase(FileDataSource(str(path)), db_dir, HogDescriptor(), name='skill_cards')
-        if not _db.is_built:
-            _db.build()
+        build_db()
+    assert _db is not None
     return _db
 
 
