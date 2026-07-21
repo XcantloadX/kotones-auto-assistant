@@ -24,8 +24,16 @@ def run_script(script_path: str) -> None:
     conf().device.default_logic_resolution = Size(720, 1280)
     logging.getLogger('kotonebot').setLevel(logging.DEBUG)
     logging.getLogger('kaa').setLevel(logging.DEBUG)
-    # init_context(target_device=KaaDeviceFactory()())
-    # manual_context().begin()
+    from kaa.kaa_context import init as kaa_init
+    from kaa.config import manager
+    configs = manager.list_profiles()
+    if not configs:
+        raise RuntimeError("No Kaa configuration profiles found. Please create one before running the script.")
+    kaa_init(manager.read(configs[0]), configs[0])
+    d = KaaDeviceFactory()()
+    d.start()
+    init_context(target_device=d)
+    manual_context().begin()
     runpy.run_module(module_name, run_name="__main__")
 
 def main():
