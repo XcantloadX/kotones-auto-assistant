@@ -24,6 +24,15 @@ class ProduceExamEffectType(Enum):
     """やる気増加量増加（干劲增加量增加）\n
     无引用此效果的卡牌"""
 
+    ExamAggressiveAdditiveFix = 'ProduceExamEffectType_ExamAggressiveAdditiveFix'
+    """やる気増加量追加（干劲增加量追加固定值）\n
+    例：わたしを支える言葉+++（p_card-02-ido-3_201）
+    
+    【参数】\n
+    `effect_value1`：追加的固定值。例如 1 代表やる気増加量 +1。
+    `effect_turn`：持续回合数。
+    """
+
     ExamAggressiveReduce = 'ProduceExamEffectType_ExamAggressiveReduce'
     """やる気減少（干劲减少）\n
     无引用此效果的卡牌"""
@@ -43,6 +52,14 @@ class ProduceExamEffectType(Enum):
     ExamBlockAddMultipleAggressive = 'ProduceExamEffectType_ExamBlockAddMultipleAggressive'
     """元気（元气增加量随干劲提升）\n
     例：初めてのお相手+++（p_card-02-ido-1_064）、愛を込めて+++（p_card-02-ido-3_086）"""
+
+    ExamBlockDependBlockConsumptionSum = 'ProduceExamEffectType_ExamBlockDependBlockConsumptionSum'
+    """元気（根据练习中消耗的元气总量比例获得元气）\n
+    无引用此效果的卡牌
+    
+    【参数】\n
+    `effect_value1`：比例值。例如 1000 代表 100%。
+    """
 
     ExamBlockDependExamReview = 'ProduceExamEffectType_ExamBlockDependExamReview'
     """好印象（元气依赖好印象）\n
@@ -132,6 +149,12 @@ class ProduceExamEffectType(Enum):
     """生成（强制打出检索卡）\n
     例：エキスパート（p_card-03-men-100_015）"""
 
+    ExamForcePlayCardSearchWithCost = 'ProduceExamEffectType_ExamForcePlayCardSearchWithCost'
+    """生成（强制打出检索卡，消耗体力）\n
+    无引用此效果的卡牌\n
+    从除外以外的技能卡中选择 1 张，消耗体力使用。
+    """
+
     ExamFullPower = 'ProduceExamEffectType_ExamFullPower'
     """全力（全力）\n
     无引用此效果的卡牌"""
@@ -143,6 +166,16 @@ class ProduceExamEffectType(Enum):
     ExamFullPowerPointReduce = 'ProduceExamEffectType_ExamFullPowerPointReduce'
     """全力値減少（全力值减少）\n
     无引用此效果的卡牌"""
+
+    ExamFullPowerLessonMultipleAdditive = 'ProduceExamEffectType_ExamFullPowerLessonMultipleAdditive'
+    """全力強化（全力效果倍率加成）\n
+    无引用此效果的卡牌\n
+    例：全力強化+20%。
+    
+    【参数】\n
+    `effect_value1`：提升倍率数值。例如 200 代表 +20%。
+    `effect_turn`：持续回合数。-1 代表永久。
+    """
 
     ExamFullPowerPoint = 'ProduceExamEffectType_ExamFullPowerPoint'
     """全力値（全力值）\n
@@ -196,6 +229,15 @@ class ProduceExamEffectType(Enum):
     """集中増加量増加（集中增加量增加）\n
     例：完全無欠（p_card-01-men-100_001）、ほぐれるひととき+++（p_card-01-sup-3_157）"""
 
+    ExamLessonBuffAdditiveFix = 'ProduceExamEffectType_ExamLessonBuffAdditiveFix'
+    """集中増加量追加（集中增加量追加固定值）\n
+    例：あなたがくれた夢+++（p_card-01-ido-3_215）
+    
+    【参数】\n
+    `effect_value1`：追加的固定值。例如 2 代表集中増加量 +2。
+    `effect_turn`：持续回合数。
+    """
+
     ExamLessonBuffDependParameterBuff = 'ProduceExamEffectType_ExamLessonBuffDependParameterBuff'
     """好調（集中依赖好调）\n
     例：見つけた世界で+++（p_card-01-ido-3_151）"""
@@ -203,6 +245,12 @@ class ProduceExamEffectType(Enum):
     ExamLessonBuffMultiple = 'ProduceExamEffectType_ExamLessonBuffMultiple'
     """集中効果一時増加（集中效果临时增加）\n
     无引用此效果的卡牌"""
+
+    ExamLessonBuffPerSearchCount = 'ProduceExamEffectType_ExamLessonBuffPerSearchCount'
+    """集中（根据除外区技能卡数量获得集中）\n
+    无引用此效果的卡牌\n
+    例：除外にあるスキルカード2枚につき、集中+1。
+    """
 
     ExamLessonBuffReduce = 'ProduceExamEffectType_ExamLessonBuffReduce'
     """集中減少（集中减少）\n
@@ -215,6 +263,23 @@ class ProduceExamEffectType(Enum):
     ExamLessonDependBlock = 'ProduceExamEffectType_ExamLessonDependBlock'
     """元気（参数依赖元气）\n
     例：気分転換+++（p_card-02-act-0_010）、アイコンタクトの基本+++（p_card-02-act-0_037）"""
+
+    ExamLessonDependBlockAndSearchCount = 'ProduceExamEffectType_ExamLessonDependBlockAndSearchCount'
+    """パラメータ（参数依赖除外区特定卡牌数量和元气）\n
+    无引用此效果的卡牌
+    
+    【参数】\n
+    `effect_value2`：比例值。例如 200 代表 20%。
+    `effect_count`：条件值。
+    """
+
+    ExamLessonDependBlockConsumptionSum = 'ProduceExamEffectType_ExamLessonDependBlockConsumptionSum'
+    """パラメータ（参数依赖元气消耗总量）\n
+    例：輝きの到達点（p_card-02-act-100_010）
+    
+    【参数】\n
+    `effect_value1`：比例值。例如 1000 代表练习中消耗元气的 100%。
+    """
 
     ExamLessonDependExamCardPlayAggressive = 'ProduceExamEffectType_ExamLessonDependExamCardPlayAggressive'
     """やる気（参数依赖干劲出牌）\n
@@ -231,6 +296,14 @@ class ProduceExamEffectType(Enum):
     ExamLessonDependPlayCardCountSum = 'ProduceExamEffectType_ExamLessonDependPlayCardCountSum'
     """パラメータ（参数依赖出牌次数）\n
     无引用此效果的卡牌"""
+
+    ExamLessonDependStamina = 'ProduceExamEffectType_ExamLessonDependStamina'
+    """パラメータ（参数依赖体力值）\n
+    例：自然体の魅力+++（p_card-01-ido-3_213）
+    
+    【参数】\n
+    `effect_value1`：比例值。例如 10000 代表 1000%（体力值的 10 倍）。
+    """
 
     ExamLessonDependStaminaConsumptionSum = 'ProduceExamEffectType_ExamLessonDependStaminaConsumptionSum'
     """パラメータ（参数依赖体力消耗总量）\n
@@ -264,6 +337,15 @@ class ProduceExamEffectType(Enum):
     """パラメータ（参数）\n
     例：アピールの基本+++（p_card-00-act-0_001）、ポーズの基本+++（p_card-00-act-0_002）"""
 
+    ExamMultipleEnthusiasticLesson = 'ProduceExamEffectType_ExamMultipleEnthusiasticLesson'
+    """パラメータ（参数提升，热意效果 2 倍适用）\n
+    例：手を伸ばした先に+++（p_card-03-ido-3_197）
+    
+    【参数】\n
+    `effect_value1`：参数提升值。例如 5 代表パラメータ +5。
+    `effect_value2`：热意倍率参考值。例如 1000 代表 2 倍。
+    """
+
     ExamMultipleLessonBuffLesson = 'ProduceExamEffectType_ExamMultipleLessonBuffLesson'
     """パラメータ（集中强化的参数提升）\n
     例：ハイタッチ+++（p_card-01-act-1_020）、最高傑作（p_card-01-act-100_004）"""
@@ -290,6 +372,14 @@ class ProduceExamEffectType(Enum):
     
     【参数】\n
     `effect_turn`：持续回合数。
+    """
+
+    ExamParameterBuffMultiplePerTurnReduce = 'ProduceExamEffectType_ExamParameterBuffMultiplePerTurnReduce'
+    """絶好調減少（绝好调减少）\n
+    无引用此效果的卡牌
+    
+    【参数】\n
+    `effect_value1`：减少层数。例如 1 代表絶好調 -1。
     """
 
     ExamParameterBuffReduce = 'ProduceExamEffectType_ExamParameterBuffReduce'
@@ -326,6 +416,15 @@ class ProduceExamEffectType(Enum):
     
     【参数】\n
     `effect_value1`：增加倍率。例如 500 代表好印象增加量增加 50%。
+    `effect_turn`：持续回合数。
+    """
+
+    ExamReviewCountAdd = 'ProduceExamEffectType_ExamReviewCountAdd'
+    """好印象追加発動（好印象追加发动次数增加）\n
+    无引用此效果的卡牌
+    
+    【参数】\n
+    `effect_value1`：追加発動回数。例如 1 代表好印象追加発動 +1。
     `effect_turn`：持续回合数。
     """
 
@@ -459,6 +558,18 @@ class ProduceExamEffectType(Enum):
     4. effect_turn=3, effect_count=2 表示持续 3 回合，且最多触发 2 次。
     """
 
+    ExamStatusEnchantEncore = 'ProduceExamEffectType_ExamStatusEnchantEncore'
+    """持続効果（再演）\n
+    满足条件时再次使用自身。
+    例：わたしだけの思い出+++（p_card-01-ido-3_202）、手を伸ばした先に+++（p_card-03-ido-3_197）、
+    クールすぎるアイドル+++（p_card-02-ido-3_198）、わたしを支える言葉+++（p_card-02-ido-3_201）、
+    お姉さんの感覚+++（p_card-01-ido-3_200）
+    
+    【参数】\n
+    `effect_turn`：持续回合数限制。-1 表示永久。
+    `effect_count`：最多再演次数。
+    """
+
     StanceLock = 'ProduceExamEffectType_StanceLock'
     """指針固定（指针固定）\n
     例：切磋琢磨+++（p_card-03-men-2_079）
@@ -466,6 +577,126 @@ class ProduceExamEffectType(Enum):
     【参数】\n
     `effect_turn`：持续回合数。
     """
+
+    @classmethod
+    def short(cls, value: str | None) -> str:
+        if not value:
+            return ''
+        try:
+            return cls(value).name
+        except ValueError:
+            return value.removeprefix('ProduceExamEffectType_')
+
+
+class ProduceCardRarity(Enum):
+    """技能卡稀有度（ProduceCard.rarity）。"""
+
+    Legend = 'ProduceCardRarity_Legend'
+    N = 'ProduceCardRarity_N'
+    R = 'ProduceCardRarity_R'
+    Sr = 'ProduceCardRarity_Sr'
+    Ssr = 'ProduceCardRarity_Ssr'
+
+    @classmethod
+    def short(cls, value: str | None) -> str:
+        if not value:
+            return ''
+        try:
+            return cls(value).name
+        except ValueError:
+            return value.removeprefix('ProduceCardRarity_')
+
+
+class ProduceCardCategory(Enum):
+    """技能卡类别（ProduceCard.category）。"""
+
+    ActiveSkill = 'ProduceCardCategory_ActiveSkill'
+    """主动（Act）"""
+    MentalSkill = 'ProduceCardCategory_MentalSkill'
+    """被动（Men）"""
+    Trouble = 'ProduceCardCategory_Trouble'
+    """干扰（Trouble）"""
+
+    @classmethod
+    def short(cls, value: str | None) -> str:
+        if not value:
+            return ''
+        try:
+            return cls(value).name
+        except ValueError:
+            return value.removeprefix('ProduceCardCategory_')
+
+
+class ProducePlanType(Enum):
+    """技能卡计划类型（ProduceCard.planType）。"""
+
+    Common = 'ProducePlanType_Common'
+    """共通"""
+    Plan1 = 'ProducePlanType_Plan1'
+    """感性"""
+    Plan2 = 'ProducePlanType_Plan2'
+    """逻辑"""
+    Plan3 = 'ProducePlanType_Plan3'
+    """异常"""
+
+    @classmethod
+    def short(cls, value: str | None) -> str:
+        if not value:
+            return ''
+        try:
+            return cls(value).name
+        except ValueError:
+            return value.removeprefix('ProducePlanType_')
+
+
+class ExamCostType(Enum):
+    """额外消耗类型（ProduceCard.costType）。"""
+
+    ExamCardPlayAggressive = 'ExamCostType_ExamCardPlayAggressive'
+    """消耗やる気（干劲）"""
+    ExamFullPowerPoint = 'ExamCostType_ExamFullPowerPoint'
+    """消耗全力値（全力值）"""
+    ExamLessonBuff = 'ExamCostType_ExamLessonBuff'
+    """消耗集中（集中）"""
+    ExamParameterBuff = 'ExamCostType_ExamParameterBuff'
+    """消耗好調（好调）"""
+    ExamParameterBuffMultiplePerTurn = 'ExamCostType_ExamParameterBuffMultiplePerTurn'
+    """消耗絶好調（绝好调）"""
+    ExamReview = 'ExamCostType_ExamReview'
+    """消耗好印象（好印象）"""
+    Unknown = 'ExamCostType_Unknown'
+    """未知类型"""
+
+    @classmethod
+    def short(cls, value: str | None) -> str:
+        if not value:
+            return ''
+        try:
+            return cls(value).name
+        except ValueError:
+            return value.removeprefix('ExamCostType_')
+
+
+class ProduceDescriptionType(Enum):
+    """描述文本类型（produceDescriptionType JSON 字段）。"""
+
+    Exam = 'ProduceDescriptionType_Exam'
+    PlainText = 'ProduceDescriptionType_PlainText'
+    ProduceCard = 'ProduceDescriptionType_ProduceCard'
+    ProduceCardCategory = 'ProduceDescriptionType_ProduceCardCategory'
+    ProduceCardGrowEffectType = 'ProduceDescriptionType_ProduceCardGrowEffectType'
+    ProduceDescription = 'ProduceDescriptionType_ProduceDescription'
+    ProduceDescriptionName = 'ProduceDescriptionType_ProduceDescriptionName'
+    ProduceExamEffectType = 'ProduceDescriptionType_ProduceExamEffectType'
+
+    @classmethod
+    def short(cls, value: str | None) -> str:
+        if not value:
+            return ''
+        try:
+            return cls(value).name
+        except ValueError:
+            return value.removeprefix('ProduceDescriptionType_')
 
 
 class ShowExamEffectType(Enum):

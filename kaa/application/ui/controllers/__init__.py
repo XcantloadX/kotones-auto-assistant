@@ -15,6 +15,7 @@ from .app_theme_controller import AppThemeController
 from .notice_backend import NoticeBackend
 from .preferences_controller import PreferencesController
 from .debug_inspector_controller import DebugInspectorController
+from .skill_card_browser_controller import SkillCardBrowserController
 
 __all__ = [
     "TabManager",
@@ -30,4 +31,5 @@ __all__ = [
     "NoticeBackend",
     "PreferencesController",
     "DebugInspectorController",
+    "SkillCardBrowserController",
 ]

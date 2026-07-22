@@ -16,7 +16,7 @@ Item {
     property var updateCtrl: null
     property var feedbackCtrl: null
     property var navigation: null
-    property bool prefsMode: false
+    property string fullscreenMode: ""
 
     Connections {
         target: TabManager
@@ -32,7 +32,7 @@ Item {
         SideNavigationBar {
             id: sideNav
             Layout.fillHeight: true
-            visible: !root.prefsMode
+            visible: root.fullscreenMode === ""
             model: ["控制", "任务", "设置", "方案", "更新", "日志", "反馈"]
 
             onCurrentChanging: function(index, previousIndex) {
@@ -49,7 +49,7 @@ Item {
         StackLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            visible: !root.prefsMode
+            visible: root.fullscreenMode === ""
             currentIndex: sideNav.currentIndex
 
             ControlPage  { id: controlPage;   runCtrl: root.runCtrl; progressCtrl: root.progressCtrl; keepScreenshots: (root.settingsCtrl?.config?.profile?.keep_screenshots) ?? false }

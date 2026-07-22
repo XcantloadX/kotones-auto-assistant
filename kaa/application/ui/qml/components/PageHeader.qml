@@ -4,7 +4,7 @@ import QtQuick.Layouts
 import ".." as App
 
 // 独立页面的标题行：返回按钮 + 图标 + 标题文本 + 可拖动填充区。
-// 由 TitleBar 在 prefsMode 时切入。
+// 由 TitleBar 在全屏模式时切入。
 Item {
     id: root
 

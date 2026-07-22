@@ -219,3 +219,4 @@ class ProduceController:
 if __name__ == '__main__':
     c = ProduceController(scenario=HajimeScenario.REGULAR)
     c.run()
+    # CardSelectContext(1, c).fetch_cards()

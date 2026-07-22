@@ -23,6 +23,7 @@ from kaa.application.ui.controllers import (
 )
 from kaa.application.ui.controllers.preferences_controller import PreferencesController
 from kaa.application.ui.controllers.debug_inspector_controller import DebugInspectorController
+from kaa.application.ui.controllers.skill_card_browser_controller import SkillCardBrowserController
 from kaa.application.ui.controllers.notice_backend import NoticeBackend
 from PySide6.QtGui import QColor, QFont, QIcon, QPalette
 from PySide6.QtWidgets import QApplication
@@ -452,6 +453,7 @@ def main() -> None:
     notice = NoticeBackend()
     app_theme = AppThemeController()
     prefs_ctrl = PreferencesController()
+    skill_card_browser_ctrl = SkillCardBrowserController()
     hotkey_mgr = HotkeyManager(
         request_stop=lambda: _hotkey_stop(tab_manager),
         get_pause_status=lambda: _hotkey_get_pause(tab_manager),
@@ -487,6 +489,7 @@ def main() -> None:
 
     engine.rootContext().setContextProperty("AppThemeController", app_theme)
     engine.rootContext().setContextProperty("PreferencesController", prefs_ctrl)
+    engine.rootContext().setContextProperty("SkillCardBrowserController", skill_card_browser_ctrl)
 
     debug_inspector = DebugInspectorController()
     engine.rootContext().setContextProperty("DebugInspector", debug_inspector)

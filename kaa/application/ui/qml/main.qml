@@ -32,7 +32,7 @@ ApplicationWindow {
     // ── Per-tab 数据模型 ──────────────────────────────────────────
     property var tabList: []
     property int activeTabIndex: 0
-    property bool prefsMode: false
+    property string fullscreenMode: ""  // "", "preferences", "skillCardBrowser"
     property int _prevTitleBarIndex: 0
     property bool allowImmediateClose: false
     property var activeSettingsCtrl: null
@@ -54,14 +54,14 @@ ApplicationWindow {
         if (activeTabIndex < 0) titleBar.setCurrentIndex(0)
     }
 
-    function enterPrefsMode() {
+    function enterFullscreenMode(mode) {
         _prevTitleBarIndex = titleBar.currentIndex
         titleBar.setCurrentIndex(1)
-        prefsMode = true
+        fullscreenMode = mode
     }
 
-    function exitPrefsMode() {
-        prefsMode = false
+    function exitFullscreenMode() {
+        fullscreenMode = ""
         titleBar.setCurrentIndex(_prevTitleBarIndex)
     }
 
@@ -263,9 +263,9 @@ ApplicationWindow {
             id: titleBar
             Layout.fillWidth: true
             configManagerDialog: configManagerDialog
-            prefsMode: window.prefsMode
-            onSettingsRequested: window.enterPrefsMode()
-            onBackRequested: window.exitPrefsMode()
+            fullscreenMode: window.fullscreenMode
+            onSettingsRequested: window.enterFullscreenMode("preferences")
+            onBackRequested: window.exitFullscreenMode()
             onMinimizeRequested: window.showMinimized()
             onCloseRequested: window.requestAppClose()
         }
@@ -278,6 +278,7 @@ ApplicationWindow {
             // ── index 0: 总览页 ────────────────────────────
             OverviewPage {
                 configManagerDialog: configManagerDialog
+                onOpenSkillCardBrowser: window.enterFullscreenMode("skillCardBrowser")
             }
 
             // ── index 1: per-tab 内容区 ─────────────────────
@@ -301,17 +302,23 @@ ApplicationWindow {
                             updateCtrl: TabManager.updateCtrlAt(index)
                             feedbackCtrl: TabManager.feedbackCtrlAt(index)
                             navigation: navigation
-                            prefsMode: window.prefsMode
+                            fullscreenMode: window.fullscreenMode
                         }
                     }
                 }
 
-                // ── prefsMode 覆盖层 ────────────────
+                // ── 全屏模式覆盖层 ──────────────────
                 PreferencesPage {
                     id: preferencesPage
                     anchors.fill: parent
-                    visible: window.prefsMode
+                    visible: window.fullscreenMode === "preferences"
                     prefsCtrl: PreferencesController
+                }
+
+                SkillCardBrowserPage {
+                    anchors.fill: parent
+                    visible: window.fullscreenMode === "skillCardBrowser"
+                    browserCtrl: SkillCardBrowserController
                 }
             }
         }

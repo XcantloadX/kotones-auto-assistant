@@ -12,6 +12,8 @@ PageContainer {
 
     required property var configManagerDialog
 
+    signal openSkillCardBrowser()
+
     property var _allConfigs: []
 
     function _reload() {
@@ -157,6 +159,18 @@ PageContainer {
                                 color: parBtn.highlighted ? (App.AppTheme.isDark ? "black" : "white") : App.AppTheme.fg
                             }
                         }
+                    }
+                }
+
+                // ── 工具入口 ──────────────────────────────────
+                RowLayout {
+                    Layout.topMargin: 16
+                    Layout.alignment: Qt.AlignHCenter
+                    spacing: 8
+
+                    Button {
+                        text: "技能卡图鉴"
+                        onClicked: root.openSkillCardBrowser()
                     }
                 }
 

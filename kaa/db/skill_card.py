@@ -5,7 +5,9 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from .constants import ProduceExamEffectType
+from .constants import (
+    ProduceExamEffectType,
+)
 from ._util import (
     load_by_ids,
     log_missing_ids,
@@ -277,11 +279,13 @@ class ProduceExamEffect:
 
     @classmethod
     def from_row(cls, row: ProduceExamEffectRow) -> 'ProduceExamEffect':
-        effect_type = (
-            ProduceExamEffectType(row.effect_type)
-            if row.effect_type is not None
-            else None
-        )
+        raw = row.effect_type
+        effect_type = None
+        if raw is not None:
+            try:
+                effect_type = ProduceExamEffectType(raw)
+            except ValueError:
+                effect_type = None
         return cls(
             row.id,
             effect_type,
@@ -447,6 +451,11 @@ class SkillCard:
             ')'
         )
 
+    @property
+    def evaluation_label(self) -> str:
+        """来源分级中文描述，见 EVALUATION_LABELS。"""
+        return EVALUATION_LABELS.get(self.evaluation or 0, "")
+
     @classmethod
     def _from_row(cls, row, effect_map: dict[str, ProduceExamEffect]) -> 'SkillCard':
         card = ProduceCardRow.model_validate(row_dict(row))
@@ -565,3 +574,24 @@ def _all_cached() -> tuple[SkillCard, ...]:
 
 
 register_cache_clear(_all_cached.cache_clear)
+
+
+# ── evaluation 来源分级 ────────────────────────────────────────
+# ProduceCard.evaluation 值按来源分类，不是强度评分。
+#
+# 判定逻辑（按优先级）：
+#   1. originIdolCardId 有值 → 偶像专属卡（eval=1）
+#   2. originSupportCardId 有值 → 支援卡（eval=32）
+#   3. isCharacterAsset=True（独立立绘）→ 基础育成卡，按稀有度细分
+#   4. 其余 → 基础图标卡，按类别细分
+EVALUATION_LABELS: dict[int, str] = {
+    0: "初始 / Legend",
+    1: "偶像专属",
+    5: "烦恼卡",
+    10: "基础育成 (N/R)",
+    15: "基础育成 (R 精神)",
+    25: "基础育成 (SR 活性)",
+    32: "支援卡",
+    35: "基础育成 (SR)",
+    50: "基础育成 (SSR)",
+}

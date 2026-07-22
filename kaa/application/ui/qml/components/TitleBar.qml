@@ -15,7 +15,7 @@ Item {
     required property var configManagerDialog
 
     readonly property int currentIndex: tabStrip.currentIndex
-    property bool prefsMode: false
+    property string fullscreenMode: ""  // "", "preferences", "skillCardBrowser"
 
     function setCurrentIndex(index) {
         tabStrip.currentIndex = index
@@ -39,7 +39,7 @@ Item {
     Binding {
         target: (typeof tabBarBridge !== 'undefined' && tabBarBridge) ? tabBarBridge : null
         property: "tabInteractiveEnd"
-        value: root.prefsMode ? pageHeader.interactiveEnd : tabStrip.interactiveEnd
+        value: root.fullscreenMode !== "" ? pageHeader.interactiveEnd : tabStrip.interactiveEnd
     }
 
     Connections {
@@ -63,10 +63,10 @@ Item {
 
     // ── 背景 ────────────────────────────────────────────────────
     // 颜色由 AppTheme 统一管理（避免散落的 palette / colorScheme 判断）。
-    // prefsMode + 非 solid：全透明，让 Mica/acrylic DWM 背景完整透出。
+    // fullscreenMode + 非 solid：全透明，让 Mica/acrylic DWM 背景完整透出。
     Rectangle {
         anchors.fill: parent
-        color: (root.prefsMode && !App.AppTheme.isSolid)
+        color: (root.fullscreenMode !== "" && !App.AppTheme.isSolid)
             ? "transparent"
             : App.AppTheme.titleBg
     }
@@ -97,7 +97,7 @@ Item {
             TabStrip {
                 id: tabStrip
                 anchors.fill: parent
-                visible: !root.prefsMode
+                visible: root.fullscreenMode === ""
                 configManagerDialog: root.configManagerDialog
                 tabs: root._tabs
                 onSettingsRequested: root.settingsRequested()
@@ -106,7 +106,7 @@ Item {
             PageHeader {
                 id: pageHeader
                 anchors.fill: parent
-                visible: root.prefsMode
+                visible: root.fullscreenMode !== ""
                 title: "琴音小助手"
                 iconSource: "file:///" + splash.iconPath
                 onBackRequested: root.backRequested()
