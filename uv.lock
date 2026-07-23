@@ -999,7 +999,7 @@ windows = [
 
 [[package]]
 name = "ksaa"
-version = "2026.7.8"
+version = "2026.7.9"
 source = { editable = "." }
 dependencies = [
     { name = "adbutils" },
