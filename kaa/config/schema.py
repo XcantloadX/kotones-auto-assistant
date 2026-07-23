@@ -134,6 +134,8 @@ class TraceConfig(ConfigBaseModel):
     """跟踪推荐卡检测"""
     commu_event_buttons: bool = False
     """跟踪 CommuEventButtons"""
+    card_select: bool = False
+    """跟踪选卡识别结果"""
 
 class StartGameConfig(ConfigBaseModel):
     enabled: bool = True

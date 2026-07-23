@@ -8,7 +8,7 @@ from cv2.typing import MatLike
 
 from kotonebot.util import cv2_imwrite
 
-TraceId = Literal['rec-card', 'commu-event-buttons']
+TraceId = Literal['rec-card', 'commu-event-buttons', 'card-select']
 TRACE_DIR = './traces/'
 _trace_files: dict[TraceId, TextIO] = {}
 

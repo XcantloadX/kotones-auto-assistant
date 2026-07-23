@@ -344,6 +344,9 @@ class CardSelectContext(Context):
             cv2.destroyAllWindows()
 
         from kaa.game_ui.skill_card_select import match_card_region
+        from kaa.util.trace import trace_named
+        from kaa.game_data.paths import skill_card_path
+        from kotonebot.backend.core import cv2_imread
         img = device.screenshot()
         results = []
         for go in letters:
@@ -360,6 +363,34 @@ class CardSelectContext(Context):
             if card:
                 logger.debug('Card matched: %s', card.name)
             results.append(CardOption(rect=go.rect, card=card))
+
+        from kaa.kaa_context import conf
+        if conf().trace.card_select:
+            import uuid
+            prefix = uuid.uuid4().hex
+            card_info = [
+                {'name': opt.card.name if opt.card else None, 'id': opt.card._id if opt.card else None}
+                for opt in results
+            ]
+            annotated = img.copy()
+            for go, opt in zip(letters, results):
+                cv2.rectangle(annotated, (go.rect.x1, go.rect.y1), (go.rect.x2, go.rect.y2), (0, 255, 0), 2)
+                if opt.card is not None:
+                    card_img = cv2_imread(skill_card_path(opt.card._asset_id))
+                    if card_img is not None:
+                        card_img = cv2.resize(card_img, (128, 128))
+                        h, w = card_img.shape[:2]
+                        paste_x = go.rect.x1
+                        paste_y = go.rect.y2 + 40
+                        if paste_y + h <= annotated.shape[0] and paste_x + w <= annotated.shape[1]:
+                            annotated[paste_y:paste_y+h, paste_x:paste_x+w] = card_img
+            trace_named('card-select', {
+                f'{prefix}_original.png': img,
+                f'{prefix}_annotated.png': annotated,
+            }, {
+                'cards': card_info,
+            })
+
         return results
 
     @eval_once
