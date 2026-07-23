@@ -19,6 +19,7 @@ if TYPE_CHECKING:
 import requests
 import zstandard
 
+from kaa.db.sqlite import invalidate_connections
 from .manifest import Manifest, parse as parse_manifest
 from .paths import (
     game_db_path, sprites_path, version_path
@@ -399,6 +400,7 @@ class GameDataUpdater:
                 dctx = zstandard.ZstdDecompressor()
                 with open(tmp_path, 'wb') as f_out:
                     dctx.copy_stream(io.BytesIO(zst_bytes), f_out)
+                invalidate_connections()
                 os.replace(tmp_path, db_path)
             except BaseException:
                 tmp_path.unlink(missing_ok=True)
