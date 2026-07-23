@@ -6,7 +6,7 @@ from kaa.main.kaa import KaaDeviceFactory
 from kotonebot.primitives.geometry import Size
 
 
-def run_script(script_path: str) -> None:
+def setup() -> None:
     """
     使用 runpy 运行指定的 Python 脚本
 
@@ -14,10 +14,7 @@ def run_script(script_path: str) -> None:
         script_path: Python 脚本的路径
     """
     logging.basicConfig(level=logging.INFO, format='[%(asctime)s] [%(levelname)s] [%(name)s] [%(funcName)s] [%(lineno)d] %(message)s')
-    # 获取模块名
-    module_name = script_path.strip('.py').replace('\\', '/').strip('/').replace('/', '.')
 
-    print(f"正在运行脚本: {script_path}")
     # 运行脚本
     from kotonebot.backend.context import init_context, manual_context
     from kotonebot.config.config import conf
@@ -34,6 +31,14 @@ def run_script(script_path: str) -> None:
     d.start()
     init_context(target_device=d)
     manual_context().begin()
+
+def run_script(script_path: str) -> None:
+    setup()
+    
+    # 获取模块名
+    module_name = script_path.strip('.py').replace('\\', '/').strip('/').replace('/', '.')
+
+    print(f"正在运行脚本: {script_path}")
     runpy.run_module(module_name, run_name="__main__")
 
 def main():

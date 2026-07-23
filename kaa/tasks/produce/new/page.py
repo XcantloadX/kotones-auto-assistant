@@ -20,7 +20,6 @@ if TYPE_CHECKING:
     from .controller import ProduceController
 
 logger = logging.getLogger(__name__)
-ORANGE_RANGE = ((14, 87, 23)), ((37, 211, 255))
 # 三个饮料的坐标
 POSTIONS = [
     Rect(157, 820, 128, 128),  # x, y, w, h
@@ -62,7 +61,7 @@ def eval_once(func: Callable[_P, _R]) -> Callable[_P, _R]:
     行为说明：
     - 如果调用时存在位置参数，则仅以第一个位置参数作为缓存键，后续使用相同第一个参数的调用
       将直接返回第一次计算的结果（忽略其它参数和关键字参数）。
-    - 如果调用时没有任何位置参数，则使用单一的全局缓存（与原先的 "eval once" 行为一致）。
+    - 如果调用时没有任何位置参数，则使用单一的全局缓存。
     """
     cache: dict[object, _R] = {}
     global_cached_result: _R | None = None
@@ -231,7 +230,7 @@ class _SceneCheckMixin:
             return Scene(SceneType.ALLOWANCE)
         
         # 培育初始饮料、卡片二选一
-        ui = CommuEventButtonUI([ORANGE_RANGE])
+        ui = CommuEventButtonUI()
         buttons = ui.all(description=False, title=False)
         if len(buttons) > 1:
             # return InitialDrinkOrCardSelectScene(type=SceneType.INITIAL_DRINK_OR_CARD_SELECT, buttons=buttons)
@@ -927,60 +926,30 @@ if __name__ == '__main__':
     # assert img is not None
     # print(find(img, R.InProduce.TextExamRankLargeFirst.template, threshold=0))
     # print(find(img, R.InProduce.TextExamRankLargeFirst.template, threshold=0, rect=R.InProduce.TextExamRankLargeFirst.template.slice_rect))
-    ctx = ExamContext(ProducePage(), None)
     
-    
-    while True:
-        (ctx.is_final_exam())
-    
-    # accumulator for masks (float32, stores summed normalized mask values)
-    acc: np.ndarray | None = None
-    # per-frame decay (0.0 = no decay). 可按需调整或暴露为参数
-    DECAY_PER_FRAME = 0.0
+    # ui = CommuEventButtonUI()
+    # buttons = ui.all()
+    # 1    
+
+    img = device.screenshot()
+    import cv2
+    # 查找边缘
+    edges = cv2.Canny(img, 100, 250)
+    # 二值化
+    binary = cv2.threshold(img, 127, 255, cv2.THRESH_BINARY)[1]
+    # cv2.imshow('Edges', cv2.resize(edges, None, fx=0.75, fy=0.75))
+    cv2.imwrite('edges.png', edges)
+    cv2.imwrite('binary.png', binary)
+    # cv2.waitKey(0)
+    # cv2.destroyAllWindows()
 
     while True:
         img = device.screenshot()
-
-        # HSV，只取黄色
-        hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-        lower_yellow = np.array([14, 60, 60])
-        upper_yellow = np.array([40, 255, 255])
-        mask = cv2.inRange(hsv, lower_yellow, upper_yellow)
-
-        # 初始化累加器（与 mask 同形状，float32）
-        if acc is None:
-            acc = np.zeros_like(mask, dtype=np.float32)
-
-        # 将 mask 归一化到 0..1 后累加
-        acc += (mask.astype(np.float32) / 255.0)
-
-        # 可选的指数衰减，防止长期累加完全饱和
-        if DECAY_PER_FRAME > 0.0:
-            acc *= (1.0 - DECAY_PER_FRAME)
-
-        # 为显示做归一化：按当前最大值缩放到 0..255 保持对比度
-        maxv = float(acc.max()) if acc is not None else 0.0
-        if maxv > 0.0:
-            disp = np.clip((acc / maxv) * 255.0, 0, 255).astype(np.uint8)
-        else:
-            disp = np.zeros_like(mask, dtype=np.uint8)
-
-        # 为了更直观，用伪彩（jet）渲染累加结果
-        disp_color = cv2.applyColorMap(disp, cv2.COLORMAP_JET)
-
-        # 展示原始单帧 mask 与叠加结果
-        cv2.imshow('mask', cv2.resize(mask, None, fx=0.5, fy=0.5))
-        cv2.imshow('accum', cv2.resize(disp_color, None, fx=0.5, fy=0.5))
-
-        # 键盘控制：q 退出，r 重置累加，s 保存当前叠加图
-        key = cv2.waitKey(1) & 0xFF
-        if key == ord('q'):
+        edges = cv2.Canny(img, 240, 250)
+        binary = cv2.threshold(img, 127, 255, cv2.THRESH_BINARY)[1]
+        cv2.imshow('Edges', cv2.resize(edges, None, fx=0.75, fy=0.75))
+        cv2.imshow('Binary', cv2.resize(binary, None, fx=0.75, fy=0.75))
+        if cv2.waitKey(1) & 0xFF == ord('q'):
             break
-        elif key == ord('r'):
-            if acc is not None:
-                acc.fill(0)
-                logger.info('Accumulator reset')
-        elif key == ord('s'):
-            # 保存为 PNG（伪彩）
-            cv2.imwrite('accum.png', disp_color)
-            logger.info('Saved accumulated image to accum.png')
+
+

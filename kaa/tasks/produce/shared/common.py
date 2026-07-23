@@ -488,10 +488,9 @@ def until_acquisition_clear():
     while ProduceInterrupt.check():
         interval.wait()
 
-ORANGE_RANGE = ((14, 87, 23)), ((37, 211, 255))
 @action('处理交流事件', screenshot_mode='manual-inherit')
 def commu_event():
-    ui = CommuEventButtonUI([ORANGE_RANGE])
+    ui = CommuEventButtonUI()
     buttons = ui.all(description=False, title=True)
     if len(buttons) > 1:
         for button in buttons:
