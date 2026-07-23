@@ -1,15 +1,64 @@
+import ctypes
+import importlib.util
 import logging
+import sys
+from pathlib import Path
+
 import numpy as np
+
+from ..descriptors.base import MetricType
+
+logger = logging.getLogger(__name__)
+
+
+def _preload_faiss_msvc_runtime_for_bootstrap() -> None:
+    """kaa-bootstrap / WinPython 专用 workaround。
+
+    WinPython 会在 python.exe 同目录放置较旧的 VCOMP140.DLL / MSVCP140.DLL。
+    Windows DLL 搜索优先命中该目录，导致 faiss-cpu 自带的 OpenMP 运行时被劫持，
+    随后 HNSW 的 add / add_with_ids 以 0xC0000005 原生崩溃。
+
+    仅在检测到解释器旁存在 VCOMP140 时，预先加载 faiss_cpu.libs 中的配套 DLL。
+    普通 venv（Scripts 下无这些 DLL）不受影响。
+    """
+    if sys.platform != 'win32':
+        return
+
+    python_dir = Path(sys.executable).resolve().parent
+    if not any((python_dir / name).exists() for name in ('VCOMP140.DLL', 'vcomp140.dll')):
+        return
+
+    try:
+        spec = importlib.util.find_spec('faiss')
+        if spec is None or not spec.origin:
+            return
+        libs_dir = Path(spec.origin).resolve().parent.parent / 'faiss_cpu.libs'
+        if not libs_dir.is_dir():
+            return
+
+        loaded: list[str] = []
+        for name in ('vcomp140.dll', 'msvcp140.dll'):
+            dll_path = libs_dir / name
+            if dll_path.is_file():
+                ctypes.WinDLL(str(dll_path))
+                loaded.append(name)
+        if loaded:
+            logger.debug(
+                'Bootstrap faiss runtime workaround: preloaded %s from %s',
+                ', '.join(loaded),
+                libs_dir,
+            )
+    except OSError as e:
+        logger.warning('Bootstrap faiss runtime workaround failed: %s', e)
+
+
+_preload_faiss_msvc_runtime_for_bootstrap()
 
 try:
     import faiss
     FAISS_AVAILABLE = True
 except ImportError:
     FAISS_AVAILABLE = False
-
-from ..descriptors.base import MetricType
-
-logger = logging.getLogger(__name__)
 
 
 class FaissIndex:
