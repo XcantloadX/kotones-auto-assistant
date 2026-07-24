@@ -37,10 +37,14 @@ class DatabaseQueryResult(NamedTuple):
 
 @dataclass
 class DatabaseMeta:
-    """数据库元数据，持久化到 meta.pkl。"""
+    """数据库元数据，持久化到 meta.pkl。
+
+    :param internal_version: ImageDatabase 内部版本，不匹配时触发重建（schema 迁移）。
+    :param version: 调用方指定的缓存版本，不匹配时触发重建。
+    """
     internal_version: int
     name: str | None
-    version: str | None
+    version: int | None
     descriptor_type: str
     descriptor_params: dict[str, Any]
     metric_type: str
@@ -71,18 +75,23 @@ class ImageDatabase:
             db_dir: str,
             descriptor: BaseDescriptor,
             *,
-            name: str | None = None
+            name: str | None = None,
+            version: int | None = None,
         ):
         """
         :param source: 数据源
         :param db_dir: 数据库目录（存放 meta.pkl + index.bin）
         :param descriptor: 图像描述子
         :param name: 数据库名称（可选）
+        :param version: 缓存版本号。调用方指定的版本标识，如 'v1', 'v2'。
+            当描述子参数或数据源变化时，调用方应递增此值。
+            若与已缓存的不一致，自动重建。
         """
         self.db_dir = os.path.abspath(db_dir)
         self.descriptor = descriptor
         self.source = source
         self.name = name
+        self._version = version
 
         self._meta: DatabaseMeta | None = None
         self._index: FlatIndex | FaissIndex | None = None
@@ -98,7 +107,7 @@ class ImageDatabase:
                 self._built = True
                 logger.info('Database loaded. name=%s, count=%d', self.name, len(self))
             except Exception as e:
-                logger.warning('Failed to load database from %s: %s', db_dir, e)
+                logger.warning('Cache invalid, will rebuild: %s', e)
                 self._meta = None
                 self._index = None
                 self._built = False
@@ -202,7 +211,7 @@ class ImageDatabase:
         self._meta = DatabaseMeta(
             internal_version=DATABASE_INTERNAL_VERSION,
             name=self.name,
-            version=None,
+            version=self._version,
             descriptor_type=type(self.descriptor).__name__,
             descriptor_params=self._get_descriptor_params(),
             metric_type=metric.value,
@@ -241,9 +250,19 @@ class ImageDatabase:
 
     def _load_meta(self, path: str):
         with open(path, 'rb') as f:
-            self._meta: DatabaseMeta = pickle.load(f)
+            self._meta = pickle.load(f)
+        if not isinstance(self._meta, DatabaseMeta):
+            raise ValueError('Invalid metadata')
+        # internal_version: schema migration
         if self._meta.internal_version != DATABASE_INTERNAL_VERSION:
-            raise ValueError(f'Database version mismatch: {self._meta.internal_version} != {DATABASE_INTERNAL_VERSION}')
+            raise ValueError(
+                f'Internal version mismatch: stored={self._meta.internal_version} != current={DATABASE_INTERNAL_VERSION}'
+            )
+        # version: caller-specified cache tag
+        if self._meta.version != self._version:
+            raise ValueError(
+                f'Version mismatch: stored={self._meta.version} != current={self._version}'
+            )
 
     def _load_index(self, path: str):
         if self._meta is None:

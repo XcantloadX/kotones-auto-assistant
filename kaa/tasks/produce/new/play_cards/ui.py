@@ -75,7 +75,7 @@ def build_db(progress_cb: Callable[[int, int], None] | None = None):
     global _db
     path = paths.resource('skill_cards')
     db_dir = paths.cache('skill_cards')
-    _db = CardImageDatabase(FileDataSource(str(path)), db_dir, HogDescriptor(), name='skill_cards')
+    _db = CardImageDatabase(FileDataSource(str(path)), db_dir, HogDescriptor(), name='skill_cards', version=1)
     if not _db.is_built:
         _db.build(progress_cb=progress_cb)
 

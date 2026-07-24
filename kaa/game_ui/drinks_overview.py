@@ -78,7 +78,7 @@ def build_db(progress_cb: Callable[[int, int], None] | None = None):
     global _db
     path = paths.resource('drinks')
     db_dir = paths.cache('drinks')
-    _db = ImageDatabase(FileDataSource(str(path)), db_dir, HistDescriptor(8), name='drinks')
+    _db = ImageDatabase(FileDataSource(str(path)), db_dir, HistDescriptor(8), name='drinks', version=1)
     if not _db.is_built:
         _db.build(progress_cb=progress_cb)
 

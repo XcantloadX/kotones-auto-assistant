@@ -24,7 +24,7 @@ def build_db(progress_cb: Callable[[int, int], None] | None = None):
     global _db
     path = paths.resource('skill_cards')
     db_dir = paths.cache('skill_cards_dialog')
-    _db = ImageDatabase(FileDataSource(str(path)), db_dir, SiftDescriptor(nfeatures=100), name='skill_cards_dialog')
+    _db = ImageDatabase(FileDataSource(str(path)), db_dir, SiftDescriptor(nfeatures=500), name='skill_cards_dialog', version=1)
     if not _db.is_built:
         _db.build(progress_cb=progress_cb)
 

@@ -103,7 +103,7 @@ def build_db(progress_cb: Callable[[int, int], None] | None = None):
     global _db
     path = paths.resource('idol_cards')
     db_dir = paths.cache('idols')
-    _db = ImageDatabase(FileDataSource(str(path)), db_dir, HistDescriptor(8), name='idols')
+    _db = ImageDatabase(FileDataSource(str(path)), db_dir, HistDescriptor(8), name='idols', version=1)
     if not _db.is_built:
         _db.build(progress_cb=progress_cb)
 
