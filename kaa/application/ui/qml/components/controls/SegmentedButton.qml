@@ -142,18 +142,20 @@ Control {
 
                     property var itemValue: typeof modelData === 'object' ? modelData[root.valueRole] : modelData
                     property string itemText: typeof modelData === 'object' ? modelData[root.textRole] : modelData
+                    property bool itemEnabled: typeof modelData === 'object' ? (modelData.enabled !== false) : true
 
                     implicitWidth: Math.max(60, label.implicitWidth + 20)
                     implicitHeight: 30
 
-                    hoverEnabled: true
+                    enabled: itemEnabled
+                    hoverEnabled: itemEnabled
                     checked: root.currentIndex === index
 
                     background: Rectangle {
                         radius: 4
                         color: {
                             if (!segmentItem.enabled)
-                                return "transparent"
+                                return root.lightScheme ? Qt.rgba(0, 0, 0, 0.03) : Qt.rgba(1, 1, 1, 0.03)
                             if (segmentItem.down)
                                 return root.lightScheme ? Qt.rgba(0, 0, 0, 0.04) : Qt.rgba(1, 1, 1, 0.04)
                             if (segmentItem.hovered && !segmentItem.checked)
@@ -167,11 +169,20 @@ Control {
                         text: segmentItem.itemText
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
-                        color: segmentItem.checked ? root.palette.accent : root.palette.text
+                        // disabled 用明显更淡的文字 + 整体降透明，避免和未选中态混淆
+                        opacity: segmentItem.enabled ? 1.0 : 0.4
+                        color: {
+                            if (!segmentItem.enabled)
+                                return root.palette.placeholderText
+                            if (segmentItem.checked)
+                                return root.palette.accent
+                            return root.palette.text
+                        }
                         font.weight: segmentItem.checked ? Font.DemiBold : Font.Normal
                     }
 
                     onClicked: {
+                        if (!segmentItem.enabled) return
                         root.currentIndex = index
                         root.activated(index, segmentItem.itemValue)
                     }

@@ -256,3 +256,23 @@ class RecommendCardDetectionMode(Enum):
             RecommendCardDetectionMode.STRICT: '严格模式',
         }
         return MAP[self]
+
+
+class HajimeScenario(str, ConfigEnum):
+    REGULAR = 'hajime_regular'
+    PRO = 'hajime_pro'
+    MASTER = 'hajime_master'
+
+
+class NiaScenario(str, ConfigEnum):
+    PRO = 'nia_pro'
+    MASTER = 'nia_master'
+
+
+# class HajimeLegendScenario(str, ConfigEnum):
+#     LEGEND = 'hajime_legend'
+
+# class HifScenario(str, ConfigEnum):
+#     REGULAR = 'hif'
+
+Scenario = HajimeScenario | NiaScenario

@@ -869,10 +869,72 @@ class ProfileV10ToV11(MigrationStep):
 
 
 # ---------------------------------------------------------------------------
+# V11 → V12：ProduceSolution data.mode 字符串枚举升级
+# ---------------------------------------------------------------------------
+
+class ProfileV11ToV12(MigrationStep):
+    """将 ProduceSolution data.mode 从 'regular'/'pro'/'master'
+    迁移到 HajimeScenario 枚举格式 'hajime_regular'/'hajime_pro'/'hajime_master'。"""
+
+    OLD_TO_NEW = {
+        'regular': 'hajime_regular',
+        'pro': 'hajime_pro',
+        'master': 'hajime_master',
+    }
+
+    def check_needed(self, ctx: MigrationContext) -> bool:
+        produce_dir = ctx.config_dir / 'produce'
+        if not produce_dir.exists():
+            return False
+        for f in produce_dir.glob('*.json'):
+            try:
+                data = json.loads(f.read_text(encoding='utf-8'))
+                mode = data.get('data', {}).get('mode', '')
+                if mode in self.OLD_TO_NEW:
+                    return True
+            except Exception:
+                continue
+        return False
+
+    def apply(self, ctx: MigrationContext) -> None:
+        produce_dir = ctx.config_dir / 'produce'
+        if not produce_dir.exists():
+            return
+        converted = 0
+        for f in produce_dir.glob('*.json'):
+            try:
+                data = json.loads(f.read_text(encoding='utf-8'))
+                mode = data.get('data', {}).get('mode', '')
+                if mode in self.OLD_TO_NEW:
+                    data['data']['mode'] = self.OLD_TO_NEW[mode]
+                    f.write_text(json.dumps(data, ensure_ascii=False, indent=4), encoding='utf-8')
+                    converted += 1
+            except Exception:
+                continue
+        # 同步更新所有 profile 版本号至最新
+        profiles_dir = ctx.config_dir / 'profiles'
+        if profiles_dir.exists():
+            for f in profiles_dir.glob('*.json'):
+                try:
+                    profile = json.loads(f.read_text(encoding='utf-8'))
+                    if profile.get('version', 0) < 12:
+                        profile['version'] = 12
+                        f.write_text(json.dumps(profile, ensure_ascii=False, indent=2), encoding='utf-8')
+                except Exception:
+                    continue
+        if converted:
+            ctx.messages.append(MigrationMessage(
+                text=f"已将 {converted} 个培育方案的 mode 字段升级到新格式。",
+                old_version='v11',
+                new_version='v12',
+            ))
+
+
+# ---------------------------------------------------------------------------
 # 迁移链
 # ---------------------------------------------------------------------------
 
-LATEST_VERSION: int = 11
+LATEST_VERSION: int = 12
 
 profile_migration_chain = MigrationChain(steps=[
     ProfileV1ToV2(),
@@ -886,6 +948,7 @@ profile_migration_chain = MigrationChain(steps=[
     ProfileV8ToV9(),
     ProfileV9ToV10(),
     ProfileV10ToV11(),
+    ProfileV11ToV12(),
 ])
 
 

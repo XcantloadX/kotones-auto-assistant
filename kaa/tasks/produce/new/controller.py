@@ -1,7 +1,7 @@
 from typing import Callable
 from typing_extensions import assert_never
 
-from kaa.tasks.produce.session import HajimeScenario
+from kaa.config.const import HajimeScenario
 from kaa.tasks.produce.shared.common import ProduceInterrupt
 from kotonebot import logging, Loop, action, sleep, device, Countdown
 

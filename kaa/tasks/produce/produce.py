@@ -1,8 +1,9 @@
 import logging
 from typing import Optional
 
+from kaa.config.const import HajimeScenario, Scenario
 from kaa.kaa_context import produce_solution, init_produce_session, clear_produce_session
-from kaa.tasks.produce.session import ProduceSession, HajimeScenario, resolve_deck
+from kaa.tasks.produce.session import ProduceSession, resolve_deck
 from kaa.tasks.produce.shared.common import resume_produce_pre
 from kaa.tasks.produce.new.controller import ProduceController
 from kaa.tasks.produce.legacy.in_purodyuusu import (
@@ -22,6 +23,7 @@ from kaa.errors import IdolCardNotFoundError
 from .prepare import prepare
 
 logger = logging.getLogger(__name__)
+
 
 def format_time(seconds):
     minutes = int(seconds // 60)
@@ -124,7 +126,7 @@ def select_set(index: int):
     
 @action('继续当前培育.继续培育', screenshot_mode='manual-inherit')
 def resume_produce_lst(
-    scenario: HajimeScenario,
+    scenario: Scenario,
     current_week: int
 ):
     """
@@ -144,6 +146,8 @@ def resume_produce_lst(
             resume_pro_produce(current_week)
         case HajimeScenario.MASTER:
             resume_master_produce(current_week)
+        case _:
+            raise NotImplementedError(f'Unsupported resume scenario: {scenario}')
 
 @action('继续当前培育', screenshot_mode='manual-inherit')
 def resume_produce():
@@ -170,7 +174,7 @@ def resume_produce():
 @action('执行培育', screenshot_mode='manual-inherit')
 def do_produce(
     idol_skin_id: str,
-    scenario: HajimeScenario,
+    scenario: Scenario,
     memory_set_index: Optional[int] = None
 ) -> bool:
     """
@@ -220,6 +224,8 @@ def do_produce(
 
     # 0. 进入培育页面
     logger.info(f'Enter produce page. Scenario: {scenario.value}')
+    if not isinstance(scenario, HajimeScenario):
+        raise NotImplementedError(f'Unsupported produce scenario: {scenario}')
     if scenario == HajimeScenario.REGULAR:
         target_buttons = [R.Produce.ButtonHajime0Regular, R.Produce.ButtonHajime1Regular]
     elif scenario == HajimeScenario.PRO:
@@ -292,6 +298,8 @@ def do_produce(
                     hajime_pro()
                 case HajimeScenario.MASTER:
                     hajime_master()
+                case _:
+                    raise NotImplementedError(f'Unsupported produce scenario: {scenario}')
         else:
             c = ProduceController(scenario=scenario)
             c.run()
@@ -312,14 +320,16 @@ def produce():
     idol = produce_solution().data.idol
     memory_set = produce_solution().data.memory_set
     support_card_set = produce_solution().data.support_card_set
-    raw_mode = produce_solution().data.mode
-    scenario = HajimeScenario(f'hajime_{raw_mode}')
+    scenario = produce_solution().data.mode
     # 数据验证
     if count < 0:
         user.warning('配置有误', '培育次数不能小于 0。将跳过本次培育。')
         return
     if idol is None:
         user.warning('配置有误', '未设置要培育的偶像。将跳过本次培育。')
+        return
+    if not isinstance(scenario, HajimeScenario):
+        user.warning('配置有误', f'暂不支持的培育模式：{scenario.value}。将跳过本次培育。')
         return
 
     for i in range(count):
@@ -355,7 +365,7 @@ if __name__ == '__main__':
     conf().tasks.produce.enabled = True
     conf().tasks.produce.produce_count = 3
     conf().tasks.produce.enable_fever_month = 'ignore'
-    produce_solution().data.mode = 'pro'
+    produce_solution().data.mode = HajimeScenario.PRO
     # produce_solution().data.idol = 'i_card-skin-hski-3-002'
     # produce_solution().data.memory_set = 1
     # produce_solution().data.auto_set_memory = True

@@ -105,6 +105,22 @@ PageContainer {
         }
     }
 
+    // mode（如 hajime_regular）拆成剧本 + 难度两个 UI 维度；仍写回单个 mode 字段
+    readonly property string _modeScript: {
+        var _ = sb.data
+        var mode = sb.get("mode", "hajime_regular") || "hajime_regular"
+        return String(mode).split("_")[0] || "hajime"
+    }
+    readonly property string _modeDifficulty: {
+        var _ = sb.data
+        var mode = sb.get("mode", "hajime_regular") || "hajime_regular"
+        var parts = String(mode).split("_")
+        return parts.length >= 2 ? parts.slice(1).join("_") : "regular"
+    }
+    function _setMode(script, difficulty) {
+        sb.set("mode", script + "_" + difficulty)
+    }
+
     // ── 初始化 ────────────────────────────────────────
     function loadStaticData() {
         if (!produceCtrl) return
@@ -531,13 +547,23 @@ PageContainer {
                         binder: sb
 
                         FormSegmentedButton {
-                            field: "mode"
-                            label: "培育模式"
+                            label: "剧本"
+                            options: [
+                                { label: "初", value: "hajime" },
+                                { label: "NIA", value: "nia", enabled: false }
+                            ]
+                            value: root._modeScript
+                            onUserSelected: function(v) { root._setMode(v, root._modeDifficulty) }
+                        }
+                        FormSegmentedButton {
+                            label: "难度"
                             options: [
                                 { label: "REGULAR", value: "regular" },
                                 { label: "PRO", value: "pro" },
                                 { label: "MASTER", value: "master" }
                             ]
+                            value: root._modeDifficulty
+                            onUserSelected: function(v) { root._setMode(root._modeScript, v) }
                         }
                         RowLayout {
                             Layout.fillWidth: true

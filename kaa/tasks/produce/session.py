@@ -1,28 +1,23 @@
 import logging
 from dataclasses import dataclass, field
-from enum import Enum
 from functools import cached_property
-from typing import Union
 
+from kaa.config.const import HajimeScenario, NiaScenario, Scenario
 from kaa.config.deck import CardDeck
 from kaa.db.idol_card import IdolCard
 from kaa.db.constants import ProduceExamEffectType, ShowExamEffectType
 
 logger = logging.getLogger(__name__)
 
-class HajimeScenario(Enum):
-    REGULAR = 'hajime_regular'
-    PRO = 'hajime_pro'
-    MASTER = 'hajime_master'
+__all__ = [
+    'HajimeScenario',
+    'NiaScenario',
+    'Scenario',
+    'ProduceSession',
+    'resolve_deck',
+    'identify_idol_card',
+]
 
-# Future:
-# class NiaScenario(Enum):
-#     PRO = 'nia_pro'
-#     MASTER = 'nia_master'
-# class HifScenario(Enum):
-#     REGULAR = 'hif'
-
-Scenario = Union[HajimeScenario]
 
 @dataclass
 class ProduceSession:

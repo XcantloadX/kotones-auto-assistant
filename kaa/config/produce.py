@@ -8,7 +8,7 @@ from pydantic import BaseModel, ConfigDict, ValidationError
 
 from kaa.errors import ProduceSolutionInvalidError, ProduceSolutionNotFoundError
 
-from .const import ProduceAction, RecommendCardDetectionMode
+from .const import ProduceAction, HajimeScenario, RecommendCardDetectionMode, Scenario
 
 logger = logging.getLogger(__name__)
 
@@ -17,10 +17,9 @@ class ConfigBaseModel(BaseModel):
 
 
 class ProduceData(ConfigBaseModel):
-    mode: Literal['regular', 'pro', 'master'] = 'regular'
+    mode: Scenario = HajimeScenario.REGULAR
     """
-    培育模式。
-    进行一次 REGULAR 培育需要 ~30min，进行一次 PRO 培育需要 ~1h（具体视设备性能而定）。
+    培育模式（剧本 + 难度，如 hajime_regular / nia_pro）。
     """
     idol: str | None = None
     """
