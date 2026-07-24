@@ -15,19 +15,18 @@ from kotonebot.devtools import EditorMetadata
 from kotonebot.backend.context.context import vars
 from kotonebot.devtools.project.schema import RectProp
 
-from ..scrollable import find_scroll_bar2
-
 logger = logging.getLogger(__name__)
 
 
-def analyze_scrollbar_track(track_img: MatLike, threshold: int = 150) -> dict | None:
+def analyze_scrollbar_track(track_img: MatLike) -> dict | None:
     """
     分析滚动条轨道切图，提取把手位置、高度等信息。
-    自动判定亮底暗把/暗底亮把，取像素数较小的区域作为把手。
-    取轨道中间 50% 宽度的 strip 进行分析，避免边缘背景干扰。
+
+    检测逻辑基于把手像素灰度值（约 140–142）做水平投影，
+    取最长连续白色区域作为 thumb 本身的位置与高度。
+    track 高度始终取输入图像（即 Prefab.rect）的高度。
 
     :param track_img: 滚动条轨道区域的 BGR 图像
-    :param threshold: 二值化阈值
     :return: 包含 thumb_start, thumb_end, thumb_height, track_height, position, page_count 的字典，
              若无法识别则返回 None
     """
@@ -35,30 +34,28 @@ def analyze_scrollbar_track(track_img: MatLike, threshold: int = 150) -> dict | 
         return None
 
     gray = cv2.cvtColor(track_img, cv2.COLOR_BGR2GRAY)
-    _, binary = cv2.threshold(gray, threshold, 255, cv2.THRESH_BINARY)
+    # 把手像素灰度约 140–142
+    binary = cv2.inRange(gray, 140, 142)
 
-    # 取中间 50% 宽度 strip，避免左右边缘背景干扰
-    w = track_img.shape[1]
-    strip_start = w // 4
-    strip_end = w * 3 // 4
-    strip = binary[:, strip_start:strip_end]
+    # 水平投影：每行平均值，再阈值化得到把手所在行
+    bar = cv2.reduce(binary, dim=1, rtype=cv2.REDUCE_AVG, dtype=cv2.CV_8U)
+    bar = cv2.inRange(bar, 100, 255)
 
-    dark_positions = np.where(strip == 0)[0]
-    light_positions = np.where(strip == 255)[0]
-
-    # 取像素数较小的区域作为把手（自动区分亮底暗把 / 暗底亮把）
-    if len(dark_positions) < len(light_positions):
-        positions = dark_positions
-    else:
-        positions = light_positions
-
-    if len(positions) == 0:
+    # 搜索最长的连续白色区域作为 thumb
+    contours, _ = cv2.findContours(bar, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    if not contours:
         return None
 
-    thumb_start = int(positions[0])
-    thumb_end = int(positions[-1])
-    thumb_height = thumb_end - thumb_start
-    track_height = strip.shape[0]
+    longest_c = max(contours, key=lambda c: cv2.boundingRect(c)[3])
+    _, y, _, h = cv2.boundingRect(longest_c)
+    if h <= 0:
+        return None
+
+    thumb_start = int(y)
+    thumb_height = int(h)
+    thumb_end = thumb_start + thumb_height
+    # track 高度视为 Prefab.rect 的高度（即输入切图高度）
+    track_height = int(track_img.shape[0])
     position = float(thumb_end / track_height)
     page_count = max(1, int(track_height / thumb_height))
 
@@ -76,6 +73,7 @@ class GakumasScrollbarObject(GameObject):
     """游戏界面中的滚动条对象。"""
 
     def _get_analysis(self) -> dict | None:
+        """基于当前 vars.screenshot_data 分析滚动条（不主动截图）。"""
         try:
             return self._cached_analysis
         except AttributeError:
@@ -86,6 +84,12 @@ class GakumasScrollbarObject(GameObject):
             result = analyze_scrollbar_track(track)
             self._cached_analysis = result
             return result
+
+    def _refresh_analysis(self) -> dict | None:
+        """截取最新画面并重新分析。"""
+        self._clear_cache()
+        device.screenshot()
+        return self._get_analysis()
 
     @property
     def position(self) -> float | None:
@@ -125,9 +129,8 @@ class GakumasScrollbarObject(GameObject):
 
     @action('滚动条.更新数据', screenshot_mode='manual-inherit')
     def update(self) -> bool:
-        """立即更新滚动数据。"""
-        self._clear_cache()
-        return self._get_analysis() is not None
+        """立即截图并更新滚动数据。"""
+        return self._refresh_analysis() is not None
 
     @action('滚动条.滚动到', screenshot_mode='manual-inherit')
     def to(self, position: float) -> bool:
@@ -137,7 +140,7 @@ class GakumasScrollbarObject(GameObject):
         """
         if position < 0 or position > 1:
             raise ValueError('position must be in range [0, 1].')
-        data = self._get_analysis()
+        data = self._refresh_analysis()
         if data is None:
             logger.warning('Failed to analyze scrollbar.')
             return False
@@ -166,7 +169,7 @@ class GakumasScrollbarObject(GameObject):
         if percentage is None and pixels is None:
             raise ValueError('Either percentage or pixels must be provided.')
 
-        data = self._get_analysis()
+        data = self._refresh_analysis()
         if data is None:
             logger.warning('Failed to analyze scrollbar.')
             return False
@@ -190,17 +193,22 @@ class GakumasScrollbarObject(GameObject):
 
         :param page: 滚动的页数。
         """
-        data = self._get_analysis()
+        data = self._refresh_analysis()
         if data is None:
             logger.warning('Failed to analyze scrollbar.')
             return False
 
-        if self.position is not None and self.position >= 1.0:
+        if data['position'] >= 1.0:
             logger.debug('Already at the end of the scrollbar.')
             return False
 
         delta = int(data['thumb_height'] * page)
-        self.by(pixels=delta)
+        # by() 会再次截图；此处直接滑动，避免重复截图
+        x = self.rect.center_x
+        src_y = self.rect.y1 + data['thumb_start'] + data['thumb_height'] // 2
+        device.swipe(x, src_y, x, src_y + delta, 0.3)
+        time.sleep(0.2)
+        self._clear_cache()
         return True
 
     def _clear_cache(self):
@@ -239,7 +247,11 @@ class GakumasScrollbarQuery(FindQuery[GakumasScrollbarObject]):
 
 
 class GakumasScrollbarPrefab(Prefab[GakumasScrollbarObject]):
-    """滚动条"""
+    """滚动条
+
+    Prefab 总是视为存在：``rect`` 即滚动条轨道区域。
+    运行时在 ``rect`` 内检测 thumb 的位置与高度；track 高度取 ``rect`` 高度。
+    """
     Query = GakumasScrollbarQuery
 
     rect: Rect
@@ -251,7 +263,7 @@ class GakumasScrollbarPrefab(Prefab[GakumasScrollbarObject]):
         icon = 'scrollbar'
         primary_prop = 'rect'
         props = {
-            'rect': RectProp(label='滚动条区域', description='滚动条在屏幕上的位置和大小', default_value=None),
+            'rect': RectProp(label='滚动条区域', description='滚动条轨道在屏幕上的区域。必须足够精确紧贴，否则可能识别不到或错误识别。', default_value=None),
         }
 
     @classmethod
@@ -275,12 +287,9 @@ class GakumasScrollbarPrefab(Prefab[GakumasScrollbarObject]):
     @override
     @classmethod
     def _find_impl(cls, query: GakumasScrollbarQuery) -> GakumasScrollbarObject | None:
-        img = device.screenshot()
-        rect = find_scroll_bar2(img)
-        if rect is None:
-            return None
+        # Prefab 总是视为存在，直接使用定义的轨道 rect
         obj = GakumasScrollbarObject()
-        obj.rect = rect
+        obj.rect = cls.rect
         obj.prefab = cls
         if query.predicate is not None and not query.predicate(obj):
             return None
@@ -289,16 +298,8 @@ class GakumasScrollbarPrefab(Prefab[GakumasScrollbarObject]):
     @override
     @classmethod
     def _find_all_impl(cls, query: GakumasScrollbarQuery) -> list[GakumasScrollbarObject]:
-        img = device.screenshot()
-        rect = find_scroll_bar2(img)
-        if rect is None:
-            return []
-        obj = GakumasScrollbarObject()
-        obj.rect = rect
-        obj.prefab = cls
-        if query.predicate is None or query.predicate(obj):
-            return [obj]
-        return []
+        obj = cls._find_impl(query)
+        return [obj] if obj is not None else []
 
     @overload
     @classmethod
