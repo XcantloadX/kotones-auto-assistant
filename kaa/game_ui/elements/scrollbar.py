@@ -150,7 +150,7 @@ class GakumasScrollbarObject(GameObject):
         target_y = self.rect.y1 + int(data['track_height'] * position)
 
         device.swipe(x, src_y, x, target_y, 0.3)
-        time.sleep(0.2)
+        time.sleep(0.8)
         self._clear_cache()
         return True
 
@@ -183,7 +183,7 @@ class GakumasScrollbarObject(GameObject):
             dst_y = src_y + int(data['track_height'] * percentage)
 
         device.swipe(x, src_y, x, dst_y, 0.3)
-        time.sleep(0.2)
+        time.sleep(0.8)
         self._clear_cache()
         return True
 
@@ -207,7 +207,7 @@ class GakumasScrollbarObject(GameObject):
         x = self.rect.center_x
         src_y = self.rect.y1 + data['thumb_start'] + data['thumb_height'] // 2
         device.swipe(x, src_y, x, src_y + delta, 0.3)
-        time.sleep(0.2)
+        time.sleep(0.8)
         self._clear_cache()
         return True
 

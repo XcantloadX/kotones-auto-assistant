@@ -451,6 +451,9 @@ class SkillCard:
             ')'
         )
 
+    def __hash__(self) -> int:
+        return hash((self._id, self.upgrade_count))
+
     @property
     def evaluation_label(self) -> str:
         """来源分级中文描述，见 EVALUATION_LABELS。"""

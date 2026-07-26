@@ -25,14 +25,16 @@ class DatabaseQueryResult(NamedTuple):
 
     :param key: 匹配到的图像 key
     :param feature: 特征向量（仅内部使用，可能为 None）
-    :param distance: 查询图像与匹配图像之间的距离
+    :param distance: 查询图像与匹配图像之间的距离（局部描述子为该 key 的最小距离）
+    :param votes: 局部描述子 1-NN 投票数；全局描述子恒为 1
     """
     key: str
     feature: Any
     distance: float
+    votes: int = 0
 
     def __repr__(self):
-        return f'DatabaseQueryResult(key={self.key}, distance={self.distance})'
+        return f'DatabaseQueryResult(key={self.key}, distance={self.distance}, votes={self.votes})'
 
 
 @dataclass
@@ -281,14 +283,15 @@ class ImageDatabase:
     def query(self, image: MatLike, k: int = 1, threshold: float | None = None) -> list[DatabaseQueryResult]:
         """搜索与查询图像最相似的图像。
 
-        对全局描述子（每图 1 向量），直接搜索索引中 top-k 最近邻。
-        对局部描述子（SIFT 等），搜索每个 query 描述子的最近邻后按图像 ID 投票。
-        投票策略：匹配数最多的图像优先，相同匹配数时取更低距离。
+        对全局描述子（每图 1 向量），直接搜索索引中 top-k 最近邻，按距离升序。
+        对局部描述子（SIFT 等），搜索每个 query 描述子的 1-NN 后按图像 key 投票：
+        **票数多者优先，票数相同时取更低 min_dist**（不再使用 1/(1+d) 加权，
+        避免单次偶然近邻压过稳定多票匹配）。
 
         :param image: 查询图像，BGR 格式
         :param k: 返回的 top-k 结果数量
-        :param threshold: 距离阈值，超过此阈值的结果会被过滤
-        :return: 按相关性降序排列的结果列表
+        :param threshold: 距离阈值；非 None 时过滤 min_dist >= threshold 的 key
+        :return: 按相关性排序的结果列表（局部：票数降序；全局：距离升序）
         """
         if not self._built or self._index is None:
             raise RuntimeError('Database not built. Call build() first.')
@@ -314,7 +317,7 @@ class ImageDatabase:
 
         GOOD_MATCH_MAX_DIST = 20000.0
 
-        score: dict[str, float] = {}
+        votes: dict[str, int] = {}
         min_dist: dict[str, float] = {}
         for dist, label in zip(flat_dist, flat_labels):
             if label < 0 or float(dist) > GOOD_MATCH_MAX_DIST:
@@ -323,16 +326,21 @@ class ImageDatabase:
             if key is None:
                 continue
             d = float(dist)
-            score[key] = score.get(key, 0.0) + 1.0 / (1.0 + d)
+            votes[key] = votes.get(key, 0) + 1
             if key not in min_dist or d < min_dist[key]:
                 min_dist[key] = d
 
         results = [
-            DatabaseQueryResult(key, None, min_dist[key])
-            for key in score
+            DatabaseQueryResult(key, None, min_dist[key], votes[key])
+            for key in votes
             if threshold is None or min_dist[key] < threshold
         ]
-        results.sort(key=lambda r: (-score[r.key], r.distance))
+        if nq == 1:
+            # 全局描述子：按距离升序
+            results.sort(key=lambda r: r.distance)
+        else:
+            # 局部描述子：票数优先，其次更低距离
+            results.sort(key=lambda r: (-r.votes, r.distance))
         return results[:k]
 
     def match(self, image: MatLike, threshold: float = 10) -> DatabaseQueryResult | None:

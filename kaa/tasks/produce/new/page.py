@@ -1,3 +1,4 @@
+# pyright: reportUnusedExpression=false
 import functools
 from typing import Any, Callable, Literal, TypeVar, ParamSpec, cast, TYPE_CHECKING
 
@@ -16,6 +17,11 @@ from kaa.tasks.actions.loading import loading
 from kaa.game_ui import CommuEventButtonUI, dialog, badge
 from .consts import Drink, Scene, SceneType, SelectDrinkDialog, PerformanceMetricsVal
 from kaa.tasks.produce.shared.cards import CardDetectResult, detect_recommended_card, skill_card_count
+from kaa.game_ui.skill_card_select import match_card_region
+from kaa.tasks.produce.new.owned_cards_longshot import (
+    crop_rect,
+    recognize_owned_from_strips,
+)
 if TYPE_CHECKING:
     from .controller import ProduceController
 
@@ -259,6 +265,65 @@ class Context:
         self.page = page
         self.controller = controller
 
+    def fetch_owned_skill_cards(self) -> list[SkillCard]:
+        """读取持有技能卡列表（multiset：同 id 多份全部保留）。
+
+        流程与 ``tools/owned_cards_longshot_test`` 主路径严格一致：
+        打开对话框 → 滚动采集 ContentArea → stitch_strips → 原检框 → match。
+        几何实例天然保留重复卡，不依赖按 id 去重。
+        """
+        # TODO: 准确率大概在 98% 左右。后续需要继续优化
+        for _ in Loop():
+            if R.InProduce.OwnedSkillCardsDialog.Title.exists():
+                break
+            elif R.InProduce.OwnedCardsButton.try_click():
+                sleep(1)
+
+        content = R.InProduce.OwnedSkillCardsDialog.ContentArea
+        content_rect = Rect(
+            int(content.x1),
+            int(content.y1),
+            int(content.x2 - content.x1),
+            int(content.y2 - content.y1),
+        )
+        strips: list[np.ndarray] = []
+        scrollbar = R.InProduce.OwnedSkillCardsDialog.Scrollbar.require()
+        for _ in scrollbar(step=0.15):
+            strips.append(crop_rect(device.screenshot(), content_rect))
+
+        cards: list[SkillCard] = []
+        if not strips:
+            logger.warning('Owned skill cards: no strips captured.')
+        else:
+            def _on_fail(rect: Rect) -> None:
+                logger.error(f'Failed to match skill card in region {rect}.')
+
+            cards, long_img, stitch_meta, rects = recognize_owned_from_strips(
+                strips,
+                match_card_region,
+                on_fail=_on_fail,
+            )
+            logger.debug(
+                'Owned skill cards stitch: pages=%d long=%sx%s meta=%s',
+                len(strips),
+                long_img.shape[1],
+                long_img.shape[0],
+                stitch_meta,
+            )
+            logger.info(
+                'Fetched %d owned skill cards (detected=%d, pages=%d).',
+                len(cards),
+                len(rects),
+                len(strips),
+            )
+
+        logger.debug('Closing owned skill cards dialog...')
+        for _ in Loop():
+            if R.InProduce.OwnedCardsButton.exists():
+                break
+            if R.InProduce.OwnedSkillCardsDialog.ButtonClose.try_click():
+                sleep(1)
+        return cards
 
 class DrinkSelectContext(Context):
     """饮料选择相关"""
@@ -958,29 +1023,33 @@ if __name__ == '__main__':
     # print(find(img, R.InProduce.TextExamRankLargeFirst.template, threshold=0))
     # print(find(img, R.InProduce.TextExamRankLargeFirst.template, threshold=0, rect=R.InProduce.TextExamRankLargeFirst.template.slice_rect))
     
+    device.screenshot()
+    ctx = Context(ProducePage(), None)
+    ctx.fetch_owned_skill_cards()
+
     # ui = CommuEventButtonUI()
     # buttons = ui.all()
     # 1    
 
-    img = device.screenshot()
-    import cv2
-    # 查找边缘
-    edges = cv2.Canny(img, 100, 250)
-    # 二值化
-    binary = cv2.threshold(img, 127, 255, cv2.THRESH_BINARY)[1]
-    # cv2.imshow('Edges', cv2.resize(edges, None, fx=0.75, fy=0.75))
-    cv2.imwrite('edges.png', edges)
-    cv2.imwrite('binary.png', binary)
-    # cv2.waitKey(0)
-    # cv2.destroyAllWindows()
+    # img = device.screenshot()
+    # import cv2
+    # # 查找边缘
+    # edges = cv2.Canny(img, 100, 250)
+    # # 二值化
+    # binary = cv2.threshold(img, 127, 255, cv2.THRESH_BINARY)[1]
+    # # cv2.imshow('Edges', cv2.resize(edges, None, fx=0.75, fy=0.75))
+    # cv2.imwrite('edges.png', edges)
+    # cv2.imwrite('binary.png', binary)
+    # # cv2.waitKey(0)
+    # # cv2.destroyAllWindows()
 
-    while True:
-        img = device.screenshot()
-        edges = cv2.Canny(img, 240, 250)
-        binary = cv2.threshold(img, 127, 255, cv2.THRESH_BINARY)[1]
-        cv2.imshow('Edges', cv2.resize(edges, None, fx=0.75, fy=0.75))
-        cv2.imshow('Binary', cv2.resize(binary, None, fx=0.75, fy=0.75))
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
+    # while True:
+    #     img = device.screenshot()
+    #     edges = cv2.Canny(img, 240, 250)
+    #     binary = cv2.threshold(img, 127, 255, cv2.THRESH_BINARY)[1]
+    #     cv2.imshow('Edges', cv2.resize(edges, None, fx=0.75, fy=0.75))
+    #     cv2.imshow('Binary', cv2.resize(binary, None, fx=0.75, fy=0.75))
+    #     if cv2.waitKey(1) & 0xFF == ord('q'):
+    #         break
 
 
