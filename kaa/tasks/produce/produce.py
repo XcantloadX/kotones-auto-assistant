@@ -175,7 +175,8 @@ def resume_produce():
 def do_produce(
     idol_skin_id: str,
     scenario: Scenario,
-    memory_set_index: Optional[int] = None
+    memory_set_index: Optional[int] = None,
+    support_card_set_index: Optional[int] = None,
 ) -> bool:
     """
     进行培育流程
@@ -184,6 +185,7 @@ def do_produce(
     结束状态：游戏首页\n
 
     :param memory_set_index: 回忆编成编号。
+    :param support_card_set_index: 支援卡编成编号。
     :param idol_skin_id: 要培育的偶像。如果为 None，则使用配置文件中的偶像。
     :param scenario: 培育方案类型。
     :return: 是否因为 AP 不足而跳过本次培育。
@@ -191,6 +193,8 @@ def do_produce(
     """
     if memory_set_index is not None and not 1 <= memory_set_index <= 20:
         raise ValueError('`memory_set_index` must be in range [1, 20].')
+    if support_card_set_index is not None and not 1 <= support_card_set_index <= 20:
+        raise ValueError('`support_card_set_index` must be in range [1, 20].')
 
     if not at_home():
         goto_home()
@@ -334,19 +338,13 @@ def produce():
 
     for i in range(count):
         start_time = time.time()
-        if produce_solution().data.auto_set_memory:
-            memory_set_to_use = None
-        else:
-            memory_set_to_use = memory_set
-        if produce_solution().data.auto_set_support_card:
-            support_card_set_to_use = None
-        else:
-            support_card_set_to_use = support_card_set
+        memory_set_to_use = memory_set
+        support_card_set_to_use = support_card_set
         logger.info(
             f'Produce start with: '
             f'idol: {idol}, scenario: {scenario.value}, memory_set: #{memory_set_to_use}, support_card_set: #{support_card_set_to_use}'
         )
-        if not do_produce(idol, scenario, memory_set_to_use):
+        if not do_produce(idol, scenario, memory_set_to_use, support_card_set_to_use):
             user.info('AP 不足', f'由于 AP 不足，跳过了 {count - i} 次培育。')
             logger.info('%d produce(s) skipped because of insufficient AP.', count - i)
             break

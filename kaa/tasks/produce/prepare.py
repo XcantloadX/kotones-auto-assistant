@@ -138,12 +138,14 @@ def step2(set_number: int | None = None, auto_set: bool | None = None) -> bool:
     """
     if set_number is None and auto_set is None:
         raise ValueError("Either set_number or auto_set must be provided.")
-    if set_number is not None and auto_set is not None:
-        raise ValueError("Only one of set_number or auto_set should be provided.")
     
     if not R.Produce.TextStepIndicator2.exists():
         logger.debug('Not at step2, returning False')
         return False
+    
+    # 无论是否 auto set，先导航到目标编成
+    if set_number is not None:
+        _select_set(set_number)
     
     if auto_set:
         for _ in Loop():
@@ -158,10 +160,10 @@ def step2(set_number: int | None = None, auto_set: bool | None = None) -> bool:
             elif R.Produce.Step2.AutoSet.ConfirmTitle.exists():
                 R.Produce.Step2.AutoSet.ConfirmButton.try_click()
                 sleep(2)
+        return True
+    
     if set_number is not None:
-        # 先导航到目标编成
-        _select_set(set_number)
-        # 然后配置租借
+        # 配置租借
         for _ in Loop():
             # 到达租借界面
             if R.Produce.Step2.Rent.ConfirmButton.exists():
@@ -196,12 +198,14 @@ def step3(set_number: int | None = None, auto_set: bool | None = None) -> bool:
     """
     if set_number is None and auto_set is None:
         raise ValueError("Either set_number or auto_set must be provided.")
-    if set_number is not None and auto_set is not None:
-        raise ValueError("Only one of set_number or auto_set should be provided.")
     
     if not R.Produce.TextStepIndicator3.exists():
         logger.debug('Not at step3, returning False')
         return False
+    
+    # 无论是否 auto set，先导航到目标编成
+    if set_number is not None:
+        _select_set(set_number)
     
     if auto_set:
         for _ in Loop():
@@ -225,8 +229,6 @@ def step3(set_number: int | None = None, auto_set: bool | None = None) -> bool:
         return True
 
     if set_number is not None:
-        # 导航到目标编成
-        _select_set(set_number)
         return True
     
     assert False, 'not possible'
@@ -267,22 +269,18 @@ def prepare():
     
     # 选择支援卡
     R.Produce.TextStepIndicator2.wait()
-    if produce_solution().data.auto_set_support_card:
-        step2(auto_set=True)
-    else:
-        set_number = produce_solution().data.support_card_set
-        assert set_number is not None, "support_card_set is None"
-        step2(set_number=set_number)
+    step2(
+        set_number=produce_solution().data.support_card_set,
+        auto_set=produce_solution().data.auto_set_support_card,
+    )
     R.Produce.Step2.ButtonNext.wait().click()
     
     # 选择回忆
     R.Produce.TextStepIndicator3.wait()
-    if produce_solution().data.auto_set_memory:
-        step3(auto_set=True)
-    else:
-        set_number = produce_solution().data.memory_set
-        assert set_number is not None, "memory_set is None"
-        step3(set_number=set_number)
+    step3(
+        set_number=produce_solution().data.memory_set,
+        auto_set=produce_solution().data.auto_set_memory,
+    )
     
     # 处理没有租借时弹出的有可用次数提示
     for _ in Loop():

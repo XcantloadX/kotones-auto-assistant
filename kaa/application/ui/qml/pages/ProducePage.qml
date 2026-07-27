@@ -629,7 +629,12 @@ PageContainer {
                             labelWidth: 100
                             from: 1
                             to: 20
-                            enabled: !sb.get("auto_set_memory", false)
+                        }
+                        FormNotice {
+                            style: "info"
+                            title: ""
+                            visible: sb.get("auto_set_memory", false)
+                            content: "此编号的回忆会被覆盖，注意选择空闲编号槽位。"
                         }
                         FormCheckBox {
                             field: "auto_set_support_card"
@@ -641,7 +646,12 @@ PageContainer {
                             labelWidth: 100
                             from: 1
                             to: 20
-                            enabled: !sb.get("auto_set_support_card", false)
+                        }
+                        FormNotice {
+                            style: "info"
+                            title: ""
+                            visible: sb.get("auto_set_support_card", false)
+                            content: "此编号的支援卡编成会被覆盖，注意选择空闲编号槽位。"
                         }
                     }
 
