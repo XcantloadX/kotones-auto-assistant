@@ -345,6 +345,12 @@ def produce_end(has_live: bool = True):
                 elif R.Produce.TextSkipLiveDialogTitle.exists():
                     logger.info("Confirming skip live.")
                     R.Common.IconButtonCheck.wait().click()
+                elif R.InProduce.ProduceScore.TitleText.exists():
+                    score = ocr.ocr(rect=R.InProduce.ProduceScore.ScoreTextArea).squash().numbers()
+                    if not score:
+                        logger.info('Produce score: ocr error')
+                    else:
+                        logger.info('Produce score: %s', score)
                 skip()
             else:
                 break
