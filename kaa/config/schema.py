@@ -67,8 +67,8 @@ class ContestConfig(ConfigBaseModel):
     select_which_contestant: Literal[1, 2, 3] = 1
     """选择第几个挑战者"""
 
-    when_no_set: Literal['remind', 'wait', 'auto_set', 'auto_set_silent'] = 'remind'
-    """竞赛队伍未编成时应该：remind=通知我并跳过竞赛，wait=提醒我并等待手动编成，auto_set=使用自动编成并提醒，auto_set_silent=使用自动编成不提醒"""
+    when_no_set: Literal['auto_set', 'skip'] = 'auto_set'
+    """竞赛队伍未编成时：auto_set=自动编成，skip=跳过任务"""
 
 
 class ProduceConfig(ConfigBaseModel):
@@ -192,7 +192,7 @@ class IdleModeConfig(ConfigBaseModel):
 
 
 
-CONFIG_VERSION_CODE = 12
+CONFIG_VERSION_CODE = 13
 
 
 class TasksConfig(ConfigBaseModel):

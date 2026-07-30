@@ -204,14 +204,12 @@ Item {
                             { label: "3号", value: 3 }
                         ]
                     }
-                    FormComboBox {
+                    FormSegmentedButton {
                         field: "when_no_set"
                         label: "竞赛队伍未编成时"
                         options: [
-                            { label: "通知我并跳过竞赛", value: "remind" },
-                            { label: "提醒我并等待手动编成", value: "wait" },
-                            { label: "使用自动编成并提醒我", value: "auto_set" },
-                            { label: "使用自动编成", value: "auto_set_silent" }
+                            { label: "自动编成", value: "auto_set" },
+                            { label: "跳过任务", value: "skip" }
                         ]
                     }
                 }

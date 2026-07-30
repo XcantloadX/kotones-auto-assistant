@@ -73,35 +73,20 @@ def handle_challenge() -> bool:
         logger.debug('Memory not set.')
         when_no_set = conf().tasks.contest.when_no_set
 
-        auto_compilation = False
         match when_no_set:
-            case 'remind':
-                # 关闭编成提示弹窗
+            case 'skip':
                 dialog.expect_no(msg='Closed memory not set dialog.')
-                ui_user.warning('竞赛未编成', '已跳过此次竞赛任务。')
-                logger.info('Contest skipped due to memory not set (remind mode).')
+                logger.info('Contest skipped due to memory not set (skip mode).')
                 raise StopCurrentTask
-            case 'wait':
-                dialog.expect_no(msg='Closed memory not set dialog.')
-                ui_user.warning('竞赛未编成', '已自动暂停，请手动编成后返回至挑战开始页，并点击网页上「恢复」按钮或使用快捷键继续执行。')
-                vars.flow.request_pause(wait_resume=True)
-                logger.info('Contest paused due to memory not set (wait mode).')
-                return True
-            case 'auto_set' | 'auto_set_silent':
-                if when_no_set == 'auto_set':
-                    ui_user.warning('竞赛未编成', '将使用自动编成。', once=True)
-                    logger.debug('Using auto-compilation with notification.')
-                else:  # auto_set_silent
-                    logger.debug('Using auto-compilation silently.')
-                auto_compilation = True
+            case 'auto_set':
+                logger.debug('Using auto-compilation.')
+                if R.Daily.ButtonContestChallenge.try_click():
+                    return True
             case _:
                 logger.warning(f'Unknown value for contest.when_no_set: {when_no_set}, fallback to auto.')
                 logger.debug('Using auto-compilation silently.')
-                auto_compilation = True
-
-        if auto_compilation:
-            if R.Daily.ButtonContestChallenge.try_click():
-                return True
+                if R.Daily.ButtonContestChallenge.try_click():
+                    return True
 
     # 勾选跳过所有
     # [screenshots/contest/contest2.png]

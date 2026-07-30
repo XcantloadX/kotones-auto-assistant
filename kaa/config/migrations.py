@@ -931,10 +931,63 @@ class ProfileV11ToV12(MigrationStep):
 
 
 # ---------------------------------------------------------------------------
+# V12 → V13：竞赛未编成时字段简化
+# ---------------------------------------------------------------------------
+
+class ProfileV12ToV13(MigrationStep):
+    """将 contest.when_no_set 从 4 选项精简为 2 选项（auto_set / skip）。
+
+    旧值映射：
+      remind → skip, wait → skip, auto_set → auto_set, auto_set_silent → auto_set
+    """
+
+    OLD_TO_NEW = {
+        'remind': 'skip',
+        'wait': 'skip',
+        'auto_set': 'auto_set',
+        'auto_set_silent': 'auto_set',
+    }
+
+    def check_needed(self, ctx: MigrationContext) -> bool:
+        profiles_dir = ctx.config_dir / 'profiles'
+        if not profiles_dir.exists():
+            return False
+        for f in profiles_dir.glob('*.json'):
+            data = json.loads(f.read_text(encoding='utf-8'))
+            old_val = data.get('tasks', {}).get('contest', {}).get('when_no_set', '')
+            if old_val in self.OLD_TO_NEW:
+                return True
+        return False
+
+    def apply(self, ctx: MigrationContext) -> None:
+        profiles_dir = ctx.config_dir / 'profiles'
+        if not profiles_dir.exists():
+            return
+        converted = 0
+        for f in profiles_dir.glob('*.json'):
+            data = json.loads(f.read_text(encoding='utf-8'))
+            contest = data.get('tasks', {}).get('contest', {})
+            old_val = contest.get('when_no_set', '')
+            if old_val in self.OLD_TO_NEW:
+                new_val = self.OLD_TO_NEW[old_val]
+                contest['when_no_set'] = new_val
+                data.setdefault('tasks', {})['contest'] = contest
+                data['version'] = 13
+                f.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding='utf-8')
+                converted += 1
+        if converted:
+            ctx.messages.append(MigrationMessage(
+                text=f"已将 {converted} 个 profile 的「竞赛队伍未编成时」字段简化为自动编成/跳过任务。",
+                old_version='v12',
+                new_version='v13',
+            ))
+
+
+# ---------------------------------------------------------------------------
 # 迁移链
 # ---------------------------------------------------------------------------
 
-LATEST_VERSION: int = 12
+LATEST_VERSION: int = 13
 
 profile_migration_chain = MigrationChain(steps=[
     ProfileV1ToV2(),
@@ -949,6 +1002,7 @@ profile_migration_chain = MigrationChain(steps=[
     ProfileV9ToV10(),
     ProfileV10ToV11(),
     ProfileV11ToV12(),
+    ProfileV12ToV13(),
 ])
 
 
