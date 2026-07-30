@@ -57,20 +57,6 @@
         }
       }
     },
-    "76c92bd0-496b-403e-b545-92eb1f2f941f": {
-      "type": "hint-box",
-      "name": "Daily.BoxHomeActivelyFunds",
-      "displayName": "首页活动费按钮",
-      "props": {
-        "image": {
-          "kind": "rect",
-          "x1": 29,
-          "y1": 530,
-          "x2": 109,
-          "y2": 633
-        }
-      }
-    },
     "98c3720d-5976-47d3-9ae0-ef709c960284": {
       "type": "prefab",
       "name": "Daily.ButtonAssignmentPartial",
@@ -224,6 +210,19 @@
           "y1": 983,
           "x2": 454,
           "y2": 1016
+        }
+      }
+    },
+    "cb770828-d419-44da-b839-24513b4968b0": {
+      "type": "hint-box",
+      "name": "Daily.ActivityFunds.EntryArea",
+      "props": {
+        "rect": {
+          "kind": "rect",
+          "x1": 30.53147814863142,
+          "y1": 528.4274578583763,
+          "x2": 108.67911544459194,
+          "y2": 605.8076996745882
         }
       }
     }
