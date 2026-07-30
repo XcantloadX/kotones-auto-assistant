@@ -58,7 +58,7 @@ class _Mirror:
 # 只收录 URL 格式已知且近期可用的镜像。
 # 探测时并发测试，选延迟最低且实际返回 2xx/3xx 的那个。
 _BUILTIN_MIRRORS: list[_Mirror] = [
-    # _Mirror("直连 GitHub", _github),
+    _Mirror("直连 GitHub", _github),
     _Mirror("mirror.1ichika.de",  _prefix_proxy("https://mirror.1ichika.de")),
     _Mirror("ghfast.top",  _prefix_proxy("https://ghfast.top")),
 ]
@@ -91,7 +91,7 @@ class CheckResult:
 
 # ── 镜像探测 ──────────────────────────────────────────────────────────────────
 
-def _probe(mirror: _Mirror, timeout: float = 5.0) -> tuple[float, _Mirror]:
+def _probe(mirror: _Mirror, timeout: float = 3.0) -> tuple[float, _Mirror]:
     """
     HEAD 请求探测镜像连通性。
     只接受 2xx/3xx（< 400）作为"可用"；4xx（含代理返回的 422）视为不可用。
@@ -107,10 +107,11 @@ def _probe(mirror: _Mirror, timeout: float = 5.0) -> tuple[float, _Mirror]:
     return float('inf'), mirror
 
 
-def _select_mirror(log_cb: Optional[Callable[[str], None]] = None) -> _Mirror:
+def _select_mirror(log_cb: Optional[Callable[[str], None]] = None) -> Optional[_Mirror]:
     """
     并发探测所有内置镜像，返回延迟最低的可用镜像。
     结果进程级缓存，后续调用直接返回缓存值。
+    所有镜像均不可达时返回 None。
     """
     def log(msg: str):
         logger.info(msg)
@@ -122,7 +123,7 @@ def _select_mirror(log_cb: Optional[Callable[[str], None]] = None) -> _Mirror:
         return _selected_mirror
 
     log(f"正在探测 GitHub 镜像连通性（{len(_BUILTIN_MIRRORS)} 个候选）...")
-    with concurrent.futures.ThreadPoolExecutor(max_workers=len(_BUILTIN_MIRRORS)) as pool:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=5) as pool:
         futures = [pool.submit(_probe, m) for m in _BUILTIN_MIRRORS]
         results = [f.result() for f in concurrent.futures.as_completed(futures)]
 
@@ -130,8 +131,8 @@ def _select_mirror(log_cb: Optional[Callable[[str], None]] = None) -> _Mirror:
     best_latency, best_mirror = results[0]
 
     if best_latency == float('inf'):
-        log("所有镜像均不可达，回退到直连 GitHub")
-        _selected_mirror = _BUILTIN_MIRRORS[0]
+        log("所有镜像均不可达，跳过更新")
+        _selected_mirror = None
     else:
         log(f"选用镜像：{best_mirror.label}（延迟 {best_latency * 1000:.0f} ms）")
         _selected_mirror = best_mirror
@@ -296,6 +297,8 @@ class GameDataUpdater:
             logger.info(msg)
 
         mirror = _select_mirror(log_cb=progress_cb)
+        if mirror is None:
+            return None
 
         log("正在获取游戏数据版本信息...")
         try:
