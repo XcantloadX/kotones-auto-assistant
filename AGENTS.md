@@ -61,22 +61,6 @@ Controllers 在 `kaa/application/ui/controllers/`：
 1. 应用启动时 → `kaa/main/kaa.py` 的 `upgrade_config()` 主动调用
 2. 首次读取 profile 时 → `kaa/config/manager.py` 的 `_ensure_migrated()` 惰性触发
 
-**当前版本历史**：
-
-| 从 | 到 | 步骤 | 内容 |
-|---|---|---|---|
-| V1 | V2 | ProfileV1ToV2 | 偶像字符串列表 → 整数枚举 |
-| V2 | V3 | ProfileV2ToV3 | 整数枚举 → skin_id 字符串 |
-| V3 | V4 | ProfileV3ToV4 | 修正游戏包名拼写（`bandinamcoent` → `bandainamcoent`） |
-| V4 | V5 | ProfileV4ToV5 | windows/remote_windows 截图方式 → backend.type='dmm' |
-| V5 | V6 | ProfileV5ToV6 | 培育参数 → ProduceSolution 独立文件 |
-| V6 | V7 | ProfileV6ToV7 | adb_raw 截图方式 → adb |
-| V7 | V8 | ProfileV7ToV8 | 单文件 → 多文件（`conf/profiles/*.json` + `conf/_shared.json`） |
-| — | — | SharedV1ToV2 | `conf/telemetry` 文件 → `_shared.json.telemetry.sentry` |
-| V8 | V9 | ProfileV8ToV9 | backend 平铺 → lifecycle/connection 嵌套；任务配置收拢到 tasks |
-| V9 | V10 | ProfileV9ToV10 | DMM 截图方式 windows → windows_native |
-| V10 | V11 | ProfileV10ToV11 | 移除 4 个已改硬编码的配置字段 |
-
 ## 目录结构速查
 
 - `kaa/config/` — 配置模型 (shared, schema, manager, base_config, produce, migration, migrations)
