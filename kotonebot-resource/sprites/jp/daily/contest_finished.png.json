@@ -1,0 +1,21 @@
+{
+  "version": 3,
+  "definitions": {
+    "f4535594-08e3-4b73-a405-12dcc03a1131": {
+      "type": "prefab",
+      "prefab_id": "TemplateMatchPrefab",
+      "name": "Daily.Contest.TextUsedUp",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 223.56158554688452,
+          "y1": 862.4666578231628,
+          "x2": 497.89786171346043,
+          "y2": 907.8748973642294
+        },
+        "fixed": true
+      },
+      "displayName": "本日の批戦権を消費しました"
+    }
+  }
+}

@@ -143,14 +143,18 @@ def handle_pick_contestant(has_ongoing_contest: bool = False) -> tuple[bool, boo
     :return: 二元组。第一个值表示是否命中任何处理。
         第二个值表示是否应该继续挑战，为 False 表示今天挑战次数已经用完了。
     """
-    if R.Daily.ButtonContestRanking.exists():
+    if R.Daily.Contest.TextUsedUp.exists():
+        logger.info('No contestant found. Today\'s challenge points used up.')
+        return (True, False)
+
+    if R.Daily.ButtonContestRanking.exists() and R.Daily.TextContestOverallStats.exists():
         # 无进行中挑战，说明要选择对手
         if not has_ongoing_contest:
             # 随机选一个对手 [screenshots/contest/main.png]
             logger.debug('Clicking on contestant.')
             contestant_list = R.Daily.TextContestOverallStats.find_all()
-            if contestant_list is None or len(contestant_list) == 0:
-                logger.info('No contestant found. Today\'s challenge points used up.')
+            if len(contestant_list) == 0:
+                logger.error('No contestant found. This should not be possible.')
                 return True, False
             # 按照y坐标从上到下排序对手列表
             contestant_list.sort(key=lambda x: x.rect.y1)
