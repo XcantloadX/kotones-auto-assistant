@@ -238,6 +238,20 @@
         "fixed": true
       },
       "displayName": "商店 Tab AP"
+    },
+    "429d96bd-bfb9-49c9-a514-efdd73a21faa": {
+      "type": "prefab",
+      "prefab_id": "GakumasScrollbarPrefab",
+      "name": "Daily.Shop.Scrollbar",
+      "props": {
+        "rect": {
+          "kind": "rect",
+          "x1": 702.6718466022865,
+          "y1": 332.038351139499,
+          "x2": 710.3072314458846,
+          "y2": 948.2227556767607
+        }
+      }
     }
   }
 }

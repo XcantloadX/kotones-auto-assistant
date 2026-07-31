@@ -14,6 +14,74 @@
           "y2": 510.1027252289855
         }
       }
+    },
+    "f671cf6d-1a6e-4ab9-8f56-c97442ba9a46": {
+      "type": "prefab",
+      "prefab_id": "TemplateMatchPrefab",
+      "name": "Daily.ApShop.Items.PtBoost",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 75.39520699438833,
+          "y1": 366.5533993818587,
+          "x2": 134.0635070179633,
+          "y2": 440.03218700285737
+        },
+        "fixed": true,
+        "colored": true
+      },
+      "displayName": "入手サボート強化Fアッブ"
+    },
+    "569f442b-3aa5-4e5d-a5e0-e3c0b99e7a4f": {
+      "type": "prefab",
+      "prefab_id": "TemplateMatchPrefab",
+      "name": "Daily.ApShop.Items.NoteBoost",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 224.9580563502626,
+          "y1": 357.47175147364544,
+          "x2": 315.8526056825618,
+          "y2": 440.0321870028573
+        },
+        "fixed": true,
+        "colored": true
+      },
+      "displayName": "入手ノート数アップ"
+    },
+    "b7ba19d7-5941-43fe-b94d-fc196aef97c1": {
+      "type": "prefab",
+      "prefab_id": "TemplateMatchPrefab",
+      "name": "Daily.ApShop.Items.Rechallenge",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 400.1366423361485,
+          "y1": 378.11186035594847,
+          "x2": 488.55224941393055,
+          "y2": 425.99691296289143
+        },
+        "fixed": true,
+        "colored": true
+      },
+      "displayName": "再挑戦チケット"
+    },
+    "c528c509-a674-4a64-ab41-37ba422ea0bd": {
+      "type": "prefab",
+      "prefab_id": "TemplateMatchPrefab",
+      "name": "Daily.ApShop.Items.MemoryRegenerate",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 573.662600152356,
+          "y1": 376.4606516453643,
+          "x2": 660.4255790604598,
+          "y2": 425.99691296289143
+        },
+        "fixed": true,
+        "colored": true
+      },
+      "displayName": "メモリー再生成チケット"
     }
   }
 }

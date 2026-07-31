@@ -48,6 +48,37 @@
         "fixed": true
       },
       "displayName": "コインガシャ"
+    },
+    "42b9cb8e-8a8e-484e-a586-ec02f2006411": {
+      "name": "Common.ShopPackButton",
+      "displayName": "商店礼包页面按钮",
+      "type": "prefab",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 398,
+          "y1": 685,
+          "x2": 458,
+          "y2": 740
+        },
+        "fixed": true
+      },
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {}
+    },
+    "56bdcc0b-b080-4813-a7bd-0379d3772bbf": {
+      "name": "Common.ShopPackRedDot",
+      "displayName": "商店礼包页面红点范围",
+      "type": "hint-box",
+      "props": {
+        "image": {
+          "kind": "rect",
+          "x1": 650,
+          "y1": 660,
+          "x2": 687,
+          "y2": 697
+        }
+      }
     }
   }
 }

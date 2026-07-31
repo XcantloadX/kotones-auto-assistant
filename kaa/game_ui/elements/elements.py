@@ -36,7 +36,23 @@ def primary_button_state(img: MatLike | None) -> Optional[bool]:
         return None
 
 def secondary_button_state(img: MatLike | None) -> Optional[bool]:
-    raise NotImplementedError
+    # 确保图像有效
+    if img is None or img.size == 0:
+        return None
+
+    # 计算红色通道直方图（五箱）
+    _, _, r = cv2.split(img)
+    hist = cv2.calcHist([r], [0], None, [5], [0, 256])
+    # 归一化并找出红色第二集中在哪一箱
+    hist = hist.ravel() / hist.sum()
+    second_max_idx = np.argsort(hist)[-2]  # 获取第二大值的索引
+
+    if second_max_idx == 3:
+        return False
+    elif second_max_idx == 1:
+        return True
+    else:
+        return None
 
 def checkbox_checked_state(img: MatLike | None) -> Optional[bool]:
     """
@@ -137,7 +153,7 @@ class GakumasSecondaryButtonObject(GameObject):
         img = vars.screenshot_data
         if img is None:
             return None
-        return primary_button_state(img[self.rect.y1:self.rect.y2, self.rect.x1:self.rect.x2])
+        return secondary_button_state(img[self.rect.y1:self.rect.y2, self.rect.x1:self.rect.x2])
 
     @property
     def disabled(self) -> bool | None:
