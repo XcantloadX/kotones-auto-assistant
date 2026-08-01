@@ -22,13 +22,10 @@ from kotonebot.util import cv2_imread
 from kaa.db.constants import CharacterId
 from kaa.db.skill_card import SkillCard
 from kaa.game_data.paths import skill_card_path
-from kaa.image_db import ImageDatabase, FileDataSource
-from kaa.image_db.descriptors.sift import SiftDescriptor
-from kaa.util import paths
+from kaa.image_db import ImageDatabase
+from kaa.image_db import registry
 
 logger = logging.getLogger(__name__)
-
-_db: ImageDatabase | None = None
 
 # 最低 base 聚合票数；低于此值视为不可靠匹配
 MIN_VOTES = 3
@@ -40,29 +37,23 @@ def build_db(
     source_dir: str | None = None,
     cache_dir: str | None = None,
 ):
-    """构建选卡对话框技能卡图像数据库索引。
+    """构建选卡对话框技能卡图像数据库索引（薄封装，委托注册中心）。
 
     :param progress_cb: 进度回调 (processed, total)
     :param source_dir: 数据源目录；为 None 时使用活跃游戏数据目录
     :param cache_dir: 索引缓存目录；为 None 时使用默认缓存目录
     """
-    global _db
-    path = source_dir or paths.resource('skill_cards')
-    db_dir = cache_dir or paths.cache('skill_cards_dialog')
-    _db = ImageDatabase(FileDataSource(str(path)), db_dir, SiftDescriptor(nfeatures=500), name='skill_cards_dialog', version=1)
-    if not _db.is_built:
-        _db.build(progress_cb=progress_cb)
+    registry._build_spec(
+        registry.get_spec('skill_cards_dialog'),
+        source_dir,
+        cache_dir,
+        progress_cb=progress_cb,
+    )
 
 
 def dialog_cards_db() -> ImageDatabase:
     """选卡对话框专用的卡片图像数据库。"""
-    global _db
-    if _db is None:
-        logger.info('Loading skill card dialog database...')
-        build_db()
-        logger.debug('Skill card dialog database loaded.')
-    assert _db is not None
-    return _db
+    return registry.get_db('skill_cards_dialog')
 
 
 def strip_character_suffix(asset_id: str) -> str:

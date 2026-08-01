@@ -5,7 +5,7 @@
 - ``auto_update`` 关闭 → 暴露 ``updateAvailable`` 供 QML 展示提醒，
   用户点击后经 ``triggerUpdate()`` 手动触发下载
 - 下载完成后设置 ``game_data_pending_version`` + ``restartNeeded``，
-  下次启动时由 ``apply_staging_if_pending()`` 原子替换活跃数据
+  下次启动时由 ``apply_pending()`` 原子替换活跃数据
 
 所有状态变更通过 Qt Signal 触发主线程 setter，后台线程不直接修改
 QML 绑定属性。

@@ -240,8 +240,8 @@ def _startup_task(
     """后台线程入口：应用 staging → 完整性校验 → (阻塞更新) → 还原 tabs → 就绪。"""
     # ── Step 0: 应用 pending staging ────────────────────────────────
     try:
-        from kaa.game_data.updater import apply_staging_if_pending
-        if apply_staging_if_pending():
+        from kaa.game_data.updater import apply_pending
+        if apply_pending():
             bridge.onStatusChanged("正在应用游戏数据更新…")
             logger.info("Applied pending game data staging.")
     except BaseException:

@@ -8,7 +8,6 @@ from typing_extensions import override
 
 from cv2.typing import MatLike
 from kaa.db.constants import CharacterId
-from kaa.image_db.descriptors.hog import HogDescriptor
 from kotonebot import image
 from kotonebot.primitives import Rect
 from kotonebot.core import GameObject
@@ -16,7 +15,8 @@ from kotonebot.backend import color
 
 from kaa.tasks import R
 from kaa.util import paths
-from kaa.image_db import ImageDatabase, FileDataSource
+from kaa.image_db import ImageDatabase
+from kaa.image_db import registry
 from kaa.db.skill_card import SkillCard
 
 DEBUG = False
@@ -24,7 +24,6 @@ CARD_OFFSET = (57, 148) # 从字母位置到卡片左上角的偏移量 x, y
 CARD_SCALE = 168 / 256 # 原始卡面图像 到 1280x720 截图中卡面图像的缩放比例
 
 logger = logging.getLogger(__name__)
-_db: ImageDatabase | None = None
 
 @dataclass
 class CardGameObject(GameObject):
@@ -77,27 +76,22 @@ def build_db(
     source_dir: str | None = None,
     cache_dir: str | None = None,
 ):
-    """构建技能卡图像数据库索引。
+    """构建技能卡图像数据库索引（薄封装，委托注册中心）。
 
     :param progress_cb: 进度回调 (processed, total)
     :param source_dir: 数据源目录；为 None 时使用活跃游戏数据目录
     :param cache_dir: 索引缓存目录；为 None 时使用默认缓存目录
     """
-    global _db
-    path = source_dir or paths.resource('skill_cards')
-    db_dir = cache_dir or paths.cache('skill_cards')
-    _db = CardImageDatabase(FileDataSource(str(path)), db_dir, HogDescriptor(), name='skill_cards', version=1)
-    if not _db.is_built:
-        _db.build(progress_cb=progress_cb)
+    registry._build_spec(
+        registry.get_spec('skill_cards'),
+        source_dir,
+        cache_dir,
+        progress_cb=progress_cb,
+    )
 
 
 def skill_cards_db() -> ImageDatabase:
-    global _db
-    if _db is None:
-        logger.info('Loading skill_cards database...')
-        build_db()
-    assert _db is not None
-    return _db
+    return registry.get_db('skill_cards')
 
 
 def _show_rects(title: str, img: MatLike, results: list[GameObject] | list[Rect]):

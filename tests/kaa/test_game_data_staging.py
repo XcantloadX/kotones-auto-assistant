@@ -123,7 +123,7 @@ def test_integrity_missing_sprite(fake_paths):
     assert updater.check_data_integrity() is False
 
 
-# ── apply_staging_if_pending ─────────────────────────────────────────────────
+# ── apply_pending ────────────────────────────────────────────────────────────
 
 def _write_valid_sqlite(path: Path) -> None:
     import sqlite3
@@ -159,7 +159,7 @@ def test_apply_staging_complete(fake_paths, fake_shared):
     _make_complete_staging(fake_paths)
 
     with patch("kaa.game_data.updater.clear_db_caches") as clear_mock:
-        result = updater.apply_staging_if_pending()
+        result = updater.apply_pending()
 
     assert result is True
     # 活跃数据被替换为新版本
@@ -186,7 +186,7 @@ def test_apply_staging_incomplete(fake_paths, fake_shared):
     (fake_paths.cache / ".staging").mkdir(parents=True, exist_ok=True)
     (fake_paths.cache / ".staging" / "dummy").write_bytes(b"x")
 
-    result = updater.apply_staging_if_pending()
+    result = updater.apply_pending()
 
     assert result is False
     assert not fake_paths.staging.exists()
@@ -197,13 +197,13 @@ def test_apply_staging_incomplete(fake_paths, fake_shared):
 
 def test_apply_staging_absent(fake_paths):
     """staging 不存在 → 返回 False。"""
-    result = updater.apply_staging_if_pending()
+    result = updater.apply_pending()
     assert result is False
 
 
 # ── download_to_staging ──────────────────────────────────────────────────────
 
-def _make_check_result(needs_db=True, categories_missing=None, version="v3"):
+def _make_check_result(needs_db=True, categories_missing=None, version="v3", needs_update=True):
     categories_missing = categories_missing or {"idol_cards": {"a.png"}}
     mirror = SimpleNamespace(make_url=lambda p: f"https://mirror/{p}")
     manifest = SimpleNamespace(version=version)
@@ -212,6 +212,8 @@ def _make_check_result(needs_db=True, categories_missing=None, version="v3"):
         manifest=manifest,
         needs_db=needs_db,
         category_missing=categories_missing,
+        needs_update=needs_update,
+        auto_update_enabled=True,
     )
 
 
@@ -281,6 +283,63 @@ def test_cleanup_staging(fake_paths):
 
     assert not fake_paths.staging.exists()
     assert not (fake_paths.cache / ".staging").exists()
+
+
+# ── check_and_update（统一下载路径：staging → 立即 apply） ───────────────────
+
+def test_check_and_update_unified(fake_paths, fake_shared, fake_prebuild_module, monkeypatch):
+    """check_and_update 阻塞路径：下载到 staging 后立即 apply，活跃数据被替换。"""
+    from kaa.game_data.updater import GameDataUpdater, UpdateOutcome
+
+    result = _make_check_result(needs_db=True, categories_missing={"idol_cards": {"a.png"}}, version="v3")
+    # check_only 被 mock，避免真实探测镜像 / 解析 manifest
+    monkeypatch.setattr(updater.GameDataUpdater, "check_only", lambda self, progress_cb=None: result)
+
+    zip_buf = io.BytesIO()
+    with zipfile.ZipFile(zip_buf, "w") as z:
+        z.writestr("idol_cards/a.png", b"pngdata")
+    zip_bytes = zip_buf.getvalue()
+
+    def fake_download(url, **kwargs):
+        if url.endswith("game.db.zst"):
+            return _zst_bytes(b"\x00" * 2048)
+        if url.endswith("idol_cards.zip"):
+            return zip_bytes
+        raise AssertionError(f"unexpected url: {url}")
+
+    with patch("kaa.game_data.updater._download", side_effect=fake_download):
+        with patch("kaa.game_data.updater.clear_db_caches") as clear_mock:
+            outcome = GameDataUpdater().check_and_update()
+
+    assert outcome is UpdateOutcome.UPDATED
+    # 活跃数据已被替换为新版本
+    assert (fake_paths.data / "game.db").exists()
+    assert (fake_paths.data / "version.txt").read_text() == "v3"
+    assert (fake_paths.data / "idol_cards" / "a.png").read_bytes() == b"pngdata"
+    # staging 已删除、pending_version 已清除
+    assert not fake_paths.staging.exists()
+    assert fake_shared.read_shared().misc.game_data_pending_version is None
+    # 图像索引构建回调与 clear_db_caches 均被触发
+    fake_prebuild_module.build_image_dbs_from_staging.assert_called_once()
+    clear_mock.assert_called_once()
+
+
+def test_check_and_update_cancelled(fake_paths, fake_shared, fake_prebuild_module, monkeypatch):
+    """check_and_update 下载被取消 → 清理 staging，返回 CANCELLED。"""
+    from kaa.game_data.updater import GameDataUpdater, GameDataUpdateCancelled, UpdateOutcome
+
+    result = _make_check_result(needs_db=True, categories_missing={"idol_cards": {"a.png"}}, version="v3")
+    monkeypatch.setattr(updater.GameDataUpdater, "check_only", lambda self, progress_cb=None: result)
+
+    def fake_download(url, **kwargs):
+        raise GameDataUpdateCancelled()
+
+    with patch("kaa.game_data.updater._download", side_effect=fake_download):
+        outcome = GameDataUpdater().check_and_update()
+
+    assert outcome is UpdateOutcome.CANCELLED
+    assert not fake_paths.staging.exists()
+    assert fake_shared.read_shared().misc.game_data_pending_version is None
 
 
 # ── P0: skill_card_index 缓存失效 ───────────────────────────────────────────

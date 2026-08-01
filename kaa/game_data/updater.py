@@ -22,6 +22,7 @@ import zstandard
 
 from kaa.db._util import clear_db_caches
 from kaa.db.sqlite import invalidate_connections
+from kaa.image_db.registry import all_cache_keys, all_resource_categories
 from .manifest import Manifest, parse as parse_manifest
 from .paths import (
     game_db_path, sprites_path, version_path,
@@ -31,7 +32,9 @@ from .paths import (
 
 logger = logging.getLogger(__name__)
 
-_CATEGORIES = ('idol_cards', 'skill_cards', 'drinks')
+# 资源分类与图像缓存 key 派生自图像数据库注册中心（单一事实来源）
+_CATEGORIES = all_resource_categories()
+_IMAGE_CACHE_KEYS = all_cache_keys()
 
 # 不读取系统代理：镜像站本身就是代理，叠加系统代理会导致 SSL 握手失败
 _session = requests.Session()
@@ -67,8 +70,10 @@ _BUILTIN_MIRRORS: list[_Mirror] = [
     _Mirror("ghfast.top",  _prefix_proxy("https://ghfast.top")),
 ]
 
-# 进程级缓存
+# 进程级缓存（TTL 到期后重新探测）
 _selected_mirror: Optional[_Mirror] = None
+_mirror_selected_at: float = 0.0
+_MIRROR_TTL_SECONDS = 300  # 5 分钟
 
 # ── 结果 / 异常 ───────────────────────────────────────────────────────────────
 
@@ -114,7 +119,7 @@ def _probe(mirror: _Mirror, timeout: float = 3.0) -> tuple[float, _Mirror]:
 def _select_mirror(log_cb: Optional[Callable[[str], None]] = None) -> Optional[_Mirror]:
     """
     并发探测所有内置镜像，返回延迟最低的可用镜像。
-    结果进程级缓存，后续调用直接返回缓存值。
+    结果按 TTL 进程级缓存，TTL 内直接返回；None 不缓存，下次调用重新探测。
     所有镜像均不可达时返回 None。
     """
     def log(msg: str):
@@ -122,8 +127,10 @@ def _select_mirror(log_cb: Optional[Callable[[str], None]] = None) -> Optional[_
         if log_cb:
             log_cb(msg)
 
-    global _selected_mirror
-    if _selected_mirror is not None:
+    global _selected_mirror, _mirror_selected_at
+    # 缓存有效且非 None 时直接返回
+    if (_selected_mirror is not None
+            and time.monotonic() - _mirror_selected_at < _MIRROR_TTL_SECONDS):
         return _selected_mirror
 
     log(f"正在探测 GitHub 镜像连通性（{len(_BUILTIN_MIRRORS)} 个候选）...")
@@ -136,10 +143,12 @@ def _select_mirror(log_cb: Optional[Callable[[str], None]] = None) -> Optional[_
 
     if best_latency == float('inf'):
         log("所有镜像均不可达，跳过更新")
+        # 不缓存 None，下次调用会重新探测
         _selected_mirror = None
     else:
         log(f"选用镜像：{best_mirror.label}（延迟 {best_latency * 1000:.0f} ms）")
         _selected_mirror = best_mirror
+        _mirror_selected_at = time.monotonic()
 
     return _selected_mirror
 
@@ -151,6 +160,23 @@ def _md5(path: Path) -> str:
         for chunk in iter(lambda: f.read(65536), b''):
             h.update(chunk)
     return h.hexdigest()
+
+
+# ── 配置访问（线程安全） ─────────────────────────────────────────────────────
+
+_config_lock = threading.Lock()
+
+
+def _update_misc(fn: Callable[['SharedMiscConfig'], None]) -> None:
+    """线程安全地读取-修改-写回 shared misc 配置。
+
+    :param fn: 对 ``SharedMiscConfig`` 执行修改的回调
+    """
+    from kaa.config import manager as config_manager
+    with _config_lock:
+        shared = config_manager.read_shared()
+        fn(shared.misc)
+        config_manager.write_shared(shared)
 
 
 def has_usable_baseline() -> bool:
@@ -165,10 +191,6 @@ def has_usable_baseline() -> bool:
         return True
     except Exception:
         return False
-
-
-# 图像索引缓存的 key（与 kaa/image_db/prebuild.py 的 _BUILDERS cache_key 对应）
-_IMAGE_CACHE_KEYS = ('idols', 'drinks', 'skill_cards', 'skill_cards_dialog')
 
 
 def check_data_integrity() -> bool:
@@ -195,12 +217,17 @@ def check_data_integrity() -> bool:
     return True
 
 
-def apply_staging_if_pending() -> bool:
+def apply_pending() -> bool:
     """启动时检查并应用 pending staging。返回是否实际应用了。
 
     流程：存在 .complete 标记 → 替换 game.db / sprite 目录 / 版本号 /
-    图像索引 cache → 清理所有缓存 → 删除 staging → 清除 pending_version。
+    图像索引 cache → 清理所有缓存 → 清除 pending_version → 删除 staging。
     无完整 staging 时清理残留并返回 False。
+
+    崩溃恢复：如果应用中途崩溃（进程重启），此时 .complete 仍存在且
+    ``pending_version`` 尚未清除，下次启动会重新应用（``os.replace`` 覆盖
+    已替换的文件是幂等且安全的）。只有 ``pending_version`` 已清除后才
+    删除 staging，避免删除后无法恢复。
     """
     staging = staging_dir()
     if not staging_complete_marker().exists():
@@ -244,17 +271,16 @@ def apply_staging_if_pending() -> bool:
                 os.replace(staged, active)
         shutil.rmtree(s_cache, ignore_errors=True)
 
-    # 6. 清理所有缓存（包含 skill_card_index.cache_clear）
+    # 6. 清理所有缓存（包含 skill_card_index.cache_clear）与内存中的图像数据库实例
     clear_db_caches()
+    from kaa.image_db.registry import invalidate_all
+    invalidate_all()
 
-    # 7. 删除 staging
+    # 7. 先清除 pending_version（幂等标记）
+    _update_misc(lambda misc: setattr(misc, 'game_data_pending_version', None))
+
+    # 8. 再删除 staging（此时即使崩溃也无影响，pending 已清）
     shutil.rmtree(staging, ignore_errors=True)
-
-    # 8. 清除 pending_version
-    from kaa.config import manager as config_manager
-    shared = config_manager.read_shared()
-    shared.misc.game_data_pending_version = None
-    config_manager.write_shared(shared)
 
     return True
 
@@ -450,94 +476,9 @@ class GameDataUpdater:
             category_missing=category_missing,
         )
 
-    def download_and_install(
-        self,
-        result: CheckResult,
-        file_progress_cb: Optional[Callable[[str, int, int], None]] = None,
-    ) -> None:
-        """
-        Phase 2：下载并安装游戏数据。可通过 self._cancel 取消。
-        """
-        def log(msg: str):
-            logger.info(msg)
-
-        def make_progress(name: str) -> Optional[Callable[[int, int], None]]:
-            cb = file_progress_cb
-            if cb is None:
-                return None
-            return lambda dl, total: cb(name, dl, total)
-
-        mirror = result.mirror
-        manifest = result.manifest
-        needs_db = result.needs_db
-        category_missing = result.category_missing
-        db_path = game_db_path()
-        ver_file = version_path()
-
-        log("开始更新...")
-
-        if file_progress_cb:
-            if needs_db:
-                file_progress_cb('game.db.zst', 0, 0)
-            for category, missing in category_missing.items():
-                if missing:
-                    file_progress_cb(f'{category}.zip', 0, 0)
-
-        if needs_db:
-            _check_cancel(self._cancel)
-            log("正在下载 game.db.zst ...")
-            zst_bytes = _download(
-                mirror.make_url('game.db.zst'),
-                log_cb=log,
-                progress_cb=make_progress('game.db.zst'),
-                cancel=self._cancel,
-            )
-            _check_cancel(self._cancel)
-            log("正在解压 game.db ...")
-            tmp_path = db_path.with_suffix('.db.tmp')
-            try:
-                dctx = zstandard.ZstdDecompressor()
-                with open(tmp_path, 'wb') as f_out:
-                    dctx.copy_stream(io.BytesIO(zst_bytes), f_out)
-                invalidate_connections()
-                os.replace(tmp_path, db_path)
-            except BaseException:
-                tmp_path.unlink(missing_ok=True)
-                raise
-            log(f"game.db 更新完成（{db_path.stat().st_size // 1024 // 1024} MB）")
-
-        for category, missing in category_missing.items():
-            if not missing:
-                log(f"{category}: 无需更新")
-                continue
-            _check_cancel(self._cancel)
-            log(f"{category}: 需更新 {len(missing)} 个文件，正在下载 {category}.zip ...")
-            zip_bytes = _download(
-                mirror.make_url(f'{category}.zip'),
-                log_cb=log,
-                progress_cb=make_progress(f'{category}.zip'),
-                cancel=self._cancel,
-            )
-            cat_dir = sprites_path(category)
-            with zipfile.ZipFile(io.BytesIO(zip_bytes)) as z:
-                for member in z.namelist():
-                    _check_cancel(self._cancel)
-                    fname = os.path.basename(member)
-                    if fname and fname.endswith('.png') and fname in missing:
-                        (cat_dir / fname).write_bytes(z.read(member))
-            log(f"{category}: 解压完成")
-
-        ver_file.write_text(manifest.version)
-        if needs_db:
-            from kaa.db._util import clear_db_caches
-            clear_db_caches()
-        log("游戏数据更新完成")
-
     def _mark_checked(self) -> None:
-        from kaa.config import manager as config_manager
-        shared = config_manager.read_shared()
-        shared.misc.game_data_last_checked = datetime.now().isoformat()
-        config_manager.write_shared(shared)
+        _update_misc(lambda misc: setattr(misc, 'game_data_last_checked',
+                                          datetime.now().isoformat()))
 
     def download_to_staging(
         self,
@@ -547,11 +488,12 @@ class GameDataUpdater:
         build_progress_cb: Optional[Callable[[int, int, str, int, int], None]] = None,
     ) -> None:
         """
-        Phase 2 变体：下载到 staging 目录而非活跃目录。
+        Phase 2：下载到 staging 目录（唯一下载路径）。
 
         下载完成后从 staging 构建图像索引到 staging cache，最后写入 .complete
-        标记并设置 ``game_data_pending_version``。下次启动时由
-        :func:`apply_staging_if_pending` 原子替换活跃数据。
+        标记并设置 ``game_data_pending_version``。默认下次启动时由
+        :func:`apply_pending` 原子替换活跃数据；阻塞路径可直接调用
+        :func:`apply_pending` 内联应用。
         可通过 self._cancel 取消。
 
         :param build_started_cb: 进入图像索引构建阶段时调用
@@ -650,10 +592,8 @@ class GameDataUpdater:
         (staging / '.complete').touch()
 
         # 6. 更新配置
-        from kaa.config import manager as config_manager
-        shared = config_manager.read_shared()
-        shared.misc.game_data_pending_version = manifest.version
-        config_manager.write_shared(shared)
+        _update_misc(lambda misc: setattr(misc, 'game_data_pending_version',
+                                          manifest.version))
 
         log("Staging 下载完成，下次启动时自动应用")
 
@@ -667,10 +607,6 @@ class GameDataUpdater:
         if sc.exists():
             shutil.rmtree(sc, ignore_errors=True)
 
-    @staticmethod
-    def _cleanup_partial() -> None:
-        game_db_path().with_suffix('.db.tmp').unlink(missing_ok=True)
-
     def check_and_update(
         self,
         progress_cb: Optional[Callable[[str], None]] = None,
@@ -680,6 +616,9 @@ class GameDataUpdater:
     ) -> UpdateOutcome:
         """
         检查并更新游戏数据。检查阶段不可跳过；下载阶段可取消。
+
+        下载统一走 staging（含图像索引构建），完成后立即调用
+        :func:`apply_pending` 内联应用，保证原子性（半途失败不会留下不一致数据）。
 
         file_progress_cb(filename, downloaded_bytes, total_bytes) 在每个下载
         chunk 后调用，供 UI 层展示实时进度。
@@ -714,9 +653,12 @@ class GameDataUpdater:
             download_started_cb(skippable)
 
         try:
-            self.download_and_install(result, file_progress_cb=file_progress_cb)
+            # 统一下载到 staging（含图像索引构建）
+            self.download_to_staging(result, file_progress_cb=file_progress_cb)
+            # 阻塞路径：立即内联应用
+            apply_pending()
             return UpdateOutcome.UPDATED
         except GameDataUpdateCancelled:
-            self._cleanup_partial()
+            self._cleanup_staging()
             logger.info("游戏数据更新已被用户跳过")
             return UpdateOutcome.CANCELLED

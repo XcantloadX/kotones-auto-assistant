@@ -7,15 +7,14 @@ import numpy as np
 from cv2.typing import MatLike
 
 from kaa.tasks import R
-from kaa.util import paths
 from kotonebot.primitives import RectTuple, Rect
 from kotonebot import device, action
 from kotonebot.util import cv2_imread
-from kaa.image_db import ImageDatabase, HistDescriptor, FileDataSource, DatabaseQueryResult
+from kaa.image_db import ImageDatabase, DatabaseQueryResult
+from kaa.image_db import registry
 from kotonebot.backend.preprocessor import HsvColorsRemover
 
 logger = logging.getLogger(__name__)
-_db: ImageDatabase | None = None
 
 # OpenCV HSV 颜色范围
 RED_DOT = ((157, 205, 255), (179, 255, 255)) # 红点
@@ -105,27 +104,22 @@ def build_db(
     source_dir: str | None = None,
     cache_dir: str | None = None,
 ):
-    """构建偶像图像数据库索引。
+    """构建偶像图像数据库索引（薄封装，委托注册中心）。
 
     :param progress_cb: 进度回调 (processed, total)
     :param source_dir: 数据源目录；为 None 时使用活跃游戏数据目录
     :param cache_dir: 索引缓存目录；为 None 时使用默认缓存目录
     """
-    global _db
-    path = source_dir or paths.resource('idol_cards')
-    db_dir = cache_dir or paths.cache('idols')
-    _db = ImageDatabase(FileDataSource(str(path)), db_dir, HistDescriptor(8), name='idols', version=1)
-    if not _db.is_built:
-        _db.build(progress_cb=progress_cb)
+    registry._build_spec(
+        registry.get_spec('idols'),
+        source_dir,
+        cache_dir,
+        progress_cb=progress_cb,
+    )
 
 
 def idols_db() -> ImageDatabase:
-    global _db
-    if _db is None:
-        logger.info('Loading idols database...')
-        build_db()
-    assert _db is not None
-    return _db
+    return registry.get_db('idols')
 
 def match_idol(skin_id: str, idol_img: MatLike) -> DatabaseQueryResult | None:
     """
