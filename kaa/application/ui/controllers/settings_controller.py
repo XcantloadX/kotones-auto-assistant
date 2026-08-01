@@ -226,33 +226,46 @@ class SettingsController(QObject):
     @Slot()
     def checkGameDataAsync(self) -> None:
         def _run() -> None:
-            result = "完成"
             try:
-                from kaa.game_data.updater import GameDataUpdater, UpdateOutcome
+                from kaa.game_data.updater import GameDataUpdater
                 updater = GameDataUpdater()
-                last_msg = ""
+
                 def progress_cb(text: str) -> None:
-                    nonlocal last_msg
-                    last_msg = text
                     self.gameDataProgress.emit(text)
-                outcome = updater.check_and_update(progress_cb=progress_cb)
-                if outcome == UpdateOutcome.UPDATED:
-                    self.gameDataProgress.emit("正在构建图像数据索引，可能需要若干分钟")
-                    from kaa.image_db.prebuild import ensure_all_image_dbs_built
-                    ensure_all_image_dbs_built(status_cb=self.gameDataProgress.emit, force=True)
-                    result = "游戏数据更新完成"
-                elif outcome == UpdateOutcome.CANCELLED:
-                    result = "已跳过本次更新，将使用当前已安装的游戏资源。"
-                elif outcome == UpdateOutcome.CHECK_FAILED:
-                    result = "检查失败，无法获取游戏资源版本信息。"
-                elif last_msg:
-                    result = last_msg
-                else:
-                    result = "目前已是最新版本，无需更新。"
+
+                check_result = updater.check_only(progress_cb=progress_cb)
+                if check_result is None:
+                    self.gameDataResult.emit("检查失败，无法获取游戏资源版本信息。")
+                    return
+
+                updater._mark_checked()
+
+                if not check_result.needs_update:
+                    self.gameDataResult.emit("目前已是最新版本，无需更新。")
+                    return
+
+                # 下载到 staging
+                updater.download_to_staging(
+                    check_result,
+                    file_progress_cb=None,  # 设置页不展示文件级进度
+                )
+
+                # 从 staging 构建图像索引
+                from kaa.image_db.prebuild import build_image_dbs_from_staging
+                from kaa.game_data.paths import staging_dir, staging_cache_dir
+                self.gameDataProgress.emit("正在构建图像数据索引，可能需要若干分钟")
+                build_image_dbs_from_staging(
+                    staging_dir=staging_dir(),
+                    staging_cache_dir=staging_cache_dir(),
+                )
+
+                self.gameDataResult.emit(
+                    f"游戏数据 {check_result.manifest.version[:8]} 下载完成，"
+                    "将在下次启动时自动应用。"
+                )
             except Exception as e:
-                result = f"检查失败：{e}"
+                self.gameDataResult.emit(f"检查失败：{e}")
             finally:
-                self.gameDataResult.emit(result)
                 self.gameDataDone.emit()
         threading.Thread(target=_run, daemon=True).start()
 

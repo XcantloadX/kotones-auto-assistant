@@ -7,9 +7,7 @@
 
 import logging
 import sys
-import time
 import threading
-from dataclasses import asdict, dataclass, field
 from importlib.metadata import version as pkg_version, PackageNotFoundError
 from typing import cast
 from pathlib import Path
@@ -21,10 +19,12 @@ from kaa.application.ui.controllers import (
     ProfileStoreBackend,
     AppThemeController,
 )
+from kaa.application.ui.controllers.game_data_controller import GameDataUpdateController
 from kaa.application.ui.controllers.preferences_controller import PreferencesController
 from kaa.application.ui.controllers.debug_inspector_controller import DebugInspectorController
 from kaa.application.ui.controllers.skill_card_browser_controller import SkillCardBrowserController
 from kaa.application.ui.controllers.notice_backend import NoticeBackend
+from kaa.util.progress import ProgressAggregator
 from PySide6.QtGui import QColor, QFont, QIcon, QPalette
 from PySide6.QtWidgets import QApplication
 from PySide6.QtQml import QQmlApplicationEngine
@@ -53,58 +53,14 @@ except PackageNotFoundError:
     _APP_VERSION = "dev"
 
 
-@dataclass
-class _FileProgress:
-    fileName: str
-    percent: float
-    speed: float
-    speedText: str
-    sizeText: str
-
-
-@dataclass
-class _SpeedState:
-    last_t: float = field(default_factory=time.monotonic)
-    last_bytes: int = 0
-    speed_ema: float = 0.0
-
-
 # ── Background worker ──────────────────────────────────────────────
-
-_MB = 1024 * 1024
-_KB = 1024
-
-
-def _fmt_size(n: int) -> str:
-    if n >= _MB:
-        return f"{n / _MB:.1f} MB"
-    if n >= _KB:
-        return f"{n / _KB:.1f} KB"
-    return f"{n} B"
-
-
-def _fmt_size_pair(downloaded: int, total: int) -> str:
-    if total <= 0:
-        return f"{_fmt_size(downloaded)} / —"
-    if total >= _MB:
-        return f"{downloaded / _MB:.1f} / {total / _MB:.1f} MB"
-    if total >= _KB:
-        return f"{downloaded / _KB:.1f} / {total / _KB:.1f} KB"
-    return f"{downloaded} / {total} B"
-
-
-def _fmt_speed(bps: float) -> str:
-    if bps <= 0:
-        return "—"
-    if bps >= _MB:
-        return f"{bps / _MB:.1f} MB/s"
-    return f"{bps / _KB:.0f} KB/s"
 
 
 class _SplashBridge(QObject):
     """Python↔QML 通信桥，同时作为 worker signal 的接收端（Slot）。
 
     通过 ``engine.rootContext().setContextProperty("splash", bridge)`` 暴露给 QML。
+    下载进度的 EMA 速度计算与节流刷新复用 :class:`kaa.util.progress.ProgressAggregator`。
     """
 
     statusTextChanged          = Signal(str)
@@ -116,9 +72,6 @@ class _SplashBridge(QObject):
     showMigrationDialog   = Signal(list)
     readyChanged          = Signal(bool)
 
-    _EMA_ALPHA      = 0.25
-    _FLUSH_INTERVAL = 0.15
-
     def __init__(self) -> None:
         super().__init__()
         self._status_text       = "正在初始化…"
@@ -127,10 +80,7 @@ class _SplashBridge(QObject):
         self._gd_skippable      = False
         self._cancel_event      = threading.Event()
         self._download_files: list = []
-        self._files: dict[str, _FileProgress] = {}
-        self._speed_state: dict[str, _SpeedState] = {}
-        self._last_flush: float = 0.0
-        self._dirty: bool = False
+        self._agg = ProgressAggregator()
         self._ready: bool = False
 
     # ── Qt Properties ──────────────────────────────────────────────
@@ -266,61 +216,47 @@ class _SplashBridge(QObject):
         self._set_game_data_checking(False)
         self._set_game_data_downloading(False)
         self._set_game_data_skippable(False)
-        self._files.clear()
-        self._speed_state.clear()
+        self._agg.clear()
 
     @Slot(str, int, int)
     def onFileProgress(self, name: str, downloaded: int, total: int) -> None:
-        now = time.monotonic()
-        state = self._speed_state.get(name)
-        if state is None:
-            state = _SpeedState(last_t=now)
-            self._speed_state[name] = state
-
-        dt = now - state.last_t
-        if dt > 0.05:
-            instant = (downloaded - state.last_bytes) / dt
-            ema = state.speed_ema
-            ema = instant if ema == 0 else self._EMA_ALPHA * instant + (1 - self._EMA_ALPHA) * ema
-            state.speed_ema = ema
-            state.last_t = now
-            state.last_bytes = downloaded
-            speed_bps = ema
-        else:
-            speed_bps = state.speed_ema
-
-        pct = round(downloaded / total * 100, 1) if total else 0.0
-        self._files[name] = _FileProgress(
-            fileName=name,
-            percent=pct,
-            speed=speed_bps,
-            speedText=_fmt_speed(speed_bps),
-            sizeText=_fmt_size_pair(downloaded, total),
-        )
-        self._dirty = True
-        if now - self._last_flush >= self._FLUSH_INTERVAL:
-            self._flush_progress()
+        self._agg.update(name, downloaded, total)
+        files = self._agg.flush()
+        if files is not None:
+            self._set_download_files(files)
 
     def _flush_progress(self) -> None:
-        if not self._dirty:
-            return
-        self._dirty = False
-        self._last_flush = time.monotonic()
-        self._set_download_files([asdict(f) for f in self._files.values()])
+        files = self._agg.force_flush()
+        if files is not None:
+            self._set_download_files(files)
 
 
-def _startup_task(bridge: _SplashBridge, tab_manager: TabManager, hotkey_mgr: HotkeyManager) -> None:
-    """后台线程入口：游戏数据更新 → 构建图像索引 → 还原 tabs → 标记就绪。"""
-    # ── Phase 1: 游戏数据更新 ────────────────────────────────
-    outcome = None
+def _startup_task(
+    bridge: _SplashBridge,
+    tab_manager: TabManager,
+    hotkey_mgr: HotkeyManager,
+    game_data_ctrl: GameDataUpdateController,
+) -> None:
+    """后台线程入口：应用 staging → 完整性校验 → (阻塞更新) → 还原 tabs → 就绪。"""
+    # ── Step 0: 应用 pending staging ────────────────────────────────
     try:
-        from kaa.config import manager as config_manager
-        from kaa.game_data.updater import GameDataUpdater, should_check
+        from kaa.game_data.updater import apply_staging_if_pending
+        if apply_staging_if_pending():
+            bridge.onStatusChanged("正在应用游戏数据更新…")
+            logger.info("Applied pending game data staging.")
+    except BaseException:
+        logger.exception("Failed to apply pending staging.")
 
-        shared = config_manager.read_shared()
-        if should_check(shared.misc):
-            logger.info("Starting game data check (QML mode).")
+    # ── Step 1: 轻量完整性校验 ───────────────────────────────────
+    from kaa.game_data.updater import check_data_integrity
+    needs_blocking = not check_data_integrity()
 
+    if needs_blocking:
+        # 阻塞更新（增量修复，立即替换）— 数据不完整时强制
+        outcome = None
+        try:
+            from kaa.game_data.updater import GameDataUpdater
+            bridge.onStatusChanged("正在检查游戏资源…")
             updater = GameDataUpdater(cancel=bridge._cancel_event)
             outcome = updater.check_and_update(
                 progress_cb=None,
@@ -329,41 +265,45 @@ def _startup_task(bridge: _SplashBridge, tab_manager: TabManager, hotkey_mgr: Ho
                 download_started_cb=bridge.onGameDataDownloading,
             )
             bridge.onGameDataFinished()
-            logger.info("Game data check finished: %s", outcome.value)
-        else:
-            logger.info("Game data update skipped (not needed).")
-    except BaseException:
-        logger.exception("Game data update failed; continuing.")
-        bridge.onGameDataFinished()
+            logger.info("Blocking game data check finished: %s", outcome.value)
+        except BaseException:
+            logger.exception("Blocking game data update failed; continuing.")
+            bridge.onGameDataFinished()
 
-    # ── Phase 1a: 构建图像数据索引 ────────────────────────────
-    try:
-        from kaa.image_db.prebuild import ensure_all_image_dbs_built
-        was_updated = outcome is not None and outcome.value == "updated"
-        bridge.onStatusChanged("正在构建图像数据索引，可能需要若干分钟")
-        ensure_all_image_dbs_built(status_cb=bridge.onStatusChanged, force=was_updated)
-    except BaseException:
-        logger.exception("Image db rebuild failed; continuing.")
+        # 阻塞更新后构建图像索引
+        try:
+            from kaa.image_db.prebuild import ensure_all_image_dbs_built
+            was_updated = outcome is not None and outcome.value == "updated"
+            bridge.onStatusChanged("正在构建图像数据索引，可能需要若干分钟")
+            ensure_all_image_dbs_built(status_cb=bridge.onStatusChanged, force=was_updated)
+        except BaseException:
+            logger.exception("Image db rebuild failed; continuing.")
+    else:
+        logger.info("Game data integrity OK, fast startup.")
 
-    # ── Phase 2: 还原已保存 tabs ────────────────────────────
+    # ── Step 2: 还原已保存 tabs ─────────────────────────────────
     try:
         bridge.onStatusChanged("正在恢复标签页…")
         tab_manager.restore_tabs()
     except Exception:
         logger.exception("Tab restoration failed; continuing.")
 
-    # ── Phase 3: 检查迁移和更新日志 ─────────────────────────
-    bridge._check_and_show_migration()
-    bridge._check_and_show_changelog()
-
-    # ── Phase 4: 启动全局热键 ──────────────────────────────
+    # ── Step 3: 启动全局热键 ─────────────────────────────────────
     try:
         hotkey_mgr.start()
     except Exception:
         logger.exception("Failed to start hotkeys")
 
+    # ── Step 4: 检查迁移和更新日志 ─────────────────────────────
+    bridge._check_and_show_migration()
+    bridge._check_and_show_changelog()
+
     # ── UI 就绪：隐藏 Splash，显示主界面 ─────────────────────
     bridge._set_ready(True)
+
+    # ── Step 5: 启动后台检查（仅数据完整时） ─────────────────
+    if not needs_blocking:
+        game_data_ctrl.startBackgroundCheck()
 
 
 # ── Entry point ────────────────────────────────────────────────────
@@ -472,6 +412,9 @@ def main() -> None:
     set_bridge(error_bridge)
     engine = QQmlApplicationEngine()
 
+    # ── 游戏数据后台更新控制器 ──────────────────────────────────
+    game_data_ctrl = GameDataUpdateController()
+
     # ── 创建平台相关桥接对象 ────────────────────────────────────
     max_hover_bridge = MaxHoverBridge() if sys.platform == 'win32' else None
     tab_bar_bridge = TabBarHitTestBridge() if sys.platform == 'win32' else None
@@ -490,6 +433,7 @@ def main() -> None:
     engine.rootContext().setContextProperty("AppThemeController", app_theme)
     engine.rootContext().setContextProperty("PreferencesController", prefs_ctrl)
     engine.rootContext().setContextProperty("SkillCardBrowserController", skill_card_browser_ctrl)
+    engine.rootContext().setContextProperty("GameDataCtrl", game_data_ctrl)
 
     debug_inspector = DebugInspectorController()
     engine.rootContext().setContextProperty("DebugInspector", debug_inspector)
@@ -518,10 +462,10 @@ def main() -> None:
         _win_event_filter = WindowEventFilter(window, max_hover_bridge, tab_bar_bridge)
         app.installNativeEventFilter(_win_event_filter)
 
-    # ── 5. 后台线程：游戏数据更新 → 恢复 tabs ──────────────────
+    # ── 5. 后台线程：应用 staging / 完整性校验 → 恢复 tabs ──────
     _startup_thread = threading.Thread(
         target=_startup_task,
-        args=(bridge, tab_manager, hotkey_mgr),
+        args=(bridge, tab_manager, hotkey_mgr, game_data_ctrl),
         daemon=True,
     )
     _startup_thread.start()

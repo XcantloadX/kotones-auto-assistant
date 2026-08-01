@@ -351,5 +351,8 @@ Item {
                 onPressed: event => event.accepted = true
             }
         }
+
+        // ── ↑ 更新中（后台检查/下载游戏数据时显示，hover 看进度） ──
+        UpdateIndicator {}
     }
 }

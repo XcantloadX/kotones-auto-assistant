@@ -99,10 +99,21 @@ def draw_idol_preview(img: MatLike, rects: list[RectTuple], db: ImageDatabase, i
                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
     return preview_img
 
-def build_db(progress_cb: Callable[[int, int], None] | None = None):
+def build_db(
+    progress_cb: Callable[[int, int], None] | None = None,
+    *,
+    source_dir: str | None = None,
+    cache_dir: str | None = None,
+):
+    """构建偶像图像数据库索引。
+
+    :param progress_cb: 进度回调 (processed, total)
+    :param source_dir: 数据源目录；为 None 时使用活跃游戏数据目录
+    :param cache_dir: 索引缓存目录；为 None 时使用默认缓存目录
+    """
     global _db
-    path = paths.resource('idol_cards')
-    db_dir = paths.cache('idols')
+    path = source_dir or paths.resource('idol_cards')
+    db_dir = cache_dir or paths.cache('idols')
     _db = ImageDatabase(FileDataSource(str(path)), db_dir, HistDescriptor(8), name='idols', version=1)
     if not _db.is_built:
         _db.build(progress_cb=progress_cb)

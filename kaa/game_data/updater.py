@@ -3,6 +3,7 @@ import hashlib
 import io
 import logging
 import os
+import shutil
 import sqlite3
 import threading
 import time
@@ -19,10 +20,13 @@ if TYPE_CHECKING:
 import requests
 import zstandard
 
+from kaa.db._util import clear_db_caches
 from kaa.db.sqlite import invalidate_connections
 from .manifest import Manifest, parse as parse_manifest
 from .paths import (
-    game_db_path, sprites_path, version_path
+    game_db_path, sprites_path, version_path,
+    staging_dir, staging_complete_marker, staging_game_db_path,
+    staging_sprites_path, staging_version_path, staging_cache_dir,
 )
 
 logger = logging.getLogger(__name__)
@@ -161,6 +165,98 @@ def has_usable_baseline() -> bool:
         return True
     except Exception:
         return False
+
+
+# 图像索引缓存的 key（与 kaa/image_db/prebuild.py 的 _BUILDERS cache_key 对应）
+_IMAGE_CACHE_KEYS = ('idols', 'drinks', 'skill_cards', 'skill_cards_dialog')
+
+
+def check_data_integrity() -> bool:
+    """轻量检查本地数据是否完整可用，用于决定是否需要阻塞更新。
+
+    检查项：game.db 存在且可读、version.txt 存在、各 sprite 目录存在。
+    注意：不做 md5 全量比对（那是 check_only 的职责），仅保证可运行。
+    """
+    db = game_db_path()
+    if not db.exists() or db.stat().st_size < 1024:
+        return False
+    try:
+        conn = sqlite3.connect(f"file:{db}?mode=ro", uri=True)
+        # schema_version 读取数据库头，能识别非 SQLite / 损坏文件
+        conn.execute("PRAGMA schema_version")
+        conn.close()
+    except Exception:
+        return False
+    if not version_path().exists():
+        return False
+    for cat in _CATEGORIES:
+        if not sprites_path(cat).exists():
+            return False
+    return True
+
+
+def apply_staging_if_pending() -> bool:
+    """启动时检查并应用 pending staging。返回是否实际应用了。
+
+    流程：存在 .complete 标记 → 替换 game.db / sprite 目录 / 版本号 /
+    图像索引 cache → 清理所有缓存 → 删除 staging → 清除 pending_version。
+    无完整 staging 时清理残留并返回 False。
+    """
+    staging = staging_dir()
+    if not staging_complete_marker().exists():
+        # 清理残留
+        if staging.exists():
+            shutil.rmtree(staging, ignore_errors=True)
+        sc = staging_cache_dir()
+        if sc.exists():
+            shutil.rmtree(sc, ignore_errors=True)
+        return False
+
+    # 1. 关闭 SQLite 连接
+    invalidate_connections()
+
+    # 2. 替换 game.db
+    s_db = staging_game_db_path()
+    if s_db.exists():
+        os.replace(s_db, game_db_path())
+
+    # 3. 替换 sprite 目录（整体替换）
+    for category in _CATEGORIES:
+        s_cat = staging_sprites_path(category)
+        if s_cat.exists():
+            active_cat = sprites_path(category)
+            if active_cat.exists():
+                shutil.rmtree(active_cat)
+            os.replace(s_cat, active_cat)
+
+    # 4. 写版本号
+    version_path().write_text(staging_version_path().read_text())
+
+    # 5. 替换 image DB cache
+    s_cache = staging_cache_dir()
+    if s_cache.exists():
+        for cache_key in _IMAGE_CACHE_KEYS:
+            staged = s_cache / cache_key
+            if staged.exists():
+                active = Path('./cache') / cache_key
+                if active.exists():
+                    shutil.rmtree(active)
+                os.replace(staged, active)
+        shutil.rmtree(s_cache, ignore_errors=True)
+
+    # 6. 清理所有缓存（包含 skill_card_index.cache_clear）
+    clear_db_caches()
+
+    # 7. 删除 staging
+    shutil.rmtree(staging, ignore_errors=True)
+
+    # 8. 清除 pending_version
+    from kaa.config import manager as config_manager
+    shared = config_manager.read_shared()
+    shared.misc.game_data_pending_version = None
+    config_manager.write_shared(shared)
+
+    return True
 
 
 def _check_cancel(cancel: Optional[threading.Event]) -> None:
@@ -326,9 +422,8 @@ class GameDataUpdater:
 
         db_path = game_db_path()
         db_entry = manifest.files.get('game.db')
-        needs_db = (
-            not db_path.exists() or
-            (db_entry and _md5(db_path) != db_entry.md5)
+        needs_db = not db_path.exists() or (
+            db_entry is not None and _md5(db_path) != db_entry.md5
         )
 
         category_missing: dict[str, set[str]] = {}
@@ -443,6 +538,134 @@ class GameDataUpdater:
         shared = config_manager.read_shared()
         shared.misc.game_data_last_checked = datetime.now().isoformat()
         config_manager.write_shared(shared)
+
+    def download_to_staging(
+        self,
+        result: CheckResult,
+        file_progress_cb: Optional[Callable[[str, int, int], None]] = None,
+        build_started_cb: Optional[Callable[[], None]] = None,
+        build_progress_cb: Optional[Callable[[int, int, str, int, int], None]] = None,
+    ) -> None:
+        """
+        Phase 2 变体：下载到 staging 目录而非活跃目录。
+
+        下载完成后从 staging 构建图像索引到 staging cache，最后写入 .complete
+        标记并设置 ``game_data_pending_version``。下次启动时由
+        :func:`apply_staging_if_pending` 原子替换活跃数据。
+        可通过 self._cancel 取消。
+
+        :param build_started_cb: 进入图像索引构建阶段时调用
+        :param build_progress_cb: 图像索引构建进度回调 (builder_index, total, name, file_cur, file_total)
+        """
+        from kaa.image_db.prebuild import build_image_dbs_from_staging
+
+        def log(msg: str):
+            logger.info(msg)
+
+        def make_progress(name: str) -> Optional[Callable[[int, int], None]]:
+            cb = file_progress_cb
+            if cb is None:
+                return None
+            return lambda dl, total: cb(name, dl, total)
+
+        mirror = result.mirror
+        manifest = result.manifest
+        needs_db = result.needs_db
+        category_missing = result.category_missing
+
+        staging = staging_dir()
+        staging.mkdir(parents=True, exist_ok=True)
+
+        log("开始下载到 staging...")
+
+        # file_progress_cb 初始化
+        if file_progress_cb:
+            if needs_db:
+                file_progress_cb('game.db.zst', 0, 0)
+            for category, missing in category_missing.items():
+                if missing:
+                    file_progress_cb(f'{category}.zip', 0, 0)
+
+        # 1. game.db
+        if needs_db:
+            _check_cancel(self._cancel)
+            log("正在下载 game.db.zst ...")
+            zst_bytes = _download(
+                mirror.make_url('game.db.zst'),
+                log_cb=log,
+                progress_cb=make_progress('game.db.zst'),
+                cancel=self._cancel,
+            )
+            _check_cancel(self._cancel)
+            log("正在解压 game.db ...")
+            tmp = staging_game_db_path().with_suffix('.db.tmp')
+            try:
+                dctx = zstandard.ZstdDecompressor()
+                with open(tmp, 'wb') as f_out:
+                    dctx.copy_stream(io.BytesIO(zst_bytes), f_out)
+                os.replace(tmp, staging_game_db_path())
+            except BaseException:
+                tmp.unlink(missing_ok=True)
+                raise
+            log("game.db staging 完成")
+
+        # 2. sprite categories — 完整提取
+        for category, missing in category_missing.items():
+            if not missing:
+                log(f"{category}: 无需更新")
+                continue
+            _check_cancel(self._cancel)
+            log(f"{category}: 正在下载 {category}.zip ...")
+            zip_bytes = _download(
+                mirror.make_url(f'{category}.zip'),
+                log_cb=log,
+                progress_cb=make_progress(f'{category}.zip'),
+                cancel=self._cancel,
+            )
+            cat_staging = staging_sprites_path(category)
+            cat_staging.mkdir(parents=True, exist_ok=True)
+            with zipfile.ZipFile(io.BytesIO(zip_bytes)) as z:
+                for member in z.namelist():
+                    _check_cancel(self._cancel)
+                    fname = os.path.basename(member)
+                    if fname and fname.endswith('.png'):
+                        (cat_staging / fname).write_bytes(z.read(member))
+            log(f"{category}: staging 解压完成")
+
+        # 3. 写版本号
+        staging_version_path().write_text(manifest.version)
+
+        # 4. 从 staging 构建图像索引
+        log("正在从 staging 构建图像索引...")
+        if build_started_cb:
+            build_started_cb()
+        build_image_dbs_from_staging(
+            staging_dir=staging,
+            staging_cache_dir=staging_cache_dir(),
+            status_cb=lambda msg: log(msg),
+            progress_cb=build_progress_cb,
+        )
+
+        # 5. 写完整性标记（最后一步）
+        (staging / '.complete').touch()
+
+        # 6. 更新配置
+        from kaa.config import manager as config_manager
+        shared = config_manager.read_shared()
+        shared.misc.game_data_pending_version = manifest.version
+        config_manager.write_shared(shared)
+
+        log("Staging 下载完成，下次启动时自动应用")
+
+    @staticmethod
+    def _cleanup_staging() -> None:
+        """清理不完整的 staging 目录。"""
+        s = staging_dir()
+        if s.exists():
+            shutil.rmtree(s, ignore_errors=True)
+        sc = staging_cache_dir()
+        if sc.exists():
+            shutil.rmtree(sc, ignore_errors=True)
 
     @staticmethod
     def _cleanup_partial() -> None:

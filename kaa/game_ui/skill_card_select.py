@@ -34,10 +34,21 @@ _db: ImageDatabase | None = None
 MIN_VOTES = 3
 
 
-def build_db(progress_cb: Callable[[int, int], None] | None = None):
+def build_db(
+    progress_cb: Callable[[int, int], None] | None = None,
+    *,
+    source_dir: str | None = None,
+    cache_dir: str | None = None,
+):
+    """构建选卡对话框技能卡图像数据库索引。
+
+    :param progress_cb: 进度回调 (processed, total)
+    :param source_dir: 数据源目录；为 None 时使用活跃游戏数据目录
+    :param cache_dir: 索引缓存目录；为 None 时使用默认缓存目录
+    """
     global _db
-    path = paths.resource('skill_cards')
-    db_dir = paths.cache('skill_cards_dialog')
+    path = source_dir or paths.resource('skill_cards')
+    db_dir = cache_dir or paths.cache('skill_cards_dialog')
     _db = ImageDatabase(FileDataSource(str(path)), db_dir, SiftDescriptor(nfeatures=500), name='skill_cards_dialog', version=1)
     if not _db.is_built:
         _db.build(progress_cb=progress_cb)

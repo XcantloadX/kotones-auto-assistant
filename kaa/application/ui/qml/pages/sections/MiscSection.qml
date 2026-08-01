@@ -200,6 +200,15 @@ Item {
                     }
                 }
 
+                // ── Staging 更新状态提示 ─────────────────────
+                Label {
+                    visible: GameDataCtrl.restartNeeded
+                    text: "游戏数据更新已下载，重启应用后自动生效。"
+                    color: palette.highlight
+                    wrapMode: Text.Wrap
+                    Layout.fillWidth: true
+                }
+
                 Dialog {
                     id: resultDialog
                     modal: true

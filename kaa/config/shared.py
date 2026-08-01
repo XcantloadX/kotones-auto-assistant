@@ -21,6 +21,7 @@ class SharedMiscConfig(BaseModel):
     game_data_check: Literal['manual', 'startup', 'daily', 'weekly'] = 'startup'
     game_data_auto_update: bool = True
     game_data_last_checked: str | None = None
+    game_data_pending_version: str | None = None
     last_seen_changelog: str | None = None
 
 
