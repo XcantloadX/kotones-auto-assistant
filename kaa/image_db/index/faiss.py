@@ -163,7 +163,12 @@ class FaissIndex:
         """
         if self._index is None:
             raise RuntimeError('No index to save.')
-        faiss.write_index(self._index, path)
+        # 不用 faiss.write_index()：它在 Windows 上通过 C fopen 写文件，
+        # 无法处理含非 ASCII 字符的路径（如中文目录），会以
+        # "No such file or directory" 失败。改用 serialize + Python 文件 IO。
+        data = faiss.serialize_index(self._index)
+        with open(path, 'wb') as f:
+            f.write(data.tobytes())
 
     @classmethod
     def load(cls, path: str, dimension: int = 0, metric: MetricType = MetricType.L2,
@@ -178,7 +183,11 @@ class FaissIndex:
         """
         if not FAISS_AVAILABLE:
             raise ImportError('faiss is not installed.')
-        raw = faiss.read_index(path)
+        # 与 save() 同理：不用 faiss.read_index()，改用 Python 读文件 + deserialize，
+        # 避免 C fopen 在含非 ASCII 字符的路径上失败。
+        with open(path, 'rb') as f:
+            blob = np.frombuffer(f.read(), dtype=np.uint8)
+        raw = faiss.deserialize_index(blob)
         inner_dim = raw.d
         if hnsw:
             obj = cls(dimension=inner_dim, metric=metric, hnsw=True)
