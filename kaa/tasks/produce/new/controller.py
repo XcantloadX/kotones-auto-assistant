@@ -10,7 +10,7 @@ from .page import (
     PracticeContext, ExamContext, CardSelectContext, PItemSelectContext,
     StudyContext, OutingContext, ConsultContext, AllowanceContext,
     SkillCardEnhanceContext, SkillCardRemovalContext,
-    PDrinkMaxContext, PDrinkMaxConfirmContext, NetworkErrorContext, DateChangeContext,
+    PDrinkMaxContext, PDrinkMaxConfirmContext, DateChangeContext,
     Flow
 )
 from kaa.tasks.common import skip

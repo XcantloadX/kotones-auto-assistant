@@ -1,0 +1,43 @@
+{
+  "version": 3,
+  "definitions": {
+    "6a12dc31-503b-4d3f-8b8c-1d4add834478": {
+      "type": "prefab",
+      "prefab_id": "TemplateMatchPrefab",
+      "name": "CommonDialogs.NetworkError.Title",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 56.86098207144761,
+          "y1": 951.7007770301534,
+          "x2": 227.8336293655026,
+          "y2": 996.6549341758093
+        },
+        "region": {
+          "kind": "rect",
+          "x1": 16.817902858092793,
+          "y1": 862.9247890325411,
+          "x2": 711.829692138878,
+          "y2": 1069.9591617109152
+        }
+      },
+      "displayName": "通信エラー"
+    },
+    "95889bfb-6242-46a6-bd4d-17cae01ceb47": {
+      "type": "prefab",
+      "prefab_id": "TemplateMatchPrefab",
+      "name": "CommonDialogs.NetworkError.ButtonRetry",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 389.8077162756599,
+          "y1": 1130.5184243428737,
+          "x2": 601.7738053185818,
+          "y2": 1190.4573005370817
+        },
+        "fixed": true
+      },
+      "displayName": "リトライ"
+    }
+  }
+}

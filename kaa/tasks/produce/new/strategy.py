@@ -20,7 +20,7 @@ if TYPE_CHECKING:
         PracticeContext, ExamContext, CardSelectContext, PItemSelectContext,
         StudyContext, OutingContext, ConsultContext, AllowanceContext,
         SkillCardEnhanceContext, SkillCardRemovalContext,
-        PDrinkMaxContext, PDrinkMaxConfirmContext, NetworkErrorContext, DateChangeContext,
+        PDrinkMaxContext, PDrinkMaxConfirmContext, DateChangeContext,
     )
     from .controller import ProduceController
 
@@ -89,10 +89,6 @@ class StandardStrategy:
     def on_pdrink_max_confirm(self, ctx: 'PDrinkMaxConfirmContext'):
         """处理 P饮料到达上限确认弹窗"""
         ProduceInterrupt._check_pdrink_max_confirm(device.screenshot())
-
-    def on_network_error(self, ctx: 'NetworkErrorContext'):
-        """处理网络错误弹窗"""
-        ProduceInterrupt._check_network_error(device.screenshot())
 
     def on_date_change(self, ctx: 'DateChangeContext'):
         """处理日期变更弹窗（确认后自动回到培育内）"""

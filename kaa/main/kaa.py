@@ -352,6 +352,11 @@ class Kaa(KotoneBot):
             force=True
         )
 
+        # 注册全局 Loop 回调：每次 Loop 迭代前自动处理网络错误等全局弹窗。
+        from kotonebot.config.config import conf
+        from kaa.tasks.globals import global_interrupt
+        conf().loop.loop_callbacks = [global_interrupt]
+
     def set_log_level(self, level: int):
         handlers = logging.getLogger().handlers
         if len(handlers) == 0:
