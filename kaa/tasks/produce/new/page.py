@@ -480,8 +480,9 @@ class CardSelectContext(Context):
             device.click(card_option.rect)
             btn = R.InProduce.AcquireBtnDisabled.find()
             if btn:
-                btn.click()
                 sleep(0.5)
+                btn.click()
+                sleep(2)
                 logger.debug("Clicked Acquire button for skill card.")
             else:
                 break
