@@ -22,6 +22,10 @@ def handle_network_error() -> bool:
 
     :return: 是否处理了网络错误弹窗。
     """
+    # 横屏下跳过检测
+    if device.detect_orientation() == 'landscape':
+        logger.debug('Landscape orientation detected, skipping network error handling.')
+        return False
     # 全屏通信エラー（加载页等）
     if R.Common.TextNetworkError.exists():
         logger.info('Network error dialog found.')
