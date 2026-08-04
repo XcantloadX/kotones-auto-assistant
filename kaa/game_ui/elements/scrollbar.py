@@ -43,12 +43,25 @@ def analyze_scrollbar_track(track_img: MatLike) -> dict | None:
 
     # 搜索最长的连续白色区域作为 thumb
     contours, _ = cv2.findContours(bar, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    if False:
+        # 可视化调试
+        debug_img = track_img.copy()
+        for contour in contours:
+            x, y, w, h = cv2.boundingRect(contour)
+            cv2.rectangle(debug_img, (0, y), (debug_img.shape[1], y + h), (0, 255, 0), 1)
+        cv2.imshow('scrollbar_debug', cv2.resize(debug_img, (0, 0), fx=0.75, fy=0.75))
+        cv2.imshow('scrollbar_binary', cv2.resize(binary, (0, 0), fx=0.75, fy=0.75))
+        cv2.waitKey(0)
+    
     if not contours:
         return None
 
     longest_c = max(contours, key=lambda c: cv2.boundingRect(c)[3])
     _, y, _, h = cv2.boundingRect(longest_c)
     if h <= 0:
+        return None
+    if h < track_img.shape[0] * 0.05:
+        logger.warning(f"Detected thumb height {h} is too small compared to track height {track_img.shape[0]}.")
         return None
 
     thumb_start = int(y)
@@ -361,5 +374,6 @@ class GakumasScrollbarIterator:
         pos = self.scrollbar.position
         if pos is not None and pos >= self.end:
             raise StopIteration
-        self.scrollbar.by(self.step)
+        if not self.scrollbar.by(self.step):
+            raise StopIteration
         return self.scrollbar.position
