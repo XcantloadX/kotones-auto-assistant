@@ -1,0 +1,35 @@
+{
+  "version": 3,
+  "definitions": {
+    "278bc176-c8d4-4420-9511-92edf87b2c46": {
+      "type": "prefab",
+      "prefab_id": "TemplateMatchPrefab",
+      "name": "Daily.ActivityFunds.DialogTitle",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 54.2032554967561,
+          "y1": 742.6921341257257,
+          "x2": 162.37528114841805,
+          "y2": 793.7294942710569
+        },
+        "fixed": true
+      }
+    },
+    "72e73151-e525-49de-a669-35474c1b742b": {
+      "type": "prefab",
+      "prefab_id": "GakumasSecondaryButtonPrefab",
+      "name": "Daily.ActivityFunds.DialogButtonClose",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 251.94747961617395,
+          "y1": 1136.0050570698522,
+          "x2": 294.16337576122106,
+          "y2": 1182.5267149563354
+        },
+        "fixed": true
+      }
+    }
+  }
+}

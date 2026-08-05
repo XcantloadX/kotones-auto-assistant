@@ -65,6 +65,27 @@ class ProduceSolutionService:
         self._manager.save(solution.id, solution)
         logger.info(f"Saved produce solution '{solution.name}' with ID {solution.id}")
 
+    def duplicate_solution(self, solution_id: str) -> ProduceSolution:
+        """
+        Duplicates a produce solution by its ID.
+
+        :param solution_id: The ID of the solution to duplicate.
+        :return: The newly created ProduceSolution object.
+        """
+        new_solution = self._manager.duplicate(solution_id)
+        self._manager.save(new_solution.id, new_solution)
+        logger.info(f"Duplicated produce solution '{new_solution.name}' from {solution_id}")
+        return new_solution
+
+    def check_name_exists(self, name: str, exclude_id: str | None = None) -> bool:
+        """检查指定名称是否已被其他方案使用。
+
+        :param name: 要检查的名称。
+        :param exclude_id: 排除的方案 ID。
+        :return: 名称已存在返回 True。
+        """
+        return self._manager.name_exists(name, exclude_id)
+
     def update_solution_data(self, solution_id: str, name: str, description: str, data: ProduceData) -> ProduceSolution:
         """
         Updates an existing produce solution with new data and saves it.

@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import ".." as App
 
 // 主窗口 tab 栏：应用图标、总览 tab、config tab 列表、+ 新建、☰ 配置管理、⚙ 偏好（已隐藏）。
 Item {
@@ -15,10 +16,6 @@ Item {
 
     // 供 TitleBar 同步给 Win32 hit-test：tab 按钮区右边界
     readonly property real interactiveEnd: interactiveRow.width + 4
-
-    readonly property color _fg:          Application.styleHints.colorScheme === Qt.Light ? "#000000" : "#ffffff"
-    readonly property color _hover:       Application.styleHints.colorScheme === Qt.Light ? Qt.rgba(0,0,0,0.08) : Qt.rgba(1,1,1,0.08)
-    readonly property color _tabCardBg:   Application.styleHints.colorScheme === Qt.Light ? "#ffffff" : "#2d2d2d"
 
     clip: true
 
@@ -76,7 +73,7 @@ Item {
                         anchors.top: parent.top
                         height: parent.height + radius
                         radius: 6
-                        color: root._tabCardBg
+                        color: App.AppTheme.tabCardBg
                     }
                 }
 
@@ -86,7 +83,7 @@ Item {
                     anchors.rightMargin: 2
                     visible: root.currentIndex !== 0 && overviewHover.hovered
                     radius: 5
-                    color: root._hover
+                    color: App.AppTheme.hover
                 }
 
                 RowLayout {
@@ -144,7 +141,7 @@ Item {
                             anchors.top: parent.top
                             height: parent.height + radius
                             radius: 6
-                            color: root._tabCardBg
+                            color: App.AppTheme.tabCardBg
                         }
                     }
 
@@ -155,7 +152,7 @@ Item {
                         anchors.rightMargin: 2
                         visible: !tabDelegate._isActive && tabHover.hovered
                         radius: 5
-                        color: root._hover
+                        color: App.AppTheme.hover
                     }
 
                     RowLayout {
@@ -180,14 +177,12 @@ Item {
                             Layout.preferredHeight: 20
                             Layout.alignment: Qt.AlignVCenter
                             radius: 4
-                            color: tabCloseMouseArea.containsMouse ? root._hover : "transparent"
+                            color: tabCloseMouseArea.containsMouse ? App.AppTheme.hoverStrong : "transparent"
 
-                            Text {
+                            FluentIcon {
                                 anchors.centerIn: parent
-                                font.family: "FluentSystemIcons-Regular"
+                                glyph: App.FluentIcons.dismiss_20_regular
                                 font.pixelSize: 9
-                                text: "\uF369"   // dismiss_20
-                                color: root._fg
                                 opacity: tabDelegate._isActive ? 0.9 : 0.6
                             }
 
@@ -217,15 +212,13 @@ Item {
                 anchors.topMargin: 4; anchors.bottomMargin: 4
                 anchors.leftMargin: 2; anchors.rightMargin: 2
                 radius: 5
-                color: addBtnHover.hovered ? root._hover : "transparent"
+                color: addBtnHover.hovered ? App.AppTheme.hover : "transparent"
             }
 
-            Text {
+            FluentIcon {
                 anchors.centerIn: parent
-                font.family: "FluentSystemIcons-Regular"
+                glyph: App.FluentIcons.add_20_regular
                 font.pixelSize: 13
-                text: "\uF109"   // add_20
-                color: root._fg
                 opacity: 0.7
             }
 
@@ -285,19 +278,17 @@ Item {
                 anchors.topMargin: 4; anchors.bottomMargin: 4
                 anchors.leftMargin: 2; anchors.rightMargin: 2
                 radius: 5
-                color: configMgrBtnHover.hovered ? root._hover : "transparent"
+                color: configMgrBtnHover.hovered ? App.AppTheme.hover : "transparent"
             }
 
             Row {
                 anchors.centerIn: parent
                 spacing: 4
 
-                Text {
+                FluentIcon {
                     anchors.verticalCenter: parent.verticalCenter
-                    font.family: "FluentSystemIcons-Regular"
+                    glyph: App.FluentIcons.navigation_20_regular
                     font.pixelSize: 14
-                    text: "\uF560"   // navigation_20
-                    color: root._fg
                     opacity: 0.7
                 }
 
@@ -305,7 +296,7 @@ Item {
                     anchors.verticalCenter: parent.verticalCenter
                     text: "配置"
                     font.pixelSize: 13
-                    color: root._fg
+                    color: App.AppTheme.fg
                     opacity: 0.7
                 }
             }
@@ -317,10 +308,10 @@ Item {
             }
         }
 
-        // ── ⚙ 偏好（已隐藏，保留代码）──────────────────────────
+        // ── ⚙ 偏好 ────────────────────────────────────────────
         Item {
-            visible: false
-            width: 64
+            id: settingsBtn
+            width: settingsRow.implicitWidth + 16
             height: parent.height
 
             HoverHandler { id: settingsBtnHover }
@@ -330,19 +321,18 @@ Item {
                 anchors.topMargin: 4; anchors.bottomMargin: 4
                 anchors.leftMargin: 2; anchors.rightMargin: 2
                 radius: 5
-                color: settingsBtnHover.hovered ? root._hover : "transparent"
+                color: settingsBtnHover.hovered ? App.AppTheme.hover : "transparent"
             }
 
             Row {
+                id: settingsRow
                 anchors.centerIn: parent
                 spacing: 4
 
-                Text {
+                FluentIcon {
                     anchors.verticalCenter: parent.verticalCenter
-                    font.family: "FluentSystemIcons-Regular"
+                    glyph: App.FluentIcons.settings_20_regular
                     font.pixelSize: 14
-                    text: "\uF6A9"   // settings_20
-                    color: root._fg
                     opacity: 0.7
                 }
 
@@ -350,7 +340,7 @@ Item {
                     anchors.verticalCenter: parent.verticalCenter
                     text: "偏好"
                     font.pixelSize: 13
-                    color: root._fg
+                    color: App.AppTheme.fg
                     opacity: 0.7
                 }
             }
@@ -361,5 +351,8 @@ Item {
                 onPressed: event => event.accepted = true
             }
         }
+
+        // ── ↑ 更新中（后台检查/下载游戏数据时显示，hover 看进度） ──
+        UpdateIndicator {}
     }
 }

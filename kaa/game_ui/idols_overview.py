@@ -1,21 +1,20 @@
 import os
 import logging
+from typing import Callable
 
 import cv2
 import numpy as np
 from cv2.typing import MatLike
 
 from kaa.tasks import R
-from kaa.util import paths
 from kotonebot.primitives import RectTuple, Rect
-from kaa.game_ui import Scrollable
 from kotonebot import device, action
 from kotonebot.util import cv2_imread
-from kaa.image_db import ImageDatabase, HistDescriptor, FileDataSource, DatabaseQueryResult
+from kaa.image_db import ImageDatabase, DatabaseQueryResult
+from kaa.image_db import registry
 from kotonebot.backend.preprocessor import HsvColorsRemover
 
 logger = logging.getLogger(__name__)
-_db: ImageDatabase | None = None
 
 # OpenCV HSV 颜色范围
 RED_DOT = ((157, 205, 255), (179, 255, 255)) # 红点
@@ -78,9 +77,10 @@ def draw_idol_preview(img: MatLike, rects: list[RectTuple], db: ImageDatabase, i
     for rect in rects:
         x, y, w, h = rect
         idol_img = img[y:y+h, x:x+w]
-        match = db.match(idol_img, 20)
-        if not match:
+        results = db.query(idol_img, k=1, threshold=20)
+        if not results:
             continue
+        match = results[0]
         file = os.path.join(idol_path, match.key)
         found_img = cv2_imread(file)
         
@@ -98,14 +98,28 @@ def draw_idol_preview(img: MatLike, rects: list[RectTuple], db: ImageDatabase, i
                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
     return preview_img
 
+def build_db(
+    progress_cb: Callable[[int, int], None] | None = None,
+    *,
+    source_dir: str | None = None,
+    cache_dir: str | None = None,
+):
+    """构建偶像图像数据库索引（薄封装，委托注册中心）。
+
+    :param progress_cb: 进度回调 (processed, total)
+    :param source_dir: 数据源目录；为 None 时使用活跃游戏数据目录
+    :param cache_dir: 索引缓存目录；为 None 时使用默认缓存目录
+    """
+    registry._build_spec(
+        registry.get_spec('idols'),
+        source_dir,
+        cache_dir,
+        progress_cb=progress_cb,
+    )
+
+
 def idols_db() -> ImageDatabase:
-    global _db
-    if _db is None:
-        logger.info('Loading idols database...')
-        path = paths.resource('idol_cards')
-        db_path = paths.cache('idols.pkl')
-        _db = ImageDatabase(FileDataSource(str(path)), db_path, HistDescriptor(8), name='idols')
-    return _db
+    return registry.get_db('idols')
 
 def match_idol(skin_id: str, idol_img: MatLike) -> DatabaseQueryResult | None:
     """
@@ -116,8 +130,11 @@ def match_idol(skin_id: str, idol_img: MatLike) -> DatabaseQueryResult | None:
     :return: 若匹配成功，则返回匹配结果，否则返回 None。
     """
     db = idols_db()
-    match = db.match(idol_img, 20)
-    if match and match.key.startswith(skin_id):
+    results = db.query(idol_img, k=1, threshold=20)
+    if not results:
+        return None
+    match = results[0]
+    if match.key.startswith(skin_id):
         return match
     else:
         return None
@@ -137,7 +154,7 @@ def locate_idol(skin_id: str) -> Rect | None:
     logger.info('Locating idol %s', skin_id)
     x, y, w, h = R.Produce.BoxIdolOverviewIdols.xywh
     db = idols_db()
-    sc = Scrollable(color_schema='light')
+    sc = R.Produce.ScrollbarIdolOverview.require()
 
     sc.update()
     logger.debug('Idol preview pages count: %s', repr(sc.page_count))
@@ -165,7 +182,8 @@ def locate_idol(skin_id: str) -> Rect | None:
         for rect in rects:
             rx, ry, rw, rh = rect
             idol_img = img[ry:ry+rh, rx:rx+rw]
-            match = db.match(idol_img, 20)
+            results = db.query(idol_img, k=1, threshold=20)
+            match = results[0] if results else None
             logger.debug('Result rect: %s, match: %s', repr(rect), repr(match))
             # Key 格式：{skin_id}_{index}
             # 同一张卡升级前后图片不一样，index 分别为 0 和 1

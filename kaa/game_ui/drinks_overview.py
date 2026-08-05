@@ -1,5 +1,6 @@
 import logging
 from collections import deque
+from typing import Callable
 
 import cv2
 import numpy as np
@@ -8,12 +9,11 @@ from cv2.typing import MatLike
 from kotonebot.primitives import RectTuple
 
 from kaa.tasks import R
-from kaa.util import paths
 from kaa.db.drink import Drink
-from kaa.image_db import ImageDatabase, HistDescriptor, FileDataSource
+from kaa.image_db import ImageDatabase
+from kaa.image_db import registry
 
 logger = logging.getLogger(__name__)
-_db: ImageDatabase | None = None
 
 def preprocess_drink_slot_img(img: MatLike) -> MatLike:
     """预处理饮品图像，使得图像识别结果更正确
@@ -73,14 +73,28 @@ def preprocess_drink_slot_img(img: MatLike) -> MatLike:
 
     return img
 
+def build_db(
+    progress_cb: Callable[[int, int], None] | None = None,
+    *,
+    source_dir: str | None = None,
+    cache_dir: str | None = None,
+):
+    """构建饮品图像数据库索引（薄封装，委托注册中心）。
+
+    :param progress_cb: 进度回调 (processed, total)
+    :param source_dir: 数据源目录；为 None 时使用活跃游戏数据目录
+    :param cache_dir: 索引缓存目录；为 None 时使用默认缓存目录
+    """
+    registry._build_spec(
+        registry.get_spec('drinks'),
+        source_dir,
+        cache_dir,
+        progress_cb=progress_cb,
+    )
+
+
 def drinks_db() -> ImageDatabase:
-    global _db
-    if _db is None:
-        logger.info('Loading drinks database...')
-        path = paths.resource('drinks')
-        db_path = paths.cache('drinks.pkl')
-        _db = ImageDatabase(FileDataSource(str(path)), db_path, HistDescriptor(8), name='drinks')
-    return _db
+    return registry.get_db('drinks')
 
 def match_first_drinks(img: MatLike, delta_threshold: float = 0.7) -> Drink | None:
     """
@@ -99,7 +113,7 @@ def match_first_drinks(img: MatLike, delta_threshold: float = 0.7) -> Drink | No
     # cv2.destroyAllWindows()
     
     db = drinks_db()
-    matches = db.match_all(img, threshold=114514)
+    matches = db.query(img, k=3)
     if len(matches) == 0:
         return None
 
@@ -112,7 +126,6 @@ def match_first_drinks(img: MatLike, delta_threshold: float = 0.7) -> Drink | No
         logger.info("Only 1 drink match result: %s", str(drink.name))
         return drink
     
-    matches = matches[:3]
     matches_distance = [round(m.distance, 2) for m in matches]
 
     if matches[1].distance - matches[0].distance <= delta_threshold:
@@ -142,9 +155,9 @@ def locate_all_drinks_in_3_drink_slots(img: MatLike) -> list[tuple[Drink, RectTu
     """
     
     potential_rects: list[RectTuple] = [
-        R.InPurodyuusu.BoxDrink1.rect,
-        R.InPurodyuusu.BoxDrink2.rect,
-        R.InPurodyuusu.BoxDrink3.rect
+        R.InProduce.BoxDrink1.rect,
+        R.InProduce.BoxDrink2.rect,
+        R.InProduce.BoxDrink3.rect
     ]
 
     results = list[tuple[Drink, RectTuple]]()
@@ -164,11 +177,11 @@ if __name__ == '__main__':
     from logging import getLogger
     logging.basicConfig(level=logging.INFO, format='[%(asctime)s] [%(levelname)s] [%(name)s] %(message)s')
 
-    # img = R.InPurodyuusu.Screenshot5Cards.data # len = 2
-    # img = R.InPurodyuusu.ScreenshotSenseiTipConsult.data # len = 3
-    # img = R.InPurodyuusu.Screenshot1Cards.data # len = 2
-    # img = R.InPurodyuusu.ScreenshotDrinkTest.data # len = 2
-    # img = R.InPurodyuusu.Screenshot4Cards.data # len = 0
-    img = R.InPurodyuusu.ScreenshotDrinkTest3.data # len = 1
+    # img = R.InProduce.Screenshot5Cards.data # len = 2
+    # img = R.InProduce.ScreenshotSenseiTipConsult.data # len = 3
+    # img = R.InProduce.Screenshot1Cards.data # len = 2
+    # img = R.InProduce.ScreenshotDrinkTest.data # len = 2
+    # img = R.InProduce.Screenshot4Cards.data # len = 0
+    img = R.InProduce.ScreenshotDrinkTest3.data # len = 1
     results = locate_all_drinks_in_3_drink_slots(img)
     print(len(results), ":", results)

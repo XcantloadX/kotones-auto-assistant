@@ -24,18 +24,18 @@ def acquire_p_drink():
     """
     # TODO: 随机领取一个饮料改成根据具体情况确定最佳
     # 如果能不领取，就不领取
-    if R.InPurodyuusu.TextDontClaim.try_click():
+    if R.InProduce.TextDontClaim.try_click():
         # [kotonebot-resource/sprites/jp/in_purodyuusu/screenshot_select_p_drink_full.png]
         logger.info("Skip claiming PDrink.")
         sleep(0.3)
-        R.InPurodyuusu.ButtonDontClaim.try_click()
+        R.InProduce.ButtonDontClaim.try_click()
     else:
         # 点击饮料
         device.click(POSTIONS[0])
         logger.debug(f"PDrink clicked: {POSTIONS[0]}")
         sleep(0.3)
         # 确定按钮
-        if R.InPurodyuusu.AcquireBtnDisabled.try_click():
+        if R.InProduce.AcquireBtnDisabled.try_click():
             logger.debug("受け取る clicked")
 
 

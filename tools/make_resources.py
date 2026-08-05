@@ -2,7 +2,7 @@ import os
 import shutil
 import argparse
 
-from kotonebot.devtools.resgen.parsers import ParserRegistry, KotoneV1Parser, BasicSpriteParser
+from kotonebot.devtools.resgen.parsers import ParserRegistry, KotoneV1Parser
 from kotonebot.devtools.resgen.utils import build_class_tree
 from kotonebot.devtools.resgen.codegen import StandardGenerator, EntityGenerator
 
@@ -19,7 +19,7 @@ class KaaGenerator(EntityGenerator):
     def render_header(self):
         super().render_header()
         self.writer.write("from kaa.common import sprite_path")
-        self.writer.write("from kaa.game_ui.elements import GakumasPrimaryButtonPrefab")
+        self.writer.write("from kaa.game_ui.elements import GakumasPrimaryButtonPrefab, GakumasSecondaryButtonPrefab, GakumasCheckboxPrefab, GakumasScrollbarPrefab")
 
 def scan_files(path: str) -> list[str]:
     files = []
@@ -62,7 +62,6 @@ def main():
     # 2. 注册解析器
     registry = ParserRegistry()
     registry.register(KotoneV1Parser())    # 优先尝试解析 JSON
-    registry.register(BasicSpriteParser()) # 兜底解析普通 PNG
 
     # 3. 扫描与解析
     print(f"Scanning {ROOT_SCAN_PATH}...")

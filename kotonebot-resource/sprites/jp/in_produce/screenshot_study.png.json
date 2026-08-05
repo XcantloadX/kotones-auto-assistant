@@ -1,0 +1,34 @@
+{
+  "version": 3,
+  "definitions": {
+    "f29b6663-1f88-477f-bb7a-8e0e77ad9138": {
+      "type": "hint-box",
+      "name": "InProduce.BoxCommuEventButtonsArea",
+      "displayName": "交流事件按钮区域",
+      "props": {
+        "image": {
+          "kind": "rect",
+          "x1": 14,
+          "y1": 412,
+          "x2": 703,
+          "y2": 1089
+        }
+      }
+    },
+    "4af07e4a-45a3-4cb5-b1cb-38e557da6ac4": {
+      "type": "prefab",
+      "name": "InProduce.IconTitleStudy",
+      "displayName": "icon_title_study.png",
+      "prefab_id": "TemplateMatchPrefab",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 81,
+          "y1": 88,
+          "x2": 143,
+          "y2": 131
+        }
+      }
+    }
+  }
+}

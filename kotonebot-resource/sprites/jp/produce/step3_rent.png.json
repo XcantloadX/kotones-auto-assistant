@@ -1,0 +1,37 @@
+{
+  "version": 3,
+  "definitions": {
+    "37cd1d4c-20b3-4989-823d-31e64444a70a": {
+      "type": "prefab",
+      "prefab_id": "GakumasPrimaryButtonPrefab",
+      "name": "Produce.Step3.AutoSet.ConfirmButton",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 391.30747205026955,
+          "y1": 1134.5493295418837,
+          "x2": 581.2770542051337,
+          "y2": 1187.5148919546568
+        },
+        "fixed": true
+      },
+      "displayName": "STEP3 租借 确认按钮"
+    },
+    "92ac3014-3b47-40e6-a5c0-e56d5c580d9f": {
+      "type": "prefab",
+      "prefab_id": "TemplateMatchPrefab",
+      "name": "Produce.Step3.AutoSet.ConfirmTitle",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 58.36078332621804,
+          "y1": 788.7741485075536,
+          "x2": 250.3300452932387,
+          "y2": 836.7429597493103
+        },
+        "fixed": true
+      },
+      "displayName": "STEP3 自动编成对话框标题"
+    }
+  }
+}

@@ -1,4 +1,9 @@
-from .db import ImageDatabase, Db, DatabaseQueryResult, FileDataSource, DataSource
-from .descriptors import HistDescriptor
+from .db import ImageDatabase, DatabaseQueryResult, DatabaseMeta
+from .datasource import DataSource, FileDataSource
+from .descriptors import BaseDescriptor, MetricType, HistDescriptor, HogDescriptor, SiftDescriptor
 
-__all__ = ['ImageDatabase', 'Db', 'DatabaseQueryResult', 'HistDescriptor', 'FileDataSource', 'DataSource']
+__all__ = [
+    'ImageDatabase', 'DatabaseQueryResult', 'DatabaseMeta',
+    'DataSource', 'FileDataSource',
+    'BaseDescriptor', 'MetricType', 'HistDescriptor', 'HogDescriptor', 'SiftDescriptor',
+]

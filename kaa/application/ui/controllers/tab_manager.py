@@ -1,36 +1,46 @@
-"""TabManager — 管理多 profile tab 生命周期r。
+"""TabManager — 管理多 profile tab 生命周期。
 
-每个 tab 对应一个 ProfileRunner（内含 Kaa + KaaFacade + gr.Blocks）。
+每个 tab 对应一个 KaaSession（内含 Kaa 实例和所有服务）。
 TabManager 负责 tab 的创建/关闭/激活/批量运行，并通过 Qt Signals 通知 QML。
 """
 import json
 import logging
 import threading
+import time
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
 
 from PySide6.QtCore import QObject, Property, Signal, Slot
 
-from kaa.application.ui.profile_runner import ProfileRunner
-
-if TYPE_CHECKING:
-    from fastapi import FastAPI
+from kaa.application.ui.kaa_session import KaaSession
+from .run_controller import RunController
+from .settings_controller import SettingsController
+from .progress_bridge import ProgressBridge
+from .log_bridge import LogBridge
+from .produce_controller import ProduceController
+from .update_controller import UpdateController
+from .feedback_controller import FeedbackController
 
 logger = logging.getLogger(__name__)
 
 
 @dataclass
 class _TabEntry:
-    runner: ProfileRunner
-    mount_path: str = ""
+    session: KaaSession
+    run_ctrl: RunController | None = None  # 惰性创建（主线程）
+    settings_ctrl: SettingsController | None = None  # 惰性创建（主线程）
+    progress_bridge: ProgressBridge | None = None  # 惰性创建（主线程）
+    log_bridge: LogBridge | None = None  # 惰性创建（主线程）
+    produce_ctrl: ProduceController | None = None  # 惰性创建（主线程）
+    update_ctrl: UpdateController | None = None  # 惰性创建（主线程）
+    feedback_ctrl: FeedbackController | None = None  # 惰性创建（主线程）
 
     @property
     def config_name(self) -> str:
-        return self.runner.profile_name
+        return self.session.profile_name
 
     @property
     def is_running(self) -> bool:
-        return self.runner.is_running
+        return self.session.is_running
 
 
 class TabManager(QObject):
@@ -38,46 +48,44 @@ class TabManager(QObject):
 
     tabsChanged = Signal()
     activeTabChanged = Signal()
-    anyBusyChanged = Signal()
     batchModeChanged = Signal()
     closeTabBlocked = Signal(str)          # reason
     readyToCloseTab = Signal(int)          # index
     tabOpenFailed = Signal(str)            # error
     operationSucceeded = Signal(str)
     operationFailed = Signal(str)
+    capturePageRequested = Signal(int)     # capture mode: navigate to page index
 
-    def __init__(self, server_app: 'FastAPI', parent: QObject | None = None) -> None:
+    def __init__(self, parent: QObject | None = None) -> None:
         super().__init__(parent)
-        self._server_app = server_app
         self._tabs: list[_TabEntry] = []
         self._active_index: int = 0
         self._batch_mode: str = ''          # '' | 'sequential' | 'parallel'
         self._stop_all_busy: bool = False
         self._seq_cancel: threading.Event | None = None
-        self._mount_counter: int = 0
         self._lock = threading.Lock()
 
     # ── 内部工具 ──────────────────────────────────────────────────────
 
-    def _next_mount_path(self) -> str:
-        with self._lock:
-            self._mount_counter += 1
-            return f"/p{self._mount_counter}"
-
     def _create_entry(self, config_name: str) -> _TabEntry:
-        mount_path = self._next_mount_path()
-        runner = ProfileRunner(
-            profile_name=config_name,
-            mount_path=mount_path,
-            server_app=self._server_app,
-        )
-        return _TabEntry(runner=runner, mount_path=mount_path)
+        session = KaaSession(config_name)
+        return _TabEntry(session=session)
 
     def _destroy_entry(self, entry: _TabEntry) -> None:
         try:
-            entry.runner.unmount()
+            if entry.progress_bridge is not None:
+                entry.progress_bridge.uninstall()
         except Exception:
-            logger.exception("Failed to unmount runner for '%s'", entry.config_name)
+            logger.exception("Failed to uninstall progress bridge for '%s'", entry.config_name)
+        try:
+            if entry.log_bridge is not None:
+                entry.log_bridge.close()
+        except Exception:
+            logger.exception("Failed to close log bridge for '%s'", entry.config_name)
+        try:
+            entry.session.destroy()
+        except Exception:
+            logger.exception("Failed to destroy session for '%s'", entry.config_name)
 
     def _save_tabs(self) -> None:
         try:
@@ -90,11 +98,22 @@ class TabManager(QObject):
         except Exception:
             logger.exception('Failed to save tab list')
 
-    def restore_tabs(self) -> None:
-        """从 shared config 恢复已保存的 tabs，在后台线程中调用。
+    def _run_entry_tasks(self, entry: _TabEntry) -> None:
+        """初始化 session 并启动所有任务，阻塞至完成。"""
+        try:
+            entry.session.initialize()
+            ts = entry.session.task_service
+            if ts is None:
+                return
+            ts.start_all_tasks()
+            # 等待任务完成
+            while entry.is_running:
+                time.sleep(0.5)
+        except Exception:
+            logger.exception("Run tasks failed for '%s'", entry.config_name)
 
-        直接调用 ``runner.mount()``（不自启线程，因为调用方已在后台线程）。
-        """
+    def restore_tabs(self) -> None:
+        """从 shared config 恢复已保存的 tabs，在后台线程中调用。"""
         try:
             from kaa.config import manager
             shared = manager.read_shared()
@@ -106,10 +125,9 @@ class TabManager(QObject):
             entries: list[_TabEntry] = []
             for name in names:
                 try:
-                    mount_path = self._next_mount_path()
-                    runner = ProfileRunner(name, mount_path, self._server_app)
-                    runner.mount()
-                    entries.append(_TabEntry(runner=runner, mount_path=mount_path))
+                    session = KaaSession(name)
+                    session.initialize()
+                    entries.append(_TabEntry(session=session))
                 except Exception:
                     logger.exception('Failed to restore tab: %s', name)
 
@@ -132,8 +150,12 @@ class TabManager(QObject):
             return self._tabs[self._active_index]
         return None
 
-    def _get_server_app(self) -> object:
-        return self._server_app
+    def get_active_task_service(self):
+        """获取当前活跃 tab 的 task_service，无活跃 tab 时返回 None。"""
+        entry = self._active_entry()
+        if entry is None:
+            return None
+        return entry.session.task_service
 
     # ── QML Slots ─────────────────────────────────────────────────────
 
@@ -150,16 +172,21 @@ class TabManager(QObject):
             self._save_tabs()
             self.tabsChanged.emit()
             self.activeTabChanged.emit()
-            # mount 在后台线程执行，完成后 tabsChanged 再通知 QML 刷新 URL
-            def _mount_and_notify():
+
+            # 后台线程初始化 session
+            def _init_and_notify():
                 try:
-                    entry.runner.mount()
+                    entry.session.initialize()
+                    # session 初始化完毕，通知 RunController 刷新任务列表
+                    # （避免 QML 页面在初始化前已创建好，导致任务列表为空）
+                    if entry.run_ctrl is not None:
+                        entry.run_ctrl.tasksChanged.emit()
                 except Exception:
-                    logger.exception('Failed to mount tab: %s', config_name)
+                    logger.exception('Failed to initialize tab: %s', config_name)
                     self.tabOpenFailed.emit(str(config_name))
                     return
                 self.tabsChanged.emit()
-            threading.Thread(target=_mount_and_notify, daemon=True).start()
+            threading.Thread(target=_init_and_notify, daemon=True).start()
         except Exception as e:
             logger.exception('Failed to open tab: %s', config_name)
             self.tabOpenFailed.emit(str(e))
@@ -240,6 +267,44 @@ class TabManager(QObject):
             self.operationFailed.emit(f'创建失败：{exc}')
             return False
 
+    @Slot(str, str, result=bool)
+    def renameProfile(self, old_name: str, new_name: str) -> bool:
+        """重命名配置文件。若该配置有打开的 tab，先关闭再用新名重新打开。"""
+        try:
+            from kaa.config import manager
+            manager.rename(old_name, new_name)
+            was_open = self.isTabOpen(old_name)
+            if was_open:
+                for i, entry in enumerate(self._tabs):
+                    if entry.config_name == old_name:
+                        self.closeTab(i)
+                        break
+                self.openTab(new_name)
+            self.operationSucceeded.emit(f'已将配置重命名为: {new_name}')
+            return True
+        except FileExistsError:
+            self.operationFailed.emit(f'配置 "{new_name}" 已存在')
+            return False
+        except FileNotFoundError:
+            self.operationFailed.emit(f'配置 "{old_name}" 不存在')
+            return False
+        except Exception as exc:
+            self.operationFailed.emit(f'重命名失败：{exc}')
+            return False
+
+    @Slot(str, result=bool)
+    def deleteProfile(self, name: str) -> bool:
+        """删除配置文件。调用前应先通过 closeTabForConfig 关闭 tab。"""
+        try:
+            from kaa.config import manager
+            manager.remove(name, not_exist='ok')
+            self.operationSucceeded.emit(f'已删除配置: {name}')
+            self.tabsChanged.emit()
+            return True
+        except Exception as exc:
+            self.operationFailed.emit(f'删除失败：{exc}')
+            return False
+
     # ── 批量运行 ───────────────────────────────────────────────────────
 
     @Slot()
@@ -258,15 +323,12 @@ class TabManager(QObject):
                     break
                 if entry.is_running:
                     continue
-                try:
-                    entry.runner.run_tasks()
-                except Exception:
-                    logger.exception("Sequential run failed for '%s'", entry.config_name)
+                self._run_entry_tasks(entry)
 
             if not cancel.is_set():
                 self._batch_mode = ''
                 self.batchModeChanged.emit()
-                self.anyBusyChanged.emit()
+                
 
         threading.Thread(target=_run, daemon=True).start()
 
@@ -281,7 +343,8 @@ class TabManager(QObject):
             if entry.is_running:
                 continue
             t = threading.Thread(
-                target=entry.runner.run_tasks,
+                target=self._run_entry_tasks,
+                args=(entry,),
                 daemon=True,
             )
             t.start()
@@ -293,7 +356,7 @@ class TabManager(QObject):
             if not self._stop_all_busy:
                 self._batch_mode = ''
                 self.batchModeChanged.emit()
-                self.anyBusyChanged.emit()
+                
 
         threading.Thread(target=_watch, daemon=True).start()
 
@@ -310,8 +373,10 @@ class TabManager(QObject):
             self._seq_cancel.set()
 
         for entry in self._tabs:
-            kaa = entry.runner.kaa
-            assert kaa is not None, f"Tab '{entry.config_name}' has no Kaa instance (mount may have failed)"
+            kaa = entry.session.kaa
+            if kaa is None:
+                logger.warning("Tab '%s' has no Kaa instance", entry.config_name)
+                continue
             try:
                 kaa.stop()
             except Exception:
@@ -320,7 +385,7 @@ class TabManager(QObject):
         self._batch_mode = ''
         self._stop_all_busy = False
         self.batchModeChanged.emit()
-        self.anyBusyChanged.emit()
+        
 
     # ── JSON 序列化 ───────────────────────────────────────────────────
 
@@ -375,35 +440,100 @@ class TabManager(QObject):
     def _get_any_running(self) -> bool:
         return any(t.is_running for t in self._tabs)
 
-    def _get_any_busy(self) -> bool:
-        return any(t.is_running for t in self._tabs)
-
     def _get_batch_mode(self) -> str:
         return self._batch_mode
 
     def _get_stop_all_busy(self) -> bool:
         return self._stop_all_busy
 
-    def _get_url_for_index(self, index: int) -> str:
-        if 0 <= index < len(self._tabs):
-            entry = self._tabs[index]
-            if not entry.runner._mounted:
-                return ""
-            return f"http://127.0.0.1:7860{entry.mount_path}"
-        return ""
+    def _get_active_settings_controller(self):
+        return self.settingsCtrlAt(self._active_index)
+
+    def _get_active_produce_controller(self):
+        return self.produceCtrlAt(self._active_index)
 
     activeTabIndex = Property(int, _get_active_tab_index, notify=activeTabChanged)
     activeConfigName = Property(str, _get_active_config_name, notify=activeTabChanged)
     anyRunning = Property(bool, _get_any_running, notify=tabsChanged)
-    anyBusy = Property(bool, _get_any_busy, notify=anyBusyChanged)
     batchMode = Property(str, _get_batch_mode, notify=batchModeChanged)
     stopAllBusy = Property(bool, _get_stop_all_busy, notify=batchModeChanged)
+    activeSettingsController = Property(QObject, _get_active_settings_controller, notify=activeTabChanged)
+    activeProduceController = Property(QObject, _get_active_produce_controller, notify=activeTabChanged)
 
-    @Slot(int, result=str)
-    def gradioUrlAt(self, index: int) -> str:
-        """返回指定 index 的 tab 的 Gradio URL。"""
-        return self._get_url_for_index(index)
+    # ── Controller 惰性创建 Slots ────────────────────────────────────
 
-    @property
-    def serverApp(self) -> object:
-        return self._server_app
+    @Slot(int)
+    def requestCapturePage(self, page_index: int) -> None:
+        """Emit capturePageRequested to navigate TabContent to a specific page (capture mode)."""
+        self.capturePageRequested.emit(page_index)
+
+    @Slot(int, result=QObject)
+    def runCtrlAt(self, index: int) -> RunController | None:
+        """返回指定 index 的 tab 的 RunController（惰性创建）。"""
+        if 0 <= index < len(self._tabs):
+            entry = self._tabs[index]
+            if entry.run_ctrl is None:
+                entry.run_ctrl = RunController(entry.session)
+            return entry.run_ctrl
+        return None
+
+    @Slot(int, result=QObject)
+    def settingsCtrlAt(self, index: int) -> SettingsController | None:
+        """返回指定 index 的 tab 的 SettingsController（惰性创建）。"""
+        if 0 <= index < len(self._tabs):
+            entry = self._tabs[index]
+            if entry.settings_ctrl is None:
+                entry.settings_ctrl = SettingsController(entry.session)
+            return entry.settings_ctrl
+        return None
+
+    @Slot(int, result=QObject)
+    def progressBridgeAt(self, index: int) -> ProgressBridge | None:
+        """返回指定 index 的 tab 的 ProgressBridge（惰性创建）。"""
+        if 0 <= index < len(self._tabs):
+            entry = self._tabs[index]
+            if entry.progress_bridge is None:
+                entry.progress_bridge = ProgressBridge(entry.session)
+            return entry.progress_bridge
+        return None
+
+    @Slot(int, result=QObject)
+    def logBridgeAt(self, index: int) -> LogBridge | None:
+        """返回指定 index 的 tab 的 LogBridge（惰性创建）。"""
+        if 0 <= index < len(self._tabs):
+            entry = self._tabs[index]
+            if entry.log_bridge is None:
+                entry.log_bridge = LogBridge()
+                entry.log_bridge.install()
+            return entry.log_bridge
+        return None
+
+    @Slot(int, result=QObject)
+    def produceCtrlAt(self, index: int) -> ProduceController | None:
+        """返回指定 index 的 tab 的 ProduceController（惰性创建）。"""
+        if 0 <= index < len(self._tabs):
+            entry = self._tabs[index]
+            if entry.produce_ctrl is None:
+                entry.produce_ctrl = ProduceController(entry.session)
+            return entry.produce_ctrl
+        return None
+
+    @Slot(int, result=QObject)
+    def updateCtrlAt(self, index: int) -> UpdateController | None:
+        """返回指定 index 的 tab 的 UpdateController（惰性创建）。"""
+        if 0 <= index < len(self._tabs):
+            entry = self._tabs[index]
+            if entry.update_ctrl is None:
+                entry.update_ctrl = UpdateController(entry.session)
+            return entry.update_ctrl
+        return None
+
+    @Slot(int, result=QObject)
+    def feedbackCtrlAt(self, index: int) -> FeedbackController | None:
+        """返回指定 index 的 tab 的 FeedbackController（惰性创建）。"""
+        if 0 <= index < len(self._tabs):
+            entry = self._tabs[index]
+            if entry.feedback_ctrl is None:
+                entry.feedback_ctrl = FeedbackController(entry.session)
+            return entry.feedback_ctrl
+        return None

@@ -1,0 +1,21 @@
+{
+  "version": 3,
+  "definitions": {
+    "113cabff-65a1-4aee-8a98-6763de196115": {
+      "type": "prefab",
+      "prefab_id": "TemplateMatchPrefab",
+      "name": "Daily.IconMenuClub",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 561.003688281518,
+          "y1": 354.33584926275034,
+          "x2": 649.6103177662209,
+          "y2": 466.7434369861353
+        },
+        "fixed": true
+      },
+      "displayName": "サークル"
+    }
+  }
+}

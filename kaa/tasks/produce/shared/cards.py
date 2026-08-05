@@ -163,12 +163,12 @@ def do_cards(
         img = device.screenshot()
 
         # 技能卡自选移动对话框
-        if R.InPurodyuusu.IconTitleSkillCardMove.exists():
+        if R.InProduce.IconTitleSkillCardMove.exists():
             if handle_skill_card_move():
                 sleep(4)  # 等待卡片刷新
                 continue
         # 饮品详细对话框（需要在 ButtonIconCheckMark 之前，因为ButtonUse也是√）
-        if R.InPurodyuusu.ButtonUse.try_click():
+        if R.InProduce.ButtonUse.try_click():
             if enable_drink and drinks_list is not None:
                 if drink_selected_idx < 0 or drink_selected_idx >= len(drinks_list):
                     logger.warning('`drink_selected_idx` dismatches, internal error!')
@@ -229,7 +229,7 @@ def do_cards(
             # 处理本回合已无剩余手牌的情况
             # TODO: 使用模板匹配而不是 OCR，提升速度
             no_card_cd.start()
-            no_remaining_card = ocr.find(contains("0枚"), rect=R.InPurodyuusu.BoxNoSkillCard)
+            no_remaining_card = ocr.find(contains("0枚"), rect=R.InProduce.BoxNoSkillCard)
             if no_remaining_card and no_card_cd.expired():
                 logger.debug('No remaining card detected. Skip this turn.')
                 # TODO: HARD CODEDED
@@ -294,9 +294,9 @@ def handle_skill_card_move():
     结束状态：对话框结束瞬间
     """
     cards = AnyOf[
-        R.InPurodyuusu.A,
-        R.InPurodyuusu.M,
-        R.InPurodyuusu.T,
+        R.InProduce.A,
+        R.InProduce.M,
+        R.InProduce.T,
     ].find_all()
     if not cards:
         logger.info("No skill cards found")
@@ -306,7 +306,7 @@ def handle_skill_card_move():
     for _ in Loop():
         # 判断对话框是否关闭
         # 已关闭，开始计时
-        if not R.InPurodyuusu.IconTitleSkillCardMove.exists():
+        if not R.InProduce.IconTitleSkillCardMove.exists():
             cd.start()
             if cd.expired():
                 logger.info("Skill card move dialog closed.")
@@ -317,9 +317,9 @@ def handle_skill_card_move():
             if not cards:
                 logger.info("No skill cards left. Retrying...")
                 cards = AnyOf[
-                    R.InPurodyuusu.A,
-                    R.InPurodyuusu.M,
-                    R.InPurodyuusu.T,
+                    R.InProduce.A,
+                    R.InProduce.M,
+                    R.InProduce.T,
                 ].find_all()
             card = cards.pop()
             device.double_click(card)
@@ -331,9 +331,9 @@ def handle_skill_card_move():
 def obtain_cards(img: MatLike | None = None):
     img = use_screenshot(img)
     cards_rects = AnyOf[
-        R.InPurodyuusu.A,
-        R.InPurodyuusu.M,
-        R.InPurodyuusu.T,
+        R.InProduce.A,
+        R.InProduce.M,
+        R.InProduce.T,
     ].find_all()
     logger.info("Current cards: %s", len(cards_rects))
     cards = []
@@ -360,11 +360,11 @@ def handle_recommended_card(
 def skill_card_count(img: MatLike | None = None):
     """获取当前持有的技能卡数量"""
     img = use_screenshot(img)
-    x, y, w, h = R.InPurodyuusu.BoxCardLetter.xywh
+    x, y, w, h = R.InProduce.BoxCardLetter.xywh
     img = img[y:y+h, x:x+w]
-    count = image.raw().count(img, R.InPurodyuusu.A.template)
-    count += image.raw().count(img, R.InPurodyuusu.M.template)
-    count += image.raw().count(img, R.InPurodyuusu.T.template)
+    count = image.raw().count(img, R.InProduce.A.template)
+    count += image.raw().count(img, R.InProduce.M.template)
+    count += image.raw().count(img, R.InProduce.T.template)
     logger.info("Current skill card count: %d", count)
     return count
 

@@ -80,6 +80,12 @@ class FeedbackService:
                     logger.warning(f"保存当前截图失败: {e}")
 
                 _progress({'type': 'packing', 'item': '配置文件', 'step': 4, 'total_steps': total_steps})
+                if os.path.exists('conf'):
+                    for root, _, files in os.walk('conf'):
+                        for file in files:
+                            file_path = os.path.join(root, file)
+                            arcname = os.path.join('conf', os.path.relpath(file_path, 'conf'))
+                            zipf.write(file_path, arcname)
                 if os.path.exists('config.json'):
                     zipf.write('config.json')
 

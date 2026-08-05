@@ -61,7 +61,7 @@ def assign(type: Literal['mini', 'online']) -> bool:
     else:
         raise ValueError(f'Invalid type: {type}')
     # MiniLive/OnlineLive 页面 [screenshots/assignment/assign_mini_live.png]
-    R.Common.ButtonSelect.wait(timeout=5)
+    R.Common.ButtonSelect.wait(timeout=20)
     logger.info('Now at assignment idol selection scene.')
     # 选择好调偶像
     selected = False
@@ -179,13 +179,16 @@ def assignment():
 
     # 点击工作按钮
     logger.debug('Clicking assignment icon.')
-    btn_assignment.click()
     # 等待加载、领取奖励
     while not at_assignment():
         if completed:
             # 领取奖励 [screenshots/assignment/acquire.png]
             if R.Common.ButtonCompletion.try_click():
                 logger.info('Assignment acquired.')
+                continue
+        btn_assignment.click()
+        sleep(2)
+        
     # 重新分配
     if conf().tasks.assignment.mini_live_reassign_enabled:
         if R.Daily.IconAssignMiniLive.exists():

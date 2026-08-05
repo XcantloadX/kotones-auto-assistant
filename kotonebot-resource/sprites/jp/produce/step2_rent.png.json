@@ -1,0 +1,36 @@
+{
+  "version": 3,
+  "definitions": {
+    "e93b3d7e-bdd4-4742-bf1c-09ccd1e69479": {
+      "type": "prefab",
+      "prefab_id": "GakumasPrimaryButtonPrefab",
+      "name": "Produce.Step2.Rent.ConfirmButton",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 395.30683167458244,
+          "y1": 1134.614306121557,
+          "x2": 580.2772142990555,
+          "y2": 1190.57791923694
+        },
+        "fixed": true
+      }
+    },
+    "a8ad2f5b-f58c-4888-9675-8d9d4e8c8ef2": {
+      "type": "prefab",
+      "prefab_id": "GakumasCheckboxPrefab",
+      "name": "Produce.Step2.Rent.CheckboxPlan",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 538.5901280764372,
+          "y1": 999.5245227365524,
+          "x2": 572.512505910161,
+          "y2": 1031.7349988592173
+        },
+        "fixed": true
+      },
+      "displayName": "プラン適正"
+    }
+  }
+}

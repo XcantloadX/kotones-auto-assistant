@@ -60,6 +60,21 @@
           "y2": 1048
         }
       }
+    },
+    "40cd979d-df7e-49aa-b32a-043c59a43443": {
+      "type": "prefab",
+      "prefab_id": "TemplateMatchPrefab",
+      "name": "Produce.ButtonProduceStart",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 54.75538785757604,
+          "y1": 417.8621673290691,
+          "x2": 318.3564099632673,
+          "y2": 461.5466253503853
+        }
+      },
+      "displayName": ""
     }
   }
 }

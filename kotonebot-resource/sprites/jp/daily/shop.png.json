@@ -1,0 +1,84 @@
+{
+  "version": 3,
+  "definitions": {
+    "f6a4a896-a742-4e55-bc31-cf72b2a7e077": {
+      "type": "prefab",
+      "prefab_id": "TemplateMatchPrefab",
+      "name": "Daily.ButtonDailyShop",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 72.53182844383747,
+          "y1": 921.0081627688514,
+          "x2": 125.79741655174196,
+          "y2": 973.9691501143536
+        },
+        "fixed": true
+      },
+      "displayName": "デイリー交換所 按钮图标"
+    },
+    "6c8d5f2b-614d-4be9-870a-28cc98a896a8": {
+      "type": "prefab",
+      "prefab_id": "TemplateMatchPrefab",
+      "name": "Daily.IconShopTitle",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 14.17893959558645,
+          "y1": 34.761837275914786,
+          "x2": 59.675112272269075,
+          "y2": 77.23771213010369
+        },
+        "fixed": true
+      },
+      "displayName": "ショップ 标题图标"
+    },
+    "2a359a7e-7aad-4e59-bf19-fad313b6963c": {
+      "type": "prefab",
+      "prefab_id": "TemplateMatchPrefab",
+      "name": "Daily.ButtonShopCapsuleToys",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 402.3966131445907,
+          "y1": 805.2618962239142,
+          "x2": 640.8486038962848,
+          "y2": 855.4936582344296
+        },
+        "fixed": true
+      },
+      "displayName": "コインガシャ"
+    },
+    "42b9cb8e-8a8e-484e-a586-ec02f2006411": {
+      "name": "Common.ShopPackButton",
+      "displayName": "商店礼包页面按钮",
+      "type": "prefab",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 398,
+          "y1": 685,
+          "x2": 458,
+          "y2": 740
+        },
+        "fixed": true
+      },
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {}
+    },
+    "56bdcc0b-b080-4813-a7bd-0379d3772bbf": {
+      "name": "Common.ShopPackRedDot",
+      "displayName": "商店礼包页面红点范围",
+      "type": "hint-box",
+      "props": {
+        "image": {
+          "kind": "rect",
+          "x1": 650,
+          "y1": 660,
+          "x2": 687,
+          "y2": 697
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "version": 3,
+  "definitions": {
+    "61e74180-bc2b-4482-bfb6-65f1be2206f4": {
+      "type": "prefab",
+      "prefab_id": "TemplateMatchPrefab",
+      "name": "InProduce.ProduceScore.TitleText",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 92.09876115704688,
+          "y1": 161.64594596223478,
+          "x2": 626.7239740479343,
+          "y2": 227.69429438560437
+        },
+        "fixed": true
+      },
+      "displayName": "最終プロデュース評価"
+    },
+    "96d2dc62-563d-4a1e-ba07-fc2a87f8a699": {
+      "type": "hint-box",
+      "name": "InProduce.ProduceScore.ScoreTextArea",
+      "props": {
+        "rect": {
+          "kind": "rect",
+          "x1": 147.76941852915104,
+          "y1": 815.8462383583303,
+          "x2": 560.3134185291511,
+          "y2": 911.3388579484025
+        }
+      }
+    }
+  }
+}

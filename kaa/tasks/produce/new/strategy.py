@@ -20,7 +20,7 @@ if TYPE_CHECKING:
         PracticeContext, ExamContext, CardSelectContext, PItemSelectContext,
         StudyContext, OutingContext, ConsultContext, AllowanceContext,
         SkillCardEnhanceContext, SkillCardRemovalContext,
-        PDrinkMaxContext, PDrinkMaxConfirmContext, NetworkErrorContext, DateChangeContext,
+        PDrinkMaxContext, PDrinkMaxConfirmContext, DateChangeContext,
     )
     from .controller import ProduceController
 
@@ -90,10 +90,6 @@ class StandardStrategy:
         """处理 P饮料到达上限确认弹窗"""
         ProduceInterrupt._check_pdrink_max_confirm(device.screenshot())
 
-    def on_network_error(self, ctx: 'NetworkErrorContext'):
-        """处理网络错误弹窗"""
-        ProduceInterrupt._check_network_error(device.screenshot())
-
     def on_date_change(self, ctx: 'DateChangeContext'):
         """处理日期变更弹窗（确认后自动回到培育内）"""
         result = acquisition_date_change_dialog()
@@ -117,11 +113,36 @@ class StandardStrategy:
 
     def on_select_card(self, ctx: 'CardSelectContext'):
         """选择技能卡"""
-        card_idx = ctx.fetch_recommend_card()
-        if card_idx is None:
-            ctx.commit(0)
+        from kaa.kaa_context import produce_session
+        session = produce_session()
+        if session is not None and session.archetype is not None and session.deck is not None:
+            deck = session.deck
+            cards = ctx.fetch_cards()
+            if cards:
+                cards.sort(key=lambda c: deck.query_priority(c.card) if c.card else 999)
+                best = cards[0]
+                if best.card is not None and deck.query_priority(best.card) < 999:
+                    logger.info('Selecting card %s (%s, priority=%d) by archetype priority.',
+                                 best.card._id, best.card.name, deck.query_priority(best.card))
+                    ctx.commit(best)
+                    return
+
+        recommend = ctx.fetch_recommend_card()
+        if recommend:
+            id = recommend.card._id if recommend.card else 'unknown'
+            name = recommend.card.name if recommend.card else 'unknown'
+            logger.info('Selecting recommended card %s (%s).', id, name)
+            ctx.commit(recommend)
         else:
-            ctx.commit(card_idx)
+            cards = ctx.fetch_cards()
+            if cards:
+                card = cards[0]
+                id = card.card._id if card.card else 'unknown'
+                name = card.card.name if card.card else 'unknown'
+                logger.info('Selecting card #1 %s (%s) by default.', id, name)
+                ctx.commit(card)
+            else:
+                logger.warning('No cards available to select.')
 
     def on_select_pitem(self, ctx: 'PItemSelectContext'):
         """选择P道具"""
@@ -200,8 +221,8 @@ class StandardStrategy:
 
         def end_predicate():
             return not AnyOf[
-                R.InPurodyuusu.TextClearUntil,
-                R.InPurodyuusu.TextPerfectUntil
+                R.InProduce.TextClearUntil,
+                R.InProduce.TextPerfectUntil
             ].exists()
     
         do_cards(False, threshold_predicate, end_predicate, battle_strategy=_build_battle_strategy(threshold_predicate))
@@ -277,7 +298,7 @@ class StandardStrategy:
         from kotonebot import ocr, contains
         def end_predicate():
             return bool(
-                not ocr.find(contains('残りターン'), rect=R.InPurodyuusu.BoxExamTop)
+                not ocr.find(contains('残りターン'), rect=R.InProduce.BoxExamTop)
                 and R.Common.ButtonNext.find()
             )
 
@@ -289,7 +310,7 @@ class StandardStrategy:
 
         # 如果考试失败
         sleep(1) # 避免在动画未播放完毕时点击
-        if btn := R.InPurodyuusu.TextRechallengeEndProduce.try_wait(timeout=3):
+        if btn := R.InProduce.TextRechallengeEndProduce.try_wait(timeout=3):
             logger.info('Exam failed, end produce.')
             device.click(btn)
             is_exam_passed = False

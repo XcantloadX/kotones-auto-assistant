@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import QtQuick.Window
+import ".." as App
 
 // 主窗口标题栏：TabStrip + PageHeader（双模式）+ WindowControls。
 Item {
@@ -11,16 +12,10 @@ Item {
     readonly property int _tabH: 34    // tab 行高度
     height: _stripH + _tabH
 
-    readonly property color _titleBg: Application.styleHints.colorScheme === Qt.Light ? "#f3f3f3" : "#202020"
-    readonly property color _hover:    Application.styleHints.colorScheme === Qt.Light ? Qt.rgba(0,0,0,0.08) : Qt.rgba(1,1,1,0.08)
-    readonly property color _hoverStrong: Application.styleHints.colorScheme === Qt.Light ? Qt.rgba(0,0,0,0.15) : Qt.rgba(1,1,1,0.15)
-    readonly property color _fg:       Application.styleHints.colorScheme === Qt.Light ? "#000000" : "#ffffff"
-    readonly property color _tabCardBg: Application.styleHints.colorScheme === Qt.Light ? "#ffffff" : "#2d2d2d"
-
     required property var configManagerDialog
 
     readonly property int currentIndex: tabStrip.currentIndex
-    property bool prefsMode: false
+    property string fullscreenMode: ""  // "", "preferences", "skillCardBrowser"
 
     function setCurrentIndex(index) {
         tabStrip.currentIndex = index
@@ -31,18 +26,20 @@ Item {
     signal minimizeRequested()
     signal closeRequested()
 
+    // 待关闭 tab 的 index（dirty 检查用）
+    property int pendingCloseIndex: -1
+
     property var _tabs: []
     function _reloadTabs() {
         root._tabs = JSON.parse(TabManager.tabsJson())
     }
     Component.onCompleted: _reloadTabs()
 
-    // ── 同步 tab 交互区右边界给 Win32 hit-test ─────────
+    // ── 同步交互区右边界给 Win32 hit-test ─────────
     Binding {
-        target: (typeof tabBarBridge !== "undefined") ? tabBarBridge : null
+        target: (typeof tabBarBridge !== 'undefined' && tabBarBridge) ? tabBarBridge : null
         property: "tabInteractiveEnd"
-        value: tabStrip.interactiveEnd
-        when: !root.prefsMode
+        value: root.fullscreenMode !== "" ? pageHeader.interactiveEnd : tabStrip.interactiveEnd
     }
 
     Connections {
@@ -51,14 +48,27 @@ Item {
         function onActiveTabChanged() { root._reloadTabs() }
         function onCloseTabBlocked(reason) { /* show notice in future */ }
         function onReadyToCloseTab(index) {
-            TabManager.closeTab(index)
+            root.pendingCloseIndex = index
+            var sc = TabManager.settingsCtrlAt(index)
+            var pc = TabManager.produceCtrlAt(index)
+            var dirty = (sc && sc.isDirty()) || (pc && pc.isDirty())
+            if (dirty) {
+                tabCloseUnsavedDialog.open()
+            } else {
+                TabManager.closeTab(index)
+                root.pendingCloseIndex = -1
+            }
         }
     }
 
     // ── 背景 ────────────────────────────────────────────────────
+    // 颜色由 AppTheme 统一管理（避免散落的 palette / colorScheme 判断）。
+    // fullscreenMode + 非 solid：全透明，让 Mica/acrylic DWM 背景完整透出。
     Rectangle {
         anchors.fill: parent
-        color: root._titleBg
+        color: (root.fullscreenMode !== "" && !App.AppTheme.isSolid)
+            ? "transparent"
+            : App.AppTheme.titleBg
     }
 
     ColumnLayout {
@@ -87,7 +97,7 @@ Item {
             TabStrip {
                 id: tabStrip
                 anchors.fill: parent
-                visible: !root.prefsMode
+                visible: root.fullscreenMode === ""
                 configManagerDialog: root.configManagerDialog
                 tabs: root._tabs
                 onSettingsRequested: root.settingsRequested()
@@ -96,10 +106,67 @@ Item {
             PageHeader {
                 id: pageHeader
                 anchors.fill: parent
-                visible: root.prefsMode
+                visible: root.fullscreenMode !== ""
                 title: "琴音小助手"
                 iconSource: "file:///" + splash.iconPath
                 onBackRequested: root.backRequested()
+            }
+        }
+    }
+
+    // ── Tab 关闭时的 dirty 检查对话框 ──────────────────────────────────
+    Dialog {
+        id: tabCloseUnsavedDialog
+        modal: true
+        title: "未保存的更改"
+        standardButtons: Dialog.NoButton
+        width: 420
+        anchors.centerIn: Overlay.overlay
+
+        contentItem: ColumnLayout {
+            spacing: 12
+            Label {
+                Layout.fillWidth: true
+                wrapMode: Text.Wrap
+                text: "该标签页有未保存的更改，关闭前请选择处理方式。"
+            }
+            RowLayout {
+                Layout.alignment: Qt.AlignRight
+                spacing: 8
+                Button {
+                    text: "取消"
+                    onClicked: {
+                        tabCloseUnsavedDialog.close()
+                        root.pendingCloseIndex = -1
+                    }
+                }
+                Button {
+                    text: "不保存并关闭"
+                    onClicked: {
+                        var idx = root.pendingCloseIndex
+                        tabCloseUnsavedDialog.close()
+                        root.pendingCloseIndex = -1
+                        if (idx >= 0) {
+                            TabManager.closeTab(idx)
+                        }
+                    }
+                }
+                Button {
+                    text: "保存并关闭"
+                    highlighted: true
+                    onClicked: {
+                        var idx = root.pendingCloseIndex
+                        tabCloseUnsavedDialog.close()
+                        root.pendingCloseIndex = -1
+                        if (idx >= 0) {
+                            var sc = TabManager.settingsCtrlAt(idx)
+                            var pc = TabManager.produceCtrlAt(idx)
+                            if (sc && sc.isDirty()) sc.save()
+                            if (pc && pc.isDirty()) pc.save()
+                            TabManager.closeTab(idx)
+                        }
+                    }
+                }
             }
         }
     }

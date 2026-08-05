@@ -7,10 +7,12 @@ from kotonebot.client.host import Instance
 if TYPE_CHECKING:
     from kaa.config.schema import KaaConfig
     from kaa.config.produce import ProduceSolution
+    from kaa.tasks.produce.session import ProduceSession
 from kaa.errors import NoProduceSolutionSelectedError
 
 _config_var: contextvars.ContextVar['KaaConfig | None'] = contextvars.ContextVar('kaa_config', default=None)
 _config_name_var: contextvars.ContextVar['str | None'] = contextvars.ContextVar('kaa_config_name', default=None)
+_produce_session_var: contextvars.ContextVar['ProduceSession | None'] = contextvars.ContextVar('kaa_produce_session', default=None)
 
 
 def _set_instance(new_instance: Instance) -> None:
@@ -39,6 +41,18 @@ def config_name() -> str | None:
     """获取当前线程的 profile 名称。"""
     return _config_name_var.get()
 
+
+def init_produce_session(session: 'ProduceSession') -> None:
+    """设置当前线程的 produce session。"""
+    _produce_session_var.set(session)
+
+def produce_session() -> 'ProduceSession | None':
+    """获取当前线程的 produce session。"""
+    return _produce_session_var.get()
+
+def clear_produce_session() -> None:
+    """清除当前线程的 produce session。"""
+    _produce_session_var.set(None)
 
 def save_config() -> None:
     """将当前线程的 profile 写回磁盘。"""

@@ -1,18 +1,18 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import "../components"
+import ".." as App
 
 // 总览页：品牌 + 启动按钮 + 配置卡片网格。
-Item {
+PageContainer {
     id: root
+    showTitle: false
+    padding: 0
 
     required property var configManagerDialog
 
-    readonly property color _fg:           Application.styleHints.colorScheme === Qt.Light ? "#000000" : "#ffffff"
-    readonly property color _hover:        Application.styleHints.colorScheme === Qt.Light ? Qt.rgba(0,0,0,0.06) : Qt.rgba(1,1,1,0.06)
-    readonly property color _cardBorder:   Application.styleHints.colorScheme === Qt.Light ? Qt.rgba(0,0,0,0.1) : Qt.rgba(1,1,1,0.1)
-    readonly property color _cardBg:       Application.styleHints.colorScheme === Qt.Light ? Qt.rgba(0,0,0,0.03) : Qt.rgba(1,1,1,0.03)
-    readonly property color _cardBgHover:  Application.styleHints.colorScheme === Qt.Light ? Qt.rgba(0,0,0,0.06) : Qt.rgba(1,1,1,0.06)
+    signal openSkillCardBrowser()
 
     property var _allConfigs: []
 
@@ -101,12 +101,13 @@ Item {
                             spacing: 7
                             anchors.centerIn: parent
 
-                            Text {
+                            FluentIcon {
                                 anchors.verticalCenter: parent.verticalCenter
-                                font.family: "FluentSystemIcons-Regular"
+                                glyph: seqBtn.isStopMode
+                                    ? App.FluentIcons.stop_20_regular
+                                    : App.FluentIcons.play_20_regular
                                 font.pixelSize: 17
-                                text: seqBtn.isStopMode ? "\uF72A" : "\uF605"
-                                color: seqBtn.highlighted ? (Application.styleHints.colorScheme === Qt.Light ? "white" : "black") : root._fg
+                                color: seqBtn.highlighted ? (App.AppTheme.isDark ? "black" : "white") : App.AppTheme.fg
                             }
 
                             Label {
@@ -117,7 +118,7 @@ Item {
                                     return "停止所有"
                                 }
                                 font.pixelSize: 14
-                                color: seqBtn.highlighted ? (Application.styleHints.colorScheme === Qt.Light ? "white" : "black") : root._fg
+                                color: seqBtn.highlighted ? (App.AppTheme.isDark ? "black" : "white") : App.AppTheme.fg
                             }
                         }
                     }
@@ -138,12 +139,13 @@ Item {
                             spacing: 7
                             anchors.centerIn: parent
 
-                            Text {
+                            FluentIcon {
                                 anchors.verticalCenter: parent.verticalCenter
-                                font.family: "FluentSystemIcons-Regular"
+                                glyph: parBtn.isStopMode
+                                    ? App.FluentIcons.stop_20_regular
+                                    : App.FluentIcons.play_multiple_16_regular
                                 font.pixelSize: 17
-                                text: parBtn.isStopMode ? "\uF72A" : "\uF100"
-                                color: parBtn.highlighted ? (Application.styleHints.colorScheme === Qt.Light ? "white" : "black") : root._fg
+                                color: parBtn.highlighted ? (App.AppTheme.isDark ? "black" : "white") : App.AppTheme.fg
                             }
 
                             Label {
@@ -154,9 +156,21 @@ Item {
                                     return "停止所有"
                                 }
                                 font.pixelSize: 14
-                                color: parBtn.highlighted ? (Application.styleHints.colorScheme === Qt.Light ? "white" : "black") : root._fg
+                                color: parBtn.highlighted ? (App.AppTheme.isDark ? "black" : "white") : App.AppTheme.fg
                             }
                         }
+                    }
+                }
+
+                // ── 工具入口 ──────────────────────────────────
+                RowLayout {
+                    Layout.topMargin: 16
+                    Layout.alignment: Qt.AlignHCenter
+                    spacing: 8
+
+                    Button {
+                        text: "技能卡图鉴"
+                        onClicked: root.openSkillCardBrowser()
                     }
                 }
 
@@ -191,9 +205,9 @@ Item {
                             height: contentCol.implicitHeight + 32
                             radius: 8
                             color: cardHover.containsMouse
-                                ? root._cardBgHover
-                                : root._cardBg
-                            border.color: root._cardBorder
+                                ? App.AppTheme.isDark ? Qt.rgba(1,1,1,0.06) : Qt.rgba(0,0,0,0.06)
+                                : App.AppTheme.isDark ? Qt.rgba(1,1,1,0.03) : Qt.rgba(0,0,0,0.03)
+                            border.color: App.AppTheme.isDark ? Qt.rgba(1,1,1,0.1) : Qt.rgba(0,0,0,0.1)
                             border.width: 1
 
                             HoverHandler { id: cardHover }
@@ -262,15 +276,62 @@ Item {
                 spacing: 12
 
                 Label {
-                    text: "还没有创建任何配置"
+                    text: "你还没有创建任何配置"
                     font.pixelSize: 14
                     opacity: 0.7
                 }
 
-                Button {
-                    highlighted: true
-                    text: "创建配置"
-                    onClicked: root.configManagerDialog.open()
+                Row {
+                    spacing: 5
+
+                    Label {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: "点击"
+                        font.pixelSize: 14
+                        opacity: 0.7
+                    }
+
+                    Button {
+                        id: createBtn
+                        highlighted: true
+                        text: "创建配置"
+                        font.pixelSize: 14
+                        topPadding: 4
+                        bottomPadding: 4
+                        leftPadding: 10
+                        rightPadding: 10
+                        anchors.verticalCenter: parent.verticalCenter
+                        onClicked: root.configManagerDialog.open()
+                    }
+
+                    Label {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: "或顶部标签栏的"
+                        font.pixelSize: 14
+                        opacity: 0.7
+                    }
+
+                    Rectangle {
+                        width: 22
+                        height: 22
+                        radius: 4
+                        color: App.AppTheme.hover
+                        anchors.verticalCenter: parent.verticalCenter
+
+                        FluentIcon {
+                            anchors.centerIn: parent
+                            glyph: App.FluentIcons.add_20_regular
+                            font.pixelSize: 13
+                            opacity: 0.7
+                        }
+                    }
+
+                    Label {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: "号创建新配置"
+                        font.pixelSize: 14
+                        opacity: 0.7
+                    }
                 }
             }
         }

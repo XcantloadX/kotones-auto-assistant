@@ -25,6 +25,17 @@
             // "module": "${command:extension.commandvariable.file.relativeDirDots}.${fileBasenameNoExtension}",
         },
         {
+            "name": "Kbot: Hot reload",
+            "type": "python",
+            "request": "launch",
+            "console": "integratedTerminal",
+            "module": "kaa.hotload_entry",
+            "args": [
+                "${relativeFile}"
+            ],
+            // "module": "${command:extension.commandvariable.file.relativeDirDots}.${fileBasenameNoExtension}",
+        },
+        {
             "name": "Python: Current Module(Without context)",
             "type": "python",
             "request": "launch",
@@ -32,14 +43,15 @@
             "module": "${command:extension.commandvariable.file.relativeDirDots}.${fileBasenameNoExtension}",
         },
         {
-            "name": "Gradio UI",
+            "name": "QML UI",
             "type": "python",
             "request": "launch",
             "console": "integratedTerminal",
             "module": "kaa.main.cli",
+            "justMyCode": false
         },
         {
-            "name": "Gradio UI (Coverage)",
+            "name": "QML UI (Coverage)",
             "type": "python",
             "request": "launch",
             "console": "integratedTerminal",
@@ -51,7 +63,7 @@
             ]
         },
         {
-            "name": "Gradio UI (Accumulated Coverage)",
+            "name": "QML UI (Accumulated Coverage)",
             "type": "python",
             "request": "launch",
             "console": "integratedTerminal",

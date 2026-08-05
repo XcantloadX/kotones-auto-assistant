@@ -2,7 +2,7 @@
 name: config-item
 description: >
   Add or modify a configuration item. Covers the full chain: decide Shared vs Profile,
-  add the Pydantic field, wire the Gradio UI control, and read the value in business logic.
+  add the Pydantic field, wire the QML UI control, and read the value in business logic.
 ---
 
 # Config Item
@@ -42,41 +42,39 @@ class PurchaseConfig(BaseModel):
     """字段说明。"""
 ```
 
-Pydantic 字段类型建议：
-
-| UI 控件 | Pydantic 类型 |
-|---|---|
-| `gr.Checkbox` | `bool` |
-| `gr.Radio` | `Literal['a', 'b', 'c']` |
-| `gr.Dropdown(multiselect=True)` | `list[str] = []` |
-| `gr.Number` | `int` / `float`，必要时加 `Field(ge=0)` |
-| `gr.Textbox` | `str \| None = None` |
-
 ## Step 3 — UI 控件
 
-编辑 `kaa/application/ui/views/settings_view.py`，在对应的 `_create_*_settings()` 方法中添加。
+编辑对应的 QML 页面文件（如 `pages/sections/MiscSection.qml` 或 `pages/sections/BasicSection.qml`）。
 
-**SharedConfig** 用 `_bind_shared`：
+**SharedConfig** — 在 MiscSection.qml 中添加控件，使用 `mutateSharedMisc` 更新：
 
-```python
-c = gr.Checkbox(
-    label="自动安装游戏资源更新",
-    value=misc.game_data_auto_update,
-    interactive=True,
-)
-self._bind_shared(c, ref(of(misc).game_data_auto_update), lambda: shared)
+```qml
+CheckBox {
+    text: "新功能"
+    checked: sharedMisc.new_field ?? false
+    onToggled: mutateSharedMisc(function(m) { m.new_field = checked })
+}
 ```
 
-**Profile KaaConfig** 用 `_bind`：
+**Profile KaaConfig** — 在对应 Section QML 中添加控件，使用 `mutateConfig` 更新：
 
-```python
-c = gr.Checkbox(
-    label="启用商店购买",
-    value=opts.tasks.purchase.enabled,
-    interactive=True,
-)
-self._bind(c, ref(of(opts).tasks.purchase.enabled))
+```qml
+CheckBox {
+    text: "启用商店购买"
+    checked: cfg?.profile?.tasks?.purchase?.enabled ?? false
+    onToggled: mutateConfig(function(c) { c.tasks.purchase.enabled = checked })
+}
 ```
+
+常见 QML 控件对照：
+
+| Pydantic 类型 | QML 控件 |
+|---|---|
+| `bool` | `CheckBox` |
+| `Literal['a', 'b', 'c']` | `SegmentedButton` 或 `ComboBox` |
+| `list[str] = []` | `TagInput` 或自定义多选 |
+| `int` / `float` | `SpinBox` 或 `TextField` |
+| `str \| None = null` | `TextField` |
 
 ## Step 4 — 业务逻辑读取
 
@@ -192,7 +190,7 @@ profile_migration_chain = MigrationChain(steps=[
 | 文件 | 改动 |
 |---|---|
 | `kaa/config/shared.py` 或 `kaa/config/schema.py` | 对应子类新增字段 |
-| `kaa/application/ui/views/settings_view.py` | 对应 `_create_*_settings()` 新增控件 |
+| `kaa/application/ui/qml/pages/sections/*.qml` | 对应 Section 新增控件 |
 | 业务代码文件（如 `kaa/tasks/xxx.py`） | 通过 `conf()` 或 `manager.read_shared()` 读取 |
 
 需要迁移的情况（删除/改型/改名），在以上基础上增加：

@@ -49,14 +49,14 @@ Rectangle {
 
         BusyIndicator {
             anchors.horizontalCenter: parent.horizontalCenter
-            running: splash.gradioUrl.length === 0
+            running: !splash.ready
             implicitWidth: 48
             implicitHeight: 48
         }
 
         // ── Game data download progress ──────────────────────────────
         GridLayout {
-            visible: splash.gameDataActive && splash.downloadFiles.length > 0
+            visible: splash.gameDataDownloading && splash.downloadFiles.length > 0
             columns: 5
             columnSpacing: 8
             rowSpacing: 6
@@ -125,6 +125,13 @@ Rectangle {
                     }
                 }
             }
+        }
+
+        Button {
+            anchors.horizontalCenter: parent.horizontalCenter
+            visible: splash.gameDataDownloading && splash.gameDataSkippable
+            text: "跳过更新"
+            onClicked: splash.skipGameDataUpdate()
         }
     }
 }

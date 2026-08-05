@@ -287,6 +287,21 @@ def start_game():
     else:
         raise ValueError(f'Unsupported platform: {device.platform}')
 
+    # Android 侧启动后有短暂的横屏
+    if device.platform == 'android':
+        for l in Loop():
+            img = l.screenshot
+            if img is None:
+                logger.warning('Failed to take screenshot, retrying...')
+                sleep(1)
+                continue
+            h, w = img.shape[:2]
+            if w > h:
+                logger.info('Waiting for portrait orientation...')
+                sleep(5)
+            else:
+                break
+
     wait_for_home()
 
 if __name__ == '__main__':

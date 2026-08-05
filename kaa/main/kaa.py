@@ -352,6 +352,11 @@ class Kaa(KotoneBot):
             force=True
         )
 
+        # 注册全局 Loop 回调：每次 Loop 迭代前自动处理网络错误等全局弹窗。
+        from kotonebot.config.config import conf
+        from kaa.tasks.globals import global_interrupt
+        conf().loop.loop_callbacks = [global_interrupt]
+
     def set_log_level(self, level: int):
         handlers = logging.getLogger().handlers
         if len(handlers) == 0:
@@ -381,8 +386,10 @@ class Kaa(KotoneBot):
     def run(self, tasks: Iterable[Task]) -> None:
         """重写：在 run 前注入 kaa_context（线程安全的单点入口，覆盖 run/start 两条路径）。"""
         from kaa.kaa_context import init as kaa_init
-        assert self._config is not None and self._profile_name is not None, \
+        from kaa.config import manager as config_manager
+        assert self._profile_name is not None, \
             "Kaa not initialized. Call with a profile_name or ensure _init_config() has been called."
+        self._config = config_manager.read(self._profile_name)
         kaa_init(self._config, self._profile_name)
         return super().run(tasks)
     

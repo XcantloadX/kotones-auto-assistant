@@ -1,8 +1,10 @@
+# pyright: reportUnusedExpression=false
 import functools
 from typing import Any, Callable, Literal, TypeVar, ParamSpec, cast, TYPE_CHECKING
 
 import cv2
 import numpy as np
+from kaa.db.skill_card import SkillCard
 from kotonebot.primitives import Rect
 from kotonebot.core import BoundPrefab, GameObject, AnyOf, Prefab
 from kotonebot.errors import UnrecoverableError
@@ -15,11 +17,15 @@ from kaa.tasks.actions.loading import loading
 from kaa.game_ui import CommuEventButtonUI, dialog, badge
 from .consts import Drink, Scene, SceneType, SelectDrinkDialog, PerformanceMetricsVal
 from kaa.tasks.produce.shared.cards import CardDetectResult, detect_recommended_card, skill_card_count
+from kaa.game_ui.skill_card_select import match_card_region
+from kaa.tasks.produce.new.owned_cards_longshot import (
+    crop_rect,
+    recognize_owned_from_strips,
+)
 if TYPE_CHECKING:
     from .controller import ProduceController
 
 logger = logging.getLogger(__name__)
-ORANGE_RANGE = ((14, 87, 23)), ((37, 211, 255))
 # 三个饮料的坐标
 POSTIONS = [
     Rect(157, 820, 128, 128),  # x, y, w, h
@@ -61,7 +67,7 @@ def eval_once(func: Callable[_P, _R]) -> Callable[_P, _R]:
     行为说明：
     - 如果调用时存在位置参数，则仅以第一个位置参数作为缓存键，后续使用相同第一个参数的调用
       将直接返回第一次计算的结果（忽略其它参数和关键字参数）。
-    - 如果调用时没有任何位置参数，则使用单一的全局缓存（与原先的 "eval once" 行为一致）。
+    - 如果调用时没有任何位置参数，则使用单一的全局缓存。
     """
     cache: dict[object, _R] = {}
     global_cached_result: _R | None = None
@@ -135,12 +141,12 @@ class _SceneCheckMixin:
     def _check_interrupt_dialogs(self) -> Scene | None:
         """判断各种中断/弹窗场景"""
         # P饮料到达上限
-        if R.InPurodyuusu.TextPDrinkMax.exists():
+        if R.InProduce.TextPDrinkMax.exists():
             logger.debug("Scene detected: PDRINK_MAX")
             return Scene(SceneType.PDRINK_MAX)
 
         # P饮料到达上限确认
-        if R.InPurodyuusu.TextPDrinkMaxConfirmTitle.exists():
+        if R.InProduce.TextPDrinkMaxConfirmTitle.exists():
             logger.debug("Scene detected: PDRINK_MAX_CONFIRM")
             return Scene(SceneType.PDRINK_MAX_CONFIRM)
 
@@ -155,7 +161,7 @@ class _SceneCheckMixin:
         #     return Scene(SceneType.DATE_CHANGE)
         
         # 第一次技能卡自选引导对话框
-        if R.InPurodyuusu.TextSkillCardSelectGuideDialogTitle.exists():
+        if R.InProduce.TextSkillCardSelectGuideDialogTitle.exists():
             dialog.yes()
             return Scene(SceneType.IDLE)
 
@@ -164,17 +170,17 @@ class _SceneCheckMixin:
     def _check_dialogs(self) -> Scene | None:
         # 卡片选择
         logger.verbose("Check skill card select...")
-        if R.InPurodyuusu.TextSkillCard.exists():
+        if R.InProduce.TextSkillCard.exists():
             return Scene(SceneType.SELECT_CARD)
         
         # P道具选择
         logger.verbose("Check PItem select...")
-        if R.InPurodyuusu.TextPItem.exists():
+        if R.InProduce.TextPItem.exists():
             return Scene(SceneType.SELECT_PITEM)
 
         # P饮料选择
         logger.verbose("Check PDrink select...")
-        if R.InPurodyuusu.TextPDrink.exists():
+        if R.InProduce.TextPDrink.exists():
             # HACK: 有一定概率 scene check 会识别到动画未结束状态的对话框
             # 因此这里加一个短暂的延时，确保动画结束
             # TODO: 也许有更好的方法。此时选择饮料的文本提示已存在，选择按钮也存在，
@@ -186,27 +192,27 @@ class _SceneCheckMixin:
 
     def _check_fullscreen_dialogs(self) -> Scene | None:
         # 技能卡自选强化
-        if R.InPurodyuusu.IconTitleSkillCardEnhance.exists():
+        if R.InProduce.IconTitleSkillCardEnhance.exists():
             return Scene(SceneType.SKILL_CARD_ENHANCE)
         
         # 技能卡自选删除
-        if R.InPurodyuusu.IconTitleSkillCardRemoval.exists():
+        if R.InProduce.IconTitleSkillCardRemoval.exists():
             return Scene(SceneType.SKILL_CARD_REMOVAL)
 
     def _check_action_like(self) -> Scene | None:
         """判断行动-like场景，右上角展示目标值的场景"""
-        if not R.InPurodyuusu.TextReviewCriteria.exists():
+        if not R.InProduce.TextReviewCriteria.exists():
             return None
         
         # 行动选择
         if AnyOf[
-            R.InPurodyuusu.TextPDiary,
-            R.InPurodyuusu.ButtonFinalPracticeVisual
+            R.InProduce.TextPDiary,
+            R.InProduce.ButtonFinalPracticeVisual
         ].exists():
             return Scene(SceneType.ACTION_SELECT)
 
         # 授業
-        if R.InPurodyuusu.IconTitleStudy.exists():
+        if R.InProduce.IconTitleStudy.exists():
             buttons = CommuEventButtonUI().all(False, False)
             if len(buttons) > 1:
                 return Scene(SceneType.STUDY)
@@ -214,7 +220,7 @@ class _SceneCheckMixin:
                 return Scene(SceneType.IDLE)
         
         # おでかけ
-        if R.InPurodyuusu.TitleIconOuting.exists():
+        if R.InProduce.TitleIconOuting.exists():
             buttons = CommuEventButtonUI().all(False, False)
             if len(buttons) > 1:
                 return Scene(SceneType.OUTING)
@@ -222,15 +228,15 @@ class _SceneCheckMixin:
                 return Scene(SceneType.IDLE)
 
         # 相談
-        if R.InPurodyuusu.IconTitleConsult.exists():
+        if R.InProduce.IconTitleConsult.exists():
             return Scene(SceneType.CONSULT)
 
         # 活動支給
-        if R.InPurodyuusu.IconTitleAllowance.exists():
+        if R.InProduce.IconTitleAllowance.exists():
             return Scene(SceneType.ALLOWANCE)
         
         # 培育初始饮料、卡片二选一
-        ui = CommuEventButtonUI([ORANGE_RANGE])
+        ui = CommuEventButtonUI()
         buttons = ui.all(description=False, title=False)
         if len(buttons) > 1:
             # return InitialDrinkOrCardSelectScene(type=SceneType.INITIAL_DRINK_OR_CARD_SELECT, buttons=buttons)
@@ -240,14 +246,14 @@ class _SceneCheckMixin:
     def _battle_scene(self) -> Scene | None:
         """判断打牌场景"""
         if AnyOf[
-            R.InPurodyuusu.TextClearUntil,
-            R.InPurodyuusu.TextPerfectUntil,
+            R.InProduce.TextClearUntil,
+            R.InProduce.TextPerfectUntil,
         ].exists():
             return Scene(SceneType.PRACTICE)
         
         if AnyOf[
-            R.InPurodyuusu.TextExamRankSmallFirst,
-            R.InPurodyuusu.TextExamRankLargeFirst,
+            R.InProduce.TextExamRankSmallFirst,
+            R.InProduce.TextExamRankLargeFirst,
         ].exists():
             return Scene(SceneType.EXAM)
 
@@ -259,12 +265,71 @@ class Context:
         self.page = page
         self.controller = controller
 
+    def fetch_owned_skill_cards(self) -> list[SkillCard]:
+        """读取持有技能卡列表（multiset：同 id 多份全部保留）。
+
+        流程与 ``tools/owned_cards_longshot_test`` 主路径严格一致：
+        打开对话框 → 滚动采集 ContentArea → stitch_strips → 原检框 → match。
+        几何实例天然保留重复卡，不依赖按 id 去重。
+        """
+        # TODO: 准确率大概在 98% 左右。后续需要继续优化
+        for _ in Loop():
+            if R.InProduce.OwnedSkillCardsDialog.Title.exists():
+                break
+            elif R.InProduce.OwnedCardsButton.try_click():
+                sleep(1)
+
+        content = R.InProduce.OwnedSkillCardsDialog.ContentArea
+        content_rect = Rect(
+            int(content.x1),
+            int(content.y1),
+            int(content.x2 - content.x1),
+            int(content.y2 - content.y1),
+        )
+        strips: list[np.ndarray] = []
+        scrollbar = R.InProduce.OwnedSkillCardsDialog.Scrollbar.require()
+        for _ in scrollbar(step=0.15):
+            strips.append(crop_rect(device.screenshot(), content_rect))
+
+        cards: list[SkillCard] = []
+        if not strips:
+            logger.warning('Owned skill cards: no strips captured.')
+        else:
+            def _on_fail(rect: Rect) -> None:
+                logger.error(f'Failed to match skill card in region {rect}.')
+
+            cards, long_img, stitch_meta, rects = recognize_owned_from_strips(
+                strips,
+                match_card_region,
+                on_fail=_on_fail,
+            )
+            logger.debug(
+                'Owned skill cards stitch: pages=%d long=%sx%s meta=%s',
+                len(strips),
+                long_img.shape[1],
+                long_img.shape[0],
+                stitch_meta,
+            )
+            logger.info(
+                'Fetched %d owned skill cards (detected=%d, pages=%d).',
+                len(cards),
+                len(rects),
+                len(strips),
+            )
+
+        logger.debug('Closing owned skill cards dialog...')
+        for _ in Loop():
+            if R.InProduce.OwnedCardsButton.exists():
+                break
+            if R.InProduce.OwnedSkillCardsDialog.ButtonClose.try_click():
+                sleep(1)
+        return cards
 
 class DrinkSelectContext(Context):
     """饮料选择相关"""
     @eval_once
     def fetch_select_drink(self) -> SelectDrinkDialog:
-        skip_btn = R.InPurodyuusu.TextDontClaim.find()
+        skip_btn = R.InProduce.TextDontClaim.find()
         drinks = [Drink(index=i) for i in range(3)]
         return SelectDrinkDialog(
             can_skip=skip_btn is not None,
@@ -284,8 +349,8 @@ class DrinkSelectContext(Context):
             data._skip_button.click()
             sleep(0.5)
             AnyOf[
-                R.InPurodyuusu.ButtonDontClaim,
-                R.InPurodyuusu.AcquireBtnDisabled
+                R.InProduce.ButtonDontClaim,
+                R.InProduce.AcquireBtnDisabled
             ].try_click()
             logger.debug("Skipped PDrink selection.")
             return
@@ -295,46 +360,130 @@ class DrinkSelectContext(Context):
         device.click(POSTIONS[drink.index])
         sleep(0.5)
         logger.debug(f"PDrink clicked: {POSTIONS[drink.index]}")
-        R.InPurodyuusu.AcquireBtnDisabled.wait().click()
+        R.InProduce.AcquireBtnDisabled.wait().click()
         logger.debug("Clicked Acquire button for PDrink.")
 
 
+class CardOption:
+    """选卡对话框中的一张可选卡：位置 + 身份。"""
+    def __init__(self, rect: Rect, card: 'SkillCard | None' = None):
+        self.rect = rect
+        self.card = card
+
+    def __repr__(self) -> str:
+        name = self.card.name if self.card else '?'
+        return f"CardOption({self.rect}, {name})"
+
 class CardSelectContext(Context):
     @eval_once
-    def fetch_cards(self):
-        cards = AnyOf[
-            R.InPurodyuusu.A,
-            R.InPurodyuusu.M
-        ].find_all()
-        cards.sort(key=lambda x: x.rect.top_left)
-        logger.info(f"Found {len(cards)} skill cards")
-        return cards
+    def fetch_cards(self) -> list[CardOption]:
+        # letters = AnyOf[
+        #     R.InProduce.A.q(threshold=0.6),
+        #     R.InProduce.M.q(threshold=0.6)
+        # ].find_all()
+        letters = (
+            R.InProduce.A.q(threshold=0.65, region=R.InProduce.SkillCardSelect.CardsBox).find_all()
+            + R.InProduce.M.q(threshold=0.65, region=R.InProduce.SkillCardSelect.CardsBox).find_all()
+        )
+        if not letters:
+            return []
+        letters.sort(key=lambda x: x.rect.top_left)
+        # x 差距小于 30 的视为重复
+        filtered_letters = []
+        for go in letters:
+            for fgo in filtered_letters:
+                if abs(go.rect.center.x - fgo.rect.center.x) < 30:
+                    break
+            else:
+                filtered_letters.append(go)
+        logger.info(f"Found {len(letters)} -> {len(filtered_letters)} skill cards.")
+        letters = filtered_letters
+
+        if False:
+            # draw boxes
+            img2 = device.screenshot()
+            for go in letters:
+                cv2.rectangle(img2, go.rect.top_left.xy, go.rect.bottom_right.xy, (0, 255, 0), 2)
+            cv2.imshow('Skill Cards', cv2.resize(img2, None, fx=0.5, fy=0.5))
+            cv2.waitKey(0)
+            cv2.destroyAllWindows()
+
+        from kaa.game_ui.skill_card_select import match_card_region
+        from kaa.util.trace import trace_named
+        from kaa.game_data.paths import skill_card_path
+        from kotonebot.backend.core import cv2_imread
+        img = device.screenshot()
+        results = []
+        for go in letters:
+            letter_rect = go.rect
+            x1 = letter_rect.center.x - 60
+            y1 = letter_rect.y1 - 105
+            x2 = letter_rect.center.x + 60
+            y2 = letter_rect.y2
+            if y1 < 0 or x1 < 0:
+                results.append(CardOption(rect=go.rect, card=None))
+                continue
+            crop = img[y1:y2, x1:x2]
+            card = match_card_region(crop)
+            if card:
+                logger.debug('Card matched: %s', card.name)
+            results.append(CardOption(rect=go.rect, card=card))
+
+        from kaa.kaa_context import conf
+        if conf().trace.card_select:
+            import uuid
+            prefix = uuid.uuid4().hex
+            card_info = [
+                {'name': opt.card.name if opt.card else None, 'id': opt.card._id if opt.card else None}
+                for opt in results
+            ]
+            annotated = img.copy()
+            for go, opt in zip(letters, results):
+                cv2.rectangle(annotated, (go.rect.x1, go.rect.y1), (go.rect.x2, go.rect.y2), (0, 255, 0), 2)
+                if opt.card is not None:
+                    card_img = cv2_imread(skill_card_path(opt.card._asset_id))
+                    if card_img is not None:
+                        card_img = cv2.resize(card_img, (128, 128))
+                        h, w = card_img.shape[:2]
+                        paste_x = go.rect.x1
+                        paste_y = go.rect.y2 + 40
+                        if paste_y + h <= annotated.shape[0] and paste_x + w <= annotated.shape[1]:
+                            annotated[paste_y:paste_y+h, paste_x:paste_x+w] = card_img
+            trace_named('card-select', {
+                f'{prefix}_original.png': img,
+                f'{prefix}_annotated.png': annotated,
+            }, {
+                'cards': card_info,
+            })
+
+        return results
 
     @eval_once
-    def fetch_recommend_card(self) -> int | None:
-        rec_badges = R.InPurodyuusu.TextRecommend.find_all()
-        rec_badges = [card.rect for card in rec_badges]
+    def fetch_recommend_card(self) -> CardOption | None:
         cards = self.fetch_cards()
-        if rec_badges:
-            cards = [card.rect for card in cards]
-            matches = badge.match(cards, rec_badges, 'mb')
-            logger.debug("Recommend card badge matches: %s", matches)
-            for i, match in enumerate(matches):
-                if match.badge is not None:
-                    return i
+        if not cards:
             return None
+        rec_badges = R.InProduce.TextRecommend.find_all()
+        if not rec_badges:
+            return None
+        card_rects = [c.rect for c in cards]
+        badge_rects = [b.rect for b in rec_badges]
+        matches = badge.match(card_rects, badge_rects, 'mb')
+        logger.debug("Recommend card badge matches: %s", matches)
+        for i, m in enumerate(matches):
+            if m.badge is not None:
+                return cards[i]
         return None
 
-    def commit(self, index: int):
-        cards = self.fetch_cards()
-        target = cards[index]
+    def commit(self, card_option: CardOption):
         for _ in Loop():
-            device.click(target)
-            btn = R.InPurodyuusu.AcquireBtnDisabled.find()
+            device.click(card_option.rect)
+            btn = R.InProduce.AcquireBtnDisabled.find()
             if btn:
-                btn.click()
                 sleep(0.5)
-                logger.debug(f"Clicked Acquire button for skill card index {index}.")
+                btn.click()
+                sleep(2)
+                logger.debug("Clicked Acquire button for skill card.")
             else:
                 break
 
@@ -354,7 +503,7 @@ class PItemSelectContext(Context):
             raise ValueError(f"Invalid PItem index: {index}")
         device.click(positions[index])
         logger.debug(f"PItem clicked: {positions[index]}")
-        R.InPurodyuusu.AcquireBtnDisabled.wait().click()
+        R.InProduce.AcquireBtnDisabled.wait().click()
         logger.debug("Clicked Acquire button for PItem.")
 
 
@@ -362,7 +511,7 @@ class ActionSelectContext(Context):
     """行动页面相关操作"""
     @eval_once
     def is_final_week(self) -> bool:
-        return R.InPurodyuusu.ButtonFinalPracticeVisual.exists()
+        return R.InProduce.ButtonFinalPracticeVisual.exists()
 
     @eval_once
     def fetch_available_actions(self) -> tuple[list[ProduceAction], list[GameObject]]:
@@ -374,20 +523,20 @@ class ActionSelectContext(Context):
                 ProduceAction.VOCAL,
                 ProduceAction.VISUAL,
             ], [
-                R.InPurodyuusu.ButtonFinalPracticeDance.q(threshold=0.6).require(),
-                R.InPurodyuusu.ButtonFinalPracticeVocal.q(threshold=0.6).require(),
-                R.InPurodyuusu.ButtonFinalPracticeVisual.q(threshold=0.6).require(),
+                R.InProduce.ButtonFinalPracticeDance.q(threshold=0.6).require(),
+                R.InProduce.ButtonFinalPracticeVocal.q(threshold=0.6).require(),
+                R.InProduce.ButtonFinalPracticeVisual.q(threshold=0.6).require(),
             ]
         else:
             # 否则逐个检测
             # 非课程
             actions = [
-                (R.InPurodyuusu.Rest, ProduceAction.REST),
+                (R.InProduce.Rest, ProduceAction.REST),
 
-                (R.InPurodyuusu.ButtonIconOuting, ProduceAction.OUTING),
-                (R.InPurodyuusu.ButtonIconStudy, ProduceAction.STUDY),
-                (R.InPurodyuusu.ButtonTextAllowance, ProduceAction.ALLOWANCE),
-                (R.InPurodyuusu.ButtonIconConsult, ProduceAction.CONSULT),
+                (R.InProduce.ButtonIconOuting, ProduceAction.OUTING),
+                (R.InProduce.ButtonIconStudy, ProduceAction.STUDY),
+                (R.InProduce.ButtonTextAllowance, ProduceAction.ALLOWANCE),
+                (R.InProduce.ButtonIconConsult, ProduceAction.CONSULT),
             ]
             buttons: list[GameObject] = []
             result: list[ProduceAction] = []
@@ -398,12 +547,12 @@ class ActionSelectContext(Context):
             
             # 课程与 SP 课程的处理
             # 三个课程一定都有或都没有
-            vo = R.InPurodyuusu.ButtonPracticeVocal.find()
+            vo = R.InProduce.ButtonPracticeVocal.find()
             if vo is not None:
                 vo_sp = da_sp = vi_sp = False
-                da = R.InPurodyuusu.ButtonPracticeDance.require()
-                vi = R.InPurodyuusu.ButtonPracticeVisual.require()
-                sp_list = R.InPurodyuusu.IconSp.find_all()
+                da = R.InProduce.ButtonPracticeDance.require()
+                vi = R.InProduce.ButtonPracticeVisual.require()
+                sp_list = R.InProduce.IconSp.find_all()
                 for cur_sp in sp_list:
                     if cur_sp.rect.center[0] < vo.rect.center[0]:
                         vo_sp = True
@@ -421,7 +570,7 @@ class ActionSelectContext(Context):
     @eval_once
     def fetch_sensei_tip(self) -> ProduceAction | None:
         """读取老师推荐的行动"""
-        if not R.InPurodyuusu.IconAsariSenseiAvatar.exists():
+        if not R.InProduce.IconAsariSenseiAvatar.exists():
             return None
 
         cd = Countdown(sec=5).start()
@@ -432,11 +581,11 @@ class ActionSelectContext(Context):
             logger.debug('Retrieving recommended lesson...')
             with cropped(device, y1=0.00, y2=0.30):
                 if result := AnyOf[
-                    R.InPurodyuusu.TextSenseiTipDance,
-                    R.InPurodyuusu.TextSenseiTipVocal,
-                    R.InPurodyuusu.TextSenseiTipVisual,
-                    R.InPurodyuusu.TextSenseiTipRest,
-                    R.InPurodyuusu.TextSenseiTipConsult,
+                    R.InProduce.TextSenseiTipDance,
+                    R.InProduce.TextSenseiTipVocal,
+                    R.InProduce.TextSenseiTipVisual,
+                    R.InProduce.TextSenseiTipRest,
+                    R.InProduce.TextSenseiTipConsult,
                 ].find():
                     break
     
@@ -446,15 +595,15 @@ class ActionSelectContext(Context):
             return None
         
         result = result.prefab
-        if result == R.InPurodyuusu.TextSenseiTipDance:
+        if result == R.InProduce.TextSenseiTipDance:
             return ProduceAction.DANCE
-        elif result == R.InPurodyuusu.TextSenseiTipVocal:
+        elif result == R.InProduce.TextSenseiTipVocal:
             return ProduceAction.VOCAL
-        elif result == R.InPurodyuusu.TextSenseiTipVisual:
+        elif result == R.InProduce.TextSenseiTipVisual:
             return ProduceAction.VISUAL
-        elif result == R.InPurodyuusu.TextSenseiTipRest:
+        elif result == R.InProduce.TextSenseiTipRest:
             return ProduceAction.REST
-        elif result == R.InPurodyuusu.TextSenseiTipConsult:
+        elif result == R.InProduce.TextSenseiTipConsult:
             return ProduceAction.CONSULT
         else:
             raise ValueError("Unrecognized sensei tip action.")
@@ -471,10 +620,10 @@ class ActionSelectContext(Context):
 
     @eval_once
     def fetch_perf_metrics(self) -> list[PerformanceMetricsVal]:
-        cur_vo = self._read_number(R.InPurodyuusu.CurVoValue)
-        cur_da = self._read_number(R.InPurodyuusu.CurDaValue)
-        cur_vi = self._read_number(R.InPurodyuusu.CurViValue)
-        max_val = self._read_number(R.InPurodyuusu.MaxDaValue)
+        cur_vo = self._read_number(R.InProduce.CurVoValue)
+        cur_da = self._read_number(R.InProduce.CurDaValue)
+        cur_vi = self._read_number(R.InProduce.CurViValue)
+        max_val = self._read_number(R.InProduce.MaxDaValue)
 
         return [
             PerformanceMetricsVal(current=cur_vi, max=max_val, lesson=ProduceAction.VISUAL),
@@ -513,20 +662,20 @@ class ActionSelectContext(Context):
         button = _actions[1][index]
 
         if button.prefab in [
-            R.InPurodyuusu.ButtonIconOuting,
-            R.InPurodyuusu.ButtonIconStudy,
-            R.InPurodyuusu.ButtonTextAllowance,
-            R.InPurodyuusu.ButtonIconConsult,
+            R.InProduce.ButtonIconOuting,
+            R.InProduce.ButtonIconStudy,
+            R.InProduce.ButtonTextAllowance,
+            R.InProduce.ButtonIconConsult,
 
-            R.InPurodyuusu.ButtonFinalPracticeDance,
-            R.InPurodyuusu.ButtonFinalPracticeVocal,
-            R.InPurodyuusu.ButtonFinalPracticeVisual,
-            R.InPurodyuusu.TextActionVisual,
-            R.InPurodyuusu.TextActionVocal,
-            R.InPurodyuusu.TextActionDance,
-            R.InPurodyuusu.ButtonPracticeDance,
-            R.InPurodyuusu.ButtonPracticeVocal,
-            R.InPurodyuusu.ButtonPracticeVisual,
+            R.InProduce.ButtonFinalPracticeDance,
+            R.InProduce.ButtonFinalPracticeVocal,
+            R.InProduce.ButtonFinalPracticeVisual,
+            R.InProduce.TextActionVisual,
+            R.InProduce.TextActionVocal,
+            R.InProduce.TextActionDance,
+            R.InProduce.ButtonPracticeDance,
+            R.InProduce.ButtonPracticeVocal,
+            R.InProduce.ButtonPracticeVisual,
         ]:
             for _ in range(3):
                 button.click()
@@ -540,13 +689,13 @@ class ActionSelectContext(Context):
             # 点击休息直到确认对话框出现
             # TODO: 需要一种方法简化这种 pattern
             for _ in Loop():
-                if R.InPurodyuusu.Rest.try_click():
+                if R.InProduce.Rest.try_click():
                     sleep(0.5)
-                elif R.InPurodyuusu.RestConfirmBtn.exists():
+                elif R.InProduce.RestConfirmBtn.exists():
                     break
             # 然后等消失
             for _ in Loop():
-                if R.InPurodyuusu.RestConfirmBtn.exists():
+                if R.InProduce.RestConfirmBtn.exists():
                     device.click()
                     sleep(0.5)
                 else:
@@ -568,7 +717,7 @@ class PracticeContext(Context):
 class ExamContext(Context):
     def is_final_exam(self) -> bool:
         img = device.screenshot()
-        roi = R.InPurodyuusu.BoxDetectExamType
+        roi = R.InProduce.BoxDetectExamType
         roi_img = img[roi.y1:roi.y2, roi.x1:roi.x2]
         # L: 亮度, a: 绿-红, b: 蓝-黄
         # cv2.imshow('roi', roi_img)
@@ -592,9 +741,9 @@ class StudyContext(Context):
         """是否为自习课"""
         # [kotonebot-resource\sprites\jp\in_purodyuusu\screenshot_study_self_study.png]
         return AnyOf[
-            R.InPurodyuusu.TextSelfStudyDance,
-            R.InPurodyuusu.TextSelfStudyVisual,
-            R.InPurodyuusu.TextSelfStudyVocal
+            R.InProduce.TextSelfStudyDance,
+            R.InProduce.TextSelfStudyVisual,
+            R.InProduce.TextSelfStudyVocal
         ].exists()
     
     @eval_once
@@ -609,11 +758,11 @@ class StudyContext(Context):
         """执行自习课行动"""
         match lesson:
             case 'dance':
-                R.InPurodyuusu.TextSelfStudyDance.wait().double_click()
+                R.InProduce.TextSelfStudyDance.wait().double_click()
             case 'visual':
-                R.InPurodyuusu.TextSelfStudyVisual.wait().double_click()
+                R.InProduce.TextSelfStudyVisual.wait().double_click()
             case 'vocal':
-                R.InPurodyuusu.TextSelfStudyVocal.wait().double_click()
+                R.InProduce.TextSelfStudyVocal.wait().double_click()
             case _:
                 raise ValueError(f"Invalid self study subject: {lesson}")
 
@@ -651,8 +800,8 @@ class OutingContext(Context):
         # pi = ProduceInterrupt()
         # for _ in Loop():
         #     if AnyOf[
-        #         R.InPurodyuusu.TextPDiary,
-        #         R.InPurodyuusu.ButtonFinalPracticeDance,
+        #         R.InProduce.TextPDiary,
+        #         R.InProduce.ButtonFinalPracticeDance,
         #     ].exists():
         #         break
         #     if pi.handle():
@@ -682,7 +831,7 @@ class _ConsultFlow(Flow):
         """
         # Phase: start
         if self._phase == "start":
-            device.click(R.InPurodyuusu.PointConsultFirstItem)
+            device.click(R.InProduce.PointConsultFirstItem)
             sleep(0.3)
             self._wait_purchase_cd.start()
             self._phase = "waiting_purchase"
@@ -701,19 +850,19 @@ class _ConsultFlow(Flow):
                 return False
 
             # 点击购买按钮
-            if R.InPurodyuusu.ButtonIconExchange.q(enabled=True).try_click():
+            if R.InProduce.ButtonIconExchange.q(enabled=True).try_click():
                 self._purchase_clicked = True
                 return False
 
             # 购买已确认，尝试点击结束咨询
-            if self._purchase_confirmed and R.InPurodyuusu.ButtonEndConsult.try_click():
+            if self._purchase_confirmed and R.InProduce.ButtonEndConsult.try_click():
                 self._exit_cd.start()
                 self._phase = "waiting_exit"
                 return False
 
             # 仍未确认购买，重复点击第一个条目以触发对话框
             if not self._purchase_confirmed:
-                device.click(R.InPurodyuusu.PointConsultFirstItem)
+                device.click(R.InProduce.PointConsultFirstItem)
                 self._wait_purchase_cd.start()
             return False
 
@@ -744,7 +893,7 @@ class ConsultContext(Context):
 
 class AllowanceContext(Context):
     def claim(self):
-        if R.InPurodyuusu.LootboxSliverLock.try_click():
+        if R.InProduce.LootboxSliverLock.try_click():
             sleep(1)
         skip()
 
@@ -783,8 +932,8 @@ class SkillFullScreenDialogContext(Context):
     def fetch_cards(self):
         # TODO: 这里目前只处理了第一个，后续需要扩展为搜索所有
         return [AnyOf[
-            R.InPurodyuusu.A,
-            R.InPurodyuusu.M
+            R.InProduce.A,
+            R.InProduce.M
         ].require()]
 
     def commit(self, index: int):
@@ -796,7 +945,7 @@ class SkillFullScreenDialogContext(Context):
 
 class SkillCardEnhanceContext(SkillFullScreenDialogContext):
     def __init__(self, page: 'ProducePage', controller: 'ProduceController') -> None:
-        super().__init__(page, controller, R.InPurodyuusu.ButtonEnhance.q(enabled=True))
+        super().__init__(page, controller, R.InProduce.ButtonEnhance.q(enabled=True))
 
     @eval_once
     def fetch_required_count(self) -> int:
@@ -817,7 +966,7 @@ class SkillCardEnhanceContext(SkillFullScreenDialogContext):
             device.click(card)
             sleep(0.5)
             device.screenshot()
-            if R.InPurodyuusu.ButtonEnhance.q(enabled=True, threshold=0.7).try_click():
+            if R.InProduce.ButtonEnhance.q(enabled=True, threshold=0.7).try_click():
                 sleep(0.5)
                 logger.debug("Enhance button clicked for a card.")
                 break
@@ -826,7 +975,7 @@ class SkillCardEnhanceContext(SkillFullScreenDialogContext):
 
 class SkillCardRemovalContext(SkillFullScreenDialogContext):
     def __init__(self, page: 'ProducePage', controller: 'ProduceController') -> None:
-        super().__init__(page, controller, R.InPurodyuusu.ButtonRemove)
+        super().__init__(page, controller, R.InProduce.ButtonRemove)
 
     def commit(self, index: int = 0):
         if index != 0:
@@ -843,7 +992,7 @@ class SkillCardRemovalContext(SkillFullScreenDialogContext):
 
         device.click(target)
         for _ in Loop():
-            if R.InPurodyuusu.ButtonRemove.try_click():
+            if R.InProduce.ButtonRemove.try_click():
                 logger.debug("Remove button clicked.")
                 break
         logger.debug("Handle skill card removal finished.")
@@ -864,70 +1013,44 @@ if __name__ == '__main__':
     # init_context(target_device=d, force=True)
     # with manual_context():
     #     ret = AnyOf[
-    #         R.InPurodyuusu.TextExamRankSmallFirst,
-    #         R.InPurodyuusu.TextExamRankLargeFirst,
+    #         R.InProduce.TextExamRankSmallFirst,
+    #         R.InProduce.TextExamRankLargeFirst,
     #     ].find()
     #     # print(ret)
     # import cv2
     # from kotonebot.backend.image import find
     # img = cv2.imread(r'b.png')
     # assert img is not None
-    # print(find(img, R.InPurodyuusu.TextExamRankLargeFirst.template, threshold=0))
-    # print(find(img, R.InPurodyuusu.TextExamRankLargeFirst.template, threshold=0, rect=R.InPurodyuusu.TextExamRankLargeFirst.template.slice_rect))
-    ctx = ExamContext(ProducePage(), None)
+    # print(find(img, R.InProduce.TextExamRankLargeFirst.template, threshold=0))
+    # print(find(img, R.InProduce.TextExamRankLargeFirst.template, threshold=0, rect=R.InProduce.TextExamRankLargeFirst.template.slice_rect))
     
-    
-    while True:
-        (ctx.is_final_exam())
-    
-    # accumulator for masks (float32, stores summed normalized mask values)
-    acc: np.ndarray | None = None
-    # per-frame decay (0.0 = no decay). 可按需调整或暴露为参数
-    DECAY_PER_FRAME = 0.0
+    device.screenshot()
+    ctx = Context(ProducePage(), None)
+    ctx.fetch_owned_skill_cards()
 
-    while True:
-        img = device.screenshot()
+    # ui = CommuEventButtonUI()
+    # buttons = ui.all()
+    # 1    
 
-        # HSV，只取黄色
-        hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-        lower_yellow = np.array([14, 60, 60])
-        upper_yellow = np.array([40, 255, 255])
-        mask = cv2.inRange(hsv, lower_yellow, upper_yellow)
+    # img = device.screenshot()
+    # import cv2
+    # # 查找边缘
+    # edges = cv2.Canny(img, 100, 250)
+    # # 二值化
+    # binary = cv2.threshold(img, 127, 255, cv2.THRESH_BINARY)[1]
+    # # cv2.imshow('Edges', cv2.resize(edges, None, fx=0.75, fy=0.75))
+    # cv2.imwrite('edges.png', edges)
+    # cv2.imwrite('binary.png', binary)
+    # # cv2.waitKey(0)
+    # # cv2.destroyAllWindows()
 
-        # 初始化累加器（与 mask 同形状，float32）
-        if acc is None:
-            acc = np.zeros_like(mask, dtype=np.float32)
+    # while True:
+    #     img = device.screenshot()
+    #     edges = cv2.Canny(img, 240, 250)
+    #     binary = cv2.threshold(img, 127, 255, cv2.THRESH_BINARY)[1]
+    #     cv2.imshow('Edges', cv2.resize(edges, None, fx=0.75, fy=0.75))
+    #     cv2.imshow('Binary', cv2.resize(binary, None, fx=0.75, fy=0.75))
+    #     if cv2.waitKey(1) & 0xFF == ord('q'):
+    #         break
 
-        # 将 mask 归一化到 0..1 后累加
-        acc += (mask.astype(np.float32) / 255.0)
 
-        # 可选的指数衰减，防止长期累加完全饱和
-        if DECAY_PER_FRAME > 0.0:
-            acc *= (1.0 - DECAY_PER_FRAME)
-
-        # 为显示做归一化：按当前最大值缩放到 0..255 保持对比度
-        maxv = float(acc.max()) if acc is not None else 0.0
-        if maxv > 0.0:
-            disp = np.clip((acc / maxv) * 255.0, 0, 255).astype(np.uint8)
-        else:
-            disp = np.zeros_like(mask, dtype=np.uint8)
-
-        # 为了更直观，用伪彩（jet）渲染累加结果
-        disp_color = cv2.applyColorMap(disp, cv2.COLORMAP_JET)
-
-        # 展示原始单帧 mask 与叠加结果
-        cv2.imshow('mask', cv2.resize(mask, None, fx=0.5, fy=0.5))
-        cv2.imshow('accum', cv2.resize(disp_color, None, fx=0.5, fy=0.5))
-
-        # 键盘控制：q 退出，r 重置累加，s 保存当前叠加图
-        key = cv2.waitKey(1) & 0xFF
-        if key == ord('q'):
-            break
-        elif key == ord('r'):
-            if acc is not None:
-                acc.fill(0)
-                logger.info('Accumulator reset')
-        elif key == ord('s'):
-            # 保存为 PNG（伪彩）
-            cv2.imwrite('accum.png', disp_color)
-            logger.info('Saved accumulated image to accum.png')

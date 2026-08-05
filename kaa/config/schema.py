@@ -67,8 +67,8 @@ class ContestConfig(ConfigBaseModel):
     select_which_contestant: Literal[1, 2, 3] = 1
     """选择第几个挑战者"""
 
-    when_no_set: Literal['remind', 'wait', 'auto_set', 'auto_set_silent'] = 'remind'
-    """竞赛队伍未编成时应该：remind=通知我并跳过竞赛，wait=提醒我并等待手动编成，auto_set=使用自动编成并提醒，auto_set_silent=使用自动编成不提醒"""
+    when_no_set: Literal['auto_set', 'skip'] = 'auto_set'
+    """竞赛队伍未编成时：auto_set=自动编成，skip=跳过任务"""
 
 
 class ProduceConfig(ConfigBaseModel):
@@ -132,6 +132,10 @@ class CapsuleToysConfig(ConfigBaseModel):
 class TraceConfig(ConfigBaseModel):
     recommend_card_detection: bool = False
     """跟踪推荐卡检测"""
+    commu_event_buttons: bool = False
+    """跟踪 CommuEventButtons"""
+    card_select: bool = False
+    """跟踪选卡识别结果"""
 
 class StartGameConfig(ConfigBaseModel):
     enabled: bool = True
@@ -178,38 +182,6 @@ class EndGameConfig(ConfigBaseModel):
     （目前仅对 DMM 版有效。）
     """
 
-class MiscConfig(ConfigBaseModel):
-    check_update: Literal['never', 'startup'] = 'startup'
-    """
-    检查更新时机。
-
-    * never: 从不检查更新。
-    * startup: 启动时检查更新。
-    """
-    auto_install_update: bool = True
-    """
-    是否自动安装更新。
-
-    若启用，则每次自动检查更新时若有新版本会自动安装，否则只是会提示。
-    """
-    expose_to_lan: bool = False
-    """
-    是否允许局域网访问 Web 界面。
-
-    启用后，局域网内的其他设备可以通过本机 IP 地址访问 Web 界面。
-    """
-    update_channel: Literal['release', 'beta'] = 'release'
-    """
-    更新通道。
-
-    * release: 只使用稳定版。
-    * beta: 包含预发布版本（如 alpha/beta/rc）。
-    """
-    log_level: Literal['debug', 'verbose'] = 'debug'
-    """
-    日志等级。
-    """
-
 class IdleModeConfig(ConfigBaseModel):
     enabled: bool = False
     """是否启用闲置挂机（任意键暂停、闲置自动恢复）"""
@@ -220,7 +192,7 @@ class IdleModeConfig(ConfigBaseModel):
 
 
 
-CONFIG_VERSION_CODE = 11
+CONFIG_VERSION_CODE = 13
 
 
 class TasksConfig(ConfigBaseModel):

@@ -1,0 +1,21 @@
+{
+  "version": 3,
+  "definitions": {
+    "b940d755-f380-436f-a887-34d81a438a75": {
+      "type": "prefab",
+      "prefab_id": "TemplateMatchPrefab",
+      "name": "Daily.ButtonSupportCardUpgrade",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 183.98771868683758,
+          "y1": 1066.7670899031127,
+          "x2": 285.3290043771332,
+          "y2": 1103.26457561949
+        },
+        "fixed": true
+      },
+      "displayName": "Lv强化"
+    }
+  }
+}

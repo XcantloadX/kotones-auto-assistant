@@ -11,7 +11,7 @@ from kaa.config.produce import (
     ProduceSolution, 
     ProduceSolutionManager
 )
-from kaa.config.const import ProduceAction, RecommendCardDetectionMode
+from kaa.config.const import ProduceAction, HajimeScenario, RecommendCardDetectionMode
 from kaa.errors import ProduceSolutionNotFoundError
 
 
@@ -20,8 +20,8 @@ class TestProduceData(TestCase):
     def test_produce_data_field_validation(self):
         """测试字段验证"""
         # 测试有效的 mode 值
-        for mode in ['regular', 'pro', 'master']:
-            data = ProduceData(mode=mode) # type: ignore[arg-type]
+        for mode in [HajimeScenario.REGULAR, HajimeScenario.PRO, HajimeScenario.MASTER]:
+            data = ProduceData(mode=mode)
             self.assertEqual(data.mode, mode)
         
         # 测试有效的 self_study_lesson 值
@@ -33,7 +33,7 @@ class TestProduceData(TestCase):
         """测试序列化和反序列化"""
         # 创建测试数据
         data = ProduceData(
-            mode='pro',
+            mode=HajimeScenario.PRO,
             idol='test_idol_123',
             memory_set=2,
             support_card_set=3,
@@ -57,7 +57,7 @@ class TestProduceData(TestCase):
         restored_data = ProduceData.model_validate(json_data)
         
         # 验证数据一致性
-        self.assertEqual(restored_data.mode, 'pro')
+        self.assertEqual(restored_data.mode, HajimeScenario.PRO)
         self.assertEqual(restored_data.idol, 'test_idol_123')
         self.assertEqual(restored_data.memory_set, 2)
         self.assertEqual(restored_data.support_card_set, 3)
@@ -79,7 +79,7 @@ class TestProduceSolution(TestCase):
 
     def test_produce_solution_creation(self):
         """测试创建培育方案"""
-        data = ProduceData(mode='pro', idol='test_idol')
+        data = ProduceData(mode=HajimeScenario.PRO, idol='test_idol')
         solution = ProduceSolution(
             id='test_id_123',
             name='测试方案',
@@ -91,7 +91,7 @@ class TestProduceSolution(TestCase):
         self.assertEqual(solution.id, 'test_id_123')
         self.assertEqual(solution.name, '测试方案')
         self.assertEqual(solution.description, '这是一个测试方案')
-        self.assertEqual(solution.data.mode, 'pro')
+        self.assertEqual(solution.data.mode, HajimeScenario.PRO)
         self.assertEqual(solution.data.idol, 'test_idol')
 
     def test_produce_solution_validation(self):
@@ -110,7 +110,7 @@ class TestProduceSolution(TestCase):
 
     def test_produce_solution_serialization(self):
         """测试序列化和反序列化"""
-        data = ProduceData(mode='master', idol='test_idol_456')
+        data = ProduceData(mode=HajimeScenario.MASTER, idol='test_idol_456')
         solution = ProduceSolution(
             id='test_id_456',
             name='高级测试方案',
@@ -129,7 +129,7 @@ class TestProduceSolution(TestCase):
         self.assertEqual(restored_solution.id, 'test_id_456')
         self.assertEqual(restored_solution.name, '高级测试方案')
         self.assertEqual(restored_solution.description, '这是一个高级测试方案')
-        self.assertEqual(restored_solution.data.mode, 'master')
+        self.assertEqual(restored_solution.data.mode, HajimeScenario.MASTER)
         self.assertEqual(restored_solution.data.idol, 'test_idol_456')
 
 
@@ -236,12 +236,12 @@ class TestProduceSolutionManager(TestCase):
         solution1 = ProduceSolution(
             id='id1',
             name='方案1',
-            data=ProduceData(mode='regular')
+            data=ProduceData(mode=HajimeScenario.REGULAR)
         )
         solution2 = ProduceSolution(
             id='id2',
             name='方案2',
-            data=ProduceData(mode='pro')
+            data=ProduceData(mode=HajimeScenario.PRO)
         )
 
         # 保存文件
@@ -291,7 +291,7 @@ class TestProduceSolutionManager(TestCase):
             id='save_test_id',
             name='保存测试方案',
             description='测试保存功能',
-            data=ProduceData(mode='master', idol='test_idol')
+            data=ProduceData(mode=HajimeScenario.MASTER, idol='test_idol')
         )
 
         # 保存方案
@@ -308,7 +308,7 @@ class TestProduceSolutionManager(TestCase):
         self.assertEqual(saved_data['id'], 'save_test_id')
         self.assertEqual(saved_data['name'], '保存测试方案')
         self.assertEqual(saved_data['description'], '测试保存功能')
-        self.assertEqual(saved_data['data']['mode'], 'master')
+        self.assertEqual(saved_data['data']['mode'], 'hajime_master')
         self.assertEqual(saved_data['data']['idol'], 'test_idol')
 
     def test_save_solution_with_name_change(self):
@@ -345,7 +345,7 @@ class TestProduceSolutionManager(TestCase):
             id='read_test_id',
             name='读取测试方案',
             description='测试读取功能',
-            data=ProduceData(mode='pro', memory_set=5)
+            data=ProduceData(mode=HajimeScenario.PRO, memory_set=5)
         )
         self.manager.save(solution.id, solution)
 
@@ -356,7 +356,7 @@ class TestProduceSolutionManager(TestCase):
         self.assertEqual(read_solution.id, 'read_test_id')
         self.assertEqual(read_solution.name, '读取测试方案')
         self.assertEqual(read_solution.description, '测试读取功能')
-        self.assertEqual(read_solution.data.mode, 'pro')
+        self.assertEqual(read_solution.data.mode, HajimeScenario.PRO)
         self.assertEqual(read_solution.data.memory_set, 5)
 
     def test_read_nonexistent_solution(self):
@@ -401,7 +401,7 @@ class TestProduceSolutionManager(TestCase):
             id='original_id',
             name='原始方案',
             description='原始描述',
-            data=ProduceData(mode='master', idol='test_idol', memory_set=3)
+            data=ProduceData(mode=HajimeScenario.MASTER, idol='test_idol', memory_set=3)
         )
         self.manager.save(original_solution.id, original_solution)
 
@@ -415,7 +415,7 @@ class TestProduceSolutionManager(TestCase):
         self.assertEqual(duplicated_solution.type, 'produce_solution')
 
         # 验证数据深拷贝
-        self.assertEqual(duplicated_solution.data.mode, 'master')
+        self.assertEqual(duplicated_solution.data.mode, HajimeScenario.MASTER)
         self.assertEqual(duplicated_solution.data.idol, 'test_idol')
         self.assertEqual(duplicated_solution.data.memory_set, 3)
 
@@ -489,7 +489,7 @@ class TestProduceSolutionManager(TestCase):
 
         # 2. 修改方案数据
         solution.description = '完整工作流程测试'
-        solution.data.mode = 'pro'
+        solution.data.mode = HajimeScenario.PRO
         solution.data.idol = 'workflow_test_idol'
 
         # 3. 保存方案
@@ -500,7 +500,7 @@ class TestProduceSolutionManager(TestCase):
         self.assertEqual(read_solution.id, original_id)
         self.assertEqual(read_solution.name, '工作流程测试')
         self.assertEqual(read_solution.description, '完整工作流程测试')
-        self.assertEqual(read_solution.data.mode, 'pro')
+        self.assertEqual(read_solution.data.mode, HajimeScenario.PRO)
         self.assertEqual(read_solution.data.idol, 'workflow_test_idol')
 
         # 5. 修改方案名称
@@ -544,7 +544,7 @@ class TestProduceSolutionManager(TestCase):
         # 创建多个方案
         for i in range(5):
             solution = self.manager.new(f'并发测试方案{i}')
-            solution.data.mode = 'pro' if i % 2 == 0 else 'regular'
+            solution.data.mode = HajimeScenario.PRO if i % 2 == 0 else HajimeScenario.REGULAR
             solutions.append(solution)
 
         # 同时保存所有方案

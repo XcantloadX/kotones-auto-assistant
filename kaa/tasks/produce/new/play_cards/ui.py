@@ -3,11 +3,11 @@ from functools import cached_property
 import os
 import cv2
 import logging
+from typing import Callable
 from typing_extensions import override
 
 from cv2.typing import MatLike
 from kaa.db.constants import CharacterId
-from kaa.image_db.descriptors.hog import HogDescriptor
 from kotonebot import image
 from kotonebot.primitives import Rect
 from kotonebot.core import GameObject
@@ -15,7 +15,8 @@ from kotonebot.backend import color
 
 from kaa.tasks import R
 from kaa.util import paths
-from kaa.image_db import ImageDatabase, FileDataSource
+from kaa.image_db import ImageDatabase
+from kaa.image_db import registry
 from kaa.db.skill_card import SkillCard
 
 DEBUG = False
@@ -23,7 +24,6 @@ CARD_OFFSET = (57, 148) # 从字母位置到卡片左上角的偏移量 x, y
 CARD_SCALE = 168 / 256 # 原始卡面图像 到 1280x720 截图中卡面图像的缩放比例
 
 logger = logging.getLogger(__name__)
-_db: ImageDatabase | None = None
 
 @dataclass
 class CardGameObject(GameObject):
@@ -43,37 +43,55 @@ class CardGameObject(GameObject):
 
 class CardImageDatabase(ImageDatabase):
     @override
-    def insert(self, key, image, *, overwrite = False):
-        if isinstance(image, str):
-            img = cv2.imread(image)
-            if img is None:
-                raise ValueError(f'Cannot read image from path: {image}')
-        else:
-            img = image
-        # 截取从下边缘中点为右下角，
-        # 到 CARD_OFFSET * CARD_SCALE 为左上角的区域
-        h, w, _ = img.shape
-        x2, y2 = w // 2, h  # 右下角
-        x1 = int(x2 - CARD_OFFSET[0] / CARD_SCALE)
-        y1 = int(y2 - CARD_OFFSET[1] / CARD_SCALE)
-        half_img = img[y1:y2, x1:x2]
+    def build(self, progress_cb=None):
+        """构建时对每张卡片图像进行裁剪预处理。"""
+        class PreprocessingSource:
+            def __init__(self, source):
+                self._source = source
+            
+            def __iter__(self):
+                for key, img in self._source:
+                    # 截取从下边缘中点为右下角，
+                    # 到 CARD_OFFSET * CARD_SCALE 为左上角的区域
+                    h, w, _ = img.shape
+                    x2, y2 = w // 2, h  # 右下角
+                    x1 = int(x2 - CARD_OFFSET[0] / CARD_SCALE)
+                    y1 = int(y2 - CARD_OFFSET[1] / CARD_SCALE)
+                    half_img = img[y1:y2, x1:x2]
+                    
+                    # if DEBUG:
+                    #     debug_img = img.copy()
+                    #     cv2.rectangle(debug_img, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                    #     cv2.imshow('original_with_rect', cv2.resize(debug_img, (0,0), fx=0.5, fy=0.5))
+                    #     cv2.imshow('half_img', cv2.resize(half_img, (0,0), fx=2, fy=2))
+                    #     cv2.waitKey(0)
+                    yield key, half_img
+        
+        self.source = PreprocessingSource(self.source)
+        super().build(progress_cb=progress_cb)
 
-        # if DEBUG:
-        #     debug_img = img.copy()
-        #     cv2.rectangle(debug_img, (x1, y1), (x2, y2), (0, 255, 0), 2)
-        #     cv2.imshow('original_with_rect', cv2.resize(debug_img, (0,0), fx=0.5, fy=0.5))
-        #     cv2.imshow('half_img', cv2.resize(half_img, (0,0), fx=2, fy=2))
-        #     cv2.waitKey(0)
-        return super().insert(key, half_img, overwrite=overwrite)
+def build_db(
+    progress_cb: Callable[[int, int], None] | None = None,
+    *,
+    source_dir: str | None = None,
+    cache_dir: str | None = None,
+):
+    """构建技能卡图像数据库索引（薄封装，委托注册中心）。
+
+    :param progress_cb: 进度回调 (processed, total)
+    :param source_dir: 数据源目录；为 None 时使用活跃游戏数据目录
+    :param cache_dir: 索引缓存目录；为 None 时使用默认缓存目录
+    """
+    registry._build_spec(
+        registry.get_spec('skill_cards'),
+        source_dir,
+        cache_dir,
+        progress_cb=progress_cb,
+    )
+
 
 def skill_cards_db() -> ImageDatabase:
-    global _db
-    if _db is None:
-        logger.info('Loading skill_cards database...')
-        path = paths.resource('skill_cards')
-        db_path = paths.cache('skill_cards.pkl')
-        _db = CardImageDatabase(FileDataSource(str(path)), db_path, HogDescriptor(), name='skill_cards')
-    return _db
+    return registry.get_db('skill_cards')
 
 
 def _show_rects(title: str, img: MatLike, results: list[GameObject] | list[Rect]):
@@ -90,15 +108,15 @@ def _show_rects(title: str, img: MatLike, results: list[GameObject] | list[Rect]
 
 def _locate_letters(img: MatLike) -> list[Rect]:
     # letters = AnyOf[
-    #     R.InPurodyuusu.A,
-    #     R.InPurodyuusu.M,
-    #     R.InPurodyuusu.T,
+    #     R.InProduce.A,
+    #     R.InProduce.M,
+    #     R.InProduce.T,
     # ].find_all()
-    x, y, w, h = R.InPurodyuusu.BoxCardLetter.xywh
+    x, y, w, h = R.InProduce.BoxCardLetter.xywh
     img = img[y:y+h, x:x+w]
-    results = image.raw().find_all(img, R.InPurodyuusu.A.template)
-    results += image.raw().find_all(img, R.InPurodyuusu.M.template)
-    results += image.raw().find_all(img, R.InPurodyuusu.T.template)
+    results = image.raw().find_all(img, R.InProduce.A.template)
+    results += image.raw().find_all(img, R.InProduce.M.template)
+    results += image.raw().find_all(img, R.InProduce.T.template)
     # 需要还原为全图坐标
     results2 = []
     for res in results:
@@ -125,7 +143,8 @@ def locate_cards(img: MatLike):
     for region, letter in zip(card_regions, letters):
         x, y, w, h = region.xywh
         card_img = img[y:y+h, x:x+w]
-        result = skill_cards_db().match(card_img, threshold=150)
+        result_list = skill_cards_db().query(card_img, k=1, threshold=150)
+        result = result_list[0] if result_list else None
         available = color.find(img, '#7a7d7d', rect=letter) is None
         if result is not None:
             # 从资源名称中提取 asset_id

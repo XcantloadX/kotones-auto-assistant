@@ -2,7 +2,7 @@
   "version": 3,
   "definitions": {
     "ae4742aa-acda-442d-bf73-b3fe7b66e85c": {
-      "name": "Daily.WeeklyFreePack",
+      "name": "Daily.PackShop.ButtonFree",
       "displayName": "每周免费礼包购买按钮",
       "type": "prefab",
       "props": {
@@ -13,10 +13,25 @@
           "x2": 556,
           "y2": 704
         },
-        "fixed": true
+        "fixed": false
       },
-      "prefab_id": "TemplateMatchPrefab",
+      "prefab_id": "GakumasPrimaryButtonPrefab",
       "variant_policy": {}
+    },
+    "b3612097-aa14-4a1e-b3b2-d18a65fcae1a": {
+      "type": "prefab",
+      "prefab_id": "TemplateMatchPrefab",
+      "name": "Daily.PackShop.Title",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 11.83744122053642,
+          "y1": 33.419110739614496,
+          "x2": 60.40812520807066,
+          "y2": 75.4005179512154
+        },
+        "fixed": true
+      }
     }
   }
 }

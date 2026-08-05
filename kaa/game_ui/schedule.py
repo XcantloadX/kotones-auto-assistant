@@ -52,9 +52,9 @@ class Schedule:
         """
         device.screenshot()
         result = AnyOf[
-            R.InPurodyuusu.TextActionVocal,
-            R.InPurodyuusu.TextActionDance,
-            R.InPurodyuusu.TextActionVisual,
+            R.InProduce.TextActionVocal,
+            R.InProduce.TextActionDance,
+            R.InProduce.TextActionVisual,
         ].find()
         return result is not None
 
@@ -97,12 +97,12 @@ class Schedule:
         :return: 课程数据列表
         """
         img = device.screenshot()
-        sp_list = R.InPurodyuusu.IconSp.find_all()
+        sp_list = R.InProduce.IconSp.find_all()
         vo_sp = da_sp = vi_sp = False
         # 等待课程按钮模板出现，使用 rect.center[0] 作为水平位置比较
-        vo = R.InPurodyuusu.ButtonPracticeVocal.wait()
-        da = R.InPurodyuusu.ButtonPracticeDance.wait()
-        vi = R.InPurodyuusu.ButtonPracticeVisual.wait()
+        vo = R.InProduce.ButtonPracticeVocal.wait()
+        da = R.InProduce.ButtonPracticeDance.wait()
+        vi = R.InProduce.ButtonPracticeVisual.wait()
         for cur_sp in sp_list:
             if cur_sp.rect.center[0] < vo.rect.center[0]:
                 vo_sp = True
@@ -127,25 +127,25 @@ class Schedule:
         :return: 当前推荐行动，如果没推荐行动，返回 RECOMMENDED
         """
         device.screenshot()
-        if R.InPurodyuusu.IconAsariSenseiAvatar.exists():
+        if R.InProduce.IconAsariSenseiAvatar.exists():
             logger.debug('Retrieving recommended lesson...')
             result = AnyOf[
-                R.InPurodyuusu.TextSenseiTipVocal,
-                R.InPurodyuusu.TextSenseiTipDance,
-                R.InPurodyuusu.TextSenseiTipVisual,
-                R.InPurodyuusu.TextSenseiTipRest,
-                R.InPurodyuusu.TextSenseiTipConsult,
+                R.InProduce.TextSenseiTipVocal,
+                R.InProduce.TextSenseiTipDance,
+                R.InProduce.TextSenseiTipVisual,
+                R.InProduce.TextSenseiTipRest,
+                R.InProduce.TextSenseiTipConsult,
             ].find()
             if result:
-                if result.prefab == R.InPurodyuusu.TextSenseiTipVocal:
+                if result.prefab == R.InProduce.TextSenseiTipVocal:
                     return ProduceAction.VOCAL
-                if result.prefab == R.InPurodyuusu.TextSenseiTipDance:
+                if result.prefab == R.InProduce.TextSenseiTipDance:
                     return ProduceAction.DANCE
-                if result.prefab == R.InPurodyuusu.TextSenseiTipVisual:
+                if result.prefab == R.InProduce.TextSenseiTipVisual:
                     return ProduceAction.VISUAL
-                if result.prefab == R.InPurodyuusu.TextSenseiTipRest:
+                if result.prefab == R.InProduce.TextSenseiTipRest:
                     return ProduceAction.REST
-                if result.prefab == R.InPurodyuusu.TextSenseiTipConsult:
+                if result.prefab == R.InProduce.TextSenseiTipConsult:
                     return ProduceAction.CONSULT
         return ProduceAction.RECOMMENDED
 

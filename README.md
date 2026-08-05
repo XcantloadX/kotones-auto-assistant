@@ -171,3 +171,4 @@ kaa 的开发还参考了以下开源项目：
 * [EmulatorExtras](https://github.com/MaaXYZ/EmulatorExtras)（No License）：MuMu 与雷电模拟器的截图与控制接口定义。
 * [blue_archive_auto_script](https://github.com/pur1fying/blue_archive_auto_script)（GPLv3）：MuMu 与雷电模拟器的截图与控制接口的 Python 实现，以及各模拟器的控制实现。
 * [Gakumas_Launcher](https://github.com/a4nqi3n/Gakumas_Launcher)（Unlicense license）：绕开 DMMPlayer 直接启动游戏本体的方式。
+* [hatsuboshi-library](https://github.com/vertesan/hatsuboshi-library)（AGPL v3）：技能卡等图鉴 UI 展示的渲染逻辑。

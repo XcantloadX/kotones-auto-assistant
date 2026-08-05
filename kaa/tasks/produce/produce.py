@@ -1,8 +1,9 @@
 import logging
-from typing import Optional, Literal
-from typing_extensions import assert_never
+from typing import Optional
 
-from kaa.kaa_context import produce_solution
+from kaa.config.const import HajimeScenario, Scenario
+from kaa.kaa_context import produce_solution, init_produce_session, clear_produce_session
+from kaa.tasks.produce.session import ProduceSession, resolve_deck
 from kaa.tasks.produce.shared.common import resume_produce_pre
 from kaa.tasks.produce.new.controller import ProduceController
 from kaa.tasks.produce.legacy.in_purodyuusu import (
@@ -14,13 +15,15 @@ from kaa.tasks import R
 from kaa.config import conf
 from kaa.game_ui import dialog
 from ..actions.scenes import at_home, goto_home
-from kotonebot.backend.loop import Loop, StatedLoop
-from kotonebot.util import Countdown, Throttler
-from kaa.game_ui.idols_overview import locate_idol, match_idol
+from kotonebot.backend.loop import Loop
+from kotonebot.util import Countdown
+from kaa.game_ui.idols_overview import locate_idol
 from kotonebot import device, ocr, task, action, sleep
 from kaa.errors import IdolCardNotFoundError
+from .prepare import prepare
 
 logger = logging.getLogger(__name__)
+
 
 def format_time(seconds):
     minutes = int(seconds // 60)
@@ -123,7 +126,7 @@ def select_set(index: int):
     
 @action('继续当前培育.继续培育', screenshot_mode='manual-inherit')
 def resume_produce_lst(
-    mode: Literal['regular', 'pro', 'master'],
+    scenario: Scenario,
     current_week: int
 ):
     """
@@ -133,18 +136,18 @@ def resume_produce_lst(
     前置条件：培育中的任意一个页面\n
     结束状态：游戏首页
 
-    :param mode: 培育模式
+    :param scenario: 培育方案类型
     :param current_week: 培育的周数
     """
-    match mode:
-        case 'regular':
+    match scenario:
+        case HajimeScenario.REGULAR:
             resume_regular_produce(current_week)
-        case 'pro':
+        case HajimeScenario.PRO:
             resume_pro_produce(current_week)
-        case 'master':
+        case HajimeScenario.MASTER:
             resume_master_produce(current_week)
         case _:
-            assert_never(mode)
+            raise NotImplementedError(f'Unsupported resume scenario: {scenario}')
 
 @action('继续当前培育', screenshot_mode='manual-inherit')
 def resume_produce():
@@ -155,18 +158,25 @@ def resume_produce():
     结束状态：游戏首页
     """
 
-    mode, current_week = resume_produce_pre()
+    scenario, current_week, idol_card = resume_produce_pre()
 
-    if conf().tasks.produce.produce_engine == 'legacy':
-        resume_produce_lst(mode, current_week)
-    else:
-        ProduceController(mode=mode).run()
+    session = ProduceSession(idol_card=idol_card, scenario=scenario, is_resumed=True,
+        deck=resolve_deck(idol_card, produce_solution().data.card_deck_id))
+    init_produce_session(session)
+    try:
+        if conf().tasks.produce.produce_engine == 'legacy':
+            resume_produce_lst(scenario, current_week)
+        else:
+            ProduceController(scenario=scenario).run()
+    finally:
+        clear_produce_session()
 
 @action('执行培育', screenshot_mode='manual-inherit')
 def do_produce(
     idol_skin_id: str,
-    mode: Literal['regular', 'pro', 'master'],
-    memory_set_index: Optional[int] = None
+    scenario: Scenario,
+    memory_set_index: Optional[int] = None,
+    support_card_set_index: Optional[int] = None,
 ) -> bool:
     """
     进行培育流程
@@ -175,13 +185,16 @@ def do_produce(
     结束状态：游戏首页\n
 
     :param memory_set_index: 回忆编成编号。
+    :param support_card_set_index: 支援卡编成编号。
     :param idol_skin_id: 要培育的偶像。如果为 None，则使用配置文件中的偶像。
-    :param mode: 培育模式。
+    :param scenario: 培育方案类型。
     :return: 是否因为 AP 不足而跳过本次培育。
     :raises ValueError: 如果 `memory_set_index` 不在 [1, 20] 的范围内。
     """
     if memory_set_index is not None and not 1 <= memory_set_index <= 20:
         raise ValueError('`memory_set_index` must be in range [1, 20].')
+    if support_card_set_index is not None and not 1 <= support_card_set_index <= 20:
+        raise ValueError('`support_card_set_index` must be in range [1, 20].')
 
     if not at_home():
         goto_home()
@@ -214,23 +227,20 @@ def do_produce(
             sleep(2)
 
     # 0. 进入培育页面
-    logger.info(f'Enter produce page. Mode: {mode}')
-    match mode:
-        case 'regular':
-            target_buttons = [R.Produce.ButtonHajime0Regular, R.Produce.ButtonHajime1Regular]
-        case 'pro':
-            target_buttons = [R.Produce.ButtonHajime0Pro, R.Produce.ButtonHajime1Pro]
-        case 'master':
-            target_buttons = [R.Produce.ButtonHajime1Master]
-        case _:
-            assert_never(mode)
+    logger.info(f'Enter produce page. Scenario: {scenario.value}')
+    if not isinstance(scenario, HajimeScenario):
+        raise NotImplementedError(f'Unsupported produce scenario: {scenario}')
+    if scenario == HajimeScenario.REGULAR:
+        target_buttons = [R.Produce.ButtonHajime0Regular, R.Produce.ButtonHajime1Regular]
+    elif scenario == HajimeScenario.PRO:
+        target_buttons = [R.Produce.ButtonHajime0Pro, R.Produce.ButtonHajime1Pro]
+    else:
+        target_buttons = [R.Produce.ButtonHajime1Master]
     find_target_button = lambda: next((b for b in target_buttons if b.find()), None)  # noqa: E731
     result = None
     for _ in Loop():
-        if R.Produce.ButtonProduce.try_click():
-            pass
         # 强化月间处理
-        elif conf().tasks.produce.enable_fever_month == 'on' and R.Produce.SwitchEventModeOff.exists():
+        if conf().tasks.produce.enable_fever_month == 'on' and R.Produce.SwitchEventModeOff.exists():
             logger.info('Fever month checked on.')
             device.click()
             sleep(0.5)
@@ -263,109 +273,13 @@ def do_produce(
                     break
         else:
             logger.info('AP insufficient. Exiting produce.')
-            R.InPurodyuusu.ButtonCancel.wait().click()
+            R.InProduce.ButtonCancel.wait().click()
             return False
 
-    idol_located = False
-    memory_set_selected = False
-    support_auto_set_done = False
-    next_throttler = Throttler(interval=4)
-    for lp in StatedLoop[Literal[0, 1, 2, 3]]():
-        if R.Produce.TextStepIndicator1.exists():
-            lp.state = 1
+    prepare()
 
-        if lp.state == 0:
-            pass
-        # 1. 选择 PIdol [screenshots/produce/screenshot_produce_start_1_p_idol.png]
-        if lp.state == 1:
-            if R.Produce.TextStepIndicator2.exists():
-                lp.state = 2
-                continue
-            if R.Produce.TextAnotherIdolAvailableDialog.exists():
-                dialog.no(msg='Closed another idol available dialog.')
-                continue
-            # 首先判断是否已选中目标偶像
-            img = lp.screenshot
-            x, y, w, h = R.Produce.BoxSelectedIdol.xywh
-            if img is not None and match_idol(idol_skin_id, img[y:y+h, x:x+w]):
-                logger.info('Idol %s selected.', idol_skin_id)
-                idol_located = True
-            # 如果没有，才选择
-            if not idol_located:
-                select_idol(idol_skin_id)
-                idol_located = True
+    R.Produce.Step4.ButtonProduceStart.wait().click()
 
-            # 下一步「次へ」
-            if (
-                idol_located and
-                R.Common.ButtonNextNoIcon.q(enabled=True).try_click() and
-                next_throttler.request()
-            ):
-                pass
-        # 2. 选择支援卡 自动编成 [screenshots/produce/screenshot_produce_start_2_support_card.png]
-        elif lp.state == 2:
-            if R.Produce.TextStepIndicator3.exists():
-                lp.state = 3
-                continue
-
-            # 下一步「次へ」
-            if R.Common.ButtonNextNoIcon.q(enabled=True).try_click() and next_throttler.request():
-                pass
-            # 今天仍然有租用回忆次数提示（第三步的提示）
-            # （第二步选完之后点「次へ」大概率会卡几秒钟，这个时候脚本很可能会重复点击，
-            # 卡住时候的点击就会在第三步生效，出现这个提示。而此时脚本仍然处于第二步，
-            # 这样就会报错，或者出现误自动编成。因此需要在第二步里处理掉这个对话框。
-            # 理论上应该避免这种情况，但是没找到办法，只能这样 workaround 了。）
-            elif R.Produce.TextRentAvailable.exists():
-                dialog.no(msg='Closed rent available dialog. (Step 2)')
-            # 确认自动编成提示
-            elif R.Produce.TextAutoSet.exists():
-                dialog.yes(msg='Confirmed auto set.')
-                sleep(1) # 等对话框消失
-            elif not support_auto_set_done and R.Produce.ButtonAutoSet.exists():
-                device.click()
-                support_auto_set_done = True
-                sleep(1)
-        # 3. 选择回忆 自动编成 [screenshots/produce/screenshot_produce_start_3_memory.png]
-        elif lp.state == 3:
-            if R.Produce.TextStepIndicator4.exists():
-                break
-
-            # 确认自动编成提示
-            if R.Produce.TextAutoSet.exists():
-                dialog.yes(msg='Confirmed auto set.')
-                continue
-            # 今天仍然有租用回忆次数提示
-            elif R.Produce.TextRentAvailable.exists():
-                dialog.yes(msg='Confirmed rent available. (Step 3)')
-                continue
-
-            if not memory_set_selected:
-                # 自动编成
-                if memory_set_index is None:
-                    R.Produce.ButtonAutoSet.try_click()
-                # 指定编号
-                else:
-                    # dialog.no() # TODO: 这是什么？
-                    select_set(memory_set_index)
-                memory_set_selected = True
-            # 下一步「次へ」
-            if R.Common.ButtonNextNoIcon.q(enabled=True).try_click() and next_throttler.request():
-                continue
-        else:
-            assert False, f'Invalid state of {lp.state}.'
-
-    # 4. 选择道具 [screenshots/produce/screenshot_produce_start_4_end.png]
-    # TODO: 如果道具不足，这里加入推送提醒
-    if produce_solution().data.use_note_boost:
-        if R.Produce.CheckboxIconNoteBoost.exists():
-            device.click()
-            sleep(0.1)
-    if produce_solution().data.use_pt_boost:
-        if R.Produce.CheckboxIconSupportPtBoost.exists():
-            device.click()
-            sleep(0.1)
-    R.Produce.ButtonProduceStart.wait().click()
     # 5. 相关设置弹窗 [screenshots/produce/skip_commu.png]
     cd = Countdown(5).start()
     for _ in Loop():
@@ -376,19 +290,25 @@ def do_produce(
             pass
         if R.Common.ButtonConfirmNoIcon.try_click():
             pass
-    if conf().tasks.produce.produce_engine == 'legacy':
-        match mode:
-            case 'regular':
-                hajime_regular()
-            case 'pro':
-                hajime_pro()
-            case 'master':
-                hajime_master()
-            case _:
-                assert_never(mode)
-    else:
-        c = ProduceController(mode=mode)
-        c.run()
+    session = ProduceSession(idol_card=idol_skin_id, scenario=scenario, is_resumed=False,
+        deck=resolve_deck(idol_skin_id, produce_solution().data.card_deck_id))
+    init_produce_session(session)
+    try:
+        if conf().tasks.produce.produce_engine == 'legacy':
+            match scenario:
+                case HajimeScenario.REGULAR:
+                    hajime_regular()
+                case HajimeScenario.PRO:
+                    hajime_pro()
+                case HajimeScenario.MASTER:
+                    hajime_master()
+                case _:
+                    raise NotImplementedError(f'Unsupported produce scenario: {scenario}')
+        else:
+            c = ProduceController(scenario=scenario)
+            c.run()
+    finally:
+        clear_produce_session()
     return True
 
 @task('培育')
@@ -404,7 +324,7 @@ def produce():
     idol = produce_solution().data.idol
     memory_set = produce_solution().data.memory_set
     support_card_set = produce_solution().data.support_card_set
-    mode = produce_solution().data.mode
+    scenario = produce_solution().data.mode
     # 数据验证
     if count < 0:
         user.warning('配置有误', '培育次数不能小于 0。将跳过本次培育。')
@@ -412,22 +332,19 @@ def produce():
     if idol is None:
         user.warning('配置有误', '未设置要培育的偶像。将跳过本次培育。')
         return
+    if not isinstance(scenario, HajimeScenario):
+        user.warning('配置有误', f'暂不支持的培育模式：{scenario.value}。将跳过本次培育。')
+        return
 
     for i in range(count):
         start_time = time.time()
-        if produce_solution().data.auto_set_memory:
-            memory_set_to_use = None
-        else:
-            memory_set_to_use = memory_set
-        if produce_solution().data.auto_set_support_card:
-            support_card_set_to_use = None
-        else:
-            support_card_set_to_use = support_card_set
+        memory_set_to_use = memory_set
+        support_card_set_to_use = support_card_set
         logger.info(
             f'Produce start with: '
-            f'idol: {idol}, mode: {mode}, memory_set: #{memory_set_to_use}, support_card_set: #{support_card_set_to_use}'
+            f'idol: {idol}, scenario: {scenario.value}, memory_set: #{memory_set_to_use}, support_card_set: #{support_card_set_to_use}'
         )
-        if not do_produce(idol, mode, memory_set_to_use):
+        if not do_produce(idol, scenario, memory_set_to_use, support_card_set_to_use):
             user.info('AP 不足', f'由于 AP 不足，跳过了 {count - i} 次培育。')
             logger.info('%d produce(s) skipped because of insufficient AP.', count - i)
             break
@@ -446,7 +363,7 @@ if __name__ == '__main__':
     conf().tasks.produce.enabled = True
     conf().tasks.produce.produce_count = 3
     conf().tasks.produce.enable_fever_month = 'ignore'
-    produce_solution().data.mode = 'pro'
+    produce_solution().data.mode = HajimeScenario.PRO
     # produce_solution().data.idol = 'i_card-skin-hski-3-002'
     # produce_solution().data.memory_set = 1
     # produce_solution().data.auto_set_memory = True

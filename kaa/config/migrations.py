@@ -869,10 +869,125 @@ class ProfileV10ToV11(MigrationStep):
 
 
 # ---------------------------------------------------------------------------
+# V11 → V12：ProduceSolution data.mode 字符串枚举升级
+# ---------------------------------------------------------------------------
+
+class ProfileV11ToV12(MigrationStep):
+    """将 ProduceSolution data.mode 从 'regular'/'pro'/'master'
+    迁移到 HajimeScenario 枚举格式 'hajime_regular'/'hajime_pro'/'hajime_master'。"""
+
+    OLD_TO_NEW = {
+        'regular': 'hajime_regular',
+        'pro': 'hajime_pro',
+        'master': 'hajime_master',
+    }
+
+    def check_needed(self, ctx: MigrationContext) -> bool:
+        produce_dir = ctx.config_dir / 'produce'
+        if not produce_dir.exists():
+            return False
+        for f in produce_dir.glob('*.json'):
+            try:
+                data = json.loads(f.read_text(encoding='utf-8'))
+                mode = data.get('data', {}).get('mode', '')
+                if mode in self.OLD_TO_NEW:
+                    return True
+            except Exception:
+                continue
+        return False
+
+    def apply(self, ctx: MigrationContext) -> None:
+        produce_dir = ctx.config_dir / 'produce'
+        if not produce_dir.exists():
+            return
+        converted = 0
+        for f in produce_dir.glob('*.json'):
+            try:
+                data = json.loads(f.read_text(encoding='utf-8'))
+                mode = data.get('data', {}).get('mode', '')
+                if mode in self.OLD_TO_NEW:
+                    data['data']['mode'] = self.OLD_TO_NEW[mode]
+                    f.write_text(json.dumps(data, ensure_ascii=False, indent=4), encoding='utf-8')
+                    converted += 1
+            except Exception:
+                continue
+        # 同步更新所有 profile 版本号至最新
+        profiles_dir = ctx.config_dir / 'profiles'
+        if profiles_dir.exists():
+            for f in profiles_dir.glob('*.json'):
+                try:
+                    profile = json.loads(f.read_text(encoding='utf-8'))
+                    if profile.get('version', 0) < 12:
+                        profile['version'] = 12
+                        f.write_text(json.dumps(profile, ensure_ascii=False, indent=2), encoding='utf-8')
+                except Exception:
+                    continue
+        if converted:
+            ctx.messages.append(MigrationMessage(
+                text=f"已将 {converted} 个培育方案的 mode 字段升级到新格式。",
+                old_version='v11',
+                new_version='v12',
+            ))
+
+
+# ---------------------------------------------------------------------------
+# V12 → V13：竞赛未编成时字段简化
+# ---------------------------------------------------------------------------
+
+class ProfileV12ToV13(MigrationStep):
+    """将 contest.when_no_set 从 4 选项精简为 2 选项（auto_set / skip）。
+
+    旧值映射：
+      remind → skip, wait → skip, auto_set → auto_set, auto_set_silent → auto_set
+    """
+
+    OLD_TO_NEW = {
+        'remind': 'skip',
+        'wait': 'skip',
+        'auto_set': 'auto_set',
+        'auto_set_silent': 'auto_set',
+    }
+
+    def check_needed(self, ctx: MigrationContext) -> bool:
+        profiles_dir = ctx.config_dir / 'profiles'
+        if not profiles_dir.exists():
+            return False
+        for f in profiles_dir.glob('*.json'):
+            data = json.loads(f.read_text(encoding='utf-8'))
+            old_val = data.get('tasks', {}).get('contest', {}).get('when_no_set', '')
+            if old_val in self.OLD_TO_NEW:
+                return True
+        return False
+
+    def apply(self, ctx: MigrationContext) -> None:
+        profiles_dir = ctx.config_dir / 'profiles'
+        if not profiles_dir.exists():
+            return
+        converted = 0
+        for f in profiles_dir.glob('*.json'):
+            data = json.loads(f.read_text(encoding='utf-8'))
+            contest = data.get('tasks', {}).get('contest', {})
+            old_val = contest.get('when_no_set', '')
+            if old_val in self.OLD_TO_NEW:
+                new_val = self.OLD_TO_NEW[old_val]
+                contest['when_no_set'] = new_val
+                data.setdefault('tasks', {})['contest'] = contest
+                data['version'] = 13
+                f.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding='utf-8')
+                converted += 1
+        if converted:
+            ctx.messages.append(MigrationMessage(
+                text=f"已将 {converted} 个 profile 的「竞赛队伍未编成时」字段简化为自动编成/跳过任务。",
+                old_version='v12',
+                new_version='v13',
+            ))
+
+
+# ---------------------------------------------------------------------------
 # 迁移链
 # ---------------------------------------------------------------------------
 
-LATEST_VERSION: int = 11
+LATEST_VERSION: int = 13
 
 profile_migration_chain = MigrationChain(steps=[
     ProfileV1ToV2(),
@@ -886,6 +1001,8 @@ profile_migration_chain = MigrationChain(steps=[
     ProfileV8ToV9(),
     ProfileV9ToV10(),
     ProfileV10ToV11(),
+    ProfileV11ToV12(),
+    ProfileV12ToV13(),
 ])
 
 

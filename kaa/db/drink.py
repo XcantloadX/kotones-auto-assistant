@@ -1,48 +1,57 @@
 from dataclasses import dataclass
+from functools import lru_cache
 
-from .sqlite import select, select_many
+from pydantic import BaseModel, ConfigDict, Field
+
+from kaa.db._util import register_cache_clear, row_dict
+from kaa.db.sqlite import select, select_many
+
+_PRODUCE_DRINK_SELECT = """
+SELECT
+    id,
+    assetId,
+    name
+FROM ProduceDrink
+""".strip()
+
+
+class ProduceDrinkRow(BaseModel):
+    """ProduceDrink 表行。"""
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    id: str
+    """饮料 ID（ProduceDrink.id）。"""
+    asset_id: str = Field(alias='assetId')
+    """资源标识，用于图片路径匹配（ProduceDrink.assetId）。"""
+    name: str
+    """饮料名称（ProduceDrink.name）。"""
+
 
 @dataclass
 class Drink:
-    """饮品"""
+    """饮品（业务用）。"""
     id: str
+    """饮料 ID（ProduceDrink.id）。"""
     asset_id: str
+    """资源标识，用于图片路径匹配（ProduceDrink.assetId）。"""
     name: str
+    """饮料名称（ProduceDrink.name）。"""
 
     @classmethod
     def from_asset_id(cls, asset_id: str) -> 'Drink | None':
-        """
-        根据 asset_id 查询 Drink。
-        """
-        row = select("""
-        SELECT
-            id,
-            assetId,
-            name
-        FROM ProduceDrink
-        WHERE assetId = ?;
-        """, asset_id)
+        """根据 asset_id 查询 Drink。"""
+        row = select(f'{_PRODUCE_DRINK_SELECT} WHERE assetId = ?;', asset_id)
         if row is None:
             return None
-        id, asset_id, name = row
-        return cls(id, asset_id, name)
-    
+        parsed = ProduceDrinkRow.model_validate(row_dict(row))
+        return cls(parsed.id, parsed.asset_id, parsed.name)
+
     @classmethod
     def all(cls) -> list['Drink']:
         """获取所有饮品"""
-        rows = select_many("""
-        SELECT
-            id,
-            assetId,
-            name
-        FROM ProduceDrink;
-        """)
-        results = []
-        for row in rows:
-            id, asset_id, name = row
-            results.append(cls(id, asset_id, name))
-        return results
-    
+        return list(_all_cached())
+
     @classmethod
     def ordinary_drinks_name(cls) -> list[str]:
         """获取所有平凡的（不需要额外操作）的饮料"""
@@ -78,7 +87,15 @@ class Drink:
             '初星湯', # [kaa/resources/drinks/img_general_pdrink_3-011.png
         ]
 
-if __name__ == '__main__':
-    from pprint import pprint as print
-    print(Drink.from_asset_id('img_general_pdrink_1-001'))
-    print([(str(drink.name) + '\', # [kaa/resources/drink/' + str(drink.asset_id) + '.png]') for drink in Drink.all()])
+
+@lru_cache(maxsize=1)
+def _all_cached() -> tuple[Drink, ...]:
+    rows = select_many(f'{_PRODUCE_DRINK_SELECT};')
+    return tuple(
+        Drink(parsed.id, parsed.asset_id, parsed.name)
+        for row in rows
+        for parsed in [ProduceDrinkRow.model_validate(row_dict(row))]
+    )
+
+
+register_cache_clear(_all_cached.cache_clear)

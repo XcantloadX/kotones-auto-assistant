@@ -1,251 +1,182 @@
 """从商店购买物品"""
 import logging
-from typing import Optional
 
-from kotonebot.backend.loop import Loop
+from kotonebot import task, device
+from kotonebot.pipeline import prefab as p, dummy, Pipeline, click_first, node, sleep as make_sleep, resolve_labels, Fragment
+
 from kaa.tasks import R
-from kaa.config import conf, DailyMoneyShopItems
-from kotonebot.primitives.geometry import Point
-from kotonebot.util import Countdown, cropped
-from kotonebot import task, device, image, action, sleep
-from ..actions.scenes import goto_home, goto_shop, at_daily_shop
+from kaa.game_ui import dialog
+from kaa.config import conf
+from ..actions.scenes import goto_home
 
 logger = logging.getLogger(__name__)
 
-@action('购买 Money 物品', screenshot_mode='manual')
-def money_items2(items: Optional[list[DailyMoneyShopItems]] = None):
-    """
-    购买 Money 物品
 
-    前置条件：商店页面的 マニー Tab\n
-    结束状态：-
+@node
+def _go_home() -> bool:
+    goto_home()
+    return True
 
-    :param items: 要购买的物品列表，默认为 None。为 None 时使用配置文件里的设置。
-    """
-    # 前置条件：[screenshots\shop\money1.png]
-    logger.info(f'Purchasing マニー items.')
+def ConfirmPurchase():
+    entry = dummy()
+    exit = dummy()
 
-    if items is None:
-        items = conf().tasks.purchase.money_items
+    is_at_dialog = p(R.Daily.Shop.PurchaseConfirmDialog.Title)
+    try_add = p(
+        R.Daily.Shop.PurchaseConfirmDialog.ButtonAdd.q(enabled=True),
+        [click_first, make_sleep(0.3)]
+    )
+    click_confirm = p(R.Common.ButtonConfirm, [click_first, make_sleep(3)])
+    @node
+    def is_not_at_dialog() -> bool:
+        return not R.Daily.Shop.PurchaseConfirmDialog.Title.exists()
 
-    device.screenshot()
-    if DailyMoneyShopItems.Recommendations in items:
-        dispatch_recommended_items()
-        items.remove(DailyMoneyShopItems.Recommendations)
+    _ = is_at_dialog >> [
+        try_add >> is_at_dialog,
+        click_confirm >> exit,
+        # is_at_daily_shop >> is_not_at_dialog >> exit
+    ]
 
-    finished = []
-    max_scroll = 3
-    scroll = 0
-    while items:
-        for item in items:
-            if ret := item.to_resource().q(colored=True).find():
-                logger.info(f'Purchasing {item.to_ui_text(item)}...')
-                confirm_purchase(ret.rect.top_left)
-                finished.append(item)
-        items = [item for item in items if item not in finished]
-        # 全都买完了
-        if not items:
-            break
-        # 还有，翻页后继续
+    resolve_labels()
+    return Fragment(entry=is_at_dialog, exit=exit)
+
+def PurchaseWeeklyPack():
+    entry = dummy()
+    stage_go_shop = dummy()
+    stage_purchase = dummy()
+    exit = dummy()
+
+    click_shop = p(R.Daily.ButtonShop, [click_first])
+    click_pack = p(R.Common.ShopPackButton, [click_first])
+    at_pack_shop = p(R.Daily.PackShop.Title, [make_sleep(1)])
+    click_free_button = p(R.Daily.PackShop.ButtonFree.q(enabled=True), [click_first, make_sleep(1)])
+    click_confirm = p(R.Common.ButtonConfirmNoIcon, [click_first, make_sleep(1)])
+
+    _ = entry >> _go_home() >> stage_go_shop >> [
+        click_shop >> stage_go_shop,
+        click_pack >> stage_go_shop,
+        at_pack_shop >> stage_purchase >> [
+            click_confirm >> _go_home() >> exit,
+            click_free_button >> stage_purchase,
+            # 如果没有就退出
+            _go_home() >> exit,
+        ]
+    ]
+
+    resolve_labels()
+    return Pipeline(entry=entry, exit=exit)
+
+def Purchase():
+    # TODO: AP/金币 不足的逻辑需要处理
+    money_items = conf().tasks.purchase.money_items
+    ap_items = conf().tasks.purchase.ap_items
+    money_item_prefabs = [item.to_resource().q(colored=True) for item in money_items]
+    ap_item_prefabs = [
+        R.Daily.ApShop.Items.PtBoost if 0 in ap_items else None,
+        R.Daily.ApShop.Items.NoteBoost if 1 in ap_items else None,
+        R.Daily.ApShop.Items.Rechallenge if 2 in ap_items else None,
+        R.Daily.ApShop.Items.MemoryRegenerate if 3 in ap_items else None,
+    ]
+    ap_item_prefabs = [item for item in ap_item_prefabs if item is not None]
+    scrollbar = R.Daily.Shop.Scrollbar.require()
+
+    entry = dummy()
+    stage_purchase_money = dummy()
+    stage_purchase_ap = dummy()
+    exit = dummy()
+
+    click_shop = p(R.Daily.ButtonShop, [click_first])
+    click_daily_shop = p(R.Daily.ButtonDailyShop, [click_first])
+    # 可以设置默认购买数量为 MAX 的提示框
+    close_tip = p(R.Daily.TextDefaultExchangeCountChangeDialog, [lambda ctx: dialog.yes()])
+    is_at_daily_shop = p(R.Daily.TextTabShopAp)
+    click_recommended = p(
+        R.Daily.TextShopRecommended,
+        [lambda ctx: device.click(ctx.matches[0].rect.moved(0, 30)), make_sleep(1)]
+    )
+    click_money_items = p(money_item_prefabs, [click_first, make_sleep(1)], id="prefab:click_money_items")
+    click_ap_items = p(ap_item_prefabs, [click_first, make_sleep(1)])
+    click_ap_tab = p(R.Daily.TextTabShopAp, [click_first, make_sleep(1)])
+    click_refresh = p(R.Daily.ButtonRefreshMoneyShop, [click_first, make_sleep(2)])
+
+    @node
+    def scoll_and_is_at_end() -> bool:
+        scrollbar.update()
+        if scrollbar.at_end:
+            return True
         else:
-            device.swipe_scaled(x1=0.5, x2=0.5, y1=0.8, y2=0.5)
-            sleep(0.5)
-            device.screenshot()
-            scroll += 1
-            if scroll >= max_scroll:
-                break
-    logger.info(f'Purchasing money items completed. {len(finished)} item(s) purchased.')
-    if items:
-        logger.info(f'{len(items)} item(s) not purchased/already purchased: {", ".join([item.to_ui_text(item) for item in items])}')
+            scrollbar.by(0.3)
+            return False
 
-@action('购买推荐商品', screenshot_mode='manual')
-def dispatch_recommended_items():
-    """
-    购买推荐商品
+    @node
+    def money_not_enabled() -> bool:
+        return not conf().tasks.purchase.money_enabled
 
-    前置条件：商店页面的 マニー Tab\n
-    结束状态：-
-    """
-    # 前置条件：[screenshots\shop\money1.png]
-    logger.info(f'Start purchasing recommended items.')
+    @node
+    def ap_not_enabled() -> bool:
+        return not conf().tasks.purchase.ap_enabled
 
-    for _ in Loop():
-        if rec := R.Daily.TextShopRecommended.find():
-            logger.info(f'Clicking on recommended item.') # TODO: 计数
-            pos = rec.rect.top_left.offset(dx=0, dy=80)
-            confirm_purchase(pos)
-            sleep(2.5) #
-        elif R.Daily.IconTitleDailyShop.exists() and not R.Daily.TextShopRecommended.exists():
-            logger.info(f'No recommended item found. Finished.')
-            break
+    _ = entry >> [
+        # 1. 进入商店
+        click_shop >> entry,
+        click_daily_shop >> entry,
+        close_tip >> entry,
+        is_at_daily_shop >> stage_purchase_money >> [
+            # 没开直接跳到 AP 购买阶段
+            money_not_enabled() >> stage_purchase_ap,
+            # 购买推荐商品
+            click_recommended >> [
+                ConfirmPurchase() >> stage_purchase_money,
+                # 要是没点到就继续点
+                click_recommended
+            ],
+            # 购买指定商品
+            click_money_items >> [
+                ConfirmPurchase() >> stage_purchase_money,
+                # 要是没点到就继续点
+                click_money_items
+            ],
+            # 往下翻页
+            scoll_and_is_at_end() >> [
+                # 尝试刷新
+                click_refresh >> is_at_daily_shop,
+                # 都买完了
+                stage_purchase_ap >> click_ap_tab >> [
+                    ap_not_enabled() >> exit,
+                    # 购买 AP 物品
+                    click_ap_items >> [
+                        ConfirmPurchase() >> stage_purchase_ap,
+                        # 要是没点到就继续点
+                        click_ap_items
+                    ],
+                    # 没有了退出
+                    exit
+                ]
+            ]
 
-@action('确认购买', screenshot_mode='manual')
-def confirm_purchase(target_item_pos: Point | None = None):
-    """
-    确认购买
+        ]
+    ]
 
-    前置条件：点击某个商品后的瞬间\n
-    结束状态：对话框关闭后原来的界面
-    """
-    # 前置条件：[screenshots\shop\dialog.png]
-    # TODO: 需要有个更好的方式检测是否已购买
-    purchased = False
-    cd = Countdown(sec=3)
-    for _ in Loop():
-        if cd.expired():
-            purchased = True
-            break
-        if R.Daily.TextShopItemSoldOut.exists():
-            logger.info('Item sold out.')
-            purchased = True
-            break
-        elif R.Daily.TextShopItemPurchased.exists():
-            logger.info('Item already purchased.')
-            purchased = True
-            break
-        elif R.Common.ButtonConfirm.exists():
-            logger.info('Confirming purchase...')
-            device.click()
-            sleep(0.5)
-        else:
-            if target_item_pos:
-                device.click(target_item_pos)
-
-    if purchased:
-        logger.info('Item sold out.')
-        sleep(1) # 等待售罄提示消失
-        return
-    else:
-        device.screenshot()
-        # TODO: 这下面这段代码是干什么的？为什么上面和下面都点击了 Confirm？
-        for _ in Loop(interval=0.2):
-            if R.Daily.ButtonShopCountAdd.q(colored=True).try_click():
-                logger.debug('Adjusted quantity(+1)...')
-            else:
-                break
-        logger.debug('Confirming purchase...')
-        device.click(R.Common.ButtonConfirm.wait())
-    # 等待对话框动画结束
-    R.Daily.IconTitleDailyShop.wait()
-
-@action('购买 AP 物品')
-def ap_items():
-    """
-    购买 AP 物品
-
-    前置条件：位于商店页面的 AP Tab
-    """
-    # [screenshots\shop\ap1.png]
-    logger.info(f'Purchasing AP items.')
-    results = R.Daily.IconShopAp.q(threshold=0.7).find_all()
-    sleep(1)
-    # 按 X, Y 坐标排序从小到大
-    results = sorted(results, key=lambda x: x.rect.top_left)
-    # 按照配置文件里的设置过滤
-    item_indices = conf().tasks.purchase.ap_items
-    logger.info(f'Purchasing AP items: {item_indices}')
-    for index in item_indices:
-        if index <= len(results):
-            logger.info(f'Purchasing #{index} AP item.')
-            device.click(results[index])
-            sleep(0.5)
-            purchased = R.Daily.TextShopItemSoldOut.wait(timeout=1)
-            if purchased is not None:
-                logger.info(f'AP item #{index} already purchased.')
-                continue
-            comfirm = R.Common.ButtonConfirm.q(colored=True).wait(timeout=2)
-            # 如果体力不足
-            if comfirm is None:
-                logger.info(f'Not enough AP for item #{index}. Skipping all AP items.')
-                device.click(R.Common.ButtonIconClose.wait())
-                break
-            # 如果数量不是最大,调到最大
-            for _ in Loop(interval=0.3):
-                if R.Daily.ButtonShopCountAdd.q(colored=True).try_click():
-                    logger.debug('Adjusted quantity(+1)...')
-                else:
-                    break
-            logger.debug(f'Confirming purchase...')
-            device.click(comfirm)
-            sleep(1.5)
-        else:
-            logger.warning(f'AP item #{index} not found')
-    logger.info(f'Purchasing AP items completed. {len(item_indices)} items purchased.')
-
-@action('购买 周免费礼包')
-def weekly_free_pack():
-    """
-    购买 周免费礼包
-
-    前置条件：位于主商店页面
-    """
-    logger.info(f'Purchasing weekly free pack.')
-
-    sleep(1.0) # 动画加载完毕，但是按钮不可点击
-    device.click(R.Common.ShopPackButton.wait())
-
-    if R.Daily.WeeklyFreePack.q(colored=True).wait(timeout=1):
-        device.click()
-        device.click(R.Common.ButtonConfirmNoIcon.wait())
-        logger.info('Confirming purchase of weekly free pack.')
+    resolve_labels()
+    return Pipeline(entry=entry, strict=False)
 
 @task('商店购买')
 def purchase():
-    """
-    从商店购买物品
-    """
-    if not conf().tasks.purchase.enabled:
-        logger.info('Purchase is disabled.')
-        return
+    purchase_ap = conf().tasks.purchase.ap_enabled
+    purchase_money = conf().tasks.purchase.money_enabled
+    purchase_pack = conf().tasks.purchase.weekly_enabled
 
-    goto_shop()
-    # 进入每日商店 [screenshots\shop\shop.png]
-    device.click(R.Daily.ButtonDailyShop.wait()) # TODO: memoable
-    # 等待载入
-    ap_tab = R.Daily.TextTabShopAp.wait()
-
-    # 购买マニー物品
-    if conf().tasks.purchase.money_enabled:
-        R.Daily.IconShopMoney.wait()
-        money_items2()
-        sleep(0.5)
-        if conf().tasks.purchase.money_refresh and R.Daily.ButtonRefreshMoneyShop.try_click():
-            logger.info('Refreshing money shop.')
-            # 等待刷新完成
-            for _ in Loop():
-                if not R.Daily.ButtonRefreshMoneyShop.exists():
-                    break
-                logger.debug('Waiting for money shop refresh...')
-            money_items2()
-            sleep(0.5)
-    else:
-        logger.info('Money purchase is disabled.')
-
-    # 购买 AP 物品
-    if conf().tasks.purchase.ap_enabled:
-        # 如果不购买マニー物品，则需要等待动画加载完毕，否则按钮无法点击
-        # FIXME: 使用Loop形式重构整个purchase函数
-        sleep(0.5)
-        # 点击 AP 选项卡
-        device.click(ap_tab)
-        # 等待 AP 选项卡加载完成
-        R.Daily.IconShopAp.q(threshold=0.7).wait()
-        ap_items()
-        sleep(0.5)
-    else:
-        logger.info('AP purchase is disabled.')
-
-    # 返回主商店页面
-    device.click(R.Common.ButtonToolbarBack.wait())
-
-    # 购买周免费礼包
-    if conf().tasks.purchase.weekly_enabled:
-        weekly_free_pack()
-
-    goto_home()
+    if purchase_ap or purchase_money:
+        Purchase().run(interval=1)
+    if purchase_pack:
+        PurchaseWeeklyPack().run(interval=1)
 
 if __name__ == '__main__':
     import logging
     logging.basicConfig(level=logging.INFO, format='[%(asctime)s] [%(levelname)s] [%(name)s] [%(funcName)s] [%(lineno)d] %(message)s')
     logger.setLevel(logging.DEBUG)
     purchase()
+    # PurchaseWeeklyPack().run(interval=1)
+    while True:
+        device.screenshot()
+        print(R.Common.ButtonConfirmNoIcon.exists())

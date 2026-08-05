@@ -2,7 +2,6 @@ from typing import Literal, overload
 
 from kotonebot.backend.image import TemplateMatchResult
 
-from ..tasks import R
 from .common import WhiteFilter
 from kotonebot import action, device, image
 
@@ -18,6 +17,7 @@ def toolbar_home(critical: Literal[True]) -> TemplateMatchResult:
 
 @action('工具栏按钮.寻找首页', screenshot_mode='manual-inherit')
 def toolbar_home(critical: bool = False):
+    from ..tasks import R
     device.screenshot()
     if critical:
         return image.expect_wait(R.Common.ButtonToolbarHome.template, preprocessors=[WhiteFilter()])
@@ -37,6 +37,7 @@ def toolbar_menu(critical: Literal[True]) -> TemplateMatchResult:
 _TOOLBAR_THRESHOLD = 0.6
 @action('工具栏按钮.寻找菜单', screenshot_mode='manual-inherit')
 def toolbar_menu(critical: bool = False):
+    from ..tasks import R
     device.screenshot()
     if critical:
         return image.expect_wait(R.Common.ButtonToolbarMenu.template, preprocessors=[WhiteFilter()], threshold=_TOOLBAR_THRESHOLD)

@@ -1,0 +1,57 @@
+{
+  "version": 3,
+  "definitions": {
+    "b6c2d769-9c86-4c9d-b11d-14597bd2f8a9": {
+      "type": "prefab",
+      "prefab_id": "TemplateMatchPrefab",
+      "name": "Daily.Shop.PurchaseConfirmDialog.Title",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 54.76999325241087,
+          "y1": 425.5579709120805,
+          "x2": 191.3508337216809,
+          "y2": 462.77529722126695
+        },
+        "fixed": false,
+        "region": {
+          "kind": "rect",
+          "x1": 26.865780791788893,
+          "y1": 372.6793836981262,
+          "x2": 256.82899060250605,
+          "y2": 526.5224992632598
+        }
+      }
+    },
+    "7a8a72e0-3118-4325-aabc-adbf52563749": {
+      "type": "prefab",
+      "prefab_id": "GakumasSecondaryButtonPrefab",
+      "name": "Daily.Shop.PurchaseConfirmDialog.ButtonAdd",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 561.4147991252879,
+          "y1": 883.2675208945604,
+          "x2": 606.4864764801471,
+          "y2": 931.7120739736848
+        },
+        "fixed": true
+      }
+    },
+    "8b876628-5175-49d0-8589-87994805774b": {
+      "type": "prefab",
+      "prefab_id": "GakumasPrimaryButtonPrefab",
+      "name": "Daily.Shop.PurchaseConfirmDialog.ButtonConfirm",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 391.3386001776532,
+          "y1": 1138.0579722528832,
+          "x2": 559.606195635794,
+          "y2": 1185.3425853287047
+        },
+        "fixed": true
+      }
+    }
+  }
+}

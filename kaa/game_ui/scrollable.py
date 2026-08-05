@@ -1,6 +1,7 @@
 import logging
 import time
 from typing import Literal
+from typing_extensions import deprecated
 
 import cv2
 import numpy as np
@@ -119,6 +120,7 @@ class ScrollableIterator:
         self.scrollable.by(pixels=self.delta_pixels)
         return self.scrollable.position
 
+@deprecated(r'Use kaa\game_ui\elements\scrollbar.py instead')
 class Scrollable:
     """
     此类用于处理游戏内的可滚动容器。

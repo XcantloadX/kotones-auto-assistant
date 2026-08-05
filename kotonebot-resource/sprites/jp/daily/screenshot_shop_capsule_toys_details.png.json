@@ -2,9 +2,9 @@
   "version": 3,
   "definitions": {
     "045e21c4-350b-4b6c-bcb7-aeb007da05b3": {
+      "type": "hint-point",
       "name": "Daily.CapsuleToys.SliderStartPoint",
       "displayName": "日常 扭蛋 滑动条起点",
-      "type": "hint-point",
       "description": "扭蛋数量滑动条的右端点（置0时的起始点）",
       "props": {
         "point": {
@@ -15,15 +15,30 @@
       }
     },
     "5ba55176-f5a1-4d3f-8fd8-75e868715ad8": {
+      "type": "hint-point",
       "name": "Daily.CapsuleToys.SliderEndPoint",
       "displayName": "日常 扭蛋 滑动条终点",
-      "type": "hint-point",
       "description": "扭蛋数量滑动条的左端点（置0时的终点）",
       "props": {
         "point": {
           "kind": "point",
           "x": 230,
           "y": 898
+        }
+      }
+    },
+    "c4c20caa-6aee-4e9e-95e0-d989e92c1482": {
+      "type": "prefab",
+      "name": "Daily.ButtonShopCountAddDisabled",
+      "displayName": "button_shop_count_add_disabled.png",
+      "prefab_id": "TemplateMatchPrefab",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 570,
+          "y1": 881,
+          "x2": 604,
+          "y2": 916
         }
       }
     }

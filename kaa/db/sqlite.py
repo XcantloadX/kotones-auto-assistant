@@ -26,7 +26,7 @@ def _ensure_db() -> sqlite3.Connection:
     return _db_dict[thread_id]
 
 
-def select_many(query: str, *args) -> List[tuple[Any, ...]]:
+def select_many(query: str, *args) -> List[sqlite3.Row]:
     """执行查询并返回多行结果，每行为字典格式"""
     db = _ensure_db()
     c = db.cursor()
@@ -34,9 +34,20 @@ def select_many(query: str, *args) -> List[tuple[Any, ...]]:
     return c.fetchall()
 
 
-def select(query: str, *args) -> Optional[tuple[Any, ...]]:
+def select(query: str, *args) -> Optional[sqlite3.Row]:
     """执行查询并返回单行结果，为字典格式"""
     db = _ensure_db()
     c = db.cursor()
     c.execute(query, args)
     return c.fetchone()
+
+
+def invalidate_connections() -> None:
+    """关闭所有线程的数据库连接（game.db 更新后调用）。"""
+    global _db_dict
+    for conn in _db_dict.values():
+        try:
+            conn.close()
+        except Exception:
+            pass
+    _db_dict = {}

@@ -1,0 +1,21 @@
+{
+  "version": 3,
+  "definitions": {
+    "b0b93e58-053d-489c-b3b8-4909809c09ff": {
+      "type": "prefab",
+      "prefab_id": "TemplateMatchPrefab",
+      "name": "Daily.ButonLinkData",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 41.57387798799648,
+          "y1": 106.42636596471799,
+          "x2": 149.12130555586427,
+          "y2": 133.83008405013274
+        },
+        "fixed": true
+      },
+      "displayName": "データ連携"
+    }
+  }
+}

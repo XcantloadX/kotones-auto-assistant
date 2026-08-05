@@ -8,7 +8,7 @@ from pydantic import BaseModel, ConfigDict, ValidationError
 
 from kaa.errors import ProduceSolutionInvalidError, ProduceSolutionNotFoundError
 
-from .const import ProduceAction, RecommendCardDetectionMode
+from .const import ProduceAction, HajimeScenario, RecommendCardDetectionMode, Scenario
 
 logger = logging.getLogger(__name__)
 
@@ -17,10 +17,9 @@ class ConfigBaseModel(BaseModel):
 
 
 class ProduceData(ConfigBaseModel):
-    mode: Literal['regular', 'pro', 'master'] = 'regular'
+    mode: Scenario = HajimeScenario.REGULAR
     """
-    培育模式。
-    进行一次 REGULAR 培育需要 ~30min，进行一次 PRO 培育需要 ~1h（具体视设备性能而定）。
+    培育模式（剧本 + 难度，如 hajime_regular / nia_pro）。
     """
     idol: str | None = None
     """
@@ -79,6 +78,13 @@ class ProduceData(ConfigBaseModel):
     """
     skip_commu: bool = True
     """检测并跳过交流"""
+    card_deck_id: str | None = None
+    """
+    卡组配置 ID。
+
+    为 None 时使用默认卡组（deck_defaults.py 中的系统预设）。
+    自定义卡组请放到 conf/decks/ 目录下。
+    """
 
 class ProduceSolution(ConfigBaseModel):
     """培育方案"""
@@ -95,13 +101,17 @@ class ProduceSolution(ConfigBaseModel):
 
 
 class ProduceSolutionManager:
-    """培育方案管理器"""
+    """培育方案管理器（单例）"""
+
+    _instance: 'ProduceSolutionManager | None' = None
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+            cls._instance._cached_list = None
+        return cls._instance
 
     SOLUTIONS_DIR = "conf/produce"
-
-    def __init__(self):
-        """初始化管理器，确保目录存在"""
-        os.makedirs(self.SOLUTIONS_DIR, exist_ok=True)
 
     def _sanitize_filename(self, name: str) -> str:
         """
@@ -165,6 +175,9 @@ class ProduceSolutionManager:
 
         :return: 方案列表
         """
+        if self._cached_list is not None:
+            return self._cached_list
+
         solutions = []
         if not os.path.exists(self.SOLUTIONS_DIR):
             return solutions
@@ -181,6 +194,7 @@ class ProduceSolutionManager:
                     logger.warning(f"Failed to load produce solution from {file_path}")
                     continue
 
+        self._cached_list = solutions
         return solutions
 
     def delete(self, id: str) -> None:
@@ -192,6 +206,7 @@ class ProduceSolutionManager:
         file_path = self._find_file_path_by_id(id)
         if file_path:
             os.remove(file_path)
+            self._cached_list = None
 
     def save(self, id: str, solution: ProduceSolution) -> None:
         """
@@ -200,6 +215,8 @@ class ProduceSolutionManager:
         :param id: 方案ID
         :param solution: 方案对象
         """
+        os.makedirs(self.SOLUTIONS_DIR, exist_ok=True)
+
         # 确保ID一致
         solution.id = id
 
@@ -214,6 +231,8 @@ class ProduceSolutionManager:
             # 使用 model_dump 并指定 mode='json' 来正确序列化枚举
             data = solution.model_dump(mode='json')
             json.dump(data, f, ensure_ascii=False, indent=4)
+
+        self._cached_list = None
 
     def read(self, id: str) -> ProduceSolution:
         """
@@ -257,3 +276,17 @@ class ProduceSolutionManager:
         )
 
         return new_solution
+
+    def name_exists(self, name: str, exclude_id: str | None = None) -> bool:
+        """检查指定名称是否已被其他方案使用。
+
+        :param name: 要检查的名称。
+        :param exclude_id: 排除的方案 ID（用于重命名时排除自身）。
+        :return: 名称已存在返回 True。
+        """
+        solutions = self.list()
+        for sol in solutions:
+            if sol.name == name:
+                if exclude_id is None or sol.id != exclude_id:
+                    return True
+        return False

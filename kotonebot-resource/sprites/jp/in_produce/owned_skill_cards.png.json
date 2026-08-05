@@ -1,0 +1,63 @@
+{
+  "version": 3,
+  "definitions": {
+    "1d375c07-71b3-4879-aedf-058e957d068d": {
+      "type": "prefab",
+      "prefab_id": "TemplateMatchPrefab",
+      "name": "InProduce.OwnedSkillCardsDialog.Title",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 17.86722040789124,
+          "y1": 34.718095441794546,
+          "x2": 271.82659124233544,
+          "y2": 78.67327131754703
+        },
+        "fixed": true
+      },
+      "displayName": "所持スキルカー ド"
+    },
+    "25333308-df8d-4b46-b3db-65f0e7409135": {
+      "type": "prefab",
+      "prefab_id": "GakumasScrollbarPrefab",
+      "name": "InProduce.OwnedSkillCardsDialog.Scrollbar",
+      "props": {
+        "rect": {
+          "kind": "rect",
+          "x1": 699.2008403632972,
+          "y1": 404.62431681040306,
+          "x2": 708.9382015708876,
+          "y2": 991.787909439657
+        }
+      }
+    },
+    "a262959f-6c0a-45c0-99ca-3e2605adc454": {
+      "type": "hint-box",
+      "name": "InProduce.OwnedSkillCardsDialog.ContentArea",
+      "props": {
+        "rect": {
+          "kind": "rect",
+          "x1": 27.578796344635407,
+          "y1": 399.9008885749963,
+          "x2": 685.5552960029585,
+          "y2": 933.9248878207109
+        }
+      }
+    },
+    "ffb99f62-a0fd-4d03-a890-8482ff5197f2": {
+      "type": "prefab",
+      "prefab_id": "TemplateMatchPrefab",
+      "name": "InProduce.OwnedSkillCardsDialog.ButtonClose",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 249.13632048590023,
+          "y1": 1135.6736953238885,
+          "x2": 292.84218943606663,
+          "y2": 1182.0712954560076
+        },
+        "fixed": true
+      }
+    }
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "version": 3,
+  "definitions": {
+    "4651e08e-48ec-497d-a5cc-993282b04eae": {
+      "type": "prefab",
+      "prefab_id": "TemplateMatchPrefab",
+      "name": "Daily.ButtonShopCapsuleToysDraw",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 317.5148029877054,
+          "y1": 627.200440835745,
+          "x2": 402.3192261595008,
+          "y2": 696.8002973181386
+        }
+      },
+      "displayName": "引く  1回10"
+    },
+    "d017cf2b-47ff-4277-8e37-54c61ab12483": {
+      "type": "prefab",
+      "prefab_id": "GakumasScrollbarPrefab",
+      "name": "Daily.CapsuleToys.Scrollbar",
+      "props": {
+        "rect": {
+          "kind": "rect",
+          "x1": 692.5372521699608,
+          "y1": 313.4470891242086,
+          "x2": 702.1924102797686,
+          "y2": 1100.3278749641743
+        }
+      }
+    }
+  }
+}
