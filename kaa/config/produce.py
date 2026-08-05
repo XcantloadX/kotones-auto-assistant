@@ -8,7 +8,7 @@ from pydantic import BaseModel, ConfigDict, ValidationError
 
 from kaa.errors import ProduceSolutionInvalidError, ProduceSolutionNotFoundError
 
-from .const import ProduceAction, HajimeScenario, RecommendCardDetectionMode, Scenario
+from .const import ProduceAction, HajimeScenario, Scenario
 
 logger = logging.getLogger(__name__)
 
@@ -65,12 +65,6 @@ class ProduceData(ConfigBaseModel):
     行动优先级
 
     每一周的行动将会按这里设置的优先级执行。
-    """
-    recommend_card_detection_mode: RecommendCardDetectionMode = RecommendCardDetectionMode.NORMAL
-    """
-    推荐卡检测模式
-
-    严格模式下，识别速度会降低，但识别准确率会提高。
     """
     use_ap_drink: bool = False
     """

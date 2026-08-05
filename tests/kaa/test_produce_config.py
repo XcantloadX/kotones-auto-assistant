@@ -11,7 +11,7 @@ from kaa.config.produce import (
     ProduceSolution, 
     ProduceSolutionManager
 )
-from kaa.config.const import ProduceAction, HajimeScenario, RecommendCardDetectionMode
+from kaa.config.const import ProduceAction, HajimeScenario
 from kaa.errors import ProduceSolutionNotFoundError
 
 
@@ -45,7 +45,6 @@ class TestProduceData(TestCase):
             self_study_lesson='vocal',
             prefer_lesson_ap=True,
             actions_order=[ProduceAction.DANCE, ProduceAction.VOCAL],
-            recommend_card_detection_mode=RecommendCardDetectionMode.STRICT,
             use_ap_drink=True,
             skip_commu=False
         )
@@ -69,7 +68,6 @@ class TestProduceData(TestCase):
         self.assertEqual(restored_data.self_study_lesson, 'vocal')
         self.assertTrue(restored_data.prefer_lesson_ap)
         self.assertEqual(restored_data.actions_order, [ProduceAction.DANCE, ProduceAction.VOCAL])
-        self.assertEqual(restored_data.recommend_card_detection_mode, RecommendCardDetectionMode.STRICT)
         self.assertTrue(restored_data.use_ap_drink)
         self.assertFalse(restored_data.skip_commu)
 

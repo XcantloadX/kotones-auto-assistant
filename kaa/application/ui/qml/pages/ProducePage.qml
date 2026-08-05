@@ -39,7 +39,6 @@ PageContainer {
 
     property var idolCards: []
     property var produceActions: []
-    property var detectModes: []
     property var cardDecks: []
 
     // 拖拽排序状态（行动优先级列表）
@@ -126,7 +125,6 @@ PageContainer {
         if (!produceCtrl) return
         idolCards      = JSON.parse(produceCtrl.idolCardsJson())
         produceActions = JSON.parse(produceCtrl.produceActionsJson())
-        detectModes    = JSON.parse(produceCtrl.detectModesJson())
         cardDecks      = JSON.parse(produceCtrl.cardDecksJson())
     }
 
@@ -896,13 +894,6 @@ PageContainer {
                         visible: root.currentSolution !== null
                         binder: sb
 
-                        FormComboBox {
-                            field: "recommend_card_detection_mode"
-                            label: "推荐卡检测模式"
-                            options: root.detectModes.map(function(mode) {
-                                return { label: mode.display_name, value: mode.value }
-                            })
-                        }
                         FormCheckBox {
                             field: "use_ap_drink"
                             label: "AP 不足时自动使用 AP 饮料"

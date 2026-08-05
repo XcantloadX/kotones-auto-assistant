@@ -245,19 +245,6 @@ class ProduceAction(Enum):
         return MAP[self]
 
 
-class RecommendCardDetectionMode(Enum):
-    NORMAL = 'normal'
-    STRICT = 'strict'
-
-    @property
-    def display_name(self):
-        MAP = {
-            RecommendCardDetectionMode.NORMAL: '正常模式',
-            RecommendCardDetectionMode.STRICT: '严格模式',
-        }
-        return MAP[self]
-
-
 class HajimeScenario(str, ConfigEnum):
     REGULAR = 'hajime_regular'
     PRO = 'hajime_pro'

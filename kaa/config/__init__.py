@@ -23,7 +23,6 @@ from .const import (
     APShopItems,
     DailyMoneyShopItems,
     ProduceAction,
-    RecommendCardDetectionMode,
 )
 from ..kaa_context import conf
 
@@ -64,7 +63,6 @@ __all__ = [
     "APShopItems",
     "DailyMoneyShopItems",
     "ProduceAction",
-    "RecommendCardDetectionMode",
     # upgrade 导出
     "upgrade_config",
     "LATEST_VERSION",

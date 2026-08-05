@@ -248,18 +248,6 @@ class ProduceController(QObject):
             return '[]'
 
     @Slot(result=str)
-    def detectModesJson(self) -> str:
-        try:
-            from kaa.config.const import RecommendCardDetectionMode
-            return json.dumps([
-                {'value': m.value, 'display_name': m.display_name}
-                for m in RecommendCardDetectionMode
-            ], ensure_ascii=False)
-        except Exception:
-            logger.exception("Failed to load detect modes")
-            return '[]'
-
-    @Slot(result=str)
     def cardDecksJson(self) -> str:
         try:
             from kaa.config.deck import CardDeckManager

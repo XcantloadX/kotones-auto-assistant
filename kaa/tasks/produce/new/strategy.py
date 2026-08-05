@@ -10,8 +10,8 @@ from kaa.tasks import R
 from kaa.tasks.produce.shared.cards import CardDetectResult, do_cards
 from kaa.tasks.produce.new.play_cards.expert_strategy import ExpertSystemStrategy
 from kaa.kaa_context import produce_solution
-from kaa.config.const import ProduceAction, RecommendCardDetectionMode
-from kaa.tasks.produce.shared.common import ProduceInterrupt, acquisition_date_change_dialog
+from kaa.config.const import ProduceAction
+from kaa.tasks.produce.shared.common import ProduceInterrupt, acquisition_date_change_dialog, use_strict_card_detection
 from kaa.tasks.actions.commu import handle_unread_commu
 
 if TYPE_CHECKING:
@@ -207,7 +207,7 @@ class StandardStrategy:
         # TODO: 目前练习和考试的实现都不符合数据解析/模拟输入、决策分析这两者分离的写法，后续需要重构
         def threshold_predicate(card_count: int, result: CardDetectResult):
             border_scores = (result.left_score, result.right_score, result.top_score, result.bottom_score)
-            is_strict_mode = produce_solution().data.recommend_card_detection_mode == RecommendCardDetectionMode.STRICT
+            is_strict_mode = use_strict_card_detection()
             if is_strict_mode:
                 return (
                     result.score >= 0.043
@@ -245,7 +245,7 @@ class StandardStrategy:
         logger.info(f"Exam type detected: {type}.")
 
         def threshold_predicate(card_count: int, result: CardDetectResult):
-            is_strict_mode = produce_solution().data.recommend_card_detection_mode == RecommendCardDetectionMode.STRICT
+            is_strict_mode = use_strict_card_detection()
             total = lambda t: result.score >= t  # noqa: E731
             def borders(t):
                 # 卡片数量小于三时无遮挡，以及最后一张卡片也总是无遮挡
