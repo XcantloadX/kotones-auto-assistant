@@ -53,6 +53,10 @@ def global_interrupt(loop: 'Loop') -> bool:
     :param loop: 当前正在执行的 Loop。
     :return: 是否处理了弹窗。
     """
-    if handle_network_error():
-        return True
+    try:
+        if handle_network_error():
+            return True
+    except Exception:
+        logger.exception('Error while handling global interrupt: %s')
+        return False
     return False
