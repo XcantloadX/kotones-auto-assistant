@@ -25,6 +25,7 @@ from ..util.paths import get_ahk_path
 from ..kaa_context import _set_instance
 from kaa.tasks import POST_TASK_REGISTRY, TASK_FUNCTIONS
 from kotonebot.errors import UserFriendlyError, StopCurrentTask
+from kotonebot.interop.window.model import WindowQueryError
 from kotonebot.core import NextHandler
 
 if is_windows():
@@ -38,7 +39,14 @@ logger = logging.getLogger(__name__)
 
 
 def windows_gui_error_middleware(ctx: BotContext, task: Task, next_handler: NextHandler):
-    """负责处理 UserFriendlyError 并弹出对话框"""
+    """负责处理用户可预见的异常并弹出对话框、停止运行。
+
+    区分三类错误：
+    1. UserFriendlyError：业务侧主动抛出的友好错误。
+    2. WindowQueryError：游戏窗口未找到等可预期的运行态问题，同样以
+       友好提示处理并停止，而非被当作系统错误逐任务上报。
+    3. 其余异常：真正的系统/程序缺陷，记录为 System Error。
+    """
     try:
         next_handler()
     except UserFriendlyError as e:
@@ -49,6 +57,22 @@ def windows_gui_error_middleware(ctx: BotContext, task: Task, next_handler: Next
         bridge = get_bridge()
         if bridge is not None:
             bridge.show(e.message, e.action_buttons, e.invoke)
+        ctx.stop()
+
+    except WindowQueryError as e:
+        # 窗口查询失败（典型如未找到游戏窗口「gakumas」）：属于可预期的
+        # 运行态问题而非程序缺陷，统一以友好提示弹出并停止，避免刷屏。
+        ctx.has_error = True
+        ctx.last_exception = e
+        logger.warning(f"Window query failed in {task.name}: {e}")
+        from kaa.application.ui.error_bridge import get_bridge
+        bridge = get_bridge()
+        if bridge is not None:
+            bridge.show(
+                '未找到游戏窗口，任务已停止。请确认游戏已启动，然后重新启动任务。',
+                [(0, '知道了')],
+                lambda _: None,
+            )
         ctx.stop()
 
     except Exception as e:
@@ -257,6 +281,11 @@ class KaaDeviceFactory:
 def sentry_middleware(ctx: BotContext, task: Task, next_handler: Callable[[], None]):
     try:
         next_handler()
+    except WindowQueryError:
+        # 窗口查询类错误（如游戏窗口未找到）属于可预期的运行态问题而非程序
+        # 缺陷，不上报 Sentry，交由下游中间件（windows_gui_error_middleware）
+        # 统一以友好提示处理。
+        raise
     except Exception as e:
         from kaa.util.telemetry import use_sentry
         sentry_sdk = use_sentry()
