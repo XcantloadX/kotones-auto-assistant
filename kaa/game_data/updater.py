@@ -36,6 +36,17 @@ logger = logging.getLogger(__name__)
 _CATEGORIES = all_resource_categories()
 _IMAGE_CACHE_KEYS = all_cache_keys()
 
+# 运行依赖的关键表：缺失时判定数据不完整（阻止旧/不完整 dump 注入）。
+# 参照 kaa/db 下实际查询的 game.db 表。
+_REQUIRED_DB_TABLES = frozenset({
+    'ProduceCard',
+    'ProduceExamEffect',
+    'IdolCard',
+    'SupportCard',
+    'ProduceDrink',
+    'EffectGroup',
+})
+
 # 不读取系统代理：镜像站本身就是代理，叠加系统代理会导致 SSL 握手失败
 _session = requests.Session()
 _session.trust_env = False
@@ -179,8 +190,33 @@ def _update_misc(fn: Callable[['SharedMiscConfig'], None]) -> None:
         config_manager.write_shared(shared)
 
 
+def _db_has_required_tables(db: Path) -> bool:
+    """检查 game.db 是否包含运行所需的关键表。
+
+    只查询 sqlite_master 元数据，不做全表扫描。旧版本或不完整 dump
+    可能缺少新功能依赖的表（如 ProduceCard），需识别并触发重新下载。
+    """
+    if not db.exists() or db.stat().st_size < 1024:
+        return False
+    try:
+        conn = sqlite3.connect(f"file:{db}?mode=ro", uri=True)
+        try:
+            rows = conn.execute(
+                "SELECT name FROM sqlite_master WHERE type = 'table'"
+            ).fetchall()
+        finally:
+            conn.close()
+    except Exception:
+        return False
+    names = {r[0] for r in rows}
+    return _REQUIRED_DB_TABLES.issubset(names)
+
+
 def has_usable_baseline() -> bool:
-    """本地是否已有可运行的 game.db 基线（允许跳过本次下载）。"""
+    """本地是否已有可运行的 game.db 基线（允许跳过本次下载）。
+
+    除文件可读外，还需包含运行依赖的关键表（见 _REQUIRED_DB_TABLES）。
+    """
     db = game_db_path()
     if not db.exists() or db.stat().st_size < 1024:
         return False
@@ -188,15 +224,18 @@ def has_usable_baseline() -> bool:
         conn = sqlite3.connect(f"file:{db}?mode=ro", uri=True)
         conn.execute("SELECT 1")
         conn.close()
-        return True
     except Exception:
         return False
+    if not _db_has_required_tables(db):
+        return False
+    return True
 
 
 def check_data_integrity() -> bool:
     """轻量检查本地数据是否完整可用，用于决定是否需要阻塞更新。
 
-    检查项：game.db 存在且可读、version.txt 存在、各 sprite 目录存在。
+    检查项：game.db 存在且可读、包含关键表（_REQUIRED_DB_TABLES）、
+    version.txt 存在、各 sprite 目录存在。
     注意：不做 md5 全量比对（那是 check_only 的职责），仅保证可运行。
     """
     db = game_db_path()
@@ -208,6 +247,8 @@ def check_data_integrity() -> bool:
         conn.execute("PRAGMA schema_version")
         conn.close()
     except Exception:
+        return False
+    if not _db_has_required_tables(db):
         return False
     if not version_path().exists():
         return False
@@ -433,7 +474,15 @@ class GameDataUpdater:
 
         ver_file = version_path()
         local_version = ver_file.read_text().strip() if ver_file.exists() else ""
-        if local_version == manifest.version:
+
+        db_path = game_db_path()
+        db_entry = manifest.files.get('game.db')
+        needs_db = not db_path.exists() or (
+            db_entry is not None and _md5(db_path) != db_entry.md5
+        )
+
+        # 版本号一致但本地 game.db 与 manifest 不符（旧/不完整 dump）时仍需更新
+        if local_version == manifest.version and not needs_db:
             log("游戏数据已是最新版本")
             return CheckResult(
                 mirror=mirror,
@@ -444,13 +493,10 @@ class GameDataUpdater:
                 category_missing={},
             )
 
-        log(f"发现新版本: {manifest.version[:8]}")
-
-        db_path = game_db_path()
-        db_entry = manifest.files.get('game.db')
-        needs_db = not db_path.exists() or (
-            db_entry is not None and _md5(db_path) != db_entry.md5
-        )
+        if local_version != manifest.version:
+            log(f"发现新版本: {manifest.version[:8]}")
+        else:
+            log("版本号一致但 game.db 与清单不符，重新校验数据")
 
         category_missing: dict[str, set[str]] = {}
         for category in _CATEGORIES:
