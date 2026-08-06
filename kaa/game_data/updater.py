@@ -258,6 +258,30 @@ def check_data_integrity() -> bool:
     return True
 
 
+def _try_replace(src: Path, dst: Path, label: str) -> bool:
+    """尽力用 ``os.replace`` 以 src 覆盖 dst，失败记日志并返回 False。
+
+    在 Windows 上，若 ``dst`` 正被其他进程以无 ``FILE_SHARE_DELETE`` 的方式
+    占用（典型场景：另一个 kaa / 残留 python.exe 实例还开着 game.db，或杀软
+    瞬时扫描），``os.replace`` 会抛 ``PermissionError``(WinError 5)。这是环境
+    状况而非代码缺陷，无需上报；当前调用路径保留 staging/pending 供下次启动
+
+    :param src: 源文件（staging 内的新数据）
+    :param dst: 目标文件（活跃数据）
+    :param label: 用于日志描述的文件名（如 'game.db'）
+    :return: 替换成功返回 True；被占用失败返回 False
+    """
+    try:
+        os.replace(src, dst)
+        return True
+    except OSError as e:
+        logger.info(
+            "暂无法应用更新「%s」: %s。文件可能正被其他进程占用，"
+            "本次跳过并保留 staging，将在下次启动时重试。", label, e,
+        )
+        return False
+
+
 def apply_pending() -> bool:
     """启动时检查并应用 pending staging。返回是否实际应用了。
 
@@ -269,6 +293,11 @@ def apply_pending() -> bool:
     ``pending_version`` 尚未清除，下次启动会重新应用（``os.replace`` 覆盖
     已替换的文件是幂等且安全的）。只有 ``pending_version`` 已清除后才
     删除 staging，避免删除后无法恢复。
+
+    占用失败：若活跃文件被其他进程占用导致替换失败，本函数记内部日志并
+    提前返回 False（此时不清除 pending_version、不删除 staging），下次启动
+    仍会重试；即便已替换了部分数据也无碍，``os.replace`` 幂等，重试会覆盖
+    补齐，不会留下新旧混杂的永久不一致。
     """
     staging = staging_dir()
     if not staging_complete_marker().exists():
@@ -283,10 +312,10 @@ def apply_pending() -> bool:
     # 1. 关闭 SQLite 连接
     invalidate_connections()
 
-    # 2. 替换 game.db
+    # 2. 替换 game.db（被占用则提前返回，保留 staging 下次重试）
     s_db = staging_game_db_path()
-    if s_db.exists():
-        os.replace(s_db, game_db_path())
+    if s_db.exists() and not _try_replace(s_db, game_db_path(), 'game.db'):
+        return False
 
     # 3. 替换 sprite 目录（整体替换）
     for category in _CATEGORIES:
@@ -295,7 +324,8 @@ def apply_pending() -> bool:
             active_cat = sprites_path(category)
             if active_cat.exists():
                 shutil.rmtree(active_cat)
-            os.replace(s_cat, active_cat)
+            if not _try_replace(s_cat, active_cat, category):
+                return False
 
     # 4. 写版本号
     version_path().write_text(staging_version_path().read_text())
@@ -309,7 +339,7 @@ def apply_pending() -> bool:
                 active = Path('./cache') / cache_key
                 if active.exists():
                     shutil.rmtree(active)
-                os.replace(staged, active)
+                _try_replace(staged, active, cache_key)
         shutil.rmtree(s_cache, ignore_errors=True)
 
     # 6. 清理所有缓存（包含 skill_card_index.cache_clear）与内存中的图像数据库实例
