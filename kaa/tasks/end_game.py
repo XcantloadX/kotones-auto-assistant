@@ -21,7 +21,7 @@ def android_close():
     logger.info("Closing game")
     if device.current_package() == GAME_PACKAGE_NAME:
         logger.info("Force stopping game")
-        device.adb.shell(f"am force-stop {GAME_PACKAGE_NAME}")
+        device.commands.adb_shell(f"am force-stop {GAME_PACKAGE_NAME}")
 
     logger.info("Game closed successfully")
 
