@@ -3,11 +3,109 @@ import logging
 
 from kaa.tasks import R
 from kaa.config import conf
-from kaa.game_ui import toolbar_menu
 from ..actions.scenes import at_home, goto_home
-from kotonebot import task, device, image, sleep, ocr
+
+from kotonebot import task, sleep, action
+from kotonebot.backend.loop import Loop
 
 logger = logging.getLogger(__name__)
+
+@action('进入社团页面')
+def goto_club():
+    """
+    进入社团页面。
+
+    前置条件：位于首页
+    结束状态：位于社团页面
+
+    通过工具栏菜单进入社团。若期间出现奖励弹窗，则先关闭。
+    """
+    logger.info('Entering club UI')
+    for _ in Loop(interval=1):
+        # 已在社团页面
+        if R.Daily.Club.TitleIcon.exists():
+            logger.debug('Now at club UI.')
+            break
+        # 笔记请求结束后的奖励弹窗，直接关闭即可领取
+        if R.Common.ButtonClose.try_click():
+            logger.debug('Closed reward popup.')
+            sleep(0.5)
+            continue
+        # 打开工具栏菜单
+        if R.Common.ButtonToolbarMenu.try_click():
+            logger.debug('Clicked toolbar menu.')
+            sleep(0.5)
+            continue
+        # 点击社团图标
+        if R.Daily.IconMenuClub.try_click():
+            logger.debug('Clicked club icon.')
+            sleep(1)
+
+@action('发起笔记请求')
+def request_note():
+    """
+    发起一轮新的笔记请求。
+
+    前置条件：位于社团页面
+    结束状态：位于社团页面，且笔记请求已经进行中
+
+    若笔记请求正在进行中（按钮显示「リクエスト中」），则直接跳过。
+    否则点击「リクエスト」按钮，在弹出的选择窗口中
+    选择配置指定的书籍并确认。
+    """
+    for _ in Loop(interval=1):
+        # 笔记请求已经进行中，无需处理
+        if R.Daily.Club.ButtonRequestOngoing.exists():
+            logger.info('Note request is ongoing.')
+            break
+        # 点击发起请求按钮，打开笔记选择窗口
+        if R.Daily.Club.ButtonRequest.try_click():
+            logger.debug('Clicked request button.')
+            sleep(0.5)
+            continue
+        # 笔记选择窗口：选择配置中指定的书籍并确认
+        if R.Common.ButtonConfirm.exists():
+            note = conf().tasks.club_reward.selected_note.to_resource()
+            if note.try_click():
+                logger.debug('Clicked selected note.')
+                sleep(0.3)
+                continue
+            if R.Common.ButtonConfirm.try_click():
+                logger.debug('Clicked confirm button.')
+                sleep(0.5)
+
+@action('发送社团礼物')
+def send_club_gifts():
+    """
+    尽可能多地给社团成员送礼物。
+
+    前置条件：位于社团页面
+    结束状态：位于社团页面
+
+    逐个切换成员并点击「寄付する」送礼物，至多处理 5 位成员。
+    """
+    logger.info('Sending gifts')
+    hit = 0
+    for _ in Loop(interval=1):
+        # 关闭送礼后的确认弹窗
+        if R.Common.ButtonConfirm.try_click():
+            logger.debug('Closed gift confirm popup.')
+            sleep(0.5)
+            continue
+        # 送礼物
+        if R.Daily.ButtonClubSendGift.q(enabled=True).try_click():
+            logger.debug('Clicked send gift button.')
+            sleep(0.5)
+            continue
+        # 切换到下一位成员
+        if R.Daily.ButtonClubSendGiftNext.try_click():
+            hit += 1
+            logger.debug('Switched to next member.')
+            # 默认只处理 5 位成员
+            if hit >= 5:
+                logger.info('Processed 5 members, stop sending gifts.')
+                break
+            sleep(0.5)
 
 @task('领取社团奖励并送礼物')
 def club_reward():
@@ -21,68 +119,19 @@ def club_reward():
     
     if not at_home():
         goto_home()
-    
-    # 进入社团UI
-    logger.info('Entering club UI')
-    device.click(toolbar_menu(True))
-    sleep(0.5) # 避免过早点击
-    R.Daily.IconMenuClub.wait(timeout=5).click()
-    sleep(3)
 
-    # 如果笔记请求尚未结束，则不进行任何笔记请求有关操作（领取奖励 & 发起新的笔记请求）
+    goto_club()
 
-    # 如果笔记请求已经结束，且存在奖励提示，学偶UI应该会直接弹出面板，那么直接点击关闭按钮即可；
-    logger.info('Prepare to collect note request reward')
-    if R.Common.ButtonClose.try_click():
-        logger.info('Collected note request reward')
-    sleep(1)
+    # 1. 请求笔记
+    if conf().tasks.club_reward.enable_request:
+        request_note()
 
-    # 如果笔记请求已经结束，则发起一轮新的笔记请求；
-    # 注：下面这个图片要可以区分出笔记请求是否已经结束，不然会发生不幸的事情
-    logger.info('Prepare to start new note request')
-
-    texts = ocr.ocr(rect=R.Daily.Club.NoteRequestHintBox)
-    logger.debug(f'OCR result: {texts}')
-    # 不应该进入的情况，识别结果为：[OcrResult(text="リクエストロ", rect=(243, 298, 145, 35), confidence=0.8576575517654419)]
-    # 应该进入的情况，识别结果为：[OcrResult(text="リクエスト", rect=(244, 297, 141, 35), confidence=0.9993334531784057)]
-    if texts and texts[0].text == 'リクエスト':
-        # 经测验，threshold=0.999时也可以正确识别，所以这里保留这个阈值
-        device.click(image.expect_wait(R.Daily.ButtonClubCollectReward.template, threshold=0.99))
-        sleep(0.5)
-        # 找到配置中选择的书籍
-        (
-            conf()
-                .club_reward.selected_note
-                .to_resource()
-                .wait(timeout=5)
-                .click()
-        )
-        sleep(0.5)
-        # 确认键
-        R.Common.ButtonConfirm.wait(timeout=5).click()
-        sleep(0.5)
-        R.Common.ButtonConfirm.wait(timeout=5).click()
-        sleep(1)
-        logger.info('Started new note request')
-    else:
-        logger.info('No need to start new note request')
-    
-    # 送礼物（好友硬币是重要的o(*￣▽￣*)o
-    logger.info('Sending gifts')
-    for _ in range(5): # 默认循环5次
-        # 送礼物
-        if R.Daily.ButtonClubSendGift.try_click():
-            sleep(0.5)
-        # 下个人
-        if R.Daily.ButtonClubSendGiftNext.try_click():
-            sleep(0.5)
-        else:
-            # 找不到下个人就break
-            break
+    # 2. 送礼物
+    if conf().tasks.club_reward.enable_send:
+        send_club_gifts()
 
 if __name__ == '__main__':
     import logging
     logging.basicConfig(level=logging.INFO, format='[%(asctime)s] [%(levelname)s] [%(name)s] [%(funcName)s] [%(lineno)d] %(message)s')
     logger.setLevel(logging.DEBUG)
     club_reward()
-

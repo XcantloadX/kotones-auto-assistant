@@ -16,6 +16,7 @@ Item {
     readonly property var _purchase:   settingsCtrl?.config?.profile?.tasks?.purchase   ?? {}
     readonly property var _assignment: settingsCtrl?.config?.profile?.tasks?.assignment ?? {}
     readonly property var _contest:    settingsCtrl?.config?.profile?.tasks?.contest    ?? {}
+    readonly property var _club:       settingsCtrl?.config?.profile?.tasks?.club_reward ?? {}
     readonly property var _tasks:      settingsCtrl?.config?.profile?.tasks             ?? {}
 
     function loadStaticData() {
@@ -57,6 +58,11 @@ Item {
         id: contest
         data: root._contest
         onCommitted: function(key, value) { root._commit("tasks.contest", key, value) }
+    }
+    FormBinder {
+        id: club
+        data: root._club
+        onCommitted: function(key, value) { root._commit("tasks.club_reward", key, value) }
     }
 
     ScrollView {
@@ -215,6 +221,41 @@ Item {
                 }
             }
 
+            // ── 社团 ──────────────────────────────────────
+            FormGroupBox {
+                title: "社团"
+                binder: club
+
+                FormCheckBox {
+                    field: "enabled"
+                    label: "启用社团"
+                }
+
+                ColumnLayout {
+                    width: parent.width
+                    spacing: 8
+                    visible: root._club.enabled ?? false
+
+                    FormCheckBox {
+                        field: "enable_request"
+                        label: "请求获得笔记"
+                    }
+
+                    FormComboBox {
+                        Layout.leftMargin: 24
+                        visible: root._club.enable_request ?? false
+                        field: "selected_note"
+                        label: "想获得的笔记类型"
+                        options: root.noteModel.map(function(note) { return { label: note.text, value: note.value } })
+                    }
+
+                    FormCheckBox {
+                        field: "enable_send"
+                        label: "发送笔记给别人"
+                    }
+                }
+            }
+
             // ── 奖励 ──────────────────────────────────────
             GroupBox {
                 title: "奖励"
@@ -227,19 +268,6 @@ Item {
                         label: "领取任务奖励"
                         value: root._tasks.mission_reward?.enabled ?? false
                         onUserToggled: function(checked) { root._commit("tasks.mission_reward", "enabled", checked) }
-                    }
-                    FormCheckBox {
-                        label: "领取社团奖励"
-                        value: root._tasks.club_reward?.enabled ?? false
-                        onUserToggled: function(checked) { root._commit("tasks.club_reward", "enabled", checked) }
-                    }
-                    FormComboBox {
-                        Layout.leftMargin: 24
-                        visible: root._tasks.club_reward?.enabled ?? false
-                        label: "社团奖励笔记选择"
-                        options: root.noteModel.map(function(note) { return { label: note.text, value: note.value } })
-                        value: root._tasks.club_reward?.selected_note ?? 3
-                        onUserSelected: function(v) { root._commit("tasks.club_reward", "selected_note", v) }
                     }
                     FormCheckBox {
                         label: "收取礼物"

@@ -1,0 +1,21 @@
+{
+  "version": 3,
+  "definitions": {
+    "d988dcd3-5aa4-4ac0-a85f-276d99432145": {
+      "type": "prefab",
+      "prefab_id": "TemplateMatchPrefab",
+      "name": "Daily.Club.ButtonRequestOngoing",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 300.2441663926453,
+          "y1": 1065.6583048827085,
+          "x2": 467.52359946999087,
+          "y2": 1105.624341446228
+        },
+        "fixed": true
+      },
+      "displayName": "リクエスト中"
+    }
+  }
+}
