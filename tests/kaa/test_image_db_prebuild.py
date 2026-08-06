@@ -78,13 +78,54 @@ def test_ensure_all_from_staging(tmp_path, fake_build_spec):
         assert cache_dir == str(cache_base / spec.cache_key)
 
 
-def test_build_image_dbs_from_staging(fake_build_spec):
-    """build_image_dbs_from_staging 委托 ensure_all_image_dbs_built 且 force=True。"""
-    source_base = Path("staging")
-    cache_base = Path("cache")
+def test_build_image_dbs_from_staging(fake_build_spec, tmp_path):
+    """build_image_dbs_from_staging 委托到 ensure_all_image_dbs_built 且 force=True。"""
+    source_base = tmp_path / "staging"
+    cache_base = tmp_path / "cache"
+    source_base.mkdir()
+    # 模拟增量更新：仅部分分类被暂存（drinks 未变更 → 源目录缺失）
+    for res_cat in ('idol_cards', 'skill_cards'):
+        (source_base / res_cat).mkdir(parents=True)
+
     ok = prebuild.build_image_dbs_from_staging(source_base, cache_base)
     assert ok is True
-    assert len(fake_build_spec) == len(registry.REGISTRY)
+    # 缺失源目录的 spec 被跳过（drinks），skill_cards_dialog 复用 skill_cards 源目录
+    called = [c[0].name for c in fake_build_spec]
+    assert set(called) == {'idols', 'skill_cards', 'skill_cards_dialog'}
     for spec, source_dir, cache_dir, _ in fake_build_spec:
         assert source_dir == str(source_base / spec.resource_category)
         assert cache_dir == str(cache_base / spec.cache_key)
+
+
+def test_staging_missing_source_skipped(fake_build_spec, tmp_path):
+    """staging 模式下，源目录缺失的 spec 被跳过且计为 ok。"""
+    source_base = tmp_path / "staging"
+    cache_base = tmp_path / "cache"
+    source_base.mkdir()
+    # 全部分类均未暂存 → 全部跳过，但仍视为成功（活跃索引无需重建）
+    ok = prebuild.ensure_all_image_dbs_built(
+        force=True,
+        source_base=source_base,
+        cache_base=cache_base,
+    )
+    assert ok is True
+    assert fake_build_spec == []
+
+
+def test_staging_mixed_presence(fake_build_spec, tmp_path):
+    """staging 混合场景：仅构建存在源目录的分类。"""
+    source_base = tmp_path / "staging"
+    cache_base = tmp_path / "cache"
+    source_base.mkdir()
+    (source_base / "idol_cards").mkdir()
+    (source_base / "drinks").mkdir()
+    # skill_cards / skill_cards_dialog 源目录缺失 → 跳过
+
+    ok = prebuild.ensure_all_image_dbs_built(
+        force=True,
+        source_base=source_base,
+        cache_base=cache_base,
+    )
+    assert ok is True
+    called = {c[0].name for c in fake_build_spec}
+    assert called == {'idols', 'drinks'}

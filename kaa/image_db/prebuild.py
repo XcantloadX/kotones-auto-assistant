@@ -43,6 +43,17 @@ def ensure_all_image_dbs_built(
         source_dir = str(source_base / spec.resource_category) if source_base else None
         cache_dir = str(cache_base / spec.cache_key) if cache_base else None
         target_cache = Path(cache_dir) if cache_dir else Path(kaa_paths.cache(spec.cache_key))
+
+        # staging 模式（source_base 非 None）下，staging 只包含本次发生变化的分类。
+        # 对未变更的分类，源子目录不存在，其活跃索引本就有效，无需（也无法）重建，
+        # 直接跳过并计为 ok，避免 FileNotFoundError 误报。
+        if source_base is not None and not (source_base / spec.resource_category).is_dir():
+            if status_cb:
+                status_cb(f"图像索引构建 ({i}/{total}): {spec.name}（无需更新）")
+            logger.info("Skip building image db '%s': source dir missing (category not staged)", spec.name)
+            ok += 1
+            continue
+
         if force and target_cache.exists():
             shutil.rmtree(target_cache)
 
