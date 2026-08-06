@@ -52,7 +52,9 @@ def windows_gui_error_middleware(ctx: BotContext, task: Task, next_handler: Next
     except UserFriendlyError as e:
         ctx.has_error = True
         ctx.last_exception = e
-        logger.error(f"Task {task.name} failed: {e.message}")
+        # 用户可预见的业务错误（如配置了不存在的偶像卡/培育方案）已被本
+        # 中间件友好处理，不应以 error 级别上报遥测刷屏，故降级为 warning。
+        logger.warning(f"Task {task.name} failed: {e.message}")
         from kaa.application.ui.error_bridge import get_bridge
         bridge = get_bridge()
         if bridge is not None:
@@ -79,7 +81,10 @@ def windows_gui_error_middleware(ctx: BotContext, task: Task, next_handler: Next
         # 处理非用户友好错误
         ctx.has_error = True
         ctx.last_exception = e
-        logger.error(f"System Error in {task.name}: {e}", exc_info=True)
+        # 真正的系统错误已由内层 sentry_middleware 上报（capture_exception），
+        # 此处无需再以 error 级别重复上报遥测（LoggingIntegration 会把 error
+        # 级日志转发为独立事件导致重复），降级为 warning 仅保留日志与面包屑。
+        logger.warning(f"System Error in {task.name}: {e}", exc_info=True)
         pass
 
 
@@ -283,7 +288,7 @@ def sentry_middleware(ctx: BotContext, task: Task, next_handler: Callable[[], No
         next_handler()
     except WindowQueryError:
         # 窗口查询类错误（如游戏窗口未找到）属于可预期的运行态问题而非程序
-        # 缺陷，不上报 Sentry，交由下游中间件（windows_gui_error_middleware）
+        # 缺陷，不上报 Sentry，交由外层中间件（windows_gui_error_middleware）
         # 统一以友好提示处理。
         raise
     except Exception as e:
@@ -344,8 +349,11 @@ class Kaa(KotoneBot):
         super().__init__(
             device_factory=self.factory,
             middlewares=[
-                sentry_middleware,
-                windows_gui_error_middleware
+                # 顺序说明：kotonebot 用 reversed() 递归包装，列表第一项为最外层。
+                # windows 在最外层作为异常最终吞没点（保证单任务失败不中断整轮 run），
+                # sentry 在内层紧贴 core，先捕获异常上报后再向上抛给 windows。
+                windows_gui_error_middleware,
+                sentry_middleware
             ]
         )
 
