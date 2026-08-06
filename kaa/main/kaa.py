@@ -284,6 +284,18 @@ class KaaDeviceFactory:
             raise TypeError(f"Unknown instance type: {type(instance)}")
 
 def sentry_middleware(ctx: BotContext, task: Task, next_handler: Callable[[], None]):
+    from kaa.util.telemetry import use_sentry
+    sentry_sdk = use_sentry()
+
+    # 每次任务执行前，将当前运行 profile 的动态字段刷新为当前线程的 tag，
+    # 使任务线程内产生的日志事件（LoggingIntegration 转发）也能携带这些字段。
+    try:
+        from kaa.util.telemetry import collect_report_context  # noqa: PLC0415
+        for key, value in collect_report_context().items():
+            sentry_sdk.set_tag(key, value)
+    except Exception:
+        logger.warning('Failed to refresh report context.', exc_info=True)
+
     try:
         next_handler()
     except WindowQueryError:
@@ -292,13 +304,17 @@ def sentry_middleware(ctx: BotContext, task: Task, next_handler: Callable[[], No
         # 统一以友好提示处理。
         raise
     except Exception as e:
-        from kaa.util.telemetry import use_sentry
-        sentry_sdk = use_sentry()
         with sentry_sdk.push_scope() as scope:
             scope.set_tag('task_name', task.name)
             try:
+                from kaa.util.telemetry import collect_report_context  # noqa: PLC0415
+                for key, value in collect_report_context().items():
+                    scope.set_tag(key, value)
+            except Exception:
+                logger.warning('Failed to attach report context.', exc_info=True)
+            try:
                 from kaa.kaa_context import conf as get_conf  # noqa: PLC0415
-                scope.set_extra('config', get_conf().model_dump_json(indent=2))
+                scope.set_extra('config', get_conf().model_dump_json())  # minify：紧凑单行，减小上报体积
             except Exception:
                 logger.warning('Failed to attach config to Sentry report.', exc_info=True)
             try:
