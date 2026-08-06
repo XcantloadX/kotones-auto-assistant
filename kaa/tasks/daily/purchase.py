@@ -15,12 +15,14 @@ logger = logging.getLogger(__name__)
 
 
 @action('商店购买.确认购买')
-def confirm_purchase():
+def confirm_purchase() -> bool:
     """
     处理购买确认弹窗：把数量加到最大，再点击确认。
 
     前置条件：购买确认弹窗已打开
     结束状态：购买确认弹窗已关闭
+
+    :return: 是否应当继续购买。
     """
     for _ in Loop(interval=0.5):
         # 弹窗未打开，无需处理
@@ -31,12 +33,21 @@ def confirm_purchase():
         if R.Daily.Shop.PurchaseConfirmDialog.ButtonAdd.q(enabled=True).try_click():
             sleep(0.3)
             continue
+        # 如果不能增大，而且也不能购买，说明余额不足
+        if (
+            not R.Daily.Shop.PurchaseConfirmDialog.ButtonAdd.q(enabled=True).exists()
+            and not R.Daily.Shop.PurchaseConfirmDialog.ButtonConfirm.q(enabled=True).exists()
+        ):
+            logger.warning('Insufficient balance to purchase item.')
+            R.Daily.Shop.PurchaseConfirmDialog.ButtonCancel.click()
+            sleep(0.5)
+            return False
         # 点击确认购买并等待动画完成
-        if R.Common.ButtonConfirm.try_click():
+        if R.Daily.Shop.PurchaseConfirmDialog.ButtonConfirm.q(enabled=True).try_click():
             logger.debug('Clicked purchase confirm button.')
             sleep(1)
             break
-
+    return True
 
 @action('商店购买.点击商品并确认')
 def click_item_and_confirm(prefabs: Sequence[Prefab | BoundPrefab]) -> bool:
@@ -50,7 +61,9 @@ def click_item_and_confirm(prefabs: Sequence[Prefab | BoundPrefab]) -> bool:
         if prefab.try_click():
             logger.debug('Clicked a purchasable item.')
             sleep(1)
-            confirm_purchase()
+            if not confirm_purchase():
+                logger.warning('Purchase failed due to insufficient balance.')
+                break
             return True
     return False
 
@@ -75,7 +88,8 @@ def purchase_money():
             logger.debug('Clicking recommended item.')
             device.click(rec.rect.moved(0, 30))
             sleep(1)
-            confirm_purchase()
+            if not confirm_purchase():
+                break
             continue
 
         # 购买配置中指定的商品
@@ -199,7 +213,6 @@ def purchase_weekly_pack():
 
 @task('商店购买')
 def purchase():
-    # TODO: AP/金币 不足的逻辑需要处理
     ap_enabled = conf().tasks.purchase.ap_enabled
     money_enabled = conf().tasks.purchase.money_enabled
     pack_enabled = conf().tasks.purchase.weekly_enabled
