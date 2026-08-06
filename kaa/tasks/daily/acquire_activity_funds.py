@@ -1,8 +1,8 @@
 """收取活动费"""
 import logging
 
-from kotonebot import task, device, color, sleep
-from kotonebot.pipeline import prefab as p, dummy, Pipeline, click_first, node, sleep as make_sleep, resolve_labels
+from kaa.game_ui import dialog
+from kotonebot import task, device, color, sleep, action, Loop
 
 from kaa.tasks import R
 from kaa.config import conf
@@ -10,47 +10,21 @@ from ..actions.scenes import goto_home
 
 logger = logging.getLogger(__name__)
 
-@node
-def _go_home() -> bool:
-    goto_home()
-    return True
+@action('判断活动费是否需要收取')
+def need_acquire() -> bool:
+    """
+    判断活动费入口处是否存在需要收取的红点提示。
 
-def AcquireActivityFunds() -> Pipeline:
-    entry = dummy()
-    exit = dummy()
+    前置条件：位于首页
+    结束状态：无变化
 
-    @node
-    def need_acquire() -> bool:
-        sleep(1)
-        needed = (
-            color.find('#ff6085', rect=R.Daily.ActivityFunds.EntryArea)
-            or color.find('#ff1249', rect=R.Daily.ActivityFunds.EntryArea)
-        ) is not None
-        return needed
-
-    @node
-    def acquire_cleared() -> bool:
-        return not need_acquire()
-    
-    click_entry = dummy([lambda c: device.click(R.Daily.ActivityFunds.EntryArea)])
-    is_at_dialog = p(R.Daily.ActivityFunds.DialogTitle)
-    close_dialog = p(R.Daily.ActivityFunds.DialogButtonClose, [click_first, make_sleep(1)])
-    should_acquire = need_acquire()
- 
-    _ = entry >> _go_home(label='go_home1') >> [
-        should_acquire >> [
-            is_at_dialog >> [
-                _go_home(label='go_home2') >> exit,
-                close_dialog >> is_at_dialog,
-            ],
-            acquire_cleared() >> exit,
-            click_entry >> should_acquire,
-        ],
-        exit
-    ]
-
-    resolve_labels()
-    return Pipeline(entry=entry, exit=exit)
+    :return: 是否需要收取活动费
+    """
+    needed = (
+        color.find('#ff6085', rect=R.Daily.ActivityFunds.EntryArea)
+        or color.find('#ff1249', rect=R.Daily.ActivityFunds.EntryArea)
+    ) is not None
+    return needed
 
 @task('收取活动费', screenshot_mode='manual-inherit')
 def acquire_activity_funds():
@@ -58,7 +32,27 @@ def acquire_activity_funds():
         logger.info('Activity funds acquisition is disabled.')
         return
 
-    AcquireActivityFunds().run(interval=1)
+    goto_home()
+    sleep(1)
+    for _ in Loop():
+        # 无需收取活动费，直接结束
+        if not need_acquire():
+            logger.info('No activity funds to acquire.')
+            break
+
+        # 收取弹窗已出现，回首页结束
+        if R.Daily.ActivityFunds.DialogTitle.exists():
+            logger.debug('Activity funds dialog appeared.')
+            dialog.no()
+            sleep(0.5)
+            break
+
+        # 点击活动费入口
+        device.click(R.Daily.ActivityFunds.EntryArea)
+        sleep(0.5)
+
+    goto_home()
+
 
 if __name__ == '__main__':
     import logging
