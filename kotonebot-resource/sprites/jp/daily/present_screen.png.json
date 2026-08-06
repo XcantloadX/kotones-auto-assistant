@@ -1,17 +1,17 @@
 {
   "version": 3,
   "definitions": {
-    "d8e5a015-db57-4d62-8680-44e97721d0ad": {
+    "27911887-4d0a-4c4e-9194-b8774d78fa3d": {
       "type": "prefab",
-      "prefab_id": "TemplateMatchPrefab",
-      "name": "Daily.ButtonClaimAllNoIcon",
+      "prefab_id": "GakumasPrimaryButtonPrefab",
+      "name": "Daily.Presents.ButtonClaimAllNoIcon",
       "props": {
         "template": {
           "kind": "image",
-          "x1": 250.01152993355717,
-          "y1": 1063.772518619078,
-          "x2": 453.01665493768206,
-          "y2": 1111.6361112255297
+          "x1": 252.04866118608146,
+          "y1": 1063.7998016186405,
+          "x2": 446.7303765771968,
+          "y2": 1104.957435348398
         },
         "fixed": true
       },
