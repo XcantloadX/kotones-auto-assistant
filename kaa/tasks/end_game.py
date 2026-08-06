@@ -1,9 +1,6 @@
 """关闭游戏"""
 import os
-import sys
 import logging
-import _thread
-import threading
 
 from kotonebot.ui import user
 from ..kaa_context import instance
@@ -11,6 +8,7 @@ from kaa.config import Priority, conf
 from kaa.config.base_config import CustomDevice, DmmDevice
 from kaa.constants import GAME_PACKAGE_NAME, PLAYCOVER_BUNDLE_ID
 from kotonebot import task, action, device
+from ..util.app_lifecycle import request_exit
 
 logger = logging.getLogger(__name__)
 
@@ -113,10 +111,7 @@ def end_game():
     # 退出 kaa
     if conf().tasks.end_game.exit_kaa:
         logger.info("Exiting kaa")
-        # kaa 不在主线程中运行，一般是以 GUI 运行
-        if not threading.main_thread() is threading.current_thread():
-            _thread.interrupt_main()
-        sys.exit(0)
+        request_exit(0)
 
     logger.info("Game ended successfully")
 

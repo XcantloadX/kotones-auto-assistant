@@ -152,6 +152,16 @@ class LogBridge(QObject):
         self._original_excepthook = sys.excepthook
 
         def excepthook(exc_type, exc_value, exc_tb):
+            # 键盘中断（Ctrl+C / _thread.interrupt_main）不是程序缺陷：
+            # 不写入 QML 日志、不上报遥测，仅转交原 excepthook（其内部会忽略），
+            # 避免经 logging 上报后绕过 Sentry 的 ignore_errors 过滤。
+            if issubclass(exc_type, KeyboardInterrupt):
+                if self._original_excepthook is not None:
+                    self._original_excepthook(exc_type, exc_value, exc_tb)
+                else:
+                    sys.__excepthook__(exc_type, exc_value, exc_tb)
+                return
+
             text = "".join(traceback.format_exception(exc_type, exc_value, exc_tb))
             logging.getLogger("uncaught").critical(text)
 
