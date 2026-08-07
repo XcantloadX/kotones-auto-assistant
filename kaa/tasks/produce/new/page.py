@@ -357,11 +357,16 @@ class DrinkSelectContext(Context):
     
         if drink.index < 0 or drink.index >= len(POSTIONS):
             raise ValueError(f"Invalid drink index: {drink.index}")
-        device.click(POSTIONS[drink.index])
-        sleep(0.5)
-        logger.debug(f"PDrink clicked: {POSTIONS[drink.index]}")
-        R.InProduce.AcquireBtnDisabled.wait().click()
-        logger.debug("Clicked Acquire button for PDrink.")
+        for _ in Loop():
+            device.click(POSTIONS[drink.index])
+            btn = R.InProduce.AcquireBtnDisabled.find()
+            if btn:
+                sleep(0.5)
+                btn.click()
+                sleep(2)
+                logger.debug(f"Clicked Acquire button for PDrink: {POSTIONS[drink.index]}")
+            else:
+                break
 
 
 class CardOption:
@@ -501,10 +506,16 @@ class PItemSelectContext(Context):
         positions = PITEM_POSTIONS
         if index < 0 or index >= len(positions):
             raise ValueError(f"Invalid PItem index: {index}")
-        device.click(positions[index])
-        logger.debug(f"PItem clicked: {positions[index]}")
-        R.InProduce.AcquireBtnDisabled.wait().click()
-        logger.debug("Clicked Acquire button for PItem.")
+        for _ in Loop():
+            device.click(positions[index])
+            btn = R.InProduce.AcquireBtnDisabled.find()
+            if btn:
+                sleep(0.5)
+                btn.click()
+                sleep(2)
+                logger.debug(f"Clicked Acquire button for PItem: {positions[index]}")
+            else:
+                break
 
 
 class ActionSelectContext(Context):
