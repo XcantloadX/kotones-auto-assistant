@@ -68,11 +68,11 @@ def request_note():
             note = conf().tasks.club_reward.selected_note.to_resource()
             if note.try_click():
                 logger.debug('Clicked selected note.')
-                sleep(0.3)
-                continue
-            if R.Common.ButtonConfirm.try_click():
-                logger.debug('Clicked confirm button.')
-                sleep(0.5)
+                sleep(1)
+                # continue
+                if R.Common.ButtonConfirm.try_click():
+                    logger.debug('Clicked confirm button.')
+                    sleep(0.5)
 
 @action('发送社团礼物')
 def send_club_gifts():
@@ -106,6 +106,13 @@ def send_club_gifts():
                 logger.info('Processed 5 members, stop sending gifts.')
                 break
             sleep(0.5)
+        # 既没有下一个按钮，当前成员也没有送礼物按钮，说明已经处理完所有成员
+        if (
+            not R.Daily.ButtonClubSendGift.exists() and
+            not R.Daily.ButtonClubSendGiftNext.exists()
+        ):
+            logger.info('No more members to send gifts to.')
+            break
 
 @task('领取社团奖励并送礼物')
 def club_reward():
