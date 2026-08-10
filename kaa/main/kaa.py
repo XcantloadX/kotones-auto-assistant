@@ -2,7 +2,8 @@
 import sys
 import logging
 import importlib.metadata
-from typing import Any, cast, Callable, Iterable
+from typing import Any, cast
+from collections.abc import Callable, Iterable
 
 from kotonebot.core.bot import BotContext, KotoneBot
 from kotonebot.backend.context import Task
@@ -24,7 +25,7 @@ from kaa.constants import GAME_PACKAGE_NAME, PLAYCOVER_BUNDLE_ID
 from ..util.paths import get_ahk_path
 from ..kaa_context import _set_instance
 from kaa.tasks import POST_TASK_REGISTRY, TASK_FUNCTIONS
-from kotonebot.errors import UserFriendlyError, StopCurrentTask
+from kotonebot.errors import UserFriendlyError, StopCurrentTask, UnscalableResolutionError
 from kotonebot.interop.window.model import WindowQueryError
 from kotonebot.core import NextHandler
 
@@ -38,14 +39,29 @@ from kotonebot.primitives.geometry import Size
 logger = logging.getLogger(__name__)
 
 
+def build_resolution_error_message(screen_size: tuple[int, int]) -> str:
+    """构造分辨率不兼容时的用户提示文案。
+
+    :param screen_size: 设备实际分辨率 (width, height)。
+    :return: 包含实际分辨率与修复指引的文案。
+    """
+    w, h = screen_size
+    return (
+        f'游戏窗口尺寸/模拟器分辨率（{w}x{h}）为不支持的分辨率。\n'
+        f'请调整尺寸/分辨率为 16:9 或 9:16 的比例（720x1280 最佳）。'
+    )
+
+
 def windows_gui_error_middleware(ctx: BotContext, task: Task, next_handler: NextHandler):
     """负责处理用户可预见的异常并弹出对话框、停止运行。
 
-    区分三类错误：
+    区分四类错误：
     1. UserFriendlyError：业务侧主动抛出的友好错误。
     2. WindowQueryError：游戏窗口未找到等可预期的运行态问题，同样以
        友好提示处理并停止，而非被当作系统错误逐任务上报。
-    3. 其余异常：真正的系统/程序缺陷，记录为 System Error。
+    3. UnscalableResolutionError：游戏窗口分辨率不兼容，同样以友好提示
+       处理并停止，避免逐任务重复失败与上报。
+    4. 其余异常：真正的系统/程序缺陷，记录为 System Error。
     """
     try:
         next_handler()
@@ -77,6 +93,22 @@ def windows_gui_error_middleware(ctx: BotContext, task: Task, next_handler: Next
             )
         ctx.stop()
 
+    except UnscalableResolutionError as e:
+        # 窗口分辨率无法缩放到逻辑分辨率：属于可预期的运行态问题而非程序
+        # 缺陷，统一以友好提示处理并停止，避免逐任务重复失败与上报刷屏。
+        ctx.has_error = True
+        ctx.last_exception = e
+        w, h = e.screen_size
+        logger.warning(f"Resolution error in {task.name}: screen {w}x{h}.")
+        from kaa.application.ui.error_bridge import get_bridge
+        bridge = get_bridge()
+        message = build_resolution_error_message((w, h))
+        if bridge is not None:
+            bridge.show(message, [(0, '知道了')], lambda _: None)
+        else:
+            logger.error(message)
+        ctx.stop()
+
     except Exception as e:
         # 处理非用户友好错误
         ctx.has_error = True
@@ -85,7 +117,6 @@ def windows_gui_error_middleware(ctx: BotContext, task: Task, next_handler: Next
         # 此处无需再以 error 级别重复上报遥测（LoggingIntegration 会把 error
         # 级日志转发为独立事件导致重复），降级为 warning 仅保留日志与面包屑。
         logger.warning(f"System Error in {task.name}: {e}", exc_info=True)
-        pass
 
 
 class KaaDeviceFactory:
@@ -303,6 +334,10 @@ def sentry_middleware(ctx: BotContext, task: Task, next_handler: Callable[[], No
         # 缺陷，不上报 Sentry，交由外层中间件（windows_gui_error_middleware）
         # 统一以友好提示处理。
         raise
+    except UnscalableResolutionError:
+        # 窗口分辨率无法缩放到逻辑分辨率：同属可预期的运行态问题而非程序
+        # 缺陷，不上报 Sentry，交由外层中间件统一以友好提示处理。
+        raise
     except Exception as e:
         with sentry_sdk.push_scope() as scope:
             scope.set_tag('task_name', task.name)
@@ -409,6 +444,57 @@ class Kaa(KotoneBot):
         from kotonebot.config.config import conf
         from kaa.tasks.globals import global_interrupt
         conf().loop.loop_callbacks = [global_interrupt]
+
+        # 启动时预检：截图验证窗口分辨率可缩放，不兼容则友好提示并阻止任务启动。
+        self._preflight_resolution(device)
+
+    def _preflight_resolution(self, device: Device) -> None:
+        """启动时用截图验证分辨率可缩放。
+
+        通过实际截图的缩放路径提前暴露 UnscalableResolutionError，以友好
+        弹窗提示用户调整窗口/模拟器分辨率，而不是等任务运行到一半才失败。
+
+        若设备或游戏窗口未就绪（无法截图），则跳过预检，交由运行时的
+        windows_gui_error_middleware 兜底。
+        """
+        try:
+            device.start()
+        except Exception:
+            logger.debug('Resolution preflight skipped: device not ready.', exc_info=True)
+            return
+
+        screen_size: tuple[int, int] | None = None
+        try:
+            device.screenshot()
+        except UnscalableResolutionError as e:
+            screen_size = cast('tuple[int, int] | None', e.screen_size)
+        except Exception:
+            # 窗口未就绪等其它异常不视为分辨率问题，静默跳过预检。
+            logger.debug('Resolution preflight skipped.', exc_info=True)
+            return
+        finally:
+            try:
+                device.stop()
+            except Exception:
+                logger.debug('Failed to stop device in resolution preflight.', exc_info=True)
+
+        if screen_size is None:
+            return
+
+        message = build_resolution_error_message(screen_size)
+        logger.warning("Incompatible device resolution %dx%d has been detected.",
+                       *screen_size)
+        from kaa.application.ui.error_bridge import get_bridge
+        bridge = get_bridge()
+        if bridge is not None:
+            bridge.show(message, [(0, '知道了')], lambda _: None)
+        else:
+            logger.error(message)
+        # 阻止 run 循环执行任何任务。
+        if self._ctx is not None:
+            self._ctx.stop()
+        else:
+            logger.warning("BotContext is None, cannot stop run loop after resolution preflight failure.")
 
     def set_log_level(self, level: int):
         handlers = logging.getLogger().handlers
