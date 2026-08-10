@@ -158,6 +158,30 @@ class ProduceController(QObject):
             self.operationFailed.emit(f"保存失败：{exc}")
             return False
 
+    # ── 校验 ─────────────────────────────────────────────
+
+    @Slot(str, result=str)
+    def validateSolution(self, json_str: str) -> str:
+        """校验培育方案，返回结构化问题列表 JSON。
+
+        :param json_str: ProduceSolution 的 JSON 字符串。
+        :return: ConfigIssue 列表的 JSON（[{severity, field, message}, ...]）。
+        """
+        try:
+            from kaa.config.produce import ProduceSolution, validate_produce_solution
+            solution = ProduceSolution.model_validate_json(json_str)
+            issues = validate_produce_solution(solution)
+            return json.dumps(
+                [i.model_dump() for i in issues],
+                ensure_ascii=False,
+            )
+        except Exception as exc:
+            logger.exception("Failed to validate produce solution")
+            return json.dumps(
+                [{'severity': 'error', 'field': None, 'message': f'校验失败：{exc}'}],
+                ensure_ascii=False,
+            )
+
     # ── CRUD ─────────────────────────────────────────────
 
     @Slot(str, result=str)

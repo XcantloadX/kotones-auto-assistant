@@ -21,6 +21,7 @@ from kaa.game_ui.idols_overview import locate_idol
 from kotonebot import device, ocr, task, action, sleep
 from kaa.errors import IdolCardNotFoundError
 from .prepare import prepare
+from kotonebot.errors import UnrecoverableError
 
 logger = logging.getLogger(__name__)
 
@@ -321,10 +322,11 @@ def produce():
         return
     import time
     count = conf().tasks.produce.produce_count
-    idol = produce_solution().data.idol
-    memory_set = produce_solution().data.memory_set
-    support_card_set = produce_solution().data.support_card_set
-    scenario = produce_solution().data.mode
+    solution = produce_solution()
+    idol = solution.data.idol
+    memory_set = solution.data.memory_set
+    support_card_set = solution.data.support_card_set
+    scenario = solution.data.mode
     # 数据验证
     if count < 0:
         user.warning('配置有误', '培育次数不能小于 0。将跳过本次培育。')
@@ -335,6 +337,11 @@ def produce():
     if not isinstance(scenario, HajimeScenario):
         user.warning('配置有误', f'暂不支持的培育模式：{scenario.value}。将跳过本次培育。')
         return
+    # 业务规则校验（如编成未配置等），以友好提示替代运行时崩溃
+    from kaa.config.produce import validate_produce_solution
+    config_issues = validate_produce_solution(solution)
+    if config_issues:
+        raise UnrecoverableError(f'配置有误：{config_issues}')
 
     for i in range(count):
         start_time = time.time()

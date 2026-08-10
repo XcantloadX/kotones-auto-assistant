@@ -40,6 +40,7 @@ PageContainer {
     property var idolCards: []
     property var produceActions: []
     property var cardDecks: []
+    property var validationIssues: []
 
     // 拖拽排序状态（行动优先级列表）
     property int _dragCurrentIndex: -1
@@ -91,6 +92,7 @@ PageContainer {
         onCommitted: function(key, value) {
             root.currentSolution.data[key] = value
             root.markDirty()
+            root.refreshValidation()
         }
     }
 
@@ -132,13 +134,45 @@ PageContainer {
     function markDirty() { dirty = true;  if (produceCtrl) produceCtrl.markDirty() }
 
     function selectSolution(id) {
-        if (!produceCtrl || !id) { currentSolution = null; markClean(); return }
+        if (!produceCtrl || !id) { currentSolution = null; validationIssues = []; markClean(); return }
         var raw = produceCtrl.solutionJson(id)
-        if (raw && raw !== '{}') { currentSolution = JSON.parse(raw); markClean() }
+        if (raw && raw !== '{}') { currentSolution = JSON.parse(raw); markClean(); refreshValidation() }
+    }
+
+    // 校验当前方案，刷新 validationIssues（供内联 FormNotice 展示）
+    function refreshValidation() {
+        validationIssues = []
+        if (!produceCtrl || !currentSolution) return
+        try {
+            var raw = produceCtrl.validateSolution(JSON.stringify(currentSolution))
+            validationIssues = JSON.parse(raw) || []
+        } catch (err) {
+            validationIssues = []
+        }
+    }
+
+    // 是否存在 error 级校验问题
+    function hasValidationErrors() {
+        for (var i = 0; i < validationIssues.length; ++i) {
+            if (validationIssues[i].severity === "error") return true
+        }
+        return false
+    }
+
+    function validationSummary() {
+        var lines = []
+        for (var i = 0; i < validationIssues.length; ++i)
+            lines.push("• " + validationIssues[i].message)
+        return lines.join("\n")
     }
 
     function save() {
         if (!produceCtrl || !currentSolution) return
+        refreshValidation()
+        if (root.hasValidationErrors()) {
+            Notice.show("error", "存在配置错误，请修正后再保存。")
+            return
+        }
         if (root.solutionNameExists(currentSolution.name, currentSolution.id)) {
             renameConflictDialog.open()
             return
@@ -520,6 +554,15 @@ PageContainer {
                             Button { text: "保存"; highlighted: true; onClicked: root.save() }
                             Button { text: "放弃"; onClicked: root.selectSolution(root.currentSolution ? root.currentSolution.id : "") }
                         }
+                    }
+
+                    // 方案校验提示：存在配置问题时内联展示，阻止保存
+                    FormNotice {
+                        Layout.fillWidth: true
+                        visible: root.validationIssues.length > 0
+                        style: root.hasValidationErrors() ? "error" : "warning"
+                        title: root.hasValidationErrors() ? "存在配置错误，请修正后保存" : "配置提示"
+                        content: root.validationSummary()
                     }
 
                     // ── 方案信息 ──────────────────────────────

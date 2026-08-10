@@ -94,6 +94,68 @@ class ProduceSolution(ConfigBaseModel):
     """培育数据"""
 
 
+class ConfigIssue(ConfigBaseModel):
+    """配置校验结果条目。
+
+    与 Pydantic 的字段类型校验互补：这里只表达跨字段、跨选项的业务规则。
+    结果不直接抛出，而是以结构化列表返回，由服务层（UI / 运行时）决定如何展示与拦截。
+    """
+    severity: Literal['error', 'warning'] = 'warning'
+    """严重程度：'error'（阻止保存/运行）或 'warning'（提示）。"""
+    field: str | None = None
+    """关联的字段名（供 UI 定位），可为 None。"""
+    message: str = ''
+    """面向用户的提示文本。"""
+
+
+def validate_produce_solution(solution: ProduceSolution) -> list[ConfigIssue]:
+    """校验培育方案的业务规则（纯逻辑，不访问游戏数据）。
+
+    用于两个场景：
+    1. UI 保存时调用，阻止写入无效配置；
+    2. 培育任务启动时调用，以友好提示替代运行时崩溃（如 step3 的 assert）。
+
+    :param solution: 待校验的培育方案。
+    :return: 校验问题列表，为空表示无问题。
+    """
+    data = solution.data
+    issues: list[ConfigIssue] = []
+
+    # 回忆编成必须配置「编号」或「自动编成」至少其一，否则 STEP3 无法继续
+    if data.memory_set is None and not data.auto_set_memory:
+        issues.append(ConfigIssue(
+            severity='error',
+            field='memory_set',
+            message='回忆编成未配置：请填写「回忆编成编号」，或勾选「自动编成回忆」。',
+        ))
+
+    # 支援卡编成必须配置「编号」或「自动编成」至少其一，否则 STEP2 无法继续
+    if data.support_card_set is None and not data.auto_set_support_card:
+        issues.append(ConfigIssue(
+            severity='error',
+            field='support_card_set',
+            message='支援卡编成未配置：请填写「支援卡编成编号」，或勾选「自动编成支援卡」。',
+        ))
+
+    # 偶像必选
+    if not data.idol:
+        issues.append(ConfigIssue(
+            severity='error',
+            field='idol',
+            message='未选择要培育的偶像。',
+        ))
+
+    # 行动优先级列表不能为空，否则培育时找不到可执行行动
+    if not data.actions_order:
+        issues.append(ConfigIssue(
+            severity='error',
+            field='actions_order',
+            message='行动优先级列表不能为空。',
+        ))
+
+    return issues
+
+
 class ProduceSolutionManager:
     """培育方案管理器（单例）"""
 
