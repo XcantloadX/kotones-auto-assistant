@@ -1,0 +1,21 @@
+{
+  "version": 3,
+  "definitions": {
+    "f12f810c-3fe2-413c-a6dc-e3db84fc159f": {
+      "type": "prefab",
+      "prefab_id": "GakumasPrimaryButtonPrefab",
+      "name": "Daily.SupportCard.ButtonUpgrade2",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 466.7953995601174,
+          "y1": 1136.6136431697983,
+          "x2": 578.77748433751,
+          "y2": 1184.5728870460218
+        },
+        "fixed": true
+      },
+      "displayName": "Lv强化"
+    }
+  }
+}
