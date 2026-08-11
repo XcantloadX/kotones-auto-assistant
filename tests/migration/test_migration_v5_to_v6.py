@@ -1,12 +1,12 @@
-"""测试 v5 到 v6 的配置迁移脚本"""
+"""测试 v5 到 v6 的配置迁移（ProfileV5ToV6 步骤）。"""
 import unittest
 import tempfile
-import os
 import json
 import shutil
-from typing import Any
+from pathlib import Path
 
-from kaa.config.migrations._v5_to_v6 import migrate
+from kaa.config.migrations import ProfileV5ToV6
+from kaa.config.migration import MigrationContext
 
 
 class TestMigrationV5ToV6(unittest.TestCase):
@@ -14,47 +14,83 @@ class TestMigrationV5ToV6(unittest.TestCase):
 
     def setUp(self):
         """设置测试环境"""
-        # 创建临时目录
+        # 创建临时目录作为 conf 根目录
         self.temp_dir = tempfile.mkdtemp()
-        self.original_cwd = os.getcwd()
-        os.chdir(self.temp_dir)
+        self.config_dir = Path(self.temp_dir)
+        self.ctx = MigrationContext(config_dir=self.config_dir)
+        self.step = ProfileV5ToV6()
 
     def tearDown(self):
         """清理测试环境"""
-        os.chdir(self.original_cwd)
         shutil.rmtree(self.temp_dir)
 
-    def test_migrate_empty_config(self):
-        """测试空配置的迁移"""
-        user_config = {}
-        result = migrate(user_config)
-        self.assertIsNone(result)
+    def _write_config(self, data: dict) -> None:
+        """写入 conf/config.json"""
+        (self.config_dir / 'config.json').write_text(
+            json.dumps(data, ensure_ascii=False, indent=4), encoding='utf-8')
 
-    def test_migrate_no_options(self):
+    def _read_config(self) -> dict:
+        """读取 conf/config.json"""
+        return json.loads((self.config_dir / 'config.json').read_text(encoding='utf-8'))
+
+    def test_empty_config(self):
+        """测试空配置（无 user_configs）"""
+        self._write_config({'version': 5, 'user_configs': []})
+        self.assertTrue(self.step.check_needed(self.ctx))
+
+        self.step.apply(self.ctx)
+
+        self.assertEqual(self._read_config()['version'], 6)
+        # 没有需要迁移的配置，不应产生消息
+        self.assertEqual(self.ctx.messages, [])
+
+    def test_no_options(self):
         """测试没有 options 的配置"""
-        user_config = {"backend": {"type": "mumu12"}}
-        result = migrate(user_config)
-        self.assertIsNone(result)
+        self._write_config({
+            'version': 5,
+            'user_configs': [{'name': 'default', 'backend': {'type': 'mumu12'}}],
+        })
+        self.step.apply(self.ctx)
 
-    def test_migrate_no_produce_config(self):
+        self.assertEqual(self._read_config()['version'], 6)
+        self.assertEqual(self.ctx.messages, [])
+
+    def test_no_produce_config(self):
         """测试没有 produce 配置的情况"""
-        user_config = {"options": {"purchase": {"enabled": False}}}
-        result = migrate(user_config)
-        self.assertIsNone(result)
+        self._write_config({
+            'version': 5,
+            'user_configs': [{
+                'name': 'default',
+                'options': {'purchase': {'enabled': False}},
+            }],
+        })
+        self.step.apply(self.ctx)
 
-    def test_migrate_already_v6_format(self):
-        """测试已经是 v6 格式的配置"""
-        user_config = {
-            "options": {
-                "produce": {
-                    "enabled": True,
-                    "selected_solution_id": "test-id",
-                    "produce_count": 1
-                }
-            }
-        }
-        result = migrate(user_config)
-        self.assertIsNone(result)
+        self.assertEqual(self._read_config()['version'], 6)
+        self.assertEqual(self.ctx.messages, [])
+
+    def test_already_v6_format(self):
+        """测试已经是 v6 格式（含 selected_solution_id）的配置不迁移"""
+        self._write_config({
+            'version': 5,
+            'user_configs': [{
+                'name': 'default',
+                'options': {
+                    'produce': {
+                        'enabled': True,
+                        'selected_solution_id': 'test-id',
+                        'produce_count': 1,
+                    },
+                },
+            }],
+        })
+        self.step.apply(self.ctx)
+
+        # 已经是最新格式，不应被重复迁移
+        self.assertEqual(self.ctx.messages, [])
+        user_cfg = self._read_config()['user_configs'][0]
+        self.assertEqual(
+            user_cfg['options']['produce']['selected_solution_id'], 'test-id')
 
     def test_migrate_v5_to_v6_basic(self):
         """测试基本的 v5 到 v6 迁移"""
@@ -76,42 +112,46 @@ class TestMigrationV5ToV6(unittest.TestCase):
             "actions_order": ["recommended", "visual", "vocal"],
             "recommend_card_detection_mode": "strict",
             "use_ap_drink": True,
-            "skip_commu": False
+            "skip_commu": False,
         }
-
-        user_config = {"options": {"produce": old_produce_config}}
+        self._write_config({
+            'version': 5,
+            'user_configs': [{
+                'name': 'default',
+                'options': {'produce': old_produce_config},
+            }],
+        })
 
         # 执行迁移
-        result = migrate(user_config)
+        self.step.apply(self.ctx)
 
-        # 验证结果
-        self.assertIsNotNone(result)
-        assert result is not None # make pylance happy
-        self.assertIn("已将培育配置迁移到新的方案系统", result)
+        # 验证消息
+        self.assertEqual(len(self.ctx.messages), 1)
+        self.assertIn("已将以下配置的培育参数迁移到方案系统", self.ctx.messages[0].text)
 
         # 验证新配置格式
-        new_produce_config = user_config["options"]["produce"]
+        new_produce_config = (
+            self._read_config()['user_configs'][0]['options']['produce'])
         self.assertEqual(new_produce_config["enabled"], True)
         self.assertEqual(new_produce_config["produce_count"], 3)
         self.assertIsNotNone(new_produce_config["selected_solution_id"])
 
         # 验证方案文件是否创建
-        solutions_dir = "conf/produce"
-        self.assertTrue(os.path.exists(solutions_dir))
-        
+        solutions_dir = self.config_dir / 'produce'
+        self.assertTrue(solutions_dir.exists())
+
         # 查找创建的方案文件
-        solution_files = [f for f in os.listdir(solutions_dir) if f.endswith('.json')]
+        solution_files = [f for f in solutions_dir.iterdir() if f.suffix == '.json']
         self.assertEqual(len(solution_files), 1)
 
         # 验证方案文件内容
-        solution_file = os.path.join(solutions_dir, solution_files[0])
-        with open(solution_file, 'r', encoding='utf-8') as f:
-            solution_data = json.load(f)
-
+        solution_data = json.loads(solution_files[0].read_text(encoding='utf-8'))
         self.assertEqual(solution_data["type"], "produce_solution")
         self.assertEqual(solution_data["name"], "默认方案")
         self.assertEqual(solution_data["description"], "从旧配置迁移的默认培育方案")
-        
+        self.assertEqual(
+            solution_data["id"], new_produce_config["selected_solution_id"])
+
         # 验证培育数据
         produce_data = solution_data["data"]
         self.assertEqual(produce_data["mode"], "pro")
@@ -125,7 +165,8 @@ class TestMigrationV5ToV6(unittest.TestCase):
         self.assertEqual(produce_data["follow_producer"], True)
         self.assertEqual(produce_data["self_study_lesson"], "vocal")
         self.assertEqual(produce_data["prefer_lesson_ap"], True)
-        self.assertEqual(produce_data["actions_order"], ["recommended", "visual", "vocal"])
+        self.assertEqual(
+            produce_data["actions_order"], ["recommended", "visual", "vocal"])
         self.assertEqual(produce_data["recommend_card_detection_mode"], "strict")
         self.assertEqual(produce_data["use_ap_drink"], True)
         self.assertEqual(produce_data["skip_commu"], False)
@@ -134,27 +175,28 @@ class TestMigrationV5ToV6(unittest.TestCase):
         """测试使用默认值的 v5 到 v6 迁移"""
         # 创建最小的 v5 格式配置
         old_produce_config = {"enabled": False}
-        user_config = {"options": {"produce": old_produce_config}}
+        self._write_config({
+            'version': 5,
+            'user_configs': [{
+                'name': 'default',
+                'options': {'produce': old_produce_config},
+            }],
+        })
 
         # 执行迁移
-        result = migrate(user_config)
-
-        # 验证结果
-        self.assertIsNotNone(result)
+        self.step.apply(self.ctx)
 
         # 验证新配置格式
-        new_produce_config = user_config["options"]["produce"]
+        new_produce_config = (
+            self._read_config()['user_configs'][0]['options']['produce'])
         self.assertEqual(new_produce_config["enabled"], False)
         self.assertEqual(new_produce_config["produce_count"], 1)
         self.assertIsNotNone(new_produce_config["selected_solution_id"])
 
         # 验证方案文件内容使用了默认值
-        solutions_dir = "conf/produce"
-        solution_files = [f for f in os.listdir(solutions_dir) if f.endswith('.json')]
-        solution_file = os.path.join(solutions_dir, solution_files[0])
-        
-        with open(solution_file, 'r', encoding='utf-8') as f:
-            solution_data = json.load(f)
+        solutions_dir = self.config_dir / 'produce'
+        solution_files = [f for f in solutions_dir.iterdir() if f.suffix == '.json']
+        solution_data = json.loads(solution_files[0].read_text(encoding='utf-8'))
 
         produce_data = solution_data["data"]
         self.assertEqual(produce_data["mode"], "regular")
@@ -172,23 +214,23 @@ class TestMigrationV5ToV6(unittest.TestCase):
             "enabled": True,
             "idols": ["idol1", "idol2", "idol3"],
             "memory_sets": [1, 2, 3],
-            "support_card_sets": [4, 5, 6]
+            "support_card_sets": [4, 5, 6],
         }
-        user_config = {"options": {"produce": old_produce_config}}
+        self._write_config({
+            'version': 5,
+            'user_configs': [{
+                'name': 'default',
+                'options': {'produce': old_produce_config},
+            }],
+        })
 
         # 执行迁移
-        result = migrate(user_config)
-
-        # 验证结果
-        self.assertIsNotNone(result)
+        self.step.apply(self.ctx)
 
         # 验证方案文件内容只使用了第一个值
-        solutions_dir = "conf/produce"
-        solution_files = [f for f in os.listdir(solutions_dir) if f.endswith('.json')]
-        solution_file = os.path.join(solutions_dir, solution_files[0])
-        
-        with open(solution_file, 'r', encoding='utf-8') as f:
-            solution_data = json.load(f)
+        solutions_dir = self.config_dir / 'produce'
+        solution_files = [f for f in solutions_dir.iterdir() if f.suffix == '.json']
+        solution_data = json.loads(solution_files[0].read_text(encoding='utf-8'))
 
         produce_data = solution_data["data"]
         self.assertEqual(produce_data["idol"], "idol1")

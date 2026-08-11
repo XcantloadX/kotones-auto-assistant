@@ -17,12 +17,12 @@ class TestBadge(TestCase):
             rect_from_center(320, 120),
         ]
         badges = [
-            # 左上角徽章
-            rect_from_center(90, 160), # 对应 objects[0] 的左上
+            # 左上角徽章（在对象中心左侧且上方）
+            rect_from_center(90, 90), # 对应 objects[0] 的左上
             # 右下角徽章
-            rect_from_center(260, 200), # 对应 objects[1] 的右下
+            rect_from_center(260, 260), # 对应 objects[1] 的右下
             # 右上角徽章
-            rect_from_center(340, 130), # 对应 objects[2] 的右上
+            rect_from_center(340, 110), # 对应 objects[2] 的右上
             # 不匹配任何对象的徽章
             rect_from_center(410, 410),
         ]
@@ -73,9 +73,10 @@ class TestBadge(TestCase):
         # https://www.desmos.com/calculator/pytdqaju4w
         objects = [rect_from_center(125, 125)]
         badges = [
-            rect_from_center(90, 90),
-            rect_from_center(80, 80),
-            rect_from_center(70, 70),
+            # 全部位于对象左下角，距离由近到远
+            rect_from_center(90, 160),
+            rect_from_center(80, 170),
+            rect_from_center(70, 180),
         ]
         
         results = match(objects, badges, 'lb')

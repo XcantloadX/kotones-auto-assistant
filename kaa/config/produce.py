@@ -167,6 +167,10 @@ class ProduceSolutionManager:
             cls._instance._cached_list = None
         return cls._instance
 
+    def __init__(self) -> None:
+        """初始化管理器，确保方案目录存在。"""
+        os.makedirs(self.SOLUTIONS_DIR, exist_ok=True)
+
     SOLUTIONS_DIR = "conf/produce"
 
     def _sanitize_filename(self, name: str) -> str:

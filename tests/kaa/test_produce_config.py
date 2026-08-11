@@ -141,6 +141,8 @@ class TestProduceSolutionManager(TestCase):
         self.original_solutions_dir = ProduceSolutionManager.SOLUTIONS_DIR
         ProduceSolutionManager.SOLUTIONS_DIR = os.path.join(self.temp_dir, "test_solutions") # type: ignore[assignment]
         self.manager = ProduceSolutionManager()
+        # 清空单例缓存，避免上一个测试残留的方案列表污染本测试
+        self.manager._cached_list = None
 
     def tearDown(self):
         """清理测试环境"""
@@ -362,7 +364,9 @@ class TestProduceSolutionManager(TestCase):
         with self.assertRaises(ProduceSolutionNotFoundError) as context:
             self.manager.read('nonexistent_id')
 
-        self.assertIn("Solution with id 'nonexistent_id' not found", str(context.exception))
+        # 错误消息已本地化，断言其中的方案 ID 与中文提示
+        self.assertIn('nonexistent_id', str(context.exception))
+        self.assertIn('不存在', str(context.exception))
 
     def test_delete_solution(self):
         """测试删除方案"""
