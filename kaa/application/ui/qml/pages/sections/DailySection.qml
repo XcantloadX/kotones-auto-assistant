@@ -4,7 +4,7 @@ import QtQuick.Layouts
 import "../../components/controls"
 import "../../components/form"
 
-// 日常设置：商店 / 工作 / 竞赛 / 奖励
+// 日常设置：商店 / 工作 / 竞赛 / 社团 / 扭蛋机 / 奖励
 Item {
     id: root
     property var settingsCtrl
@@ -17,6 +17,7 @@ Item {
     readonly property var _assignment: settingsCtrl?.config?.profile?.tasks?.assignment ?? {}
     readonly property var _contest:    settingsCtrl?.config?.profile?.tasks?.contest    ?? {}
     readonly property var _club:       settingsCtrl?.config?.profile?.tasks?.club_reward ?? {}
+    readonly property var _capsuleToys: settingsCtrl?.config?.profile?.tasks?.capsule_toys ?? {}
     readonly property var _tasks:      settingsCtrl?.config?.profile?.tasks             ?? {}
 
     function loadStaticData() {
@@ -63,6 +64,11 @@ Item {
         id: club
         data: root._club
         onCommitted: function(key, value) { root._commit("tasks.club_reward", key, value) }
+    }
+    FormBinder {
+        id: capsuleToys
+        data: root._capsuleToys
+        onCommitted: function(key, value) { root._commit("tasks.capsule_toys", key, value) }
     }
 
     ScrollView {
@@ -256,6 +262,48 @@ Item {
                 }
             }
 
+            // ── 扭蛋机 ────────────────────────────────────
+            FormGroupBox {
+                title: "扭蛋机"
+                binder: capsuleToys
+
+                FormCheckBox {
+                    field: "enabled"
+                    label: "启用扭蛋机"
+                }
+
+                ColumnLayout {
+                    width: parent.width
+                    spacing: 8
+                    visible: root._capsuleToys.enabled ?? false
+
+                    FormSpinBox {
+                        field: "friend_capsule_toys_count"
+                        label: "好友扭蛋机次数"
+                        from: 0
+                        to: 100
+                    }
+                    FormSpinBox {
+                        field: "sense_capsule_toys_count"
+                        label: "感性扭蛋机次数"
+                        from: 0
+                        to: 100
+                    }
+                    FormSpinBox {
+                        field: "logic_capsule_toys_count"
+                        label: "理性扭蛋机次数"
+                        from: 0
+                        to: 100
+                    }
+                    FormSpinBox {
+                        field: "anomaly_capsule_toys_count"
+                        label: "非凡扭蛋机次数"
+                        from: 0
+                        to: 100
+                    }
+                }
+            }
+
             // ── 奖励 ──────────────────────────────────────
             GroupBox {
                 title: "奖励"
@@ -278,11 +326,6 @@ Item {
                         label: "收取活动费"
                         value: root._tasks.activity_funds?.enabled ?? false
                         onUserToggled: function(checked) { root._commit("tasks.activity_funds", "enabled", checked) }
-                    }
-                    FormCheckBox {
-                        label: "扭蛋机"
-                        value: root._tasks.capsule_toys?.enabled ?? false
-                        onUserToggled: function(checked) { root._commit("tasks.capsule_toys", "enabled", checked) }
                     }
                     FormCheckBox {
                         label: "升级支援卡"
