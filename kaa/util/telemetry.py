@@ -98,11 +98,14 @@ def _attach_global_tags() -> None:
     except Exception:
         logger.debug('Failed to collect platform.', exc_info=True)
 
-    # 系统内存大小（psutil 跨平台可用）
+    # 系统内存大小与剩余可用内存（psutil 跨平台可用）
     try:
-        import psutil  # noqa: PLC0415
-        total_gb = psutil.virtual_memory().total / (1024 ** 3)
+        import psutil
+        mem = psutil.virtual_memory()
+        total_gb = mem.total / (1024 ** 3)
         global_scope.set_tag('system_memory_gb', f'{total_gb:.1f}')
+        available_gb = mem.available / (1024 ** 3)
+        global_scope.set_tag('system_memory_available_gb', f'{available_gb:.1f}')
     except Exception:
         logger.debug('Failed to collect system memory.', exc_info=True)
 
@@ -175,7 +178,7 @@ def _attach_global_tags() -> None:
 def collect_report_context() -> dict[str, str]:
     """收集错误上报时动态附加的上下文字段（每次上报实时采集）。
 
-    静态系统信息（平台/系统内存/系统版本/locale/显示器分辨率）在 setup() 中已通过
+    静态系统信息（平台/系统内存/剩余可用内存/系统版本/locale/显示器分辨率）在 setup() 中已通过
     全局 tag 附加，这里只收集运行期可能变化的数据：进程自身内存占用、游戏数据版本、
     当前 profile 的设备平台与截图方式、模拟器分辨率，以及 MuMu 模拟器版本号（仅 v5，
     v4 无版本查询 API）。所有字段采集失败均静默跳过。
