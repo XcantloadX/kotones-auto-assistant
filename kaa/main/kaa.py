@@ -338,6 +338,11 @@ def sentry_middleware(ctx: BotContext, task: Task, next_handler: Callable[[], No
         # 窗口分辨率无法缩放到逻辑分辨率：同属可预期的运行态问题而非程序
         # 缺陷，不上报 Sentry，交由外层中间件统一以友好提示处理。
         raise
+    except UserFriendlyError:
+        # 业务侧主动抛出的友好错误（如配置错误、需要游戏本体更新等）已被外层
+        # windows_gui_error_middleware 友好处理并弹窗提示，不应上报 Sentry，
+        # 交由外层中间件统一处理，避免遥测刷屏。
+        raise
     except Exception as e:
         with sentry_sdk.push_scope() as scope:
             scope.set_tag('task_name', task.name)

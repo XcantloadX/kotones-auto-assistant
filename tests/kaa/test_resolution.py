@@ -1,10 +1,14 @@
 from unittest import TestCase
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from kotonebot.backend.context import Task
-from kotonebot.errors import UnscalableResolutionError
+from kotonebot.errors import UnscalableResolutionError, UserFriendlyError
 
-from kaa.main.kaa import build_resolution_error_message, windows_gui_error_middleware
+from kaa.main.kaa import (
+    build_resolution_error_message,
+    sentry_middleware,
+    windows_gui_error_middleware,
+)
 
 
 class _FakeCtx:
@@ -74,3 +78,28 @@ class TestWindowsGuiErrorMiddleware(TestCase):
 
         self.assertTrue(ctx.has_error)
         self.assertTrue(ctx.stopped)
+
+
+class TestSentryMiddleware(TestCase):
+    """验证 sentry_middleware 对各类异常的上报行为。"""
+
+    def _run(self, error):
+        def next_handler():
+            raise error
+
+        task = Task(name='测试任务', id='test', description='', func=lambda: None, priority=0)
+        fake_sentry = MagicMock()
+        with patch('kaa.util.telemetry.use_sentry', return_value=fake_sentry):
+            with self.assertRaises(type(error)):
+                sentry_middleware(_FakeCtx(), task, next_handler)
+        return fake_sentry
+
+    def test_user_friendly_error_not_reported(self):
+        # 友好业务错误已由外层中间件弹窗处理，不应上报 Sentry
+        fake_sentry = self._run(UserFriendlyError('用户可预见的错误', []))
+        fake_sentry.capture_exception.assert_not_called()
+
+    def test_generic_exception_is_reported(self):
+        # 真正的系统缺陷应上报 Sentry
+        fake_sentry = self._run(RuntimeError('系统缺陷'))
+        fake_sentry.capture_exception.assert_called_once()
