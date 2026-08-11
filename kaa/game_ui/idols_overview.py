@@ -186,7 +186,8 @@ def locate_idol(skin_id: str) -> Rect | None:
             match = results[0] if results else None
             logger.debug('Result rect: %s, match: %s', repr(rect), repr(match))
             # Key 格式：{skin_id}_{index}
-            # 同一张卡升级前后图片不一样，index 分别为 0 和 1
+            # 同一张卡升级前后图片不一样，index 分别为 0 和 1；
+            # 带一番星（Prima Stella）形态的卡额外有 index 为 2 的立绘。
             if match and match.key.startswith(skin_id):
                 logger.info('Found idol %s', skin_id)
                 return Rect(rx, ry, rw, rh)

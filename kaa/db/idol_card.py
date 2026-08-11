@@ -17,7 +17,8 @@ SELECT
     Char.id AS characterId,
     Char.lastName || ' ' || Char.firstName AS characterName,
     IC.examEffectType AS examEffectType,
-    IC.showExamEffectType AS showExamEffectType
+    IC.showExamEffectType AS showExamEffectType,
+    IC.primaStellaConsumptionSetId AS primaStellaConsumptionSetId
 FROM IdolCard IC
 JOIN Character Char ON characterId = Char.id
 JOIN IdolCardSkin ICS ON IC.id = ICS.idolCardId
@@ -47,6 +48,8 @@ class IdolCardRow(BaseModel):
     """考试流派（ProduceExamEffectType 枚举值）。"""
     show_exam_effect_type: str | None = Field(None, alias='showExamEffectType')
     """显示考试流派。当此值与 exam_effect_type 不同时，表示推荐流派显示为「温存」。"""
+    prima_stella_consumption_set_id: str | None = Field(None, alias='primaStellaConsumptionSetId')
+    """一番星（Prima Stella）形态消费组 ID。非空表示该卡拥有 ``_2`` 变体立绘。"""
 
 
 @dataclass
@@ -70,6 +73,8 @@ class IdolCard:
     """考试流派。"""
     show_exam_effect_type: ShowExamEffectType | None
     """显示考试流派。当此值与 exam_effect_type 不同时，表示推荐流派显示为「温存」。"""
+    prima_stella_consumption_set_id: str | None = None
+    """一番星（Prima Stella）形态消费组 ID。非空表示该卡拥有 ``_2`` 变体立绘。"""
 
     @classmethod
     def from_skin_id(cls, sid: str) -> 'IdolCard | None':
@@ -99,6 +104,7 @@ class IdolCard:
             parsed.character_name,
             exam,
             show,
+            parsed.prima_stella_consumption_set_id or None,
         )
 
 

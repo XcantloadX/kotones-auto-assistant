@@ -252,6 +252,9 @@ class ProduceController(QObject):
                     'character_id': c.character_id,
                     'character_name': c.character_name,
                     'image_path': (sprite_dir / f'{c.skin_id}_0.png').resolve().as_uri(),
+                    'has_prima_stella': bool(c.prima_stella_consumption_set_id),
+                    'image_path_2': (sprite_dir / f'{c.skin_id}_2.png').resolve().as_uri()
+                        if c.prima_stella_consumption_set_id else '',
                 }
                 for c in cards
             ], ensure_ascii=False)

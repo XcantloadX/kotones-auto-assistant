@@ -28,9 +28,18 @@ Dialog {
     // ── 内部状态 ──────────────────────────────────────
     property string _currentCharacterId: ""
     property string _searchText: ""
-    property bool _showAfter: false
+    property int _showVariant: 0   // 立绘变体：0=特训前(_0)，1=特训后(_1)，2=一番星(_2)
     property bool _sortReversed: true   // 默认按数据库顺序倒序展示
     property var _characters: []    // [{character_id, character_name, count}]
+
+    // 根据变体返回卡片立绘路径；无对应变体时回退到特训前立绘
+    function _imageSource(card, variant) {
+        if (variant === 1)
+            return card.image_path.replace("_0.png", "_1.png")
+        if (variant === 2)
+            return card.image_path_2 ? card.image_path_2 : card.image_path
+        return card.image_path
+    }
 
     // 根据分类+搜索过滤后的卡片列表
     property var _filteredCards: {
@@ -210,13 +219,18 @@ Dialog {
 
             SegmentedButton {
                 model: [
-                    { text: "特训前", value: false },
-                    { text: "特训后", value: true }
+                    { text: "特训前", value: 0 },
+                    { text: "特训后", value: 1 },
+                    { text: "一番星", value: 2 }
                 ]
-                value: root._showAfter
+                value: root._showVariant
                 onActivated: function(index, value) {
-                    root._showAfter = value
+                    root._showVariant = value
                 }
+                hoverEnabled: true
+                ToolTip.text: "「一番星」形态仅部分偶像卡可用"
+                ToolTip.visible: hovered
+                ToolTip.delay: 500
             }
         }
 
@@ -349,9 +363,7 @@ Dialog {
 
                     Image {
                         anchors.fill: parent
-                        source: root._showAfter
-                            ? modelData.image_path.replace("_0.png", "_1.png")
-                            : modelData.image_path
+                        source: root._imageSource(modelData, root._showVariant)
                         fillMode: Image.PreserveAspectFit
                         sourceSize.width: 120
                         sourceSize.height: 120
