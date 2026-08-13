@@ -23,6 +23,7 @@ from kaa.application.ui.controllers.game_data_controller import GameDataUpdateCo
 from kaa.application.ui.controllers.preferences_controller import PreferencesController
 from kaa.application.ui.controllers.debug_inspector_controller import DebugInspectorController
 from kaa.application.ui.controllers.skill_card_browser_controller import SkillCardBrowserController
+from kaa.application.ui.controllers.telemetry_consent_controller import TelemetryConsentController
 from kaa.application.ui.controllers.notice_backend import NoticeBackend
 from kaa.util.progress import ProgressAggregator
 from PySide6.QtGui import QColor, QFont, QIcon, QPalette
@@ -394,6 +395,7 @@ def main() -> None:
     app_theme = AppThemeController()
     prefs_ctrl = PreferencesController()
     skill_card_browser_ctrl = SkillCardBrowserController()
+    telemetry_consent_ctrl = TelemetryConsentController()
     hotkey_mgr = HotkeyManager(
         request_stop=lambda: _hotkey_stop(tab_manager),
         get_pause_status=lambda: _hotkey_get_pause(tab_manager),
@@ -434,6 +436,7 @@ def main() -> None:
     engine.rootContext().setContextProperty("PreferencesController", prefs_ctrl)
     engine.rootContext().setContextProperty("SkillCardBrowserController", skill_card_browser_ctrl)
     engine.rootContext().setContextProperty("GameDataCtrl", game_data_ctrl)
+    engine.rootContext().setContextProperty("TelemetryConsentController", telemetry_consent_ctrl)
 
     debug_inspector = DebugInspectorController()
     engine.rootContext().setContextProperty("DebugInspector", debug_inspector)

@@ -111,6 +111,15 @@ ApplicationWindow {
         }
     }
 
+    Connections {
+        target: TelemetryConsentController
+        function onTelemetryConsentRequiredChanged() {
+            if (TelemetryConsentController.telemetryConsentRequired) {
+                telemetryConsentDialog.open()
+            }
+        }
+    }
+
     Dialog {
         id: taskErrorDialog
         property string mainInstruction: ""
@@ -243,6 +252,78 @@ ApplicationWindow {
 
     // ── Splash（启动时显示） ─────────────────────────────────────
     SplashOverlay { visible: !splash.ready }
+
+    // ── 匿名上报首次同意弹窗（启动时询问） ──────────────────────
+    Dialog {
+        id: telemetryConsentDialog
+        title: "数据收集"
+        modal: true
+        closePolicy: Popup.NoAutoClose
+        anchors.centerIn: parent
+        width: Math.min(420, window.width - 80)
+        standardButtons: Dialog.NoButton
+
+        Column {
+            width: parent.width
+            spacing: 10
+            Text {
+                text: "是否允许琴音小助手自动发送匿名错误报告？发送的信息仅用于改善琴音小助手，你也可以随时在“偏好设置”中更改。"
+                font.pixelSize: 13
+                color: sysPalette.windowText
+                wrapMode: Text.Wrap
+                width: parent.width
+                lineHeight: 1.4
+            }
+
+            Switch {
+                id: sentrySwitch
+                text: "发送匿名错误报告"
+                checked: TelemetryConsentController.sentryEnabled
+            }
+
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: 2
+
+                Switch {
+                    id: screenshotSwitch
+                    text: "错误上报时附带游戏截图"
+                    checked: TelemetryConsentController.screenshotEnabled
+                }
+
+                HelpTip {
+                    richText: "只包含游戏画面截图，不含电脑桌面或其他应用内容。<br>如果不希望发送截图，请关闭此选项。"
+                    Layout.alignment: Qt.AlignVCenter
+                }
+            }
+        }
+
+        footer: Rectangle {
+            implicitHeight: 81
+            color: sysPalette.window
+            Rectangle {
+                width: parent.width; height: 1
+                color: AppTheme.isDark ? "#15FFFFFF" : "#0F000000"
+            }
+            Row {
+                anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter
+                anchors.rightMargin: 24; spacing: 8
+                Button {
+                    text: "取消"
+                    onClicked: telemetryConsentDialog.close()
+                }
+                Button {
+                    text: "确定"
+                    highlighted: true
+                    onClicked: {
+                        TelemetryConsentController.setTelemetryConsent(sentrySwitch.checked, screenshotSwitch.checked)
+                        Notice.show("success", "数据收集设置将于下次启动时生效。")
+                        telemetryConsentDialog.close()
+                    }
+                }
+            }
+        }
+    }
 
     // ── NavigationCoordinator（页面切换守卫，不可见） ──────────
     NavigationCoordinator {
@@ -394,6 +475,11 @@ ApplicationWindow {
         _onTabsChanged()
         TabManager.tabsChanged.connect(window._onTabsChanged)
         TabManager.activeTabChanged.connect(window._onActiveTabChanged)
+
+        // 首次启动且未设置匿名上报时，弹出同意询问（对应 TelemetryConsentController）
+        if (TelemetryConsentController.telemetryConsentRequired) {
+            telemetryConsentDialog.open()
+        }
     }
 }
 

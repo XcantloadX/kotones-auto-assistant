@@ -3,7 +3,6 @@ import logging
 import os
 import platform
 import sys
-import time
 from asyncio import CancelledError
 
 logger = logging.getLogger(__name__)
@@ -18,6 +17,27 @@ def is_enabled() -> bool:
     return bool(manager.read_shared().telemetry.sentry)
 
 
+def is_pending() -> bool:
+    """是否尚有未设置的匿名上报配置项（总开关 sentry 或截图上传 upload_screenshot 为 None）。"""
+    from kaa.config import manager  # noqa: PLC0415
+    telemetry_cfg = manager.read_shared().telemetry
+    return telemetry_cfg.sentry is None or telemetry_cfg.upload_screenshot is None
+
+
+def set_enabled(value: bool) -> None:
+    """持久化匿名上报总开关的启用状态到 _shared.json。"""
+    _set_enabled(value)
+
+
+def set_consent(sentry: bool, upload_screenshot: bool) -> None:
+    """同时持久化匿名上报总开关与截图上传开关到 _shared.json。"""
+    from kaa.config import manager  # noqa: PLC0415
+    shared = manager.read_shared()
+    shared.telemetry.sentry = bool(sentry)
+    shared.telemetry.upload_screenshot = bool(upload_screenshot)
+    manager.write_shared(shared)
+
+
 def _set_enabled(value: bool) -> None:
     from kaa.config import manager  # noqa: PLC0415
     shared = manager.read_shared()
@@ -26,6 +46,7 @@ def _set_enabled(value: bool) -> None:
 
 
 def setup():
+    # 开发环境（源码/调试解释器）下不初始化遥测，也不弹窗询问。
     if is_dev():
         logger.info('Development mode detected, telemetry disabled.')
         return
@@ -38,28 +59,10 @@ def setup():
     from kaa.config import manager  # noqa: PLC0415
     shared = manager.read_shared()
 
-    if shared.telemetry.sentry is None:
-        print('=' * 40)
-        print(
-            '是否允许自动发送匿名错误报告以帮助改进琴音小助手？\n'
-            '（按任意键同意，按 0 拒绝）'
-        )
-        print('=' * 40)
-        import msvcrt
-        ch = msvcrt.getch()
-        if ch == b'0':
-            logger.info('User declined telemetry.')
-            _set_enabled(False)
-            print('已禁用匿名错误报告。')
-            time.sleep(2)
-            return
-        else:
-            logger.info('User accepted telemetry.')
-            _set_enabled(True)
-            print('已启用匿名错误报告，感谢您的支持！')
-            time.sleep(2)
-
-    if not is_enabled():
+    # 未启用（False）或尚未征得同意（None）时不初始化遥测。首次启动由 GUI 通过
+    # TelemetryConsentController 弹窗询问，写入后下次启动生效。
+    if not shared.telemetry.sentry:
+        logger.info('Telemetry disabled or pending consent.')
         return
 
     # 延迟导入避免与 telemetry_screenshot（反向依赖 is_enabled/is_dev）形成循环。
