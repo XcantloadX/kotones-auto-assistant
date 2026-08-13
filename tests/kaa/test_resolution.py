@@ -1,6 +1,8 @@
 from unittest import TestCase
 from unittest.mock import MagicMock, patch
 
+import numpy as np
+
 from kotonebot.backend.context import Task
 from kotonebot.errors import UnscalableResolutionError, UserFriendlyError
 
@@ -94,6 +96,25 @@ class TestSentryMiddleware(TestCase):
                 sentry_middleware(_FakeCtx(), task, next_handler)
         return fake_sentry
 
+    def _run_with_screenshot(self, error, upload_return, screenshot):
+        """以 patched device 与 upload_screenshot 运行中间件，返回 (fake_sentry, scope, mock_upload)。"""
+
+        def next_handler():
+            raise error
+
+        task = Task(name='测试任务', id='test', description='', func=lambda: None, priority=0)
+        fake_sentry = MagicMock()
+        device_mock = MagicMock()
+        device_mock.screenshot.return_value = screenshot
+        with patch('kaa.util.telemetry.use_sentry', return_value=fake_sentry):
+            with patch('kotonebot.device', device_mock):
+                with patch('kaa.util.telemetry_screenshot.upload_screenshot',
+                           return_value=upload_return) as mock_upload:
+                    with self.assertRaises(type(error)):
+                        sentry_middleware(_FakeCtx(), task, next_handler)
+        scope = fake_sentry.push_scope.return_value.__enter__.return_value
+        return fake_sentry, scope, mock_upload
+
     def test_user_friendly_error_not_reported(self):
         # 友好业务错误已由外层中间件弹窗处理，不应上报 Sentry
         fake_sentry = self._run(UserFriendlyError('用户可预见的错误', []))
@@ -103,3 +124,22 @@ class TestSentryMiddleware(TestCase):
         # 真正的系统缺陷应上报 Sentry
         fake_sentry = self._run(RuntimeError('系统缺陷'))
         fake_sentry.capture_exception.assert_called_once()
+
+    def test_exception_uploads_screenshot_and_sets_tag(self):
+        # 通用异常：实时截图应上传到图片服务，并把返回的 UUID 作为 tag 附加
+        screenshot = np.zeros((16, 16, 3), dtype=np.uint8)
+        _, scope, mock_upload = self._run_with_screenshot(
+            RuntimeError('系统缺陷'), 'abc-123', screenshot)
+        mock_upload.assert_called_once()
+        self.assertIs(mock_upload.call_args.args[0], screenshot)
+        scope.set_tag.assert_any_call('screenshot_id', 'abc-123')
+
+    def test_upload_failure_skips_screenshot_tag(self):
+        # 上传失败（返回 None）时不应附加 screenshot_id tag，报告仍应正常上报
+        screenshot = np.zeros((16, 16, 3), dtype=np.uint8)
+        _, scope, mock_upload = self._run_with_screenshot(
+            RuntimeError('系统缺陷'), None, screenshot)
+        mock_upload.assert_called_once()
+        tag_calls = [c for c in scope.set_tag.call_args_list
+                     if c.args and c.args[0] == 'screenshot_id']
+        self.assertEqual(tag_calls, [])

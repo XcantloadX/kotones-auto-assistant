@@ -62,6 +62,9 @@ def setup():
     if not is_enabled():
         return
 
+    # 延迟导入避免与 telemetry_screenshot（反向依赖 is_enabled/is_dev）形成循环。
+    from kaa.util.telemetry_screenshot import screenshot_before_send  # noqa: PLC0415
+
     sentry_sdk.init(
         "http://4ca21281d59148989b00454488e759c0@bugsink.1ichika.de/1",
 
@@ -75,6 +78,10 @@ def setup():
         send_client_reports=False,
         auto_session_tracking=False,
         ignore_errors=[KeyboardInterrupt, CancelledError],
+
+        # 为 LoggingIntegration 上报的 error 级日志事件附加截图上传（异常事件由
+        # sentry_middleware 处理）。详见 telemetry_screenshot.screenshot_before_send。
+        before_send=screenshot_before_send,
     )
     _attach_global_tags()
     logger.info('Telemetry initialized.')
