@@ -27,6 +27,12 @@ class SharedMiscConfig(BaseModel):
 
 class TelemetryConfig(BaseModel):
     sentry: bool | None = None
+    upload_screenshot: bool | None = None
+    """是否在错误上报时自动上传截图。
+
+    仅当显式为 True 时才会在异常/error 日志上报中附带实时截图；
+    None（缺省）或 False 时跳过截图上传，只上报文字信息。
+    """
 
 
 class PushConfig(BaseModel):

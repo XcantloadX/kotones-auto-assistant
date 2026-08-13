@@ -178,6 +178,13 @@ Item {
                     label: "自动发送匿名错误报告"
                 }
 
+                FormCheckBox {
+                    binder: telemetry
+                    field: "upload_screenshot"
+                    label: "错误上报时附带截图"
+                    help: "开启后，错误上报会附带实时截图以帮助定位问题；关闭或缺省则只上报文字信息。"
+                }
+
                 RowLayout {
                     Layout.fillWidth: true
 

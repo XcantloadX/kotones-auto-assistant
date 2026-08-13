@@ -358,11 +358,13 @@ def sentry_middleware(ctx: BotContext, task: Task, next_handler: Callable[[], No
             except Exception:
                 logger.warning('Failed to attach config to Sentry report.', exc_info=True)
             try:
-                from kaa.util.telemetry_screenshot import upload_screenshot
-                from kotonebot import device
-                upload_id = upload_screenshot(device.screenshot())
-                if upload_id:
-                    scope.set_tag('screenshot_id', upload_id)
+                from kaa.config import manager as config_manager
+                if config_manager.read_shared().telemetry.upload_screenshot is True:
+                    from kaa.util.telemetry_screenshot import upload_screenshot
+                    from kotonebot import device
+                    upload_id = upload_screenshot(device.screenshot())
+                    if upload_id:
+                        scope.set_tag('screenshot_id', upload_id)
             except Exception:
                 logger.warning('Failed to upload screenshot to Sentry report.', exc_info=True)
             sentry_sdk.capture_exception(e)

@@ -96,8 +96,13 @@ class TestSentryMiddleware(TestCase):
                 sentry_middleware(_FakeCtx(), task, next_handler)
         return fake_sentry
 
-    def _run_with_screenshot(self, error, upload_return, screenshot):
-        """以 patched device 与 upload_screenshot 运行中间件，返回 (fake_sentry, scope, mock_upload)。"""
+    def _run_with_screenshot(self, error, upload_return, screenshot,
+                             upload_screenshot: bool | None = True):
+        """以 patched device 与 upload_screenshot 运行中间件，返回 (fake_sentry, scope, mock_upload)。
+
+        :param upload_screenshot: telemetry.upload_screenshot 的配置值（True/False/None）。
+        """
+        from kaa.config.shared import SharedConfig
 
         def next_handler():
             raise error
@@ -106,12 +111,16 @@ class TestSentryMiddleware(TestCase):
         fake_sentry = MagicMock()
         device_mock = MagicMock()
         device_mock.screenshot.return_value = screenshot
+        shared = SharedConfig()
+        shared.telemetry.upload_screenshot = upload_screenshot
         with patch('kaa.util.telemetry.use_sentry', return_value=fake_sentry):
-            with patch('kotonebot.device', device_mock):
-                with patch('kaa.util.telemetry_screenshot.upload_screenshot',
-                           return_value=upload_return) as mock_upload:
-                    with self.assertRaises(type(error)):
-                        sentry_middleware(_FakeCtx(), task, next_handler)
+            with patch('kaa.main.kaa.config_manager.read_shared',
+                       return_value=shared):
+                with patch('kotonebot.device', device_mock):
+                    with patch('kaa.util.telemetry_screenshot.upload_screenshot',
+                               return_value=upload_return) as mock_upload:
+                        with self.assertRaises(type(error)):
+                            sentry_middleware(_FakeCtx(), task, next_handler)
         scope = fake_sentry.push_scope.return_value.__enter__.return_value
         return fake_sentry, scope, mock_upload
 
@@ -140,6 +149,30 @@ class TestSentryMiddleware(TestCase):
         _, scope, mock_upload = self._run_with_screenshot(
             RuntimeError('系统缺陷'), None, screenshot)
         mock_upload.assert_called_once()
+        tag_calls = [c for c in scope.set_tag.call_args_list
+                     if c.args and c.args[0] == 'screenshot_id']
+        self.assertEqual(tag_calls, [])
+
+    def test_upload_screenshot_none_skips_upload(self):
+        # 配置缺省（None）时不应上传截图，报告仍应正常上报
+        screenshot = np.zeros((16, 16, 3), dtype=np.uint8)
+        _, scope, mock_upload = self._run_with_screenshot(
+            RuntimeError('系统缺陷'), 'abc-123', screenshot, upload_screenshot=None)
+        mock_upload.assert_not_called()
+        tag_calls = [c for c in scope.set_tag.call_args_list
+                     if c.args and c.args[0] == 'screenshot_id']
+        self.assertEqual(tag_calls, [])
+        fake_sentry, _, _ = self._run_with_screenshot(
+            RuntimeError('系统缺陷'), 'abc-123', np.zeros((16, 16, 3), dtype=np.uint8),
+            upload_screenshot=None)
+        fake_sentry.capture_exception.assert_called_once()
+
+    def test_upload_screenshot_false_skips_upload(self):
+        # 配置为 False 时不应上传截图，报告仍应正常上报
+        screenshot = np.zeros((16, 16, 3), dtype=np.uint8)
+        _, scope, mock_upload = self._run_with_screenshot(
+            RuntimeError('系统缺陷'), 'abc-123', screenshot, upload_screenshot=False)
+        mock_upload.assert_not_called()
         tag_calls = [c for c in scope.set_tag.call_args_list
                      if c.args and c.args[0] == 'screenshot_id']
         self.assertEqual(tag_calls, [])
