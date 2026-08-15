@@ -176,3 +176,29 @@ class TestSentryMiddleware(TestCase):
         tag_calls = [c for c in scope.set_tag.call_args_list
                      if c.args and c.args[0] == 'screenshot_id']
         self.assertEqual(tag_calls, [])
+
+    def test_reports_profile_and_shared_config(self):
+        # 异常上报应同时携带当前 profile config 与 shared config 内容
+        from kaa.config.schema import KaaConfig
+        from kaa.config.shared import SharedConfig
+
+        def next_handler():
+            raise RuntimeError('系统缺陷')
+
+        task = Task(name='测试任务', id='test', description='', func=lambda: None, priority=0)
+        fake_sentry = MagicMock()
+        device_mock = MagicMock()
+        device_mock.screenshot.return_value = np.zeros((16, 16, 3), dtype=np.uint8)
+        shared = SharedConfig()
+        with patch('kaa.util.telemetry.use_sentry', return_value=fake_sentry):
+            with patch('kaa.main.kaa.config_manager.read_shared', return_value=shared):
+                with patch('kaa.kaa_context.conf', return_value=KaaConfig()):
+                    with patch('kotonebot.device', device_mock):
+                        with self.assertRaises(RuntimeError):
+                            sentry_middleware(_FakeCtx(), task, next_handler)
+        scope = fake_sentry.push_scope.return_value.__enter__.return_value
+        extra_calls = {c.args[0]: c.args[1] for c in scope.set_extra.call_args_list}
+        self.assertIn('config', extra_calls)
+        self.assertIn('shared_config', extra_calls)
+        self.assertIsInstance(extra_calls['config'], str)
+        self.assertIsInstance(extra_calls['shared_config'], str)

@@ -359,6 +359,12 @@ def sentry_middleware(ctx: BotContext, task: Task, next_handler: Callable[[], No
                 logger.warning('Failed to attach config to Sentry report.', exc_info=True)
             try:
                 from kaa.config import manager as config_manager
+                shared = config_manager.read_shared()
+                scope.set_extra('shared_config', shared.model_dump_json())  # minify：紧凑单行，减小上报体积
+            except Exception:
+                logger.warning('Failed to attach shared config to Sentry report.', exc_info=True)
+            try:
+                from kaa.config import manager as config_manager
                 if config_manager.read_shared().telemetry.upload_screenshot is True:
                     from kaa.util.telemetry_screenshot import upload_screenshot
                     from kotonebot import device
