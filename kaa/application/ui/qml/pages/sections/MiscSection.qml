@@ -14,7 +14,6 @@ Item {
     readonly property var _idle:      settingsCtrl?.config?.profile?.idle     ?? {}
     readonly property var _trace:     settingsCtrl?.config?.profile?.trace    ?? {}
     readonly property var _shared:    settingsCtrl?.config?.shared?.misc      ?? {}
-    readonly property var _telemetry: settingsCtrl?.config?.shared?.telemetry ?? {}
     readonly property var _profile:   settingsCtrl?.config?.profile           ?? {}
 
     function _commit(path, key, value) {
@@ -39,11 +38,6 @@ Item {
         id: shared
         data: root._shared
         onCommitted: function(key, value) { root._commit("shared.misc", key, value) }
-    }
-    FormBinder {
-        id: telemetry
-        data: root._telemetry
-        onCommitted: function(key, value) { root._commit("shared.telemetry", key, value) }
     }
 
     ScrollView {
@@ -156,33 +150,6 @@ Item {
                 FormCheckBox {
                     field: "game_data_auto_update"
                     label: "自动安装游戏资源更新"
-                }
-
-                Label {
-                    text: "匿名数据收集"
-                    font.weight: Font.DemiBold
-                    Layout.fillWidth: true
-                }
-
-                Label {
-                    text: "目前收集的数据包含：\n- 发生错误时的错误类型和堆栈信息\n\n<b>收集的数据将仅用于分析和改进 kaa。你可以随时在下面启用或禁用数据收集</b>。"
-                    wrapMode: Text.Wrap
-                    Layout.fillWidth: true
-                    color: palette.placeholderText
-                    textFormat: Text.RichText
-                }
-
-                FormCheckBox {
-                    binder: telemetry
-                    field: "sentry"
-                    label: "自动发送匿名错误报告"
-                }
-
-                FormCheckBox {
-                    binder: telemetry
-                    field: "upload_screenshot"
-                    label: "错误上报时附带截图"
-                    help: "开启后，错误上报会附带实时截图以帮助定位问题；关闭或缺省则只上报文字信息。"
                 }
 
                 RowLayout {

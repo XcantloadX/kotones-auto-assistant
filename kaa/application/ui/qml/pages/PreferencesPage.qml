@@ -99,6 +99,18 @@ PageContainer {
                     value: root._get("telemetry.sentry") === true
                     onUserToggled: function(checked) { root._set("telemetry.sentry", checked) }
                 }
+
+                FormCheckBox {
+                    label: "错误上报时附带截图"
+                    value: root._get("telemetry.upload_screenshot") === true
+                    onUserToggled: function(checked) { root._set("telemetry.upload_screenshot", checked) }
+                }
+
+                FormCheckBox {
+                    label: "匿名收集统计数据"
+                    value: root._get("telemetry.statics") === true
+                    onUserToggled: function(checked) { root._set("telemetry.statics", checked) }
+                }
             }
 
             FormGroupBox {

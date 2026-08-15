@@ -278,13 +278,13 @@ ApplicationWindow {
             Switch {
                 id: staticsSwitch
                 text: "匿名收集统计数据"
-                checked: TelemetryConsentController.staticsEnabled
+                checked: true
             }
 
             Switch {
                 id: sentrySwitch
                 text: "发送匿名错误报告"
-                checked: TelemetryConsentController.sentryEnabled
+                checked: true
             }
 
             RowLayout {
@@ -294,7 +294,7 @@ ApplicationWindow {
                 Switch {
                     id: screenshotSwitch
                     text: "错误上报时附带游戏截图"
-                    checked: TelemetryConsentController.screenshotEnabled
+                    checked: true
                 }
 
                 HelpTip {
@@ -315,14 +315,10 @@ ApplicationWindow {
                 anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter
                 anchors.rightMargin: 24; spacing: 8
                 Button {
-                    text: "取消"
-                    onClicked: telemetryConsentDialog.close()
-                }
-                Button {
                     text: "确定"
                     highlighted: true
                     onClicked: {
-                        TelemetryConsentController.setTelemetryConsent(sentrySwitch.checked, screenshotSwitch.checked)
+                        TelemetryConsentController.setTelemetryConsent(sentrySwitch.checked, screenshotSwitch.checked, staticsSwitch.checked)
                         Notice.show("success", "数据收集设置将于下次启动时生效。")
                         telemetryConsentDialog.close()
                     }
