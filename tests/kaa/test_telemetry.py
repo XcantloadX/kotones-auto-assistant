@@ -13,12 +13,13 @@ from kaa.application.ui.controllers.telemetry_consent_controller import (
 )
 
 
-def _shared(sentry=None, screenshot=None):
-    """构造一个 telemetry.sentry / upload_screenshot 可控的 SharedConfig。"""
+def _shared(sentry=None, screenshot=None, statics=None):
+    """构造一个 telemetry.sentry / upload_screenshot / statics 可控的 SharedConfig。"""
     from kaa.config.shared import SharedConfig
     shared = SharedConfig()
     shared.telemetry.sentry = sentry
     shared.telemetry.upload_screenshot = screenshot
+    shared.telemetry.statics = statics
     return shared
 
 
@@ -35,18 +36,23 @@ class TestTelemetryStateHelpers(TestCase):
 
     def test_is_pending_when_sentry_none(self):
         # 总开关未表态（None）时视为待同意
-        with patch('kaa.config.manager.read_shared', return_value=_shared(None, True)):
+        with patch('kaa.config.manager.read_shared', return_value=_shared(None, True, False)):
             self.assertTrue(telemetry.is_pending())
 
     def test_is_pending_when_screenshot_none(self):
         # 截图开关未表态（None）时同样视为待同意
-        with patch('kaa.config.manager.read_shared', return_value=_shared(True, None)):
+        with patch('kaa.config.manager.read_shared', return_value=_shared(True, None, False)):
             self.assertTrue(telemetry.is_pending())
 
-    def test_is_pending_false_when_both_set(self):
-        accepted = _shared(True, True)
-        declined = _shared(False, False)
-        partial = _shared(True, False)
+    def test_is_pending_when_statics_none(self):
+        # 统计数据收集开关未表态（None）时同样视为待同意
+        with patch('kaa.config.manager.read_shared', return_value=_shared(True, True, None)):
+            self.assertTrue(telemetry.is_pending())
+
+    def test_is_pending_false_when_all_set(self):
+        accepted = _shared(True, True, True)
+        declined = _shared(False, False, False)
+        partial = _shared(True, False, False)
         with patch('kaa.config.manager.read_shared', return_value=accepted):
             self.assertFalse(telemetry.is_pending())
         with patch('kaa.config.manager.read_shared', return_value=declined):
@@ -62,13 +68,14 @@ class TestTelemetryStateHelpers(TestCase):
             self.assertTrue(shared.telemetry.sentry)
             mock_write.assert_called_once_with(shared)
 
-    def test_set_consent_persists_both(self):
-        shared = _shared(None, None)
+    def test_set_consent_persists_all(self):
+        shared = _shared(None, None, None)
         with patch('kaa.config.manager.read_shared', return_value=shared), \
              patch('kaa.config.manager.write_shared') as mock_write:
-            telemetry.set_consent(False, True)
+            telemetry.set_consent(False, True, True)
             self.assertIs(shared.telemetry.sentry, False)
             self.assertIs(shared.telemetry.upload_screenshot, True)
+            self.assertIs(shared.telemetry.statics, True)
             mock_write.assert_called_once_with(shared)
 
 
@@ -87,12 +94,12 @@ class TestTelemetrySetup(TestCase):
         fake_sentry = MagicMock()
         with patch.dict('sys.modules', {'sentry_sdk': fake_sentry}):
             with patch('kaa.util.telemetry.is_dev', return_value=False):
-                with patch('kaa.config.manager.read_shared', return_value=_shared(None, None)):
+                with patch('kaa.config.manager.read_shared', return_value=_shared(None, None, None)):
                     telemetry.setup()
         fake_sentry.init.assert_not_called()
 
     def test_disabled_skips_init(self):
-        shared = _shared(False, False)
+        shared = _shared(False, False, False)
         fake_sentry = MagicMock()
         with patch.dict('sys.modules', {'sentry_sdk': fake_sentry}):
             with patch('kaa.util.telemetry.is_dev', return_value=False):
@@ -103,7 +110,7 @@ class TestTelemetrySetup(TestCase):
         mock_tags.assert_not_called()
 
     def test_enabled_initializes_sentry(self):
-        shared = _shared(True, False)
+        shared = _shared(True, False, False)
         fake_sentry = MagicMock()
         with patch.dict('sys.modules', {'sentry_sdk': fake_sentry}):
             with patch('kaa.util.telemetry.is_dev', return_value=False):
@@ -125,36 +132,47 @@ class TestTelemetryConsentController(TestCase):
 
     def test_pending_when_sentry_none_and_not_dev(self):
         # 总开关未表态：需要同意，开关初始状态从配置读取（screenshot 已开启）
-        ctrl = self._make_ctrl(_shared(None, True))
+        ctrl = self._make_ctrl(_shared(None, True, False))
         self.assertTrue(ctrl.telemetryConsentRequired)
         self.assertFalse(ctrl.sentryEnabled)
         self.assertTrue(ctrl.screenshotEnabled)
+        self.assertFalse(ctrl.staticsEnabled)
 
     def test_pending_when_screenshot_none(self):
         # 截图开关未表态：同样需要同意
-        ctrl = self._make_ctrl(_shared(True, None))
+        ctrl = self._make_ctrl(_shared(True, None, False))
         self.assertTrue(ctrl.telemetryConsentRequired)
         self.assertTrue(ctrl.sentryEnabled)
 
+    def test_pending_when_statics_none(self):
+        # 统计数据收集开关未表态：同样需要同意
+        ctrl = self._make_ctrl(_shared(True, True, None))
+        self.assertTrue(ctrl.telemetryConsentRequired)
+        self.assertTrue(ctrl.sentryEnabled)
+        self.assertTrue(ctrl.screenshotEnabled)
+        self.assertFalse(ctrl.staticsEnabled)
+
     def test_dev_env_does_not_require_consent(self):
-        ctrl = self._make_ctrl(_shared(None, None), is_dev=True)
+        ctrl = self._make_ctrl(_shared(None, None, None), is_dev=True)
         self.assertFalse(ctrl.telemetryConsentRequired)
 
     def test_settled_consent_does_not_require(self):
-        ctrl = self._make_ctrl(_shared(True, False))
+        ctrl = self._make_ctrl(_shared(True, False, True))
         self.assertFalse(ctrl.telemetryConsentRequired)
         self.assertTrue(ctrl.sentryEnabled)
         self.assertFalse(ctrl.screenshotEnabled)
+        self.assertTrue(ctrl.staticsEnabled)
 
     def test_set_telemetry_consent_persists_and_clears(self):
-        ctrl = self._make_ctrl(_shared(None, None))
+        ctrl = self._make_ctrl(_shared(None, None, None))
         self.assertTrue(ctrl.telemetryConsentRequired)
         fired = []
         ctrl.telemetryConsentRequiredChanged.connect(lambda: fired.append(True))
         with patch('kaa.util.telemetry.set_consent', return_value=None) as mock_set:
-            ctrl.setTelemetryConsent(True, False)
-        mock_set.assert_called_once_with(True, False)
+            ctrl.setTelemetryConsent(True, False, True)
+        mock_set.assert_called_once_with(True, False, True)
         self.assertTrue(ctrl.sentryEnabled)
         self.assertFalse(ctrl.screenshotEnabled)
+        self.assertTrue(ctrl.staticsEnabled)
         self.assertFalse(ctrl.telemetryConsentRequired)
         self.assertEqual(fired, [True])

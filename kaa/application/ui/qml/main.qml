@@ -276,6 +276,12 @@ ApplicationWindow {
             }
 
             Switch {
+                id: staticsSwitch
+                text: "匿名收集统计数据"
+                checked: TelemetryConsentController.staticsEnabled
+            }
+
+            Switch {
                 id: sentrySwitch
                 text: "发送匿名错误报告"
                 checked: TelemetryConsentController.sentryEnabled

@@ -18,10 +18,14 @@ def is_enabled() -> bool:
 
 
 def is_pending() -> bool:
-    """是否尚有未设置的匿名上报配置项（总开关 sentry 或截图上传 upload_screenshot 为 None）。"""
+    """是否尚有未设置的匿名上报配置项（总开关 sentry、截图上传 upload_screenshot 或统计数据收集 statics 为 None）。"""
     from kaa.config import manager  # noqa: PLC0415
     telemetry_cfg = manager.read_shared().telemetry
-    return telemetry_cfg.sentry is None or telemetry_cfg.upload_screenshot is None
+    return (
+        telemetry_cfg.sentry is None
+        or telemetry_cfg.upload_screenshot is None
+        or telemetry_cfg.statics is None
+    )
 
 
 def set_enabled(value: bool) -> None:
@@ -29,12 +33,13 @@ def set_enabled(value: bool) -> None:
     _set_enabled(value)
 
 
-def set_consent(sentry: bool, upload_screenshot: bool) -> None:
-    """同时持久化匿名上报总开关与截图上传开关到 _shared.json。"""
+def set_consent(sentry: bool, upload_screenshot: bool, statics: bool) -> None:
+    """同时持久化匿名上报总开关、截图上传开关与统计数据收集开关到 _shared.json。"""
     from kaa.config import manager  # noqa: PLC0415
     shared = manager.read_shared()
     shared.telemetry.sentry = bool(sentry)
     shared.telemetry.upload_screenshot = bool(upload_screenshot)
+    shared.telemetry.statics = bool(statics)
     manager.write_shared(shared)
 
 
