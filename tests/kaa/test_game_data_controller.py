@@ -72,10 +72,15 @@ class SimpleNamespace:
         self.__dict__.update(kw)
 
 
+class GameDataUpdateCancelled(Exception):
+    """与真实 updater 模块同名异常，供控制器 except 分支捕获。"""
+
+
 def make_fake_updater_module():
     """构建带 should_check 与 GameDataUpdater 的假 kaa.game_data.updater 模块。"""
     mod = types.ModuleType("kaa.game_data.updater")
     mod.GameDataUpdater = FakeUpdater
+    mod.GameDataUpdateCancelled = GameDataUpdateCancelled
     mod.should_check = lambda misc: True
     return mod
 
@@ -189,6 +194,47 @@ def test_background_check_failure(ctrl):
     """check_only 返回 None → FAILED。"""
     _run_check(ctrl, None)
     _wait_until(lambda: ctrl.updateStatus == ctrl.STATUS_FAILED)
+
+
+def test_background_download_cancelled(ctrl, monkeypatch):
+    """用户取消下载（download_to_staging 抛 GameDataUpdateCancelled）→
+    视为预期取消，回到 idle，不进入 FAILED。"""
+
+    class CancelFakeUpdater(FakeUpdater):
+        def download_to_staging(self, result, **kwargs):
+            self.download_calls.append((result, kwargs.get("file_progress_cb")))
+            raise GameDataUpdateCancelled()
+
+    mod = make_fake_updater_module()
+    mod.GameDataUpdater = CancelFakeUpdater
+    monkeypatch.setitem(sys.modules, "kaa.game_data.updater", mod)
+    FakeUpdater.instances.clear()
+    FakeUpdater.default_result = FakeResult(auto_update_enabled=True)
+
+    ctrl.startBackgroundCheck()
+    _wait_until(lambda: len(FakeUpdater.instances) >= 1)
+    _wait_until(lambda: ctrl.updateStatus == ctrl.STATUS_IDLE)
+    assert ctrl.restartNeeded is False
+
+
+def test_manual_download_cancelled(ctrl, monkeypatch):
+    """手动下载中用户取消 → 回到 idle，进度提示已取消。"""
+
+    class CancelFakeUpdater(FakeUpdater):
+        def download_to_staging(self, result, **kwargs):
+            self.download_calls.append((result, kwargs.get("file_progress_cb")))
+            raise GameDataUpdateCancelled()
+
+    mod = make_fake_updater_module()
+    mod.GameDataUpdater = CancelFakeUpdater
+    monkeypatch.setitem(sys.modules, "kaa.game_data.updater", mod)
+    FakeUpdater.instances.clear()
+    FakeUpdater.default_result = FakeResult(auto_update_enabled=False)
+
+    ctrl.triggerUpdate()
+    _wait_until(lambda: len(FakeUpdater.instances) >= 1)
+    _wait_until(lambda: ctrl.updateStatus == ctrl.STATUS_IDLE)
+    assert ctrl.progressMessage == "已取消下载。"
 
 
 def test_trigger_update(ctrl):

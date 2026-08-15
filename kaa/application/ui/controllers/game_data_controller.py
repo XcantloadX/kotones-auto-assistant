@@ -167,7 +167,7 @@ class GameDataUpdateController(QObject):
     def _background_check(self):
         try:
             from kaa.config import manager as config_manager
-            from kaa.game_data.updater import GameDataUpdater, should_check
+            from kaa.game_data.updater import GameDataUpdateCancelled, GameDataUpdater, should_check
 
             shared = config_manager.read_shared()
             if not should_check(shared.misc):
@@ -199,6 +199,10 @@ class GameDataUpdateController(QObject):
                 # 提示用户手动更新
                 self._set_update_available(True)
                 self._set_update_status(self.STATUS_IDLE)
+        except GameDataUpdateCancelled:
+            # 用户主动跳过下载（skipDownload 设置取消事件），属预期流程，非错误。
+            logger.info("Background game data check cancelled by user.")
+            self._set_update_status(self.STATUS_IDLE)
         except Exception:
             logger.exception("Background game data check failed.")
             self._set_update_status(self.STATUS_FAILED)
@@ -268,7 +272,7 @@ class GameDataUpdateController(QObject):
 
     def _do_manual_download(self):
         try:
-            from kaa.game_data.updater import GameDataUpdater
+            from kaa.game_data.updater import GameDataUpdateCancelled, GameDataUpdater
             self._set_update_status(self.STATUS_CHECKING)
             updater = GameDataUpdater(cancel=self._cancel_event)
             result = updater.check_only()
@@ -277,6 +281,11 @@ class GameDataUpdateController(QObject):
                 self._set_progress_message("目前已是最新版本，无需更新。")
                 return
             self._do_staging_download(updater, result)
+        except GameDataUpdateCancelled:
+            # 用户主动取消下载（skipDownload 设置取消事件），属预期流程，非错误。
+            logger.info("Manual game data download cancelled by user.")
+            self._set_update_status(self.STATUS_IDLE)
+            self._set_progress_message("已取消下载。")
         except Exception as e:
             logger.exception("Manual game data download failed.")
             self._set_update_status(self.STATUS_FAILED)
