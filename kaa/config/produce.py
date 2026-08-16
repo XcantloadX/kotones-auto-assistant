@@ -9,6 +9,7 @@ from pydantic import BaseModel, ConfigDict, ValidationError
 from kaa.errors import ProduceSolutionInvalidError, ProduceSolutionNotFoundError
 
 from .const import ProduceAction, HajimeScenario, Scenario
+from .validation import ConfigIssue
 
 logger = logging.getLogger(__name__)
 
@@ -92,20 +93,6 @@ class ProduceSolution(ConfigBaseModel):
     """方案描述"""
     data: ProduceData
     """培育数据"""
-
-
-class ConfigIssue(ConfigBaseModel):
-    """配置校验结果条目。
-
-    与 Pydantic 的字段类型校验互补：这里只表达跨字段、跨选项的业务规则。
-    结果不直接抛出，而是以结构化列表返回，由服务层（UI / 运行时）决定如何展示与拦截。
-    """
-    severity: Literal['error', 'warning'] = 'warning'
-    """严重程度：'error'（阻止保存/运行）或 'warning'（提示）。"""
-    field: str | None = None
-    """关联的字段名（供 UI 定位），可为 None。"""
-    message: str = ''
-    """面向用户的提示文本。"""
 
 
 def validate_produce_solution(solution: ProduceSolution) -> list[ConfigIssue]:

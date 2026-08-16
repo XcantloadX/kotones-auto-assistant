@@ -8,6 +8,7 @@ import "../../components/form"
 Item {
     id: root
     property var settingsCtrl
+    property var errors: ({})
 
     property var moneyItemModel: []
     property var apItemModel: []
@@ -48,26 +49,36 @@ Item {
     FormBinder {
         id: purchase
         data: root._purchase
+        prefix: "tasks.purchase"
+        errors: root.errors
         onCommitted: function(key, value) { root._commit("tasks.purchase", key, value) }
     }
     FormBinder {
         id: assignment
         data: root._assignment
+        prefix: "tasks.assignment"
+        errors: root.errors
         onCommitted: function(key, value) { root._commit("tasks.assignment", key, value) }
     }
     FormBinder {
         id: contest
         data: root._contest
+        prefix: "tasks.contest"
+        errors: root.errors
         onCommitted: function(key, value) { root._commit("tasks.contest", key, value) }
     }
     FormBinder {
         id: club
         data: root._club
+        prefix: "tasks.club_reward"
+        errors: root.errors
         onCommitted: function(key, value) { root._commit("tasks.club_reward", key, value) }
     }
     FormBinder {
         id: capsuleToys
         data: root._capsuleToys
+        prefix: "tasks.capsule_toys"
+        errors: root.errors
         onCommitted: function(key, value) { root._commit("tasks.capsule_toys", key, value) }
     }
 

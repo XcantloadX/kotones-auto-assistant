@@ -9,6 +9,7 @@ import "../../dialogs"
 Item {
     id: root
     property var settingsCtrl
+    property var errors: ({})
     property bool _checking: false
 
     readonly property var _idle:      settingsCtrl?.config?.profile?.idle     ?? {}
@@ -27,16 +28,22 @@ Item {
     FormBinder {
         id: idle
         data: root._idle
+        prefix: "idle"
+        errors: root.errors
         onCommitted: function(key, value) { root._commit("idle", key, value) }
     }
     FormBinder {
         id: trace
         data: root._trace
+        prefix: "trace"
+        errors: root.errors
         onCommitted: function(key, value) { root._commit("trace", key, value) }
     }
     FormBinder {
         id: shared
         data: root._shared
+        prefix: "shared.misc"
+        errors: root.errors
         onCommitted: function(key, value) { root._commit("shared.misc", key, value) }
     }
 

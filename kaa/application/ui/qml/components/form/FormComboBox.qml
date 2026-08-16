@@ -5,7 +5,7 @@ import "../controls"
 import "../"
 import "formUtils.js" as F
 
-RowLayout {
+ColumnLayout {
     id: root
     Layout.fillWidth: true
     property string label: ""
@@ -35,27 +35,34 @@ RowLayout {
     }
 
     RowLayout {
-        Layout.preferredWidth: 120
-        spacing: 6
+        RowLayout {
+            Layout.preferredWidth: 120
+            spacing: 6
 
-        Label { text: root.label; Layout.alignment: Qt.AlignVCenter }
+            Label { text: root.label; Layout.alignment: Qt.AlignVCenter }
 
-        HelpTip {
-            visible: root.help.length > 0
-            richText: root.help
-            Layout.alignment: Qt.AlignVCenter
+            HelpTip {
+                visible: root.help.length > 0
+                richText: root.help
+                Layout.alignment: Qt.AlignVCenter
+            }
+        }
+
+        Select {
+            Layout.fillWidth: true
+            model: root.options.map(function(o) { return typeof o === "object" ? o.label : String(o) })
+            currentIndex: root.indexOfValue(root._val)
+            onActivated: {
+                var o = root.options[currentIndex]
+                var v = typeof o === "object" ? o.value : o
+                if (root._eb && root.field) root._eb.set(root.field, v)
+                else root.userSelected(v)
+            }
         }
     }
 
-    Select {
-        Layout.fillWidth: true
-        model: root.options.map(function(o) { return typeof o === "object" ? o.label : String(o) })
-        currentIndex: root.indexOfValue(root._val)
-        onActivated: {
-            var o = root.options[currentIndex]
-            var v = typeof o === "object" ? o.value : o
-            if (root._eb && root.field) root._eb.set(root.field, v)
-            else root.userSelected(v)
-        }
+    FormError {
+        Layout.leftMargin: 126
+        info: root._eb ? root._eb.error(root.field) : null
     }
 }

@@ -4,8 +4,9 @@ import QtQuick.Layouts
 import "../"
 import "formUtils.js" as F
 
-RowLayout {
+ColumnLayout {
     id: root
+    Layout.fillWidth: true
     property string label: ""
     property string help: ""
     property bool value: false
@@ -25,19 +26,26 @@ RowLayout {
         return (_eb && field) ? _eb.get(field, false) : value
     }
 
-    CheckBox {
-        text: root.label
-        checked: root._val
-        font: root.font
-        onToggled: {
-            if (root._eb && root.field) root._eb.set(root.field, checked)
-            else root.userToggled(checked)
+    RowLayout {
+        CheckBox {
+            text: root.label
+            checked: root._val
+            font: root.font
+            onToggled: {
+                if (root._eb && root.field) root._eb.set(root.field, checked)
+                else root.userToggled(checked)
+            }
+        }
+
+        HelpTip {
+            visible: root.help.length > 0
+            richText: root.help
+            Layout.alignment: Qt.AlignVCenter
         }
     }
 
-    HelpTip {
-        visible: root.help.length > 0
-        richText: root.help
-        Layout.alignment: Qt.AlignVCenter
+    FormError {
+        Layout.leftMargin: 4
+        info: root._eb ? root._eb.error(root.field) : null
     }
 }

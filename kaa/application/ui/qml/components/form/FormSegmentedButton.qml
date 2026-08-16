@@ -5,7 +5,7 @@ import "../controls"
 import "../"
 import "formUtils.js" as F
 
-RowLayout {
+ColumnLayout {
     id: root
     Layout.fillWidth: true
     property string label: ""
@@ -29,27 +29,34 @@ RowLayout {
     }
 
     RowLayout {
-        Layout.preferredWidth: 120
-        spacing: 6
+        RowLayout {
+            Layout.preferredWidth: 120
+            spacing: 6
 
-        Label { text: root.label; Layout.alignment: Qt.AlignVCenter }
+            Label { text: root.label; Layout.alignment: Qt.AlignVCenter }
 
-        HelpTip {
-            visible: root.help.length > 0
-            richText: root.help
-            Layout.alignment: Qt.AlignVCenter
+            HelpTip {
+                visible: root.help.length > 0
+                richText: root.help
+                Layout.alignment: Qt.AlignVCenter
+            }
+        }
+
+        SegmentedButton {
+            Layout.fillWidth: true
+            model: root.options
+            textRole: "label"
+            valueRole: "value"
+            value: root._val
+            onActivated: function(index, v) {
+                if (root._eb && root.field) root._eb.set(root.field, v)
+                else root.userSelected(v)
+            }
         }
     }
 
-    SegmentedButton {
-        Layout.fillWidth: true
-        model: root.options
-        textRole: "label"
-        valueRole: "value"
-        value: root._val
-        onActivated: function(index, v) {
-            if (root._eb && root.field) root._eb.set(root.field, v)
-            else root.userSelected(v)
-        }
+    FormError {
+        Layout.leftMargin: 126
+        info: root._eb ? root._eb.error(root.field) : null
     }
 }

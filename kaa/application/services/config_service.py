@@ -6,13 +6,13 @@ from PySide6.QtCore import QObject, Signal
 from kaa.config.schema import KaaConfig
 from kaa.config.shared import SharedConfig
 from kaa.config import manager
+from kaa.config.validation import (
+    ConfigIssue,
+    ConfigValidationError,
+    validate_profile_config,
+)
 
 logger = logging.getLogger(__name__)
-
-
-class ConfigValidationError(ValueError):
-    """Custom exception for configuration validation errors."""
-    pass
 
 
 class ConfigSignalBus(QObject):
@@ -132,40 +132,26 @@ class ConfigService:
         """校验并将当前配置写入磁盘。"""
         if self._config is None:
             raise RuntimeError("Config not loaded, cannot save.")
-        self._validate(self._config)
+        self._raise_if_invalid(self._config)
         manager.write(self._name, self._config)
         if self._bus:
             self._bus.configChanged.emit()
         logger.info("Configuration '%s' saved successfully.", self._name)
 
+    def collect_issues(self, config: KaaConfig | None = None) -> list[ConfigIssue]:
+        """返回业务规则校验问题列表（不抛异常）。
+
+        :param config: 待校验对象；为 None 时校验 live config。
+        :return: ConfigIssue 列表，为空表示无问题。
+        """
+        return validate_profile_config(config or self._config)
+
     def validate(self, config: KaaConfig | None = None) -> None:
-        """校验给定对象（默认 live config）。"""
-        assert self._config is not None
-        self._validate(config or self._config)
+        """校验给定对象（默认 live config）；存在 error 级问题时抛 ConfigValidationError。"""
+        self._raise_if_invalid(config or self._config)
 
-    def _validate(self, config: KaaConfig) -> None:
-        """对配置执行业务规则校验。"""
-        valid_screenshot_methods = {
-            'mumu12': ['adb', 'uiautomator2', 'nemu_ipc'],
-            'mumu12v5': ['adb', 'uiautomator2', 'nemu_ipc'],
-            'leidian': ['adb', 'uiautomator2'],
-            'custom': ['adb', 'uiautomator2'],
-            'dmm': ['windows', 'windows_native', 'windows_background'],
-            'playcover': ['macos'],
-        }
-        backend = config.backend
-        lc_type = backend.lifecycle.type
-        if backend.screenshot_impl not in valid_screenshot_methods.get(lc_type, []):
-            raise ConfigValidationError(
-                f"截图方法 '{backend.screenshot_impl}' "
-                f"不适用于当前选择的模拟器类型 '{lc_type}'。"
-            )
-
-        if config.tasks.produce.enabled and not config.tasks.produce.selected_solution_id:
-            raise ConfigValidationError("启用培育时，必须选择培育方案。")
-
-        if config.tasks.purchase.ap_enabled and not config.tasks.purchase.ap_items:
-            raise ConfigValidationError("启用AP购买时，AP商店购买物品不能为空。")
-
-        if config.tasks.purchase.money_enabled and not config.tasks.purchase.money_items:
-            raise ConfigValidationError("启用金币购买时，金币商店购买物品不能为空。")
+    def _raise_if_invalid(self, config: KaaConfig) -> None:
+        """若存在 error 级校验问题，聚合消息抛出 ConfigValidationError。"""
+        errors = [i for i in validate_profile_config(config) if i.severity == 'error']
+        if errors:
+            raise ConfigValidationError('；'.join(i.message for i in errors))

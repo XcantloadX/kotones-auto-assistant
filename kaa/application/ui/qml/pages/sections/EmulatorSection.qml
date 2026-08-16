@@ -9,6 +9,7 @@ import "../../components/form"
 Item {
     id: root
     property var settingsCtrl
+    property var errors: ({})
 
     property var emulatorInstances: []
     property bool enumerationLoading: false
@@ -84,21 +85,29 @@ Item {
     FormBinder {
         id: lifecycle_b
         data: root.lifecycle
+        prefix: "backend.lifecycle"
+        errors: root.errors
         onCommitted: function(key, value) { root._commit("backend.lifecycle", key, value) }
     }
     FormBinder {
         id: backend_b
         data: root.backend
+        prefix: "backend"
+        errors: root.errors
         onCommitted: function(key, value) { root._commit("backend", key, value) }
     }
     FormBinder {
         id: startGame_b
         data: root.startGame
+        prefix: "tasks.start_game"
+        errors: root.errors
         onCommitted: function(key, value) { root._commit("tasks.start_game", key, value) }
     }
     FormBinder {
         id: endGame_b
         data: root.endGame
+        prefix: "tasks.end_game"
+        errors: root.errors
         onCommitted: function(key, value) { root._commit("tasks.end_game", key, value) }
     }
 

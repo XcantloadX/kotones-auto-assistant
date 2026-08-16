@@ -8,6 +8,13 @@ QtObject {
     // 指向配置子树（只读，外部响应式更新）
     property var data: null
 
+    // 该 binder 数据子树对应的完整 dot path（如 "tasks.purchase"）。
+    // 用于把校验 issue.field 映射回本 binder 内的字段。
+    property string prefix: ""
+
+    // 完整 dot path → {severity, message} 的校验问题映射（来自 SettingsPage）
+    property var errors: ({})
+
     // 字段修改信号：section 监听此信号来持久化变更
     signal committed(string key, var value)
 
@@ -21,6 +28,13 @@ QtObject {
         if (data === null || data === undefined) return fallback
         var v = data[key]
         return (v !== undefined && v !== null) ? v : fallback
+    }
+
+    // 按字段名（相对本 binder）查询校验问题，无问题时返回 null
+    function error(field) {
+        if (!errors || !field) return null
+        var full = prefix ? (prefix + "." + field) : field
+        return errors[full] || null
     }
 
     // 写入字段：先触发 committed（onCommitted 完成 mutation），再递增 _revision
