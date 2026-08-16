@@ -135,13 +135,26 @@ class TestSentryMiddleware(TestCase):
         fake_sentry.capture_exception.assert_called_once()
 
     def test_exception_uploads_screenshot_and_sets_tag(self):
-        # 通用异常：实时截图应上传到图片服务，并把返回的 UUID 作为 tag 附加
+        # 通用异常：无上次截图数据时现场截图上传，并把带 [now] 前缀的 ID 作为 tag 附加
         screenshot = np.zeros((16, 16, 3), dtype=np.uint8)
         _, scope, mock_upload = self._run_with_screenshot(
             RuntimeError('系统缺陷'), 'abc-123', screenshot)
         mock_upload.assert_called_once()
         self.assertIs(mock_upload.call_args.args[0], screenshot)
-        scope.set_tag.assert_any_call('screenshot_id', 'abc-123')
+        scope.set_tag.assert_any_call('screenshot_id', '[now]abc-123')
+
+    def test_exception_reuses_last_screenshot_and_sets_tag(self):
+        # 存在上次截图数据时复用该图上传，并把带 [last] 前缀的 ID 作为 tag 附加
+        last_img = np.zeros((16, 16, 3), dtype=np.uint8)
+        stack_mock = MagicMock()
+        stack_mock._screenshot = last_img
+        with patch('kotonebot.backend.context.ContextStackVars.current',
+                   return_value=stack_mock):
+            fake_sentry, scope, mock_upload = self._run_with_screenshot(
+                RuntimeError('系统缺陷'), 'abc-123', last_img)
+        mock_upload.assert_called_once()
+        self.assertIs(mock_upload.call_args.args[0], last_img)
+        scope.set_tag.assert_any_call('screenshot_id', '[last]abc-123')
 
     def test_upload_failure_skips_screenshot_tag(self):
         # 上传失败（返回 None）时不应附加 screenshot_id tag，报告仍应正常上报

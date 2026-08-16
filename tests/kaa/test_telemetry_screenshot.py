@@ -5,6 +5,7 @@ from kaa.util.telemetry_screenshot import (
     _allow_upload,
     _upload_attempt_times,
     screenshot_before_send,
+    upload_report_screenshot,
 )
 
 
@@ -53,14 +54,29 @@ class TestScreenshotBeforeSend(TestCase):
         mock_upload.assert_not_called()
 
     def test_error_log_event_uploads_and_sets_tag(self):
-        # error 级日志事件上传截图并把 UUID 写入 tags.screenshot_id
+        # error 级日志事件上传现场截图并把带 [now] 前缀的 ID 写入 tags.screenshot_id
         event = _log_event('Unexpected failure')
         with patch('kotonebot.device', MagicMock()):
             with patch('kaa.util.telemetry_screenshot.upload_screenshot',
                        return_value='abc-123') as mock_upload:
                 result = screenshot_before_send(event, {})
         mock_upload.assert_called_once()
-        self.assertEqual(result['tags']['screenshot_id'], 'abc-123')
+        self.assertEqual(result['tags']['screenshot_id'], '[now]abc-123')
+
+    def test_last_screenshot_reused_and_prefixed_with_last(self):
+        # 存在上次截图数据时复用该图，并把带 [last] 前缀的 ID 写入 tags.screenshot_id
+        last_img = object()
+        stack_mock = MagicMock()
+        stack_mock._screenshot = last_img
+        event = _log_event('Unexpected failure')
+        with patch('kotonebot.backend.context.ContextStackVars.current',
+                   return_value=stack_mock):
+            with patch('kaa.util.telemetry_screenshot.upload_screenshot',
+                       return_value='abc-123') as mock_upload:
+                result = screenshot_before_send(event, {})
+        mock_upload.assert_called_once()
+        self.assertIs(mock_upload.call_args.args[0], last_img)
+        self.assertEqual(result['tags']['screenshot_id'], '[last]abc-123')
 
     def test_upload_failure_leaves_event_untouched(self):
         # 上传失败（返回 None）时不写 tag，事件本身不受影响
@@ -71,6 +87,44 @@ class TestScreenshotBeforeSend(TestCase):
                 result = screenshot_before_send(event, {})
         self.assertIs(result, event)
         self.assertNotIn('screenshot_id', result.get('tags', {}))
+
+
+class TestUploadReportScreenshot(TestCase):
+    """验证 upload_report_screenshot 的截图来源选择与 ID 前缀。"""
+
+    def test_reuses_last_screenshot(self):
+        # 有上次截图数据：复用该图，前缀为 [last]
+        last_img = object()
+        stack_mock = MagicMock()
+        stack_mock._screenshot = last_img
+        with patch('kotonebot.backend.context.ContextStackVars.current',
+                   return_value=stack_mock):
+            with patch('kaa.util.telemetry_screenshot.upload_screenshot',
+                       return_value='abc-123') as mock_upload:
+                self.assertEqual(upload_report_screenshot(), '[last]abc-123')
+        self.assertIs(mock_upload.call_args.args[0], last_img)
+
+    def test_falls_back_to_fresh_screenshot(self):
+        # 无上次截图数据：现场截图，前缀为 [now]
+        fresh_img = object()
+        device_mock = MagicMock()
+        device_mock.screenshot.return_value = fresh_img
+        with patch('kotonebot.backend.context.ContextStackVars.current',
+                   return_value=None):
+            with patch('kotonebot.device', device_mock):
+                with patch('kaa.util.telemetry_screenshot.upload_screenshot',
+                           return_value='abc-123') as mock_upload:
+                    self.assertEqual(upload_report_screenshot(), '[now]abc-123')
+        self.assertIs(mock_upload.call_args.args[0], fresh_img)
+
+    def test_upload_failure_returns_none(self):
+        # 上传失败（返回 None）时整体返回 None
+        with patch('kotonebot.backend.context.ContextStackVars.current',
+                   return_value=None):
+            with patch('kotonebot.device', MagicMock()):
+                with patch('kaa.util.telemetry_screenshot.upload_screenshot',
+                           return_value=None):
+                    self.assertIsNone(upload_report_screenshot())
 
 
 class TestUploadRateLimit(TestCase):

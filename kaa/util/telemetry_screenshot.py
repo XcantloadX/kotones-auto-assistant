@@ -1,8 +1,12 @@
 """错误上报时的截图上传模块。
 
-将实时截图上传到 Cloudflare Worker（转发至 Google Drive），返回服务端分配的
+将截图上传到 Cloudflare Worker（转发至 Google Drive），返回服务端分配的
 UUID。该 ID 作为 tag 附加到 Sentry 报告，便于在 Drive 中检索对应图片。所有失败
 均静默降级（仅记 warning 日志并返回 None），绝不阻断错误上报链路。
+
+截图来源优先复用内存中上次的截图数据（``vars.screenshot_data``），无数据时才
+现场截图；上传成功后在 UUID 前追加 ``[last]``/``[now]`` 前缀，便于在 Drive 中
+区分截图来源。
 
 截图上传覆盖两条上报路径：
 1. 异常上报：sentry_middleware 在 capture_exception 时同步上传。
@@ -72,7 +76,6 @@ def screenshot_before_send(event: 'Event', hint: 'Hint') -> 'Event | None':
     :param hint: Sentry 事件附带元数据（此处未使用）。
     :return: 原事件（可能已追加 ``tags.screenshot_id``）；本实现从不返回 None。
     """
-    print(11111111111)
     # 事件以 TypedDict 传入，统一转成普通 dict 进行读写，规避 TypedDict 的静态限制。
     data: dict = cast(dict, event)
 
@@ -94,14 +97,56 @@ def screenshot_before_send(event: 'Event', hint: 'Hint') -> 'Event | None':
         return event
 
     try:
-        from kotonebot import device  # noqa: PLC0415
-        upload_id = upload_screenshot(device.screenshot())
-        if upload_id:
-            data.setdefault('tags', {})['screenshot_id'] = upload_id
+        screenshot_id = upload_report_screenshot()
+        if screenshot_id:
+            data.setdefault('tags', {})['screenshot_id'] = screenshot_id
     except Exception:
         # 截图/上传失败一律降级，不影响 Sentry 上报主流程。
         logger.warning('Failed to attach screenshot for log error event.', exc_info=True)
     return event
+
+
+def _resolve_report_screenshot() -> tuple[object | None, str]:
+    """解析错误上报用的截图：优先复用上次截图数据，无数据时才现场截图。
+
+    :return: ``(image_bgr, prefix)``。image_bgr 为 OpenCV BGR 截图数组；
+        prefix 为 ``'last'``（复用上次截图）或 ``'now'``（现场截图）。
+        两者都取不到时返回 ``(None, '')``。
+    """
+    # 优先复用自动化上下文中最近一次截图（报错现场前的画面）。
+    try:
+        from kotonebot.backend.context import ContextStackVars  # noqa: PLC0415
+        stack = ContextStackVars.current()
+        if stack is not None and stack._screenshot is not None:
+            return stack._screenshot, 'last'
+    except Exception:
+        # 读取上次截图失败时降级为现场截图。
+        logger.debug('Failed to read last screenshot data.', exc_info=True)
+    # 无上次截图数据时现场截一张。
+    try:
+        from kotonebot import device  # noqa: PLC0415
+        return device.screenshot(), 'now'
+    except Exception:
+        logger.warning('Failed to take a fresh screenshot.', exc_info=True)
+    return None, ''
+
+
+def upload_report_screenshot() -> str | None:
+    """错误上报时上传截图：优先复用上次截图数据，无数据时现场截图。
+
+    上传成功后返回带来源前缀（``[last]``/``[now]``）的截图 ID，用于
+    Sentry 的 ``screenshot_id`` tag 区分截图是复用还是新截。
+
+    :return: 成功返回 ``[last]<uuid>`` 或 ``[now]<uuid>``；遥测未启用、
+        上传失败或截图不可用时返回 None。
+    """
+    image_bgr, prefix = _resolve_report_screenshot()
+    if image_bgr is None:
+        return None
+    upload_id = upload_screenshot(image_bgr)
+    if upload_id:
+        return f'[{prefix}]{upload_id}'
+    return None
 
 
 def upload_screenshot(image_bgr) -> str | None:
