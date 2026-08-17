@@ -524,7 +524,6 @@ class ActionSelectContext(Context):
     def is_final_week(self) -> bool:
         return R.InProduce.ButtonFinalPracticeVisual.exists()
 
-    @eval_once
     def fetch_available_actions(self) -> tuple[list[ProduceAction], list[GameObject]]:
         """读取当前可用的行动"""
         if self.is_final_week():

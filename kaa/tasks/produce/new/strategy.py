@@ -157,48 +157,64 @@ class StandardStrategy:
         ctx.commit(0)
 
     def on_action_select(self, ctx: 'ActionSelectContext'):
-        recommend = ctx.fetch_sensei_tip()
-        availables = ctx.fetch_available_actions()[0]
+        # 行动选择页在切页动画期间可能出现按钮尚未渲染完成的瞬时状态，
+        # 此时 fetch_available_actions() 会返回空列表。为避免误判为不可恢复错误
+        # 直接中断整个培育任务，无可用行动时等待 1s 后重试（最多 5 次）；
+        # 连续多次仍无可用行动才真正抛出异常。
+        for attempt in range(5):
+            recommend = ctx.fetch_sensei_tip()
+            availables = ctx.fetch_available_actions()[0]
 
-        # 首先处理优先 SP
-        # 如果优先 SP，
-        if produce_solution().data.prefer_lesson_ap and ctx.has_sp_lesson():
-            # 1. 推荐行动是休息，则休息
-            if recommend == ProduceAction.REST:
-                ctx.commit(ProduceAction.REST)
+            # 首先处理优先 SP
+            # 如果优先 SP，
+            if produce_solution().data.prefer_lesson_ap and ctx.has_sp_lesson():
+                # 1. 推荐行动是休息，则休息
+                if recommend == ProduceAction.REST:
+                    ctx.commit(ProduceAction.REST)
+                    return
+                
+                # 2. 推荐行动是 SP 课程，则执行推荐行动
+                sp = _lesson_to_sp(recommend)
+                if sp and sp in availables:
+                    ctx.commit(sp)
+                    return
+
+                # 3. 推荐行动是其他，优先选择 current/max < 0.8 的 SP 课程
+                metrics = ctx.fetch_perf_metrics()
+                for m in metrics:
+                    sp_lesson = _lesson_to_sp(m.lesson)
+                    if m.current / m.max < 0.8 and sp_lesson in availables:
+                        ctx.commit(sp_lesson)
+                        return
+
+                # 4. 如果都 > 0.8，则选择 current 最小的课程
+                min_metric = min(metrics, key=lambda x: x.current)
+                ctx.commit(min_metric.lesson)
+                return
+
+            # 如果有推荐行动，优先推荐
+            if recommend:
+                ctx.commit(recommend)
                 return
             
-            # 2. 推荐行动是 SP 课程，则执行推荐行动
-            sp = _lesson_to_sp(recommend)
-            if sp and sp in availables:
-                ctx.commit(sp)
-                return
+            # 否则按照配置里的顺序来
+            configured_actions = produce_solution().data.actions_order
+            for ac in configured_actions:
+                for available in availables:
+                    if ac == available:
+                        ctx.commit(available)
+                        return
 
-            # 3. 推荐行动是其他，优先选择 current/max < 0.8 的 SP 课程
-            metrics = ctx.fetch_perf_metrics()
-            for m in metrics:
-                sp_lesson = _lesson_to_sp(m.lesson)
-                if m.current / m.max < 0.8 and sp_lesson in availables:
-                    ctx.commit(sp_lesson)
-                    return
-
-            # 4. 如果都 > 0.8，则选择 current 最小的课程
-            min_metric = min(metrics, key=lambda x: x.current)
-            ctx.commit(min_metric.lesson)
-            return
-
-        # 如果有推荐行动，优先推荐
-        if recommend:
-            ctx.commit(recommend)
-            return
-        
-        # 否则按照配置里的顺序来
-        configured_actions = produce_solution().data.actions_order
-        for ac in configured_actions:
-            for available in availables:
-                if ac == available:
-                    ctx.commit(available)
-                    return
+            # 无可用行动：等待 1s 后重试（覆盖切页动画等瞬时状态）
+            if attempt < 4:
+                logger.warning(
+                    "No available actions to execute. Waiting 1s and retrying... (%d/5)",
+                    attempt + 1,
+                )
+                sleep(1)
+                device.screenshot()
+                continue
+            break
 
         raise UnrecoverableError("No available actions to execute.")
 
