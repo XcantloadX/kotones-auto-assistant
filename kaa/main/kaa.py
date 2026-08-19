@@ -163,6 +163,15 @@ class KaaDeviceFactory:
             assert isinstance(lc, CustomDevice)
             conn = config.backend.connection
             assert isinstance(conn, TcpConnection)
+            if conn._ip_contains_port():
+                # IP 字段误填了端口（如 '127.0.0.1:16384'）会导致 ADB 地址拼接
+                # 成非法的双端口形式（127.0.0.1:16384:5555），抛出友好错误以便
+                # 用户在设置页修正，而不是以晦涩的 AdbError 崩溃。
+                host, _, port = conn.ip.partition(':')
+                raise UserFriendlyError(
+                    f'ADB 连接配置错误：IP 地址中不能包含端口（当前填了 "{conn.ip}"）。'
+                    f'请在设置页将「ADB IP 地址」填为 "{host}"，「ADB 端口」填为 "{port}"。'
+                )
             exe = lc.emulator_path
             instance = create_custom(
                 adb_ip=conn.ip,

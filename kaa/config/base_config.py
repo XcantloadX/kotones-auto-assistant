@@ -90,6 +90,18 @@ class TcpConnection(BaseModel):
     port: int = 5555
     """adb 连接的端口。"""
 
+    def _ip_contains_port(self) -> bool:
+        """判断 ip 字段是否误填了端口（如 '127.0.0.1:16384'）。
+
+        ADB 连接地址由 ip 与 port 两个字段分开配置，ip 中不应再携带端口。
+        仅当 ip 为「单冒号 + 数字结尾」（IPv4/主机名 + 端口）时判定为误填，
+        不会误伤多冒号的 IPv6 地址。
+        """
+        if self.ip.count(':') != 1:
+            return False
+        host, _, port = self.ip.partition(':')
+        return bool(host) and port.isdigit()
+
 
 DeviceConnection = Annotated[
     AutoConnection | TcpConnection,

@@ -97,6 +97,13 @@ Item {
         onCommitted: function(key, value) { root._commit("backend", key, value) }
     }
     FormBinder {
+        id: connection_b
+        data: root.connection
+        prefix: "backend.connection"
+        errors: root.errors
+        onCommitted: function(key, value) { root._commit("backend.connection", key, value) }
+    }
+    FormBinder {
         id: startGame_b
         data: root.startGame
         prefix: "tasks.start_game"
@@ -291,8 +298,9 @@ Item {
 
                 FormTextField {
                     label: "ADB IP 地址"
-                    value: root.connection.ip ?? "127.0.0.1"
-                    onUserEdited: function(v) { root._commit("backend.connection", "ip", v) }
+                    help: "仅填 IP（如 127.0.0.1），不要包含端口；端口请在下方单独填写。"
+                    binder: connection_b
+                    field: "ip"
                 }
                 FormTextField {
                     label: "ADB 端口"

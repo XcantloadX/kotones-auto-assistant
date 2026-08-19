@@ -11,6 +11,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
 
+from .base_config import TcpConnection
 from .schema import KaaConfig
 
 
@@ -64,6 +65,17 @@ def validate_profile_config(config: KaaConfig) -> list[ConfigIssue]:
             message=(
                 f"截图方法 '{backend.screenshot_impl}' "
                 f"不适用于当前选择的模拟器类型 '{lc_type}'。"
+            ),
+        ))
+
+    conn = backend.connection
+    if isinstance(conn, TcpConnection) and conn._ip_contains_port():
+        issues.append(ConfigIssue(
+            severity='error',
+            field='backend.connection.ip',
+            message=(
+                f"ADB IP 地址中不应包含端口（当前填了 '{conn.ip}'）。"
+                f"请将 IP 与端口分开填写：IP 填 '{conn.ip.split(':')[0]}'，端口填 '{conn.ip.split(':')[1]}'。"
             ),
         ))
 
