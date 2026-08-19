@@ -178,6 +178,16 @@ class CommuEventButtonUI:
                     desc_text = self.description()
             result.append(EventButton(btn.rect, btn.is_selected, desc_text, title_text))
 
+        # 读取描述时点击了未选中的按钮，这会改变游戏中的真实选中状态，
+        # 因此上面记录的 selected 只是进入本函数时的快照，可能已经过期。
+        # 重新检测一次，让返回的 selected 与游戏当前实际状态一致，
+        # 这样调用方依据 selected 决定单击/双击才是正确的。
+        if description:
+            fresh_regions = self._detect_regions(device.screenshot())
+            selected_centers = [r.rect.center for r in fresh_regions if r.is_selected]
+            for eb in result:
+                eb.selected = eb.rect.center in selected_centers
+
         result.sort(key=lambda x: x.rect.y1)
         return result
 

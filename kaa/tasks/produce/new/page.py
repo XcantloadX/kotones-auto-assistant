@@ -780,10 +780,7 @@ class StudyContext(Context):
         """执行非自习课内容"""
         buttons = self.fetch_options()
         target_btn = buttons[index]
-        if target_btn.selected:
-            device.click(target_btn)
-        else:
-            device.double_click(target_btn)
+        device.double_click(target_btn)
         sleep(2)
     
 
@@ -800,10 +797,8 @@ class OutingContext(Context):
             raise ValueError(f"Invalid outing option index: {index}")
         target_btn = buttons[index]
         logger.debug('Clicking "%s".', target_btn.description)
-        if target_btn.selected:
-            device.click(target_btn)
-        else:
-            device.double_click(target_btn)
+        # 双击 = 第一次点击建立选中、第二次点击确认执行，与 StudyContext.commit 保持一致。
+        device.double_click(target_btn)
         sleep(2)
         
 
