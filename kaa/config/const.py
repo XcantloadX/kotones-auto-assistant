@@ -256,10 +256,23 @@ class NiaScenario(str, ConfigEnum):
     MASTER = 'nia_master'
 
 
+class HifScenario(str, ConfigEnum):
+    """HIF（Hatsuboshi Idol Festival）剧本。难度分为选拔赛和正赛。"""
+    QUALIFY = 'hif_qualify'
+    """选拔赛"""
+    MAIN = 'hif_main'
+    """正赛"""
+
+
+class ProduceStrategy(str, ConfigEnum):
+    """培育策略。不同剧本支持的策略不同。"""
+    NORMAL = 'normal'
+    """普通"""
+    WITHDRAW_MAIN = 'withdraw_main'
+    """正赛弃赛（HIF 专用：培育至正赛时弃赛，用于快速刷取 HIF 点数）"""
+
+
 # class HajimeLegendScenario(str, ConfigEnum):
 #     LEGEND = 'hajime_legend'
 
-# class HifScenario(str, ConfigEnum):
-#     REGULAR = 'hif'
-
-Scenario = HajimeScenario | NiaScenario
+Scenario = HajimeScenario | NiaScenario | HifScenario

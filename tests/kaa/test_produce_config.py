@@ -9,9 +9,10 @@ from unittest import TestCase
 from kaa.config.produce import (
     ProduceData, 
     ProduceSolution, 
-    ProduceSolutionManager
+    ProduceSolutionManager,
+    validate_produce_solution,
 )
-from kaa.config.const import ProduceAction, HajimeScenario
+from kaa.config.const import ProduceAction, HajimeScenario, HifScenario, ProduceStrategy
 from kaa.errors import ProduceSolutionNotFoundError
 
 
@@ -23,11 +24,72 @@ class TestProduceData(TestCase):
         for mode in [HajimeScenario.REGULAR, HajimeScenario.PRO, HajimeScenario.MASTER]:
             data = ProduceData(mode=mode)
             self.assertEqual(data.mode, mode)
-        
+
         # 测试有效的 self_study_lesson 值
         for lesson in ['dance', 'visual', 'vocal']:
             data = ProduceData(self_study_lesson=lesson) # type: ignore[arg-type]
             self.assertEqual(data.self_study_lesson, lesson)
+
+    def test_hif_scenario_and_produce_strategy(self):
+        """测试 HIF 剧本难度与培育策略枚举"""
+        # HIF 的两个难度：选拔赛 / 正赛
+        self.assertEqual(HifScenario.QUALIFY.value, 'hif_qualify')
+        self.assertEqual(HifScenario.MAIN.value, 'hif_main')
+
+        # 培育策略默认普通
+        data = ProduceData()
+        self.assertEqual(data.produce_strategy, ProduceStrategy.NORMAL)
+        self.assertEqual(data.produce_strategy.value, 'normal')
+
+        # HIF 模式 + 正赛弃赛 可正常序列化/反序列化
+        hif = ProduceData(mode=HifScenario.MAIN, produce_strategy=ProduceStrategy.WITHDRAW_MAIN)
+        json_data = hif.model_dump(mode='json')
+        self.assertEqual(json_data['mode'], 'hif_main')
+        self.assertEqual(json_data['produce_strategy'], 'withdraw_main')
+        restored = ProduceData.model_validate(json_data)
+        self.assertIs(restored.mode, HifScenario.MAIN)
+        self.assertIs(restored.produce_strategy, ProduceStrategy.WITHDRAW_MAIN)
+
+    def test_produce_strategy_scenario_validation(self):
+        """测试培育策略必须匹配剧本"""
+        def solution(data: ProduceData) -> ProduceSolution:
+            return ProduceSolution(id='t', name='测试', data=data)
+
+        # 合法组合：HIF + 正赛弃赛、初 + 普通，不应出现策略相关错误
+        hif_ok = validate_produce_solution(solution(ProduceData(
+            mode=HifScenario.QUALIFY, produce_strategy=ProduceStrategy.WITHDRAW_MAIN,
+            idol='i', auto_set_memory=True, auto_set_support_card=True)))
+        self.assertFalse([i for i in hif_ok if i.field == 'produce_strategy'])
+        hajime_ok = validate_produce_solution(solution(ProduceData(
+            mode=HajimeScenario.PRO, produce_strategy=ProduceStrategy.NORMAL,
+            idol='i', auto_set_memory=True, auto_set_support_card=True)))
+        self.assertFalse([i for i in hajime_ok if i.field == 'produce_strategy'])
+
+        # 非法组合：HIF + 普通、初 + 正赛弃赛，应报策略错误
+        hif_bad = validate_produce_solution(solution(ProduceData(mode=HifScenario.MAIN)))
+        self.assertTrue([i for i in hif_bad if i.field == 'produce_strategy'])
+        hajime_bad = validate_produce_solution(solution(ProduceData(
+            mode=HajimeScenario.REGULAR, produce_strategy=ProduceStrategy.WITHDRAW_MAIN)))
+        self.assertTrue([i for i in hajime_bad if i.field == 'produce_strategy'])
+
+    def test_hif_skips_idol_and_memory_validation(self):
+        """测试 HIF 剧本下不要求偶像/回忆/支援卡编成"""
+        solution = ProduceSolution(
+            id='hif', name='HIF 方案',
+            data=ProduceData(mode=HifScenario.MAIN, produce_strategy=ProduceStrategy.WITHDRAW_MAIN),
+        )
+        issues = validate_produce_solution(solution)
+        # 不应出现偶像、回忆编成、支援卡编成的必填错误
+        self.assertFalse([i for i in issues if i.field in ('idol', 'memory_set', 'support_card_set')])
+
+        # 非 HIF 剧本下这些必填项仍然生效
+        hajime = ProduceSolution(
+            id='hajime', name='初方案',
+            data=ProduceData(mode=HajimeScenario.PRO),
+        )
+        hajime_issues = validate_produce_solution(hajime)
+        fields = {i.field for i in hajime_issues}
+        self.assertTrue({'idol', 'memory_set', 'support_card_set'} & fields)
 
     def test_produce_data_serialization(self):
         """测试序列化和反序列化"""
