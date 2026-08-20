@@ -238,7 +238,7 @@ def step4(note_boost: bool, pt_boost: bool) -> bool:
     """培育准备 STEP4。
     前提：位于 STEP4 页面。
     """
-    if not R.Produce.TextStepIndicator4.exists():
+    if not R.Produce.TextStepIndicator4Or2.exists():
         logger.debug('Not at step4, returning False')
         return False
     
@@ -266,7 +266,7 @@ def prepare():
     assert idol_skin_id is not None, "idol_skin_id is None"
     step1(idol_skin_id)
     R.Produce.Step1.ButtonNext.wait().click()
-    
+
     # 选择支援卡
     R.Produce.TextStepIndicator2.wait()
     step2(
@@ -291,13 +291,39 @@ def prepare():
         # 3 -> 4
         elif R.Produce.TextStepIndicator3.exists():
             R.Produce.Step3.ButtonNext.try_click()
-        elif R.Produce.TextStepIndicator4.exists():
+        elif R.Produce.TextStepIndicator4Or2.exists():
             break
     
     # 设置加成
     note_boost = produce_solution().data.use_note_boost
     pt_boost = produce_solution().data.use_pt_boost
     step4(note_boost=note_boost, pt_boost=pt_boost)
+
+def prepare_hif_main() -> bool:
+    """完成培育准备，从 STEP1 到 STEP2 共四个步骤。
+
+    前提：位于 STEP1 页面。\n
+    结束：位于 STEP2，点击开始培育按钮前。
+    """
+    logger.info('Preparing Hif main scenario.')
+    # 选择偶像（选择回忆）
+
+    # 设置加成
+    for _ in Loop():
+        # 1 -> 2
+        if R.Produce.TextStepIndicator1.exists():
+            R.Produce.Step1.ButtonNext.try_click()
+            sleep(1)
+        elif R.Produce.TextStepIndicator4Or2.exists():
+            break
+
+    note_boost = produce_solution().data.use_note_boost
+    pt_boost = produce_solution().data.use_pt_boost
+    if not step4(note_boost=note_boost, pt_boost=pt_boost):
+        return False
+
+    return True
+
 
 if __name__ == "__main__":
     from kotonebot.backend.context import manual_context, init_context

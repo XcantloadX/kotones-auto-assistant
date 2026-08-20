@@ -19,7 +19,7 @@
       "variant_policy": {}
     },
     "48a458a9-b6cf-4199-850e-78f679f4f337": {
-      "name": "Produce.PointNiaToHajime",
+      "name": "Produce.PointPrev",
       "displayName": "NIA 左侧翻页箭头",
       "type": "hint-point",
       "props": {
