@@ -3,6 +3,8 @@ from typing import Optional
 
 from kaa.config.const import HajimeScenario, HifScenario, Scenario
 from kaa.kaa_context import produce_solution, init_produce_session, clear_produce_session
+from kaa.tasks.produce.new.strategies.hif_grind import HifGrindStrategy
+from kaa.tasks.produce.new.strategies.standard import StandardStrategy
 from kaa.tasks.produce.session import ProduceSession, resolve_deck
 from kaa.tasks.produce.shared.common import resume_produce_pre
 from kaa.tasks.produce.new.controller import ProduceController
@@ -168,7 +170,13 @@ def resume_produce():
         if conf().tasks.produce.produce_engine == 'legacy':
             resume_produce_lst(scenario, current_week)
         else:
-            ProduceController(scenario=scenario).run()
+            if isinstance(scenario, HajimeScenario):
+                c = ProduceController(scenario=scenario, strategy=StandardStrategy)
+            elif isinstance(scenario, HifScenario):
+                c = ProduceController(scenario=scenario, strategy=HifGrindStrategy)
+            else:
+                raise NotImplementedError(f'Unsupported produce scenario: {scenario}')
+            c.run()
     finally:
         clear_produce_session()
 
@@ -310,9 +318,9 @@ def do_produce(
     is_hif_main = scenario == HifScenario.MAIN
     if not is_hif_main:
         prepare()
-        R.Produce.Step4.ButtonProduceStart.wait().click()
     else:
         prepare_hif_main()
+    R.Produce.Step4.ButtonProduceStart.wait().click()
 
     # 5. 相关设置弹窗 [screenshots/produce/skip_commu.png]
     cd = Countdown(5).start()
@@ -339,7 +347,12 @@ def do_produce(
                 case _:
                     raise NotImplementedError(f'Unsupported produce scenario: {scenario}')
         else:
-            c = ProduceController(scenario=scenario)
+            if isinstance(scenario, HajimeScenario):
+                c = ProduceController(scenario=scenario, strategy=StandardStrategy)
+            elif isinstance(scenario, HifScenario):
+                c = ProduceController(scenario=scenario, strategy=HifGrindStrategy)
+            else:
+                raise NotImplementedError(f'Unsupported produce scenario: {scenario}')
             c.run()
     finally:
         clear_produce_session()

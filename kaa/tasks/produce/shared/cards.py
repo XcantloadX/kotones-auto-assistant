@@ -287,6 +287,9 @@ def do_cards(
             logger.debug('reset break_cd')
             break_cd.stop()
 
+def do_skips():
+    pass
+
 @action("技能卡移动")
 def handle_skill_card_move():
     """

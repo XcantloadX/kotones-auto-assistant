@@ -1,0 +1,20 @@
+{
+  "version": 3,
+  "definitions": {
+    "e7149839-d25b-4d92-8437-8cc2df588f8a": {
+      "type": "prefab",
+      "prefab_id": "TemplateMatchPrefab",
+      "name": "InProduce.ButtonIconGift",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 403.9331799586728,
+          "y1": 955.3341050609499,
+          "x2": 479.8038368393523,
+          "y2": 1036.4072070305242
+        }
+      },
+      "displayName": "差し入れ"
+    }
+  }
+}

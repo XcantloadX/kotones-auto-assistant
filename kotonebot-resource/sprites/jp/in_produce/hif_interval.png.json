@@ -1,0 +1,41 @@
+{
+  "version": 3,
+  "definitions": {
+    "f762b40a-df6a-4229-9dfb-e76e24142b37": {
+      "type": "prefab",
+      "prefab_id": "TemplateMatchPrefab",
+      "name": "InProduce.HifInterval.Title",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 79.11362037616419,
+          "y1": 71.54497207051415,
+          "x2": 151.8292598420036,
+          "y2": 134.30155840992524
+        },
+        "fixed": true
+      }
+    },
+    "331aa87e-b844-4f97-bc13-2ffe70707f32": {
+      "type": "prefab",
+      "prefab_id": "TemplateMatchPrefab",
+      "name": "InProduce.HifInterval.ButtonEnd",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 585.6441543825227,
+          "y1": 1057.4301249714922,
+          "x2": 629.4388008789942,
+          "y2": 1108.626287511538
+        },
+        "region": {
+          "kind": "rect",
+          "x1": 560.8547318373503,
+          "y1": 1040.9152338295419,
+          "x2": 700.5018121751554,
+          "y2": 1126.7926677676833
+        }
+      }
+    }
+  }
+}

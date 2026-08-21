@@ -1,0 +1,50 @@
+{
+  "version": 3,
+  "definitions": {
+    "c9bd526a-9c4a-48af-af6c-53f896551f98": {
+      "type": "prefab",
+      "prefab_id": "TemplateMatchPrefab",
+      "name": "InProduce.ButtonIconStudyVocalHif",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 129.59310436144375,
+          "y1": 939.5444980582679,
+          "x2": 266.17394483071376,
+          "y2": 1058.0397725929222
+        }
+      },
+      "displayName": "授業"
+    },
+    "6959d8d1-1c9c-4dc7-b8c5-a398cdcbf41c": {
+      "type": "prefab",
+      "prefab_id": "TemplateMatchPrefab",
+      "name": "InProduce.ButtonIconStudyDanceHif",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 291.62764691816864,
+          "y1": 939.5444980582679,
+          "x2": 428.2084873874386,
+          "y2": 1058.039772592921
+        }
+      },
+      "displayName": "授業"
+    },
+    "93ec5956-4eed-4ef0-b744-9c62c8270d53": {
+      "type": "prefab",
+      "prefab_id": "TemplateMatchPrefab",
+      "name": "InProduce.ButtonIconStudyVisualHif",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 453.6621894748935,
+          "y1": 941.4056803808018,
+          "x2": 590.2430299441635,
+          "y2": 1059.9009549154557
+        }
+      },
+      "displayName": "授業"
+    }
+  }
+}

@@ -1,4 +1,5 @@
 from enum import IntEnum, Enum
+from typing import TypeAlias
 from typing_extensions import assert_never
 
 
@@ -222,7 +223,17 @@ class ProduceAction(Enum):
     DANCE_SP = 'dance_sp'
     OUTING = 'outing'
     STUDY = 'study'
+    """授業"""
+    STUDY_VISUAL_HIF = 'study_visual'
+    """授業（形象）。HIF 专用。"""
+    STUDY_VOCAL_HIF = 'study_vocal'
+    """授業（声乐）。HIF 专用。"""
+    STUDY_DANCE_HIF = 'study_dance'
+    """授業（舞蹈）。HIF 专用。"""
     ALLOWANCE = 'allowance'
+    """活动支给（活動支給）。初专用。"""
+    GIFT = 'gift'
+    """差し入れ。NIA/HIF 专用。"""
     REST = 'rest'
     CONSULT = 'consult'
 
@@ -275,4 +286,4 @@ class ProduceStrategy(str, ConfigEnum):
 # class HajimeLegendScenario(str, ConfigEnum):
 #     LEGEND = 'hajime_legend'
 
-Scenario = HajimeScenario | NiaScenario | HifScenario
+Scenario: TypeAlias = HajimeScenario | NiaScenario | HifScenario

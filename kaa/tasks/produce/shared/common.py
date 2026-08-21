@@ -3,6 +3,7 @@ from turtle import color
 from typing import Literal, Callable
 
 from cv2.typing import MatLike
+from kaa.config.const import HifScenario
 from kotonebot import (
     ocr,
     device,
@@ -176,7 +177,7 @@ def handle_skill_card_removal():
     logger.debug("Handle skill card removal finished.")
 
 @action('继续当前培育.进入培育', screenshot_mode='manual-inherit')
-def resume_produce_pre() -> tuple[HajimeScenario, int, str]:
+def resume_produce_pre() -> tuple[Scenario, int, str]:
     """
     继续当前培育.进入培育\n
     该函数用于处理‘日期变更’等情况；单独执行此函数时，要确保代码已经处于培育状态。
@@ -196,7 +197,8 @@ def resume_produce_pre() -> tuple[HajimeScenario, int, str]:
     mode_result = AnyOf[
         R.Produce.ResumeDialogRegular,
         R.Produce.ResumeDialogPro,
-        R.Produce.ResumeDialogMaster
+        R.Produce.ResumeDialogMaster,
+        R.Produce.ResumeDialogHifMain
     ].find()
     if not mode_result:
         raise ValueError('Failed to detect produce scenario.')
@@ -204,8 +206,12 @@ def resume_produce_pre() -> tuple[HajimeScenario, int, str]:
         scenario = HajimeScenario.REGULAR
     elif mode_result.prefab == R.Produce.ResumeDialogPro:
         scenario = HajimeScenario.PRO
-    else:
+    elif mode_result.prefab == R.Produce.ResumeDialogMaster:
         scenario = HajimeScenario.MASTER
+    elif mode_result.prefab == R.Produce.ResumeDialogHifMain:
+        scenario = HifScenario.MAIN
+    else:
+        raise ValueError('Failed to detect produce scenario.')
     logger.info(f'Produce scenario: {scenario}')
 
     # 识别偶像卡

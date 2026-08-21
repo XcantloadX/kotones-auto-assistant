@@ -313,7 +313,7 @@ def prepare_hif_main() -> bool:
         # 1 -> 2
         if R.Produce.TextStepIndicator1.exists():
             R.Produce.Step1.ButtonNext.try_click()
-            sleep(1)
+            sleep(2)
         elif R.Produce.TextStepIndicator4Or2.exists():
             break
 
