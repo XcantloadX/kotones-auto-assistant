@@ -302,6 +302,12 @@ Item {
                     binder: connection_b
                     field: "ip"
                 }
+                FieldRegistrar {
+                    startParent: parent
+                    binder: connection_b
+                    field: "port"
+                    label: "ADB 端口"
+                }
                 FormTextField {
                     label: "ADB 端口"
                     value: (root.connection.port ?? 5555).toString()

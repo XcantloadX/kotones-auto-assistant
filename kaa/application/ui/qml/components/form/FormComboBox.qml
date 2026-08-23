@@ -26,6 +26,20 @@ ColumnLayout {
         return (_eb && field) ? _eb.get(field, null) : value
     }
 
+    FieldRegistrar {
+        id: _registrar
+        startParent: root.parent
+        binder: root._eb
+        field: root.field
+        label: root.label
+        prefixRevision: root._eb ? (root._eb.prefix.length) : 0
+    }
+    Connections {
+        target: root._eb
+        enabled: !!root._eb && !!root.field && !!root.label
+        function onPrefixChanged() { _registrar.prefixRevision++ }
+    }
+
     function indexOfValue(v) {
         for (var i = 0; i < root.options.length; i++) {
             var opt = root.options[i]

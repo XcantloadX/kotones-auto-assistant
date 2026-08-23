@@ -95,6 +95,11 @@ Item {
                     value: root._profile.keep_screenshots ?? false
                     onUserToggled: function(checked) { settingsCtrl.setField("keep_screenshots", checked) }
                 }
+                FieldRegistrar {
+                    startParent: parent
+                    field: "keep_screenshots"
+                    label: "保留截图数据"
+                }
                 FormCheckBox {
                     field: "recommend_card_detection"
                     label: "跟踪推荐卡检测"

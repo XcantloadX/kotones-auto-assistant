@@ -26,6 +26,23 @@ ColumnLayout {
         return (_eb && field) ? _eb.get(field, false) : value
     }
 
+    // 自动注册 label ↔ field 映射至 SettingsPage（仅当通过 binder+field 使用时）
+    FieldRegistrar {
+        id: _registrar
+        startParent: root.parent
+        binder: root._eb
+        field: root.field
+        label: root.label
+        // binder.prefix 变化时触发重同步
+        prefixRevision: root._eb ? (root._eb.prefix.length) : 0
+    }
+    // prefix 字符串变化需额外监听（length 不足以覆盖同长度不同值，补充 Connections）
+    Connections {
+        target: root._eb
+        enabled: !!root._eb && !!root.field && !!root.label
+        function onPrefixChanged() { _registrar.prefixRevision++ }
+    }
+
     RowLayout {
         CheckBox {
             text: root.label

@@ -58,6 +58,27 @@ PageContainer {
     property var validationIssues: []
     // 完整 dot path → {severity, message}，分发给各 section 供字段内联展示
     property var errors: ({})
+    // 自动注册的 field → label 映射（由各 Form* 通过 FieldRegistrar 上报）
+    property var fieldLabelMap: ({})
+
+    function registerField(path, label) {
+        if (!path || !label) return
+        var m = fieldLabelMap
+        m[path] = label
+        fieldLabelMap = m
+    }
+    function unregisterField(path) {
+        if (!path) return
+        var m = fieldLabelMap
+        if (m[path] !== undefined) {
+            delete m[path]
+            fieldLabelMap = m
+        }
+    }
+    function labelFor(field) {
+        if (!field) return ""
+        return fieldLabelMap[field] || field
+    }
 
     // 由 validationIssues 构建完整路径 → {severity, message} 的映射
     function errorMap() {
@@ -94,20 +115,75 @@ PageContainer {
         if (!settingsCtrl) return
         refreshValidation()
         if (root.hasValidationErrors()) {
-            Notice.show("error", "存在配置错误，请修正后再保存。")
+            validationErrorDialog.open()
             return
         }
-        settingsCtrl.save()
+        // commit 兜底：若 Python 侧仍校验失败，刷新后同样弹模态框
+        if (!settingsCtrl.save()) {
+            refreshValidation()
+            if (root.hasValidationErrors()) validationErrorDialog.open()
+        }
     }
 
     Component.onCompleted: refreshValidation()
+
+    Dialog {
+        id: validationErrorDialog
+        title: "配置校验未通过"
+        modal: true
+        anchors.centerIn: Overlay.overlay
+        width: Math.min(520, root.width - 40)
+        standardButtons: Dialog.Ok
+        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+
+        contentItem: ColumnLayout {
+            spacing: 10
+            width: parent.width
+
+            Label {
+                text: "以下字段存在问题，请修正后再保存："
+                wrapMode: Text.Wrap
+                Layout.fillWidth: true
+                font.bold: true
+            }
+
+            ColumnLayout {
+                spacing: 6
+                Layout.fillWidth: true
+                Repeater {
+                    model: root.validationIssues.filter(function(it){ return it && it.severity === "error" })
+                    delegate: RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 6
+                        Label { text: "•"; font.bold: true; Layout.alignment: Qt.AlignTop }
+                        Label {
+                            Layout.fillWidth: true
+                            wrapMode: Text.Wrap
+                            text: {
+                                var it = modelData
+                                var lbl = root.labelFor(it.field)
+                                // 若 label 与 field 相同（未注册或原始 path），仅展示 message 避免重复
+                                if (it.field && lbl !== it.field) return lbl + " — " + it.message
+                                if (it.field) return lbl + " — " + it.message
+                                return it.message
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     Connections {
         target: settingsCtrl
         function onDirtyChanged(isDirty) { root.dirty = isDirty; root.refreshValidation() }
         function onConfigChanged()     { root.refreshValidation() }
         function onOperationSucceeded(msg) { Notice.show("success", msg) }
-        function onOperationFailed(msg) { Notice.show("error", msg) }
+        function onOperationFailed(msg) {
+            // 校验失败已由 save() 的模态框展示，避免 toast 重复
+            if (root.hasValidationErrors()) return
+            Notice.show("error", msg)
+        }
     }
 
     ColumnLayout {

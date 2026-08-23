@@ -118,6 +118,13 @@ Item {
                         Layout.leftMargin: 24
                         visible: root._purchase.money_enabled ?? false
 
+                        // 异形控件（非 Form*）手动注册 label 映射
+                        FieldRegistrar {
+                            startParent: parent
+                            binder: purchase
+                            field: "money_items"
+                            label: "金币商店购买物品"
+                        }
                         MultiSelect {
                             Layout.fillWidth: true
                             label: "金币商店购买物品"
@@ -143,6 +150,12 @@ Item {
                         Layout.leftMargin: 24
                         visible: root._purchase.ap_enabled ?? false
 
+                        FieldRegistrar {
+                            startParent: parent
+                            binder: purchase
+                            field: "ap_items"
+                            label: "AP商店购买物品"
+                        }
                         MultiSelect {
                             Layout.fillWidth: true
                             label: "AP商店购买物品"
