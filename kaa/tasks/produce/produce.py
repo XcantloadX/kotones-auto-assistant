@@ -377,7 +377,7 @@ def produce():
     if count < 0:
         user.warning('配置有误', '培育次数不能小于 0。将跳过本次培育。')
         return
-    if idol is None:
+    if isinstance(solution.data.mode, HajimeScenario) and idol is None:
         user.warning('配置有误', '未设置要培育的偶像。将跳过本次培育。')
         return
     # 业务规则校验（如编成未配置等），以友好提示替代运行时崩溃
