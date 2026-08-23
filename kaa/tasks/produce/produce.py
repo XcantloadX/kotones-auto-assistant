@@ -1,8 +1,10 @@
 import logging
 from typing import Optional
 
-from kaa.config.const import HajimeScenario, Scenario
+from kaa.config.const import HajimeScenario, HifScenario, Scenario
 from kaa.kaa_context import produce_solution, init_produce_session, clear_produce_session
+from kaa.tasks.produce.new.strategies.hif_grind import HifGrindStrategy
+from kaa.tasks.produce.new.strategies.standard import StandardStrategy
 from kaa.tasks.produce.session import ProduceSession, resolve_deck
 from kaa.tasks.produce.shared.common import resume_produce_pre
 from kaa.tasks.produce.new.controller import ProduceController
@@ -20,7 +22,7 @@ from kotonebot.util import Countdown
 from kaa.game_ui.idols_overview import locate_idol
 from kotonebot import device, ocr, task, action, sleep
 from kaa.errors import IdolCardNotFoundError
-from .prepare import prepare
+from .prepare import prepare, prepare_hif_main
 from kotonebot.errors import UnrecoverableError
 
 logger = logging.getLogger(__name__)
@@ -168,7 +170,13 @@ def resume_produce():
         if conf().tasks.produce.produce_engine == 'legacy':
             resume_produce_lst(scenario, current_week)
         else:
-            ProduceController(scenario=scenario).run()
+            if isinstance(scenario, HajimeScenario):
+                c = ProduceController(scenario=scenario, strategy=StandardStrategy)
+            elif isinstance(scenario, HifScenario):
+                c = ProduceController(scenario=scenario, strategy=HifGrindStrategy)
+            else:
+                raise NotImplementedError(f'Unsupported produce scenario: {scenario}')
+            c.run()
     finally:
         clear_produce_session()
 
@@ -209,13 +217,12 @@ def do_produce(
                 logger.info('Confirmed break produce dialog.')
                 continue
             
-        if R.Produce.LogoHajime.exists(): # Hajime培育界面
-            # 新开
+        if (
+            R.Produce.LogoHajime.exists()
+            or R.Produce.LogoNia.exists()
+            or R.Produce.LogoHif.exists()
+        ): # 新开
             break
-        elif R.Produce.LogoNia.exists(): # NIA培育界面
-            device.click(R.Produce.PointNiaToHajime)
-            sleep(0.5)
-            continue
         elif R.Produce.ButtonResume.exists():
             # 再开
             resume_produce()
@@ -229,14 +236,45 @@ def do_produce(
 
     # 0. 进入培育页面
     logger.info(f'Enter produce page. Scenario: {scenario.value}')
-    if not isinstance(scenario, HajimeScenario):
+    # 先翻页
+    # 剧本顺序：初、NIA、HIF
+    if isinstance(scenario, HajimeScenario):
+        target_logo = R.Produce.LogoHajime
+    elif isinstance(scenario, HifScenario):
+        target_logo = R.Produce.LogoHif
+    else:
         raise NotImplementedError(f'Unsupported produce scenario: {scenario}')
+    for _ in Loop():
+        if target_logo.exists():
+            logger.info(f'Found target logo: {target_logo}.')
+            break
+        if R.Produce.LogoHajime.exists():
+            logger.info('Reset to Hajime logo.')
+            break
+        else:
+            device.click(R.Produce.PointPrev)
+            sleep(0.5)
+    for _ in Loop():
+        if target_logo.exists():
+            logger.info(f'Found target logo: {target_logo}.')
+            break
+        else:
+            device.click(R.Produce.PointNext)
+            sleep(0.5)
+
+    # 然后点击按钮
     if scenario == HajimeScenario.REGULAR:
         target_buttons = [R.Produce.ButtonHajime0Regular, R.Produce.ButtonHajime1Regular]
     elif scenario == HajimeScenario.PRO:
         target_buttons = [R.Produce.ButtonHajime0Pro, R.Produce.ButtonHajime1Pro]
-    else:
+    elif scenario == HajimeScenario.MASTER:
         target_buttons = [R.Produce.ButtonHajime1Master]
+    elif scenario == HifScenario.QUALIFY:
+        target_buttons = [R.Produce.ButtonHifQualify]
+    elif scenario == HifScenario.MAIN:
+        target_buttons = [R.Produce.ButtonHifMain]
+    else:
+        raise NotImplementedError(f'Unsupported produce scenario: {scenario}')
     find_target_button = lambda: next((b for b in target_buttons if b.find()), None)  # noqa: E731
     result = None
     for _ in Loop():
@@ -251,7 +289,7 @@ def do_produce(
             sleep(0.5)
         elif btn := find_target_button():
             btn.click()
-        elif R.Produce.ButtonPIdolOverview.exists():
+        elif R.Produce.Step1.ButtonNext.exists():
             result = True
             break
         elif R.Produce.TextAPInsufficient.exists():
@@ -277,8 +315,11 @@ def do_produce(
             R.InProduce.ButtonCancel.wait().click()
             return False
 
-    prepare()
-
+    is_hif_main = scenario == HifScenario.MAIN
+    if not is_hif_main:
+        prepare()
+    else:
+        prepare_hif_main()
     R.Produce.Step4.ButtonProduceStart.wait().click()
 
     # 5. 相关设置弹窗 [screenshots/produce/skip_commu.png]
@@ -306,7 +347,12 @@ def do_produce(
                 case _:
                     raise NotImplementedError(f'Unsupported produce scenario: {scenario}')
         else:
-            c = ProduceController(scenario=scenario)
+            if isinstance(scenario, HajimeScenario):
+                c = ProduceController(scenario=scenario, strategy=StandardStrategy)
+            elif isinstance(scenario, HifScenario):
+                c = ProduceController(scenario=scenario, strategy=HifGrindStrategy)
+            else:
+                raise NotImplementedError(f'Unsupported produce scenario: {scenario}')
             c.run()
     finally:
         clear_produce_session()
@@ -333,9 +379,6 @@ def produce():
         return
     if idol is None:
         user.warning('配置有误', '未设置要培育的偶像。将跳过本次培育。')
-        return
-    if not isinstance(scenario, HajimeScenario):
-        user.warning('配置有误', f'暂不支持的培育模式：{scenario.value}。将跳过本次培育。')
         return
     # 业务规则校验（如编成未配置等），以友好提示替代运行时崩溃
     from kaa.config.produce import validate_produce_solution

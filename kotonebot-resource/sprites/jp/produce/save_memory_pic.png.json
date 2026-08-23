@@ -1,0 +1,35 @@
+{
+  "version": 3,
+  "definitions": {
+    "220fb13f-a779-4612-a6d0-4d8907fe2b9a": {
+      "type": "prefab",
+      "prefab_id": "GakumasSecondaryButtonPrefab",
+      "name": "Produce.SaveMemoPic.Title",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 53.86146194348174,
+          "y1": 476.74949691571953,
+          "x2": 128.84946514262867,
+          "y2": 520.7121371355912
+        },
+        "fixed": true
+      }
+    },
+    "8e2de1e8-2354-4c4d-a350-8ce25ff27fcf": {
+      "type": "prefab",
+      "prefab_id": "TemplateMatchPrefab",
+      "name": "Produce.SaveMemoPic.ButtonConfirm",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 388.80787623300455,
+          "y1": 1132.5321309222454,
+          "x2": 440.79955845107975,
+          "y2": 1181.4905257125572
+        },
+        "fixed": true
+      }
+    }
+  }
+}

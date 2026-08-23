@@ -1,0 +1,21 @@
+{
+  "version": 3,
+  "definitions": {
+    "af3e8ea7-88ed-40f9-a6ea-8c47c7053082": {
+      "type": "prefab",
+      "prefab_id": "TemplateMatchPrefab",
+      "name": "InProduce.End.ButtonGenerate",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 324.1998803286818,
+          "y1": 954.8897043538573,
+          "x2": 397.81695334161833,
+          "y2": 998.4289628189988
+        },
+        "fixed": true
+      },
+      "displayName": "生成"
+    }
+  }
+}

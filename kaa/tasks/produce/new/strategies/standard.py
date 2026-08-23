@@ -1,28 +1,38 @@
-from typing import TYPE_CHECKING, Literal
+"""标准培育策略实现。
 
-from kaa.tasks.produce.legacy.in_purodyuusu import produce_end
-from kaa.tasks.produce.new.play_cards.bandai_strategy import BandaiStrategy
+:class:`StandardStrategy` 是开箱即用的默认培育策略，实现了
+:class:`~kaa.tasks.produce.new.strategies.base.ProduceStrategy` 定义的全部钩子，
+覆盖授業、外出、考试、行动选择等常规场景的决策逻辑。
+"""
+
+from typing import TYPE_CHECKING, Literal
+from typing_extensions import override
+
+from kaa.tasks.produce.new.page import SkillCardChangeContext
 from kotonebot import logging, sleep, device, Loop
 from kotonebot.core import AnyOf
 from kotonebot.errors import UnrecoverableError
 
+from kaa.tasks.produce.legacy.in_purodyuusu import produce_end
+from kaa.tasks.produce.new.play_cards.bandai_strategy import BandaiStrategy
 from kaa.tasks import R
 from kaa.tasks.produce.shared.cards import CardDetectResult, do_cards
 from kaa.tasks.produce.new.play_cards.expert_strategy import ExpertSystemStrategy
 from kaa.kaa_context import produce_solution
 from kaa.config.const import ProduceAction
 from kaa.tasks.produce.shared.common import ProduceInterrupt, acquisition_date_change_dialog, use_strict_card_detection
-from kaa.tasks.actions.commu import handle_unread_commu
+
+from .base import ProduceStrategy
 
 if TYPE_CHECKING:
-    from .page import (
+    from ..page import (
         DrinkSelectContext, ActionSelectContext,
         PracticeContext, ExamContext, CardSelectContext, PItemSelectContext,
         StudyContext, OutingContext, ConsultContext, AllowanceContext,
         SkillCardEnhanceContext, SkillCardRemovalContext,
         PDrinkMaxContext, PDrinkMaxConfirmContext, DateChangeContext,
     )
-    from .controller import ProduceController
+    from ..controller import ProduceController
 
 logger = logging.getLogger(__name__)
 
@@ -47,10 +57,9 @@ def _build_battle_strategy(threshold_predicate):
         return ExpertSystemStrategy()
     raise UnrecoverableError(f'Unknown produce battle strategy: {battle_strategy}')
 
-class StandardStrategy:
+class StandardStrategy(ProduceStrategy):
     def __init__(self, controller: 'ProduceController') -> None:
-        self.controller = controller
-        self.page = controller.page
+        super().__init__(controller)
 
     def on_study(self, ctx: 'StudyContext'):
         if ctx.is_self_study():
@@ -95,12 +104,6 @@ class StandardStrategy:
         result = acquisition_date_change_dialog()
         if result is None:
             logger.warning("DATE_CHANGE scene detected but acquisition_date_change_dialog returned None.")
-
-    def try_handle_commu(self, img) -> bool:
-        """处理交流"""
-        if produce_solution().data.skip_commu and handle_unread_commu(img):
-            return True
-        return False
 
     def on_select_drink(self, ctx: 'DrinkSelectContext'):
         """选择饮料"""
@@ -155,6 +158,12 @@ class StandardStrategy:
     def on_skill_card_removal(self, ctx: 'SkillCardRemovalContext'):
         """技能卡自选删除"""
         ctx.commit(0)
+
+    @override
+    def on_skill_card_change(self, ctx: 'SkillCardChangeContext'):
+        if ctx.stage == 1:
+            ctx.commit_stage1(0)
+        ctx.commit_stage2(0)
 
     def on_action_select(self, ctx: 'ActionSelectContext'):
         # 行动选择页在切页动画期间可能出现按钮尚未渲染完成的瞬时状态，
@@ -246,12 +255,6 @@ class StandardStrategy:
     def on_practice_exited(self):
         pass
 
-    def on_practice_tick(self, ctx: 'PracticeContext'):
-        pass
-
-    def on_exam(self, ctx: 'ExamContext'):
-        pass
-
     def on_exam_entered(self, ctx: 'ExamContext'):
         type: Literal['mid', 'final'] = 'final'
         if ctx.is_final_exam():
@@ -319,6 +322,7 @@ class StandardStrategy:
             )
 
         do_cards(True, threshold_predicate, end_predicate, battle_strategy=_build_battle_strategy(threshold_predicate))
+
 
         R.Common.ButtonNext.wait().click()
 

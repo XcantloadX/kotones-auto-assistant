@@ -1,13 +1,15 @@
 from typing import Callable
 from typing_extensions import assert_never
 
-from kaa.config.const import HajimeScenario
+from kaa.config.const import HajimeScenario, HifScenario, Scenario
+from kaa.tasks.produce.new.strategies.base import HifProduceStrategy
+from kaa.tasks.produce.new.strategies.hif_grind import HifGrindStrategy
 from kaa.tasks.produce.shared.common import ProduceInterrupt
 from kotonebot import logging, Loop, action, sleep, device, Countdown
 
 from .page import (
-    ActionSelectContext, DrinkSelectContext, ProducePage,
-    PracticeContext, ExamContext, CardSelectContext, PItemSelectContext,
+    ActionSelectContext, DrinkSelectContext, HifRoundIntervalContext, ProduceEndContext, ProducePage,
+    PracticeContext, ExamContext, CardSelectContext, PItemSelectContext, SkillCardChangeContext,
     StudyContext, OutingContext, ConsultContext, AllowanceContext,
     SkillCardEnhanceContext, SkillCardRemovalContext,
     PDrinkMaxContext, PDrinkMaxConfirmContext, DateChangeContext,
@@ -15,15 +17,15 @@ from .page import (
 )
 from kaa.tasks.common import skip
 from .consts import Scene, SceneType
-from .strategy import StandardStrategy
+from .strategies import ProduceStrategy, StandardStrategy
 
 logger = logging.getLogger(__name__)
 
 
 class ProduceController:
-    def __init__(self, *, scenario: HajimeScenario) -> None:
+    def __init__(self, *, scenario: Scenario, strategy: type[ProduceStrategy] | None = None) -> None:
         self.page = ProducePage()
-        self.strategy = StandardStrategy(self)
+        self.strategy: ProduceStrategy = strategy(self) if strategy is not None else StandardStrategy(self)
         self.running: bool = True
         self._last_scene: Scene | None = None
         self._flow: Flow | None = None
@@ -104,6 +106,12 @@ class ProduceController:
             case SceneType.SKILL_CARD_REMOVAL:
                 self.strategy.on_skill_card_removal(SkillCardRemovalContext(self.page, self))
                 return True
+            case SceneType.SKILL_CARD_CHANGE_1:
+                self.strategy.on_skill_card_change(SkillCardChangeContext(self.page, self, stage=1))
+                return True
+            case SceneType.SKILL_CARD_CHANGE_2:
+                self.strategy.on_skill_card_change(SkillCardChangeContext(self.page, self, stage=2))
+                return True
             case _:
                 return False
 
@@ -167,6 +175,8 @@ class ProduceController:
         # 否则按当前场景分发
         match scene.type:
             case SceneType.ACTION_SELECT:
+                sleep(2)
+                device.screenshot()
                 ctx = ActionSelectContext(self.page, self)
                 self.strategy.on_action_select(ctx)
             case SceneType.PRACTICE:
@@ -175,13 +185,12 @@ class ProduceController:
                     logger.info("Entered practice battle scene.")
                     self.strategy.on_practice_entered(ctx)
                 else:
-                    self.strategy.on_practice_tick(ctx)
+                    skip()
             case SceneType.EXAM:
                 ctx = ExamContext(self.page, self)
                 if not last_scene or last_scene.type != SceneType.EXAM:
                     logger.info("Entered exam battle scene.")
                     self.strategy.on_exam_entered(ctx)
-                self.strategy.on_exam(ctx)
             case SceneType.STUDY:
                 ctx = StudyContext(self.page, self)
                 self.strategy.on_study(ctx)
@@ -194,6 +203,14 @@ class ProduceController:
             case SceneType.ALLOWANCE:
                 ctx = AllowanceContext(self.page, self)
                 self.strategy.on_allowance(ctx)
+            case SceneType.HIF_ROUND_INTERVAL:
+                ctx = HifRoundIntervalContext(self.page, self)
+                if not isinstance(self.strategy, HifProduceStrategy):
+                    raise RuntimeError("HIF_ROUND_INTERVAL scene encountered but current strategy is not HifProduceStrategy.")
+                self.strategy.on_hif_round_interval(ctx)
+            case SceneType.PRODUCE_END:
+                ctx = ProduceEndContext(self.page, self)
+                self.strategy.on_produce_end(ctx)
             case SceneType.IDLE:
                 skip()
                 logger.info("Idle state. Doing nothing.")
@@ -206,7 +223,7 @@ class ProduceController:
             case (
                 SceneType.LOADING | SceneType.PDRINK_MAX | SceneType.PDRINK_MAX_CONFIRM | 
                 SceneType.SELECT_DRINK | SceneType.SELECT_CARD | SceneType.SELECT_PITEM | 
-                SceneType.SKILL_CARD_ENHANCE | SceneType.SKILL_CARD_REMOVAL
+                SceneType.SKILL_CARD_ENHANCE | SceneType.SKILL_CARD_REMOVAL | SceneType.SKILL_CARD_CHANGE_1 | SceneType.SKILL_CARD_CHANGE_2
             ):
                 # 这些类型应由 interrupt 处理逻辑捕获，不应到达这里
                 raise RuntimeError(f"Interrupt scene {scene.type} reached main dispatch unexpectedly.")
@@ -217,6 +234,9 @@ class ProduceController:
 
     
 if __name__ == '__main__':
-    c = ProduceController(scenario=HajimeScenario.REGULAR)
+    from kaa.kaa_context import init_produce_session
+    from kaa.tasks.produce.session import ProduceSession
+    init_produce_session(ProduceSession('', HifScenario.MAIN, True))
+    c = ProduceController(scenario=HifScenario.MAIN, strategy=HifGrindStrategy)
     c.run()
     # CardSelectContext(1, c).fetch_cards()

@@ -1,10 +1,12 @@
 # pyright: reportUnusedExpression=false
 import functools
 from typing import Any, Callable, Literal, TypeVar, ParamSpec, cast, TYPE_CHECKING
+from typing_extensions import override
 
 import cv2
 import numpy as np
 from kaa.db.skill_card import SkillCard
+from kaa.kaa_context import produce_session
 from kotonebot.primitives import Rect
 from kotonebot.core import BoundPrefab, GameObject, AnyOf, Prefab
 from kotonebot.errors import UnrecoverableError
@@ -12,7 +14,7 @@ from kotonebot import logging, device, sleep, Countdown, Loop, cropped, ocr
 
 from kaa.tasks import R
 from kaa.tasks.common import skip
-from kaa.config.const import ProduceAction
+from kaa.config.const import HajimeScenario, HifScenario, NiaScenario, ProduceAction, Scenario
 from kaa.tasks.actions.loading import loading
 from kaa.game_ui import CommuEventButtonUI, dialog, badge
 from .consts import Drink, Scene, SceneType, SelectDrinkDialog, PerformanceMetricsVal
@@ -165,6 +167,15 @@ class _SceneCheckMixin:
             dialog.yes()
             return Scene(SceneType.IDLE)
 
+        # 培育结算
+        if R.InProduce.ProduceScore.TitleText.exists():
+            logger.debug("Scene detected: PRODUCE_END (score)")
+            return Scene(SceneType.PRODUCE_END)
+        
+        if R.InProduce.End.ButtonGenerate.exists():
+            logger.debug("Scene detected: PRODUCE_END (gen memory)")
+            return Scene(SceneType.PRODUCE_END)
+
         return None
 
     def _check_dialogs(self) -> Scene | None:
@@ -198,6 +209,14 @@ class _SceneCheckMixin:
         # 技能卡自选删除
         if R.InProduce.IconTitleSkillCardRemoval.exists():
             return Scene(SceneType.SKILL_CARD_REMOVAL)
+    
+        # 技能卡自选变更 阶段 1
+        if R.InProduce.DialogCardChange1.TipText.exists():
+            return Scene(SceneType.SKILL_CARD_CHANGE_1)
+
+        # 技能卡自选变更 阶段 2
+        if R.InProduce.DialogCardChange2.Title.exists():
+            return Scene(SceneType.SKILL_CARD_CHANGE_2)
 
     def _check_action_like(self) -> Scene | None:
         """判断行动-like场景，右上角展示目标值的场景"""
@@ -234,6 +253,13 @@ class _SceneCheckMixin:
         # 活動支給
         if R.InProduce.IconTitleAllowance.exists():
             return Scene(SceneType.ALLOWANCE)
+
+        # 差し入れ 不需要额外判断
+        # 一直点就能自动处理掉
+
+        # HIF インターバル
+        if R.InProduce.HifInterval.Title.exists():
+            return Scene(SceneType.HIF_ROUND_INTERVAL)
         
         # 培育初始饮料、卡片二选一
         ui = CommuEventButtonUI()
@@ -526,7 +552,9 @@ class ActionSelectContext(Context):
 
     def fetch_available_actions(self) -> tuple[list[ProduceAction], list[GameObject]]:
         """读取当前可用的行动"""
-        if self.is_final_week():
+        session = produce_session()
+        assert session is not None, "Produce session is not initialized."
+        if isinstance(session.scenario, HajimeScenario) and self.is_final_week():
             # 冲刺周只有 Da Vi Vo 三种行动
             return [
                 ProduceAction.DANCE,
@@ -540,28 +568,53 @@ class ActionSelectContext(Context):
         else:
             # 否则逐个检测
             # 非课程
-            actions = [
-                (R.InProduce.Rest, ProduceAction.REST),
+            actions: list[tuple[None | list[type[Scenario]], type[Prefab[GameObject]], ProduceAction]] = [
+                # 共通
+                (None, R.InProduce.Rest, ProduceAction.REST),
 
-                (R.InProduce.ButtonIconOuting, ProduceAction.OUTING),
-                (R.InProduce.ButtonIconStudy, ProduceAction.STUDY),
-                (R.InProduce.ButtonTextAllowance, ProduceAction.ALLOWANCE),
-                (R.InProduce.ButtonIconConsult, ProduceAction.CONSULT),
+                (None, R.InProduce.ButtonIconOuting, ProduceAction.OUTING),
+                (None, R.InProduce.ButtonIconConsult, ProduceAction.CONSULT),
+
+                # 初
+                ([HajimeScenario], R.InProduce.ButtonIconStudy, ProduceAction.STUDY),
+                ([HajimeScenario], R.InProduce.ButtonTextAllowance, ProduceAction.ALLOWANCE),
+
+                # HIF/NIA
+                ([NiaScenario, HifScenario], R.InProduce.ButtonIconGift, ProduceAction.GIFT),
+
+                # HIF
+                ([HifScenario], R.InProduce.ButtonIconStudyVisualHif, ProduceAction.STUDY_VISUAL_HIF),
+                ([HifScenario], R.InProduce.ButtonIconStudyVocalHif, ProduceAction.STUDY_VOCAL_HIF),
+                ([HifScenario], R.InProduce.ButtonIconStudyDanceHif, ProduceAction.STUDY_DANCE_HIF),
             ]
             buttons: list[GameObject] = []
             result: list[ProduceAction] = []
-            for btn, action in actions:
+            for scenarios, btn, action in actions:
+                # 跳过不属于当前场景的行动
+                if scenarios is not None:
+                    if not any(isinstance(session.scenario, s) for s in scenarios):
+                        continue
+
                 if obj := btn.find():
                     result.append(action)
                     buttons.append(obj)
             
             # 课程与 SP 课程的处理
             # 三个课程一定都有或都没有
-            vo = R.InProduce.ButtonPracticeVocal.find()
+            vo = AnyOf[
+                R.InProduce.ButtonPracticeVocal,
+                R.InProduce.ButtonPracticeVocalHif
+            ].find()
             if vo is not None:
                 vo_sp = da_sp = vi_sp = False
-                da = R.InProduce.ButtonPracticeDance.require()
-                vi = R.InProduce.ButtonPracticeVisual.require()
+                da = AnyOf[
+                    R.InProduce.ButtonPracticeDance,
+                    R.InProduce.ButtonPracticeDanceHif
+                ].require()
+                vi = AnyOf[
+                    R.InProduce.ButtonPracticeVisual,
+                    R.InProduce.ButtonPracticeVisualHif
+                ].require()
                 sp_list = R.InProduce.IconSp.find_all()
                 for cur_sp in sp_list:
                     if cur_sp.rect.center[0] < vo.rect.center[0]:
@@ -671,30 +724,7 @@ class ActionSelectContext(Context):
         index = _actions[0].index(action)
         button = _actions[1][index]
 
-        if button.prefab in [
-            R.InProduce.ButtonIconOuting,
-            R.InProduce.ButtonIconStudy,
-            R.InProduce.ButtonTextAllowance,
-            R.InProduce.ButtonIconConsult,
-
-            R.InProduce.ButtonFinalPracticeDance,
-            R.InProduce.ButtonFinalPracticeVocal,
-            R.InProduce.ButtonFinalPracticeVisual,
-            R.InProduce.TextActionVisual,
-            R.InProduce.TextActionVocal,
-            R.InProduce.TextActionDance,
-            R.InProduce.ButtonPracticeDance,
-            R.InProduce.ButtonPracticeVocal,
-            R.InProduce.ButtonPracticeVisual,
-        ]:
-            for _ in range(3):
-                button.click()
-                sleep(0.3)
-            
-            sleep(2)
-            logger.info(f"Entered action: {action}")
-            self.controller.wait_disappear(button.prefab)
-        else: # rest
+        if action == ProduceAction.REST: # rest
             # 先等按钮出现
             # 点击休息直到确认对话框出现
             # TODO: 需要一种方法简化这种 pattern
@@ -711,7 +741,14 @@ class ActionSelectContext(Context):
                 else:
                     break
 
-
+        else:
+            for _ in range(3):
+                button.click()
+                sleep(0.3)
+            
+            sleep(2)
+            logger.info(f"Entered action: {action}")
+            self.controller.wait_disappear(button.prefab)
 
 class PracticeContext(Context):
     def fetch_card_count(self) -> int:
@@ -929,17 +966,27 @@ class SkillFullScreenDialogContext(Context):
         page: 'ProducePage',
         controller: 'ProduceController',
         confirm_btn: type[Prefab[Any]] | BoundPrefab[Any, Any],
+        card_area: Rect | None = None
     ) -> None:
         super().__init__(page, controller)
         self.confirm_btn = confirm_btn
+        self.card_area = card_area
 
     @eval_once
     def fetch_cards(self):
         # TODO: 这里目前只处理了第一个，后续需要扩展为搜索所有
-        return [AnyOf[
-            R.InProduce.A,
-            R.InProduce.M
-        ].require()]
+        # return [AnyOf[
+        #     R.InProduce.A.q(region=self.card_area),
+        #     R.InProduce.M.q(region=self.card_area)
+        # ].require()]
+        cards_a = R.InProduce.A.q(region=self.card_area).find()
+        cards_m = R.InProduce.M.q(region=self.card_area).find()
+        if cards_a is not None:
+            return [cards_a]
+        elif cards_m is not None:
+            return [cards_m]
+        else:
+            raise UnrecoverableError("No skill card found in the specified area.")
 
     def commit(self, index: int):
         cards = self.fetch_cards()
@@ -1003,6 +1050,79 @@ class SkillCardRemovalContext(SkillFullScreenDialogContext):
         logger.debug("Handle skill card removal finished.")
 
 
+class SkillCardChangeContext(SkillFullScreenDialogContext):
+    def __init__(self, page: 'ProducePage', controller: 'ProduceController', stage: Literal[1, 2]) -> None:
+        super().__init__(page, controller, R.InProduce.ButtonRemove, R.InProduce.DialogCardChange2.BoxCardArea)
+        self.stage = stage
+
+    @override
+    def commit(self, index: int):
+        raise ValueError('Call commit_stage1 or commit_stage2 instead of commit for SkillCardRemovalContext.')
+
+    def commit_stage1(self, index: int = 0):
+        """提交阶段1，选择新的卡牌。"""
+        if index != 0:
+            raise NotImplementedError("SkillCardChangeContext.commit only supports index=0 for now.")
+
+        for _ in Loop():
+            if R.InProduce.DialogCardChange1.ButtonNext.q(enabled=True).try_click():
+                logger.debug("Change button clicked.")
+                sleep(1)
+            elif R.InProduce.DialogCardChange2.Title.exists():
+                logger.debug("Skill card change stage 2 detected.")
+                break
+            else:
+                device.click(R.InProduce.DialogCardChange1.PointCard1)
+                sleep(1)
+
+    def commit_stage2(self, index: int = 0):
+        """提交阶段2，选择被替换的卡牌。"""
+        if index != 0:
+            raise NotImplementedError("SkillCardChangeContext.commit only supports index=0 for now.")
+        cards = self.fetch_cards()
+        if not cards:
+            logger.info("No skill cards found for changing")
+            return
+
+        if index < 0 or index >= len(cards):
+            target = cards[0]
+        else:
+            target = cards[index]
+
+        device.click(target)
+        for _ in Loop():
+            if R.InProduce.DialogCardChange2.ButtonConfirm.try_click():
+                logger.debug("Change button clicked.")
+                sleep(1)
+            elif R.InProduce.DialogCardChangeConfirm.TItle.exists():
+                logger.debug("Skill card change confirm dialog detected.")
+                if R.InProduce.DialogCardChangeConfirm.ButtonConfirm.try_click():
+                    logger.debug("Change confirm button clicked.")
+                    sleep(1)
+            else:
+                break
+        logger.debug("Handle skill card change finished.")
+
+
+class HifRoundIntervalContext(Context):
+    def end(self):
+        for _ in Loop():
+            if R.InProduce.HifIntervalConfirm.Title.exists():
+                logger.info("Hif round interval confirm dialog detected.")
+                if R.InProduce.HifIntervalConfirm.ButtonConfirm.try_click():
+                    logger.debug("Hif round interval confirm button clicked.")
+                    sleep(1)
+            elif R.InProduce.HifInterval.ButtonEnd.try_click():
+                logger.info("Hif round interval end button detected.")
+                sleep(1)
+            elif not R.InProduce.HifInterval.Title.exists():
+                logger.info("Hif round interval exited.")
+                break
+
+class ProduceEndContext(Context):
+    """培育结算"""
+    pass
+
 class ProducePage(
         _SceneCheckMixin,
     ):
@@ -1029,9 +1149,13 @@ if __name__ == '__main__':
     # print(find(img, R.InProduce.TextExamRankLargeFirst.template, threshold=0))
     # print(find(img, R.InProduce.TextExamRankLargeFirst.template, threshold=0, rect=R.InProduce.TextExamRankLargeFirst.template.slice_rect))
     
+    from kaa.kaa_context import init_produce_session
+    from kaa.tasks.produce.session import ProduceSession
+    init_produce_session(ProduceSession('', HifScenario.MAIN, True))
     device.screenshot()
-    ctx = Context(ProducePage(), None)
-    ctx.fetch_owned_skill_cards()
+    ctx = SkillCardChangeContext(ProducePage(), None, 1)
+    # ctx.commit_stage1(0)
+    ctx.commit_stage2(0)
 
     # ui = CommuEventButtonUI()
     # buttons = ui.all()

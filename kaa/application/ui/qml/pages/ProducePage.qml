@@ -118,8 +118,62 @@ PageContainer {
         var parts = String(mode).split("_")
         return parts.length >= 2 ? parts.slice(1).join("_") : "regular"
     }
+
+    // 各剧本的难度选项（HIF 暂仅展示 正赛，选拔赛不在 UI 中暴露）
+    function _difficultyOptions(script) {
+        if (script === "nia")
+            return [
+                { label: "PRO", value: "pro" },
+                { label: "MASTER", value: "master" }
+            ]
+        if (script === "hif")
+            return [
+                { label: "正赛", value: "main" }
+            ]
+        return [
+            { label: "REGULAR", value: "regular" },
+            { label: "PRO", value: "pro" },
+            { label: "MASTER", value: "master" }
+        ]
+    }
+
+    // 各剧本的培育策略选项（初/NIA 仅「普通」；HIF 仅「正赛弃赛」）。
+    // 直接按剧本调整选项列表，而不是通过 disabled 显示不可选项。
+    function _strategyOptions(script) {
+        if (script === "hif")
+            return [ { label: "正赛弃赛", value: "withdraw_main" } ]
+        return [ { label: "普通", value: "normal" } ]
+    }
+
+    // 当前剧本下合法的培育策略值；切换剧本后残留的旧值会被回退到首个合法选项
+    readonly property string _strategyValue: {
+        var _ = sb._revision
+        var opts = root._strategyOptions(root._modeScript)
+        var v = sb.get("produce_strategy", opts.length > 0 ? opts[0].value : null)
+        for (var i = 0; i < opts.length; ++i)
+            if (opts[i].value === v) return v
+        return opts.length > 0 ? opts[0].value : null
+    }
+
     function _setMode(script, difficulty) {
-        sb.set("mode", script + "_" + difficulty)
+        // 剧本切换后难度可能不再适用（如 hajime_regular → hif），回退到首个合法难度
+        var diffOpts = root._difficultyOptions(script)
+        var diff = difficulty
+        var diffValid = false
+        for (var i = 0; i < diffOpts.length; ++i) {
+            if (diffOpts[i].value === diff) { diffValid = true; break }
+        }
+        if (!diffValid && diffOpts.length > 0) diff = diffOpts[0].value
+        // 剧本切换后培育策略可能不再适用，重置为当前剧本的首个合法策略
+        var strategyOpts = root._strategyOptions(script)
+        var strategy = sb.get("produce_strategy", strategyOpts.length > 0 ? strategyOpts[0].value : null)
+        var strategyValid = false
+        for (var i = 0; i < strategyOpts.length; ++i) {
+            if (strategyOpts[i].value === strategy) { strategyValid = true; break }
+        }
+        if (!strategyValid && strategyOpts.length > 0)
+            sb.set("produce_strategy", strategyOpts[0].value)
+        sb.set("mode", script + "_" + diff)
     }
 
     // ── 初始化 ────────────────────────────────────────
@@ -591,24 +645,28 @@ PageContainer {
                             label: "剧本"
                             options: [
                                 { label: "初", value: "hajime" },
-                                { label: "NIA", value: "nia", enabled: false }
+                                { label: "HIF", value: "hif" }
                             ]
                             value: root._modeScript
                             onUserSelected: function(v) { root._setMode(v, root._modeDifficulty) }
                         }
                         FormSegmentedButton {
                             label: "难度"
-                            options: [
-                                { label: "REGULAR", value: "regular" },
-                                { label: "PRO", value: "pro" },
-                                { label: "MASTER", value: "master" }
-                            ]
+                            options: root._difficultyOptions(root._modeScript)
                             value: root._modeDifficulty
                             onUserSelected: function(v) { root._setMode(root._modeScript, v) }
+                        }
+                        FormSegmentedButton {
+                            label: "培育策略"
+                            options: root._strategyOptions(root._modeScript)
+                            value: root._strategyValue
+                            onUserSelected: function(v) { sb.set("produce_strategy", v) }
                         }
                         RowLayout {
                             Layout.fillWidth: true
                             spacing: 6
+                            // HIF 剧本无需选择偶像（由游戏内自动选中），隐藏选择器
+                            visible: root._modeScript !== "hif"
 
                             RowLayout {
                                 Layout.preferredWidth: 120
@@ -657,7 +715,7 @@ PageContainer {
                     // ── 编成设置 ──────────────────────────────
                     FormGroupBox {
                         title: "编成设置"
-                        visible: root.currentSolution !== null
+                        visible: root.currentSolution !== null && root._modeScript !== "hif"
                         binder: sb
 
                         FormCheckBox {
@@ -693,6 +751,17 @@ PageContainer {
                             title: ""
                             visible: sb.get("auto_set_support_card", false)
                             content: "此编号的支援卡编成会被覆盖，注意选择空闲编号槽位。"
+                        }
+                    }
+
+                    // ── HIF 编成设置 ────────────────────────────
+                    FormGroupBox {
+                        title: "HIF 编成设置"
+                        visible: root.currentSolution !== null && root._modeScript === "hif"
+                        binder: sb
+                        Text {
+                            text: "暂不支持指定 HIF 回忆编成。将会使用游戏内自动选中的回忆。"
+                            font.pixelSize: 14
                         }
                     }
 
