@@ -127,6 +127,13 @@ class KaaDeviceFactory:
     def __call__(self) -> Device:
         from kaa.kaa_context import conf as get_conf  # noqa: PLC0415
         config = get_conf()
+        return self.create_device_for_config(config)
+
+    def create_device_for_config(self, config: KaaConfig) -> Device:
+        """为指定配置创建 Device，绕过 ContextVar，供跨线程截图等场景使用。
+
+        与 ``__call__`` 等价，但不依赖 ``kaa_context.conf()`` 的线程局部状态。
+        """
         self.target_screenshot_interval = config.backend.target_screenshot_interval
 
         from kotonebot.config.config import conf
