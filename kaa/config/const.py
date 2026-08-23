@@ -246,6 +246,10 @@ class ProduceAction(Enum):
             ProduceAction.DANCE: '舞蹈课程',
             ProduceAction.OUTING: '外出（おでかけ）',
             ProduceAction.STUDY: '文化课（授業）',
+            ProduceAction.STUDY_VISUAL_HIF: '文化课（形象·HIF）',
+            ProduceAction.STUDY_VOCAL_HIF: '文化课（声乐·HIF）',
+            ProduceAction.STUDY_DANCE_HIF: '文化课（舞蹈·HIF）',
+            ProduceAction.GIFT: '赠礼（差し入れ）',
             ProduceAction.ALLOWANCE: '活动支给（活動支給）',
             ProduceAction.REST: '休息',
             ProduceAction.CONSULT: '咨询（相談）',
@@ -253,7 +257,7 @@ class ProduceAction(Enum):
             ProduceAction.VOCAL_SP: '声乐 SP 课程',
             ProduceAction.DANCE_SP: '舞蹈 SP 课程',
         }
-        return MAP[self]
+        return MAP.get(self, self.value)
 
 
 class HajimeScenario(str, ConfigEnum):
