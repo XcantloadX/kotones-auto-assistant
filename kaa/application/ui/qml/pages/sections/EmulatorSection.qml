@@ -14,6 +14,7 @@ Item {
     property var emulatorInstances: []
     property bool enumerationLoading: false
     property bool emulatorNotInstalled: false
+    property bool _hasEnumerated: false
 
     readonly property var emulatorTypeNames: ({
         mumu12: "MuMu 12 v4.x",
@@ -65,6 +66,8 @@ Item {
         if (valid && !valid.some(function(o) { return o.value === root.backend.screenshot_impl }))
             _commit("backend", "screenshot_impl", valid[0].value)
         root.emulatorNotInstalled = false
+        root._hasEnumerated = false
+        root.emulatorInstances = []
         root.enumerationLoading = true
         if (settingsCtrl) settingsCtrl.listEmulatorInstancesAsync(type)
     }
@@ -75,10 +78,13 @@ Item {
             if (type !== root.emuType) return
             root.emulatorInstances = JSON.parse(json)
             root.enumerationLoading = false
+            root._hasEnumerated = true
         }
         function onEmulatorNotInstalled(type) {
             if (type !== root.emuType) return
             root.emulatorNotInstalled = true
+            root.enumerationLoading = false
+            root._hasEnumerated = true
         }
     }
 
@@ -118,8 +124,10 @@ Item {
         onCommitted: function(key, value) { root._commit("tasks.end_game", key, value) }
     }
 
-    // 模拟器实例选项（MuMu / 雷电复用）
+    // 模拟器实例选项（MuMu / 雷电复用）— 对齐 IAA: 未载入前返回 [] 以触发 FormInstancePicker.autoRefreshIfEmpty
     readonly property var instanceOptions: {
+        if (!root._hasEnumerated && root.emulatorInstances.length === 0 && !root.enumerationLoading)
+            return []
         var opts = root.emulatorInstances.map(function(e) {
             return { label: "[" + e.id + "] " + e.name, value: e.id }
         })

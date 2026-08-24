@@ -1,3 +1,5 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -7,13 +9,15 @@ import "formUtils.js" as F
 
 // Form 版本的 InstancePicker，复刻自 IAA 的 DslInstancePicker。
 // 裸控件在 controls/InstancePicker.qml。
-RowLayout {
+ColumnLayout {
     id: root
     Layout.fillWidth: true
+    spacing: 4
     property string label: ""
     property string help: ""
     property var options: []
     property bool loading: false
+    property bool enabled: true
     property var binder: null
     property string field: ""
 
@@ -48,28 +52,54 @@ RowLayout {
         return -1
     }
 
+    // 对齐 IAA DslInstancePicker.autoRefreshIfEmpty：可见且非 loading 时，若选项为空则自动触发刷新
+    function autoRefreshIfEmpty() {
+        if (root.loading) return
+        var opts = root.options
+        if (!opts || opts.length === 0) root.refreshTriggered()
+    }
+
+    Component.onCompleted: {
+        if (visible) Qt.callLater(autoRefreshIfEmpty)
+    }
+    onVisibleChanged: {
+        if (visible) Qt.callLater(autoRefreshIfEmpty)
+    }
+
     RowLayout {
-        Layout.preferredWidth: 120
-        spacing: 6
+        Layout.fillWidth: true
+        spacing: 0
 
-        Label { text: root.label; Layout.alignment: Qt.AlignVCenter }
+        RowLayout {
+            Layout.preferredWidth: 120
+            spacing: 6
 
-        HelpTip {
-            visible: root.help.length > 0
-            richText: root.help
-            Layout.alignment: Qt.AlignVCenter
+            Label { text: root.label; Layout.alignment: Qt.AlignVCenter }
+
+            HelpTip {
+                visible: root.help.length > 0
+                richText: root.help
+                Layout.alignment: Qt.AlignVCenter
+            }
+        }
+
+        InstancePicker {
+            Layout.fillWidth: true
+            enabled: root.enabled
+            options: root.options
+            loading: root.loading
+            currentIndex: root.indexOfValue(root.options, root._val)
+            onActivated: {
+                var v = currentValue
+                if (root._eb && root.field) root._eb.set(root.field, v)
+            }
+            onRefreshTriggered: root.refreshTriggered()
         }
     }
 
-    InstancePicker {
+    FormError {
+        Layout.leftMargin: 126
         Layout.fillWidth: true
-        options: root.options
-        loading: root.loading
-        currentIndex: root.indexOfValue(root.options, root._val)
-        onActivated: {
-            var v = currentValue
-            if (root._eb && root.field) root._eb.set(root.field, v)
-        }
-        onRefreshTriggered: root.refreshTriggered()
+        info: root._eb ? root._eb.error(root.field) : null
     }
 }
