@@ -1,0 +1,35 @@
+{
+  "version": 3,
+  "definitions": {
+    "327c7a19-a267-4d60-ab2d-486e3da1cb26": {
+      "type": "prefab",
+      "prefab_id": "TemplateMatchPrefab",
+      "name": "InProduce.DialogSkillCardUseConfirm.Title",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 58,
+          "y1": 762,
+          "x2": 380,
+          "y2": 799
+        },
+        "fixed": true
+      }
+    },
+    "a6fe238c-ec56-4498-abfc-b76088175b8e": {
+      "type": "prefab",
+      "prefab_id": "TemplateMatchPrefab",
+      "name": "InProduce.DialogSkillCardUseConfirm.ButtonConfirm",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 387.0212743268462,
+          "y1": 1131.0543414983686,
+          "x2": 557.0212743268462,
+          "y2": 1186.0543414983686
+        },
+        "fixed": true
+      }
+    }
+  }
+}
