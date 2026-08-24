@@ -353,14 +353,16 @@ def apply_color_scheme(app: QApplication, color_scheme: str) -> None:
 
 
 def apply_theme_color(app: QApplication, color_value: str | None) -> None:
-    palette = QPalette()
-    if color_value:
-        color = QColor(color_value)
-        if color.isValid():
-            palette.setColor(QPalette.ColorRole.Highlight, color)
-            accent_role = getattr(QPalette.ColorRole, 'Accent', None)
-            if accent_role is not None:
-                palette.setColor(accent_role, color)
+    if not color_value:
+        return
+    color = QColor(color_value)
+    if not color.isValid():
+        return
+    palette = app.palette()
+    palette.setColor(QPalette.ColorRole.Highlight, color)
+    accent_role = getattr(QPalette.ColorRole, 'Accent', None)
+    if accent_role is not None:
+        palette.setColor(accent_role, color)
     app.setPalette(palette)
 
 
@@ -402,6 +404,12 @@ def main() -> None:
         request_pause=lambda: _hotkey_pause(tab_manager),
         request_resume=lambda: _hotkey_resume(tab_manager),
     )
+
+    # ── 2.5 应用界面配色（必须在 QML 加载前设置，使 palette/暗色正确）──
+    from kaa.config import manager as config_manager
+    _shared = config_manager.read_shared()
+    apply_color_scheme(app, _shared.interface.color_scheme)
+    apply_theme_color(app, _shared.interface.theme_color)
 
     # ── 3. 创建 bridge，加载 QML ────────────────────────────────
     qml_file = _QML_DIR / "main.qml"
@@ -449,12 +457,6 @@ def main() -> None:
     if not engine.rootObjects():
         logger.error("Failed to load QML file. Exiting.")
         return
-
-    # ── 4. 应用界面偏好（配色、主题色、窗口样式）──
-    from kaa.config import manager as config_manager
-    _shared = config_manager.read_shared()
-    apply_color_scheme(app, _shared.interface.color_scheme)
-    apply_theme_color(app, _shared.interface.theme_color)
 
     # ── 5. 无边框窗口 + Win32 event filter + 窗口特效（仅 Windows）──
     if sys.platform == 'win32' and max_hover_bridge is not None and tab_bar_bridge is not None:

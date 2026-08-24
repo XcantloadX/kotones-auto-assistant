@@ -19,8 +19,7 @@ ApplicationWindow {
             ? "PingFang SC"
             : "Noto Sans CJK SC"
 
-    SystemPalette { id: sysPalette }
-    color: sysPalette.window
+    color: palette.window
     flags: Qt.platform.os === "windows"
         ? (Qt.Window | Qt.FramelessWindowHint)
         : Qt.Window
@@ -139,7 +138,7 @@ ApplicationWindow {
             Text {
                 text: taskErrorDialog.content
                 font.pixelSize: 13
-                color: sysPalette.windowText
+                color: palette.windowText
                 wrapMode: Text.Wrap
                 width: parent.width
                 lineHeight: 1.4
@@ -148,7 +147,7 @@ ApplicationWindow {
 
         footer: Rectangle {
             implicitHeight: 81
-            color: sysPalette.window
+            color: palette.window
             Rectangle {
                 width: parent.width; height: 1
                 color: AppTheme.isDark ? "#15FFFFFF" : "#0F000000"
@@ -203,7 +202,7 @@ ApplicationWindow {
                 width: changelogDialog.width - 48
                 text: changelogDialog.changelogText
                 wrapMode: Text.Wrap; font.pixelSize: 14; lineHeight: 1.5
-                color: sysPalette.windowText
+                color: palette.windowText
             }
         }
     }
@@ -230,7 +229,7 @@ ApplicationWindow {
                         Text {
                             text: modelData.level === "warning" ? "⚠️" : "ℹ️"
                             font.pixelSize: 13
-                            color: modelData.level === "warning" ? "#e65100" : sysPalette.windowText
+                            color: modelData.level === "warning" ? "#e65100" : palette.windowText
                             verticalAlignment: Text.AlignTop
                         }
                         Text {
@@ -242,7 +241,7 @@ ApplicationWindow {
                                 return vi + modelData.text
                             }
                             wrapMode: Text.Wrap; font.pixelSize: 13; lineHeight: 1.4
-                            color: sysPalette.windowText
+                            color: palette.windowText
                         }
                     }
                 }
@@ -269,7 +268,7 @@ ApplicationWindow {
             Text {
                 text: "是否允许琴音小助手自动发送匿名错误报告？发送的信息仅用于改善琴音小助手，你也可以随时在“偏好设置”中更改。"
                 font.pixelSize: 13
-                color: sysPalette.windowText
+                color: palette.windowText
                 wrapMode: Text.Wrap
                 width: parent.width
                 lineHeight: 1.4
@@ -306,7 +305,7 @@ ApplicationWindow {
 
         footer: Rectangle {
             implicitHeight: 81
-            color: sysPalette.window
+            color: palette.window
             Rectangle {
                 width: parent.width; height: 1
                 color: AppTheme.isDark ? "#15FFFFFF" : "#0F000000"

@@ -6,9 +6,7 @@ Rectangle {
 
     anchors.fill: parent
 
-    SystemPalette { id: sysPalette }
-
-    color: sysPalette.window
+    color: palette.window
 
     Column {
         anchors.centerIn: parent
@@ -22,7 +20,7 @@ Rectangle {
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
             text: splash.statusText.length > 0 ? splash.statusText : "正在加载琴音小助手..."
-            color: sysPalette.windowText
+            color: palette.windowText
             font.pixelSize: 16
         }
 

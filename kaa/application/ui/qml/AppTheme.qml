@@ -5,7 +5,7 @@ import QtQuick
 // TitleBar 区域统一从本单例获取色值，不再在各组件内重复判断。
 // 不使用 palette.windowText（Windows 10 浅色系统主题下值为 #000000，与 FluentWinUI3 暗色 palette 冲突）。
 QtObject {
-    readonly property bool isDark: Application.styleHints.colorScheme !== Qt.Light
+    readonly property bool isDark: Application.styleHints.colorScheme === Qt.Dark
     readonly property bool isSolid: AppThemeController.windowStyle === "solid"
 
     // 前景色（icon / 自定义 Text 颜色）

@@ -5,9 +5,7 @@ import QtQuick.Layouts
 Rectangle {
     anchors.fill: parent
 
-    SystemPalette { id: sysPalette }
-
-    color: sysPalette.window
+    color: palette.window
 
     Column {
         anchors.centerIn: parent
@@ -26,7 +24,7 @@ Rectangle {
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
             text: "琴音小助手"
-            color: sysPalette.windowText
+            color: palette.windowText
             font.pixelSize: 36
             font.weight: Font.DemiBold
         }
@@ -34,7 +32,7 @@ Rectangle {
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
             text: "v" + splash.appVersion
-            color: sysPalette.windowText
+            color: palette.windowText
             opacity: 0.45
             font.pixelSize: 15
         }
@@ -42,7 +40,7 @@ Rectangle {
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
             text: splash.statusText
-            color: sysPalette.windowText
+            color: palette.windowText
             opacity: 0.6
             font.pixelSize: 15
         }
@@ -62,11 +60,11 @@ Rectangle {
             rowSpacing: 6
 
             // ── 列头 ──
-            Text { text: "文件名";  Layout.preferredWidth: 180; Layout.preferredHeight: 28; font.pixelSize: 12; opacity: 0.55; color: sysPalette.windowText; verticalAlignment: Text.AlignVCenter }
-            Text { text: "进度";   Layout.preferredWidth: 52;  Layout.preferredHeight: 28; font.pixelSize: 12; opacity: 0.55; color: sysPalette.windowText; verticalAlignment: Text.AlignVCenter; horizontalAlignment: Text.AlignRight }
+            Text { text: "文件名";  Layout.preferredWidth: 180; Layout.preferredHeight: 28; font.pixelSize: 12; opacity: 0.55; color: palette.windowText; verticalAlignment: Text.AlignVCenter }
+            Text { text: "进度";   Layout.preferredWidth: 52;  Layout.preferredHeight: 28; font.pixelSize: 12; opacity: 0.55; color: palette.windowText; verticalAlignment: Text.AlignVCenter; horizontalAlignment: Text.AlignRight }
             Item {                 Layout.preferredWidth: 160; Layout.preferredHeight: 28 }
-            Text { text: "速度";   Layout.preferredWidth: 90;  Layout.preferredHeight: 28; font.pixelSize: 12; opacity: 0.55; color: sysPalette.windowText; verticalAlignment: Text.AlignVCenter; horizontalAlignment: Text.AlignRight }
-            Text { text: "大小";   Layout.preferredWidth: 126; Layout.preferredHeight: 28; font.pixelSize: 12; opacity: 0.55; color: sysPalette.windowText; verticalAlignment: Text.AlignVCenter; horizontalAlignment: Text.AlignHCenter }
+            Text { text: "速度";   Layout.preferredWidth: 90;  Layout.preferredHeight: 28; font.pixelSize: 12; opacity: 0.55; color: palette.windowText; verticalAlignment: Text.AlignVCenter; horizontalAlignment: Text.AlignRight }
+            Text { text: "大小";   Layout.preferredWidth: 126; Layout.preferredHeight: 28; font.pixelSize: 12; opacity: 0.55; color: palette.windowText; verticalAlignment: Text.AlignVCenter; horizontalAlignment: Text.AlignHCenter }
 
             // ── 数据行 ──
             Repeater {
@@ -80,7 +78,7 @@ Rectangle {
 
                     Text {
                         text: modelData.fileName || ""
-                        color: sysPalette.windowText
+                        color: palette.windowText
                         Layout.preferredWidth: 180
                         Layout.fillHeight: true
                         elide: Text.ElideRight
@@ -89,7 +87,7 @@ Rectangle {
                     }
                     Text {
                         text: (modelData.percent || 0).toFixed(1) + "%"
-                        color: sysPalette.windowText
+                        color: palette.windowText
                         opacity: 0.7
                         font.pixelSize: 13
                         Layout.preferredWidth: 52
@@ -105,7 +103,7 @@ Rectangle {
                     }
                     Text {
                         text: modelData.speedText || "—"
-                        color: sysPalette.windowText
+                        color: palette.windowText
                         opacity: 0.7
                         font.pixelSize: 13
                         Layout.preferredWidth: 90
@@ -115,7 +113,7 @@ Rectangle {
                     }
                     Text {
                         text: modelData.sizeText || "—"
-                        color: sysPalette.windowText
+                        color: palette.windowText
                         opacity: 0.7
                         font.pixelSize: 13
                         Layout.preferredWidth: 126
