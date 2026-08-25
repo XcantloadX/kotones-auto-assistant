@@ -974,19 +974,14 @@ class SkillFullScreenDialogContext(Context):
 
     @eval_once
     def fetch_cards(self):
-        # TODO: 这里目前只处理了第一个，后续需要扩展为搜索所有
-        # return [AnyOf[
-        #     R.InProduce.A.q(region=self.card_area),
-        #     R.InProduce.M.q(region=self.card_area)
-        # ].require()]
-        cards_a = R.InProduce.A.q(region=self.card_area).find()
-        cards_m = R.InProduce.M.q(region=self.card_area).find()
-        if cards_a is not None:
-            return [cards_a]
-        elif cards_m is not None:
-            return [cards_m]
-        else:
+        cards = (
+            R.InProduce.A.q(region=self.card_area).find_all()
+            + R.InProduce.M.q(region=self.card_area).find_all()
+        )
+        if not cards:
             raise UnrecoverableError("No skill card found in the specified area.")
+        cards.sort(key=lambda x: x.rect.top_left)
+        return [cards[0]]
 
     def commit(self, index: int):
         cards = self.fetch_cards()
