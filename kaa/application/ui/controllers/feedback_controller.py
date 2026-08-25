@@ -1,12 +1,9 @@
 """FeedbackController — 反馈报告控制器。
 
-后台线程创建报告并上传，通过信号推送进度到 QML。
+后台线程创建报告，通过信号推送进度到 QML。
 """
 import logging
-import os
 import threading
-import zipfile
-from datetime import datetime
 from typing import TYPE_CHECKING
 
 from PySide6.QtCore import QObject, Signal, Slot
@@ -38,13 +35,12 @@ class FeedbackController(QObject):
 
     # ── 提交报告 ─────────────────────────────────────────
 
-    @Slot(str, str, bool)
-    def submitReport(self, title: str, description: str, upload: bool) -> None:
-        """在后台线程中创建并上传反馈报告。
+    @Slot(str, str)
+    def submitReport(self, title: str, description: str) -> None:
+        """在后台线程中创建反馈报告并保存到本地。
 
         :param title: 报告标题。
         :param description: 问题描述。
-        :param upload: 是否上传到服务器。
         """
         def _on_progress(info: dict) -> None:
             """反馈服务的进度回调（子线程触发）。"""
@@ -68,7 +64,6 @@ class FeedbackController(QObject):
                     title=title,
                     description=description,
                     version=version,
-                    upload=upload,
                     on_progress=_on_progress,
                 )
                 self.reportDone.emit(result.message)
@@ -77,23 +72,3 @@ class FeedbackController(QObject):
                 self.reportFailed.emit(str(exc))
 
         threading.Thread(target=_work, daemon=True).start()
-
-    # ── 导出日志 ─────────────────────────────────────────
-
-    @Slot(result=str)
-    def exportLogsZip(self) -> str:
-        if not os.path.exists('logs'):
-            return "logs 文件夹不存在"
-        try:
-            timestamp = datetime.now().strftime('%y-%m-%d-%H-%M-%S')
-            zip_filename = f'logs-{timestamp}.zip'
-            with zipfile.ZipFile(zip_filename, 'w', zipfile.ZIP_DEFLATED, compresslevel=9) as zipf:
-                for root, _, files in os.walk('logs'):
-                    for file in files:
-                        file_path = os.path.join(root, file)
-                        arcname = os.path.relpath(file_path, 'logs')
-                        zipf.write(file_path, arcname)
-            return f"已导出到 {zip_filename}"
-        except Exception as exc:
-            logger.exception("Failed to export logs")
-            return f"导出失败：{exc}"

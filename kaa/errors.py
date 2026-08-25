@@ -65,13 +65,6 @@ class ReportCreationError(FeedbackServiceError):
             'https://www.kdocs.cn/l/cetCY8mGKHLj?linkname=some-link' # TODO
         )
 
-class UploadError(FeedbackServiceError):
-    def __init__(self, reason: str):
-        super().__init__(
-            f'Failed to upload bug report: {reason}',
-            'https://www.kdocs.cn/l/cetCY8mGKHLj?linkname=some-link' # TODO
-        )
-
 class ProduceSolutionNotFoundError(KaaUserFriendlyError):
     def __init__(self, solution_id: str):
         self.solution_id = solution_id

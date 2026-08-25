@@ -3,7 +3,7 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import "../components"
 
-// 反馈页：提交 bug 报告 + 导出日志
+// 反馈页：提交 bug 报告
 PageContainer {
     id: root
     title: "反馈"
@@ -92,28 +92,15 @@ PageContainer {
                     }
 
                     // 操作按钮
-                    RowLayout {
-                        spacing: 8
-                        Button {
-                            text: "上传"
-                            highlighted: true
-                            enabled: !root.submitting && titleField.text.length > 0
-                            onClicked: {
-                                root.submitting = true
-                                root.resultMessage = ""
-                                root.errorMessage = ""
-                                feedbackCtrl.submitReport(titleField.text, descField.text, true)
-                            }
-                        }
-                        Button {
-                            text: "保存至本地"
-                            enabled: !root.submitting && titleField.text.length > 0
-                            onClicked: {
-                                root.submitting = true
-                                root.resultMessage = ""
-                                root.errorMessage = ""
-                                feedbackCtrl.submitReport(titleField.text, descField.text, false)
-                            }
+                    Button {
+                        text: "保存至本地"
+                        highlighted: true
+                        enabled: !root.submitting && titleField.text.length > 0
+                        onClicked: {
+                            root.submitting = true
+                            root.resultMessage = ""
+                            root.errorMessage = ""
+                            feedbackCtrl.submitReport(titleField.text, descField.text)
                         }
                     }
 
@@ -131,31 +118,6 @@ PageContainer {
                         visible: text.length > 0
                         wrapMode: Text.Wrap
                         Layout.fillWidth: true
-                    }
-                }
-            }
-
-            // ── 导出日志 ──────────────────────────────
-            GroupBox {
-                title: "日志导出"
-                Layout.fillWidth: true
-
-                ColumnLayout {
-                    width: parent.width
-                    spacing: 8
-
-                    Label {
-                        text: "将 logs 目录打包为 ZIP 文件"
-                        color: palette.placeholderText
-                    }
-
-                    Button {
-                        text: "导出日志"
-                        enabled: !root.submitting && feedbackCtrl !== null
-                        onClicked: {
-                            var result = feedbackCtrl.exportLogsZip()
-                            root.resultMessage = result
-                        }
                     }
                 }
             }
