@@ -459,6 +459,10 @@ class Kaa(KotoneBot):
             force=True
         )
 
+        if self.factory.backend_instance is None:
+            raise RuntimeError('Backend instance was not initialized.')
+        _set_instance(self.factory.backend_instance)
+
         # 注册全局 Loop 回调：每次 Loop 迭代前自动处理网络错误等全局弹窗。
         from kotonebot.config.config import conf
         from kaa.tasks.globals import global_interrupt
