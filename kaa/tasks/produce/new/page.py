@@ -1107,12 +1107,15 @@ class HifRoundIntervalContext(Context):
                 if R.InProduce.HifIntervalConfirm.ButtonConfirm.try_click():
                     logger.debug("Hif round interval confirm button clicked.")
                     sleep(1)
+                    continue
             elif R.InProduce.HifInterval.ButtonEnd.try_click():
                 logger.info("Hif round interval end button detected.")
                 sleep(1)
+                continue
             elif not R.InProduce.HifInterval.Title.exists():
                 logger.info("Hif round interval exited.")
                 break
+            skip()
 
 class ProduceEndContext(Context):
     """培育结算"""
