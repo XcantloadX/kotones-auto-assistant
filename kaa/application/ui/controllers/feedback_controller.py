@@ -1,7 +1,4 @@
-"""FeedbackController — 反馈报告控制器。
-
-后台线程创建报告，通过信号推送进度到 QML。
-"""
+"""FeedbackController — 反馈报告控制器。"""
 import logging
 import threading
 from typing import TYPE_CHECKING
@@ -17,7 +14,6 @@ logger = logging.getLogger(__name__)
 class FeedbackController(QObject):
     """反馈报告控制器。"""
 
-    reportProgress = Signal(str, float)
     reportDone = Signal(str)
     reportFailed = Signal(str)
 
@@ -33,26 +29,9 @@ class FeedbackController(QObject):
         except Exception:
             return 'unknown'
 
-    # ── 提交报告 ─────────────────────────────────────────
-
-    @Slot(str, str)
-    def submitReport(self, title: str, description: str) -> None:
-        """在后台线程中创建反馈报告并保存到本地。
-
-        :param title: 报告标题。
-        :param description: 问题描述。
-        """
-        def _on_progress(info: dict) -> None:
-            """反馈服务的进度回调（子线程触发）。"""
-            try:
-                step = info.get('step', 0)
-                total = info.get('total_steps', 1)
-                item = info.get('item', '')
-                fraction = step / total if total > 0 else 0.0
-                self.reportProgress.emit(item, fraction)
-            except Exception:
-                pass
-
+    @Slot(str, str, str)
+    def submitReport(self, title: str, description: str, output_path: str) -> None:
+        """在后台线程中创建反馈报告并保存到用户选择的路径。"""
         def _work() -> None:
             try:
                 fs = self._session.feedback_service
@@ -64,11 +43,11 @@ class FeedbackController(QObject):
                     title=title,
                     description=description,
                     version=version,
-                    on_progress=_on_progress,
+                    output_path=output_path,
                 )
                 self.reportDone.emit(result.message)
             except Exception as exc:
-                logger.exception("Failed to submit report")
+                logger.exception("Failed to export report")
                 self.reportFailed.emit(str(exc))
 
         threading.Thread(target=_work, daemon=True).start()

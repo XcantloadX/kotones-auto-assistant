@@ -1,10 +1,8 @@
 import logging
 import os
-import re
 import traceback
 import zipfile
-from datetime import datetime
-from typing import Optional, Callable, Dict, Any, TYPE_CHECKING
+from typing import Optional, Callable, TYPE_CHECKING
 
 import cv2
 from pydantic import BaseModel
@@ -23,11 +21,6 @@ class BugReportResult(BaseModel):
     message: str
 
 
-def _sanitize_filename(s: str) -> str:
-    """过滤掉文件名中的非法字符"""
-    return re.sub(r'[\\/:*?"<>|]', '_', s)
-
-
 class FeedbackService:
     """处理反馈和错误报告的逻辑"""
 
@@ -42,10 +35,6 @@ class FeedbackService:
     def capture_screenshot(self):
         """
         获取当前设备截图，优先复用调度器持有的活跃设备，失败则临时创建设备。
-
-        对齐 ``E:/GithubRepos/ichikas-auto-assistant/iaa/application/service/scheduler.py:463``
-        的 ``capture_screenshot`` 双分支逻辑，避免在 UI 线程中直接调用
-        ``kotonebot.device.screenshot()`` 触发 ``'NoneType' object has no attribute 'device'``。
         """
         # 1. 优先复用活跃设备（任务运行中）
         if self._kaa_getter is not None:
@@ -84,36 +73,23 @@ class FeedbackService:
 
         raise RuntimeError("No screenshot available: no active device and temporary device creation failed.")
 
-    def report(self, title: str, description: str, version: str, on_progress: Optional[Callable[[Dict[str, Any]], None]] = None) -> BugReportResult:
-        """
-        创建错误报告并保存到本地。
+    def report(self, title: str, description: str, version: str, output_path: str) -> BugReportResult:
+        """创建错误报告并保存到用户选择的本地路径。"""
+        if not output_path:
+            raise ReportCreationError("未选择报告保存路径")
 
-        :param title: 报告标题。
-        :param description: 报告描述。
-        :param version: 当前版本。
-        :param on_progress: 进度回调函数，用于实时回报进度。
-        :return: 一个 BugReportResult 对象。
-        :raises ReportCreationError: 如果报告创建失败。
-        """
-        total_steps = 5
-        def _progress(data: Dict[str, Any]):
-            if on_progress:
-                on_progress(data)
-
-        os.makedirs('logs', exist_ok=True)
-        os.makedirs('reports', exist_ok=True)
-
-        safe_title = _sanitize_filename(title)[:30] or "无标题"
-        timestamp = datetime.now().strftime("%y-%m-%d-%H-%M-%S")
-        path = f'./reports/bug_{timestamp}_{safe_title}.zip'
+        path = os.path.abspath(os.path.expanduser(output_path))
+        if not path.lower().endswith('.zip'):
+            path += '.zip'
+        parent = os.path.dirname(path)
+        if parent:
+            os.makedirs(parent, exist_ok=True)
 
         try:
             with zipfile.ZipFile(path, 'w', zipfile.ZIP_DEFLATED, compresslevel=9) as zipf:
-                _progress({'type': 'packing', 'item': '描述文件', 'step': 1, 'total_steps': total_steps})
                 description_content = f"标题：{title}\n类型：bug\n内容：\n{description}"
                 zipf.writestr('description.txt', description_content.encode('utf-8'))
 
-                _progress({'type': 'packing', 'item': '截图', 'step': 2, 'total_steps': total_steps})
                 try:
                     # 优先尝试复用上次截图的内存数据（bot 线程内有效），失败则现拍
                     last_img = None
@@ -143,7 +119,6 @@ class FeedbackService:
                     except Exception:
                         pass
 
-                _progress({'type': 'packing', 'item': '配置文件', 'step': 3, 'total_steps': total_steps})
                 if os.path.exists('conf'):
                     for root, _, files in os.walk('conf'):
                         for file in files:
@@ -153,7 +128,6 @@ class FeedbackService:
                 if os.path.exists('config.json'):
                     zipf.write('config.json')
 
-                _progress({'type': 'packing', 'item': '日志', 'step': 4, 'total_steps': total_steps})
                 if os.path.exists('logs'):
                     for root, _, files in os.walk('logs'):
                         for file in files:
@@ -165,7 +139,7 @@ class FeedbackService:
         except Exception as e:
             raise ReportCreationError(str(e)) from e
 
-        file_path = os.path.abspath(path)
-        message = f"报告已保存至 {file_path}"
-        _progress({'type': 'done', 'file_path': file_path, 'step': 5, 'total_steps': total_steps})
-        return BugReportResult(file_path=file_path, message=message)
+        return BugReportResult(
+            file_path=path,
+            message=f"报告已保存至 {path}",
+        )

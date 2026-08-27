@@ -4,6 +4,7 @@ import QtQuick.Layouts
 import "../components"
 import "../components/controls"
 import "../components/form"
+import "../dialogs"
 
 // 控制页：任务运行控制 + 快速开关 + 状态列表 + 进度
 PageContainer {
@@ -11,6 +12,7 @@ PageContainer {
     title: "状态"
     required property var runCtrl
     property var progressCtrl: null
+    property var feedbackCtrl: null
     property bool keepScreenshots: false
 
     readonly property bool ctrl_running:  runCtrl ? runCtrl.running : false
@@ -122,6 +124,29 @@ PageContainer {
                 }
             }
 
+            // ── 引导提示 ──────────────────────────────
+            RowLayout {
+                Layout.fillWidth: true
+
+                Label {
+                    text: "脚本报错或者卡住？点击"
+                    color: palette.placeholderText
+                }
+
+                Button {
+                    text: "导出报告"
+                    padding: 0
+                    leftPadding: 8
+                    rightPadding: 8
+                    onClicked: feedbackDialog.open()
+                }
+
+                Label {
+                    text: "并发送给开发者反馈！"
+                    color: palette.placeholderText
+                }
+            }
+
             // ── 快速任务开关 ──────────────────────────────
             GroupBox {
                 title: "快速设置"
@@ -163,15 +188,19 @@ PageContainer {
                 title: "调试模式"
                 content: "当前启用了调试功能「保留截图数据」，调试结束后正常使用时建议关闭此选项！"
             }
-
-            // ── 引导提示 ──────────────────────────────
-            Label {
-                text: '脚本报错或者卡住？前往「反馈」页面可以快速导出报告！'
-                color: palette.placeholderText
-                font.pixelSize: 12
-                Layout.fillWidth: true
-            }
-
         }
+    }
+
+    ExportReportDialog {
+        id: feedbackDialog
+        feedbackCtrl: root.feedbackCtrl
+        onExportSucceeded: function(message) {
+            resultDialog.message = message
+            Qt.callLater(function() { resultDialog.open() })
+        }
+    }
+
+    ReportExportResultDialog {
+        id: resultDialog
     }
 }
