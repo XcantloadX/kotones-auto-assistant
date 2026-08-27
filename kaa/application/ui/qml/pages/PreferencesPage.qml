@@ -170,6 +170,95 @@ PageContainer {
             }
 
             FormGroupBox {
+                title: "更新"
+                Layout.fillWidth: true
+
+                FormComboBox {
+                    label: "检查更新时机"
+                    value: root._get("misc.check_update") || "startup"
+                    options: [
+                        { label: "从不", value: "never" },
+                        { label: "启动时", value: "startup" }
+                    ]
+                    onUserSelected: function(v) { root._set("misc.check_update", v) }
+                }
+
+                FormCheckBox {
+                    label: "自动安装更新"
+                    value: root._get("misc.auto_install_update") === true
+                    onUserToggled: function(checked) { root._set("misc.auto_install_update", checked) }
+                }
+
+                FormComboBox {
+                    label: "更新通道"
+                    value: root._get("misc.update_channel") || "release"
+                    options: [
+                        { label: "稳定版", value: "release" },
+                        { label: "测试版", value: "beta" }
+                    ]
+                    onUserSelected: function(v) { root._set("misc.update_channel", v) }
+                }
+            }
+
+            FormGroupBox {
+                title: "游戏资源"
+                Layout.fillWidth: true
+
+                FormComboBox {
+                    label: "资源检查时机"
+                    value: root._get("misc.game_data_check") || "startup"
+                    options: [
+                        { label: "手动", value: "manual" },
+                        { label: "每次启动", value: "startup" },
+                        { label: "每天一次", value: "daily" },
+                        { label: "每周一次", value: "weekly" }
+                    ]
+                    onUserSelected: function(v) { root._set("misc.game_data_check", v) }
+                }
+
+                FormCheckBox {
+                    label: "自动安装游戏资源更新"
+                    value: root._get("misc.game_data_auto_update") === true
+                    onUserToggled: function(checked) { root._set("misc.game_data_auto_update", checked) }
+                }
+
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: 8
+
+                    Button {
+                        text: "立即检查并更新"
+                        enabled: GameDataCtrl.updateStatus === "idle" || GameDataCtrl.updateStatus === "failed"
+                        onClicked: GameDataCtrl.triggerUpdate()
+                    }
+
+                    BusyIndicator {
+                        running: GameDataCtrl.updateStatus === "checking" ||
+                                 GameDataCtrl.updateStatus === "downloading" ||
+                                 GameDataCtrl.updateStatus === "building"
+                        visible: running
+                        implicitWidth: 20
+                        implicitHeight: 20
+                    }
+
+                    Label {
+                        visible: !!GameDataCtrl.progressMessage
+                        text: GameDataCtrl.progressMessage
+                        wrapMode: Text.Wrap
+                        Layout.fillWidth: true
+                    }
+                }
+
+                Label {
+                    visible: GameDataCtrl.restartNeeded
+                    text: "游戏数据更新已下载，重启应用后自动生效。"
+                    color: palette.highlight
+                    wrapMode: Text.Wrap
+                    Layout.fillWidth: true
+                }
+            }
+
+            FormGroupBox {
                 title: "通知"
                 Layout.fillWidth: true
 
