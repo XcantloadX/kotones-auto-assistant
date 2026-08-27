@@ -964,6 +964,7 @@ PageContainer {
                         binder: sb
                         Text {
                             text: "暂不支持指定 HIF 回忆编成。将会使用游戏内自动选中的回忆。"
+                            color: palette.windowText
                             font.pixelSize: 14
                         }
                     }
