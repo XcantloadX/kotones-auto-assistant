@@ -15,9 +15,9 @@ def _install():
         if issubclass(exc_type, KeyboardInterrupt):
             sys.__excepthook__(exc_type, exc_value, exc_traceback)
             return
-        
+
         logger.critical(
-            "Uncaught System Exception (Main Thread):", 
+            "Uncaught System Exception (Main Thread):",
             exc_info=(exc_type, exc_value, exc_traceback)
         )
 
@@ -39,6 +39,7 @@ def setup():
     logging.getLogger("kaa").setLevel(logging.DEBUG)
     logging.getLogger("kotonebot").setLevel(logging.DEBUG)
     logging.getLogger("httpx").setLevel(logging.WARNING)
+    logging.getLogger("urllib3").setLevel(logging.WARNING)
     _install()
 
 def add_file_logger(log_path: str):
