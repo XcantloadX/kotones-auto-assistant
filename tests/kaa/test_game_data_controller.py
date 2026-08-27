@@ -146,6 +146,22 @@ def test_initial_state(ctrl):
     assert ctrl.availableVersion == ""
 
 
+def test_current_version_loaded(monkeypatch, tmp_path):
+    """启动时从当前游戏数据 version.txt 读取版本。"""
+    version_file = tmp_path / "version.txt"
+    version_file.write_text("game-data-123\n", encoding="utf-8")
+
+    import types
+    paths = types.ModuleType("kaa.game_data.paths")
+    paths.version_path = lambda: version_file
+    monkeypatch.setitem(sys.modules, "kaa.game_data.paths", paths)
+
+    _patch_config_manager(monkeypatch)
+    monkeypatch.setitem(sys.modules, "kaa.game_data.updater", make_fake_updater_module())
+    c = CONTROLLER.GameDataUpdateController()
+    assert c.currentVersion == "game-data-123"
+
+
 def test_pending_staging_sets_restart_needed(ctrl_pending):
     """存在 pending_version → restartNeeded + READY 状态。"""
     assert ctrl_pending.restartNeeded is True

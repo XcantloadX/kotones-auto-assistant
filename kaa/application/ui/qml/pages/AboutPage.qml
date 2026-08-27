@@ -36,6 +36,11 @@ PageContainer {
             Layout.alignment: Qt.AlignHCenter
         }
 
+        Label {
+            text: "游戏数据 " + (GameDataCtrl.currentVersion || "未安装")
+            Layout.alignment: Qt.AlignHCenter
+        }
+
         RowLayout {
             Layout.alignment: Qt.AlignHCenter
             Layout.fillWidth: false
