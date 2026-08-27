@@ -17,7 +17,6 @@ ColumnLayout {
     property string help: ""
     property var options: []
     property bool loading: false
-    property bool enabled: true
     property var binder: null
     property string field: ""
 

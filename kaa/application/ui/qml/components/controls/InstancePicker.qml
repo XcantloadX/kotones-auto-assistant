@@ -12,7 +12,6 @@ RowLayout {
 
     property var options: []
     property bool loading: false
-    property bool enabled: true
     property int currentIndex: -1
     readonly property var currentValue: comboBox.currentValue
 
