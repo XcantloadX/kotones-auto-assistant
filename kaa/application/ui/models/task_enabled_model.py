@@ -55,22 +55,17 @@ class TaskEnabledModel(QAbstractListModel):
     NameRole = Qt.UserRole + 2  # type: ignore[attr-defined]
     ShortNameRole = Qt.UserRole + 3  # type: ignore[attr-defined]
     PathRole = Qt.UserRole + 4  # type: ignore[attr-defined]
-    RunningRole = Qt.UserRole + 5  # type: ignore[attr-defined]
-    StatusTextRole = Qt.UserRole + 6  # type: ignore[attr-defined]
 
     _roles = {
         NameRole: b'name',
         ShortNameRole: b'shortName',
         PathRole: b'path',
         EnabledRole: b'enabled',
-        RunningRole: b'running',
-        StatusTextRole: b'statusText',
     }
 
     def __init__(self, cs: ConfigService, parent=None):
         super().__init__(parent)
         self._cs = cs
-        self._running_map: dict[str, str] = {}   # task_name → status
         self._items: list[dict] = []
 
         cs.bus().configChanged.connect(self._on_config_changed)
@@ -105,33 +100,7 @@ class TaskEnabledModel(QAbstractListModel):
             if item['enabled'] != old_enabled:
                 idx = self.index(row, 0)
                 self.dataChanged.emit(idx, idx, [self.EnabledRole])
-
-    def update_running_status(self, name: str, status: str):
-        for row, item in enumerate(self._items):
-            if item['name'] == name:
-                old_status = self._running_map.get(name)
-                if old_status != status:
-                    self._running_map[name] = status
-                    idx = self.index(row, 0)
-                    self.dataChanged.emit(idx, idx, [self.RunningRole, self.StatusTextRole])
-                return
-
-    def set_all_running_statuses(self, status_map: dict[str, str]):
-        changed = False
-        for item in self._items:
-            s = status_map.get(item['name'], 'pending')
-            old = self._running_map.get(item['name'])
-            if old != s:
-                self._running_map[item['name']] = s
-                changed = True
-        if changed:
-            self.dataChanged.emit(
-                self.index(0, 0),
-                self.index(len(self._items) - 1, 0),
-                [self.RunningRole, self.StatusTextRole],
-            )
-
-    # ── QAbstractListModel 接口 ──────────────────────────────
+    # QAbstractListModel 接口 ──────────────────────────────
 
     def rowCount(self, parent=QModelIndex()):
         return len(self._items)
@@ -148,10 +117,6 @@ class TaskEnabledModel(QAbstractListModel):
             return item['path']
         if role == self.EnabledRole:
             return item['enabled']
-        if role == self.RunningRole:
-            return self._running_map.get(item['name'], 'pending') == 'running'
-        if role == self.StatusTextRole:
-            return self._running_map.get(item['name'], 'pending')
         if role == Qt.DisplayRole:  # type: ignore[attr-defined]
             return item['shortName']
         return None

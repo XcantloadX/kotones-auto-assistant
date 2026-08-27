@@ -18,15 +18,6 @@ PageContainer {
     readonly property bool ctrl_paused:   runCtrl ? runCtrl.isPaused : false
     readonly property string ctrl_task:   runCtrl ? runCtrl.currentTaskName : ""
 
-    function statusText(status) {
-        var map = {
-            pending: "等待",
-            running: "运行中",
-            finished: "完成",
-            error: "出错"
-        }
-        return map[status] || status
-    }
 
     ScrollView {
         anchors.fill: parent
@@ -181,39 +172,6 @@ PageContainer {
                 Layout.fillWidth: true
             }
 
-            // ── 任务状态列表 ──────────────────────────────
-            GroupBox {
-                title: "任务状态"
-                Layout.fillWidth: true
-
-                ListView {
-                    id: statusList
-                    implicitHeight: contentHeight
-                    width: parent.width
-                    clip: true
-                    model: runCtrl.taskModel
-                    spacing: 4
-
-                    delegate: ItemDelegate {
-                        width: statusList.width
-
-                        contentItem: RowLayout {
-                            width: parent.availableWidth
-                            Label {
-                                text: model.name
-                                Layout.fillWidth: true
-                                elide: Text.ElideRight
-                            }
-                            Label {
-                                text: root.statusText(model.statusText)
-                                color: model.statusText === "running" ? "#1976d2"
-                                         : model.statusText === "error" ? "#d32f2f"
-                                         : palette.placeholderText
-                            }
-                        }
-                    }
-                }
-            }
         }
     }
 }
