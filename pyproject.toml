@@ -51,6 +51,7 @@ dev = [
     "kotonebot[dev]",
     # Testing
     "pytest==7.4.2",
+    "pytest-qt>=4.4,<5",
     # Packaging
     "pyinstaller==6.11.1",
     "twine==6.1.0",

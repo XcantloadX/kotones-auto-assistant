@@ -46,6 +46,7 @@ Rectangle {
         }
 
         BusyIndicator {
+            objectName: "splashBusyIndicator"
             anchors.horizontalCenter: parent.horizontalCenter
             running: !splash.ready
             implicitWidth: 48
@@ -55,6 +56,7 @@ Rectangle {
         // ── Game data download progress ──────────────────────────────
         GridLayout {
             visible: splash.gameDataDownloading && splash.downloadFiles.length > 0
+            objectName: "splashDownloadGrid"
             columns: 5
             columnSpacing: 8
             rowSpacing: 6
@@ -78,6 +80,7 @@ Rectangle {
 
                     Text {
                         text: modelData.fileName || ""
+                        objectName: "splashFile_" + index
                         color: palette.windowText
                         Layout.preferredWidth: 180
                         Layout.fillHeight: true
@@ -127,6 +130,7 @@ Rectangle {
 
         Button {
             anchors.horizontalCenter: parent.horizontalCenter
+            objectName: "splashSkipButton"
             visible: splash.gameDataDownloading && splash.gameDataSkippable
             text: "跳过更新"
             onClicked: splash.skipGameDataUpdate()

@@ -1,0 +1,10 @@
+{
+  "venvPath": "../../..",
+  "venv": ".venv",
+  "extraPaths": ["../../../.venv/Lib/site-packages"],
+  "typeCheckingMode": "strict",
+  "include": ["*.py"],
+  "reportMissingTypeStubs": false,
+  "reportMissingImports": false,
+  "reportMissingModuleSource": false
+}

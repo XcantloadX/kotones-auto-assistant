@@ -85,6 +85,7 @@ PageContainer {
 
                     Button {
                         id: seqBtn
+                        objectName: "overviewSequentialButton"
                         readonly property bool isStopMode: TabManager.batchMode === "sequential"
                         highlighted: true
                         enabled: TabManager.batchMode === ""
@@ -123,6 +124,7 @@ PageContainer {
 
                     Button {
                         id: parBtn
+                        objectName: "overviewParallelButton"
                         readonly property bool isStopMode: TabManager.batchMode === "parallel"
                         highlighted: true
                         enabled: TabManager.batchMode === ""
@@ -279,6 +281,7 @@ PageContainer {
 
                     Button {
                         id: createBtn
+                        objectName: "overviewCreateConfigButton"
                         highlighted: true
                         text: "创建配置"
                         font.pixelSize: 14

@@ -45,6 +45,7 @@ PageContainer {
     }
 
     headerActions: Button {
+        objectName: "settingsSaveButton"
         text: "保存"
         highlighted: true
         enabled: !root.scriptRunning && root.dirty
