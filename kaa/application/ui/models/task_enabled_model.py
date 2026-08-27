@@ -21,7 +21,6 @@ logger = logging.getLogger(__name__)
 
 # ── 任务 key → config dot path 映射 ──────────────────────────────
 _TASK_CONFIG_PATHS: dict[str, str] = {
-    'start_game':             'tasks.start_game.enabled',
     'acquire_activity_funds': 'tasks.activity_funds.enabled',
     'acquire_presents':       'tasks.presents.enabled',
     'assignment':             'tasks.assignment.enabled',
@@ -36,7 +35,6 @@ _TASK_CONFIG_PATHS: dict[str, str] = {
 
 # ── 快速设置短标签 ────────────────────────────────────────────────
 _TASK_SHORT_NAMES: dict[str, str] = {
-    'start_game':             '启动游戏',
     'acquire_activity_funds': '活动费',
     'acquire_presents':       '礼物',
     'assignment':             '工作',

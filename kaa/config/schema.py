@@ -144,9 +144,6 @@ class TraceConfig(ConfigBaseModel):
     """跟踪选卡识别结果"""
 
 class StartGameConfig(ConfigBaseModel):
-    enabled: bool = True
-    """是否启用自动启动游戏。默认为True"""
-
     start_through_kuyo: bool = False
     """是否通过Kuyo来启动游戏"""
 

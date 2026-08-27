@@ -410,28 +410,17 @@ Item {
 
                 FormCheckBox {
                     binder: startGame_b
-                    field: "enabled"
-                    label: "启用自动启动游戏"
+                    field: "disable_gakumas_localify"
+                    label: "自动禁用 Gakumas Localify 汉化"
+                    enabled: root.emuType === "dmm"
+                    font.strikeout: !enabled
                 }
-                ColumnLayout {
-                    width: parent.width
-                    spacing: 8
-                    visible: root.startGame.enabled ?? false
-
-                    FormCheckBox {
-                        binder: startGame_b
-                        field: "disable_gakumas_localify"
-                        label: "自动禁用 Gakumas Localify 汉化"
-                        enabled: root.emuType === "dmm"
-                        font.strikeout: !enabled
-                    }
-                    FormCheckBox {
-                        binder: startGame_b
-                        field: "start_through_kuyo"
-                        label: "通过Kuyo来启动游戏"
-                        enabled: root.emuType === "mumu12" || root.emuType === "mumu12v5" || root.emuType === "leidian" || root.emuType === "custom"
-                        font.strikeout: !enabled
-                    }
+                FormCheckBox {
+                    binder: startGame_b
+                    field: "start_through_kuyo"
+                    label: "通过Kuyo来启动游戏"
+                    enabled: root.emuType === "mumu12" || root.emuType === "mumu12v5" || root.emuType === "leidian" || root.emuType === "custom"
+                    font.strikeout: !enabled
                 }
             }
         }
