@@ -333,6 +333,7 @@ ApplicationWindow {
         settingsCtrl: window.activeSettingsCtrl
         produceCtrl: window.activeProduceCtrl
         prefsCtrl: PreferencesController
+        onFullscreenModeRequested: window.enterFullscreenMode(mode)
     }
 
     // ── 主内容区（Splash 隐藏后显示） ──────────────────────────
@@ -360,7 +361,6 @@ ApplicationWindow {
             // ── index 0: 总览页 ────────────────────────────
             OverviewPage {
                 configManagerDialog: configManagerDialog
-                onOpenSkillCardBrowser: window.enterFullscreenMode("skillCardBrowser")
             }
 
             // ── index 1: per-tab 内容区 ─────────────────────

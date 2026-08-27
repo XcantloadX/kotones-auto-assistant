@@ -10,6 +10,7 @@ Item {
     id: root
     property var settingsCtrl
     property var errors: ({})
+    property var navigation: null
     property bool _checking: false
 
     readonly property var _idle:      settingsCtrl?.config?.profile?.idle     ?? {}
@@ -113,9 +114,24 @@ Item {
                     label: "跟踪选卡识别"
                 }
 
-                Button {
-                    text: "Inspect 授業"
-                    onClicked: schoolEventInspector.open()
+                RowLayout {
+                    spacing: 8
+
+                    Button {
+                        text: "技能卡图鉴"
+                        onClicked: {
+                            if (root.navigation) {
+                                root.navigation.requestGuardedAction("打开技能卡图鉴", function() {
+                                    root.navigation.requestFullscreenMode("skillCardBrowser")
+                                })
+                            }
+                        }
+                    }
+
+                    Button {
+                        text: "Inspect 授業"
+                        onClicked: schoolEventInspector.open()
+                    }
                 }
             }
 

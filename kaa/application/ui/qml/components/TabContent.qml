@@ -54,7 +54,12 @@ Item {
 
             ControlPage  { id: controlPage;   runCtrl: root.runCtrl; progressCtrl: root.progressCtrl; keepScreenshots: (root.settingsCtrl?.config?.profile?.keep_screenshots) ?? false }
             TaskPage     { id: taskPage;      runCtrl: root.runCtrl }
-            SettingsPage { id: settingsPage;  settingsCtrl: root.settingsCtrl; runCtrl: root.runCtrl }
+            SettingsPage {
+                id: settingsPage
+                settingsCtrl: root.settingsCtrl
+                runCtrl: root.runCtrl
+                navigation: root.navigation
+            }
             ProducePage  { id: producePage;   produceCtrl: root.produceCtrl }
             UpdatePage   { id: updatePage;    updateCtrl: root.updateCtrl }
             LogPage      { id: logPage;       logBridge: root.logBridge }

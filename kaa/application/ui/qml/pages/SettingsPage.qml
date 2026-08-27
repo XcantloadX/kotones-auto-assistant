@@ -53,6 +53,7 @@ PageContainer {
 
     required property var settingsCtrl
     property var runCtrl: null
+    property var navigation: null
     readonly property bool scriptRunning: runCtrl ? (runCtrl.running || runCtrl.isStopping) : false
     property bool dirty: false
     property var validationIssues: []
@@ -221,6 +222,7 @@ PageContainer {
             MiscSection {
                 settingsCtrl: root.settingsCtrl
                 errors: root.errors
+                navigation: root.navigation
             }
         }
     }
