@@ -242,7 +242,9 @@ def do_cards(
         else:
             if try_battle_strategy():
                 logger.info("Handle battle strategy success with %d tries", tries)
-                sleep(4.5)
+                sleep(1)
+                skip()
+                sleep(3.5)
                 tries = 0
                 timeout_cd.reset()
                 continue
