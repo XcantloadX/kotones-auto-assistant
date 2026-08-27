@@ -33,7 +33,7 @@ Item {
             id: sideNav
             Layout.fillHeight: true
             visible: root.fullscreenMode === ""
-            model: ["控制", "任务", "设置", "方案", "更新", "日志", "反馈"]
+            model: ["控制", "任务", "设置", "方案", "更新", "日志", "反馈", "关于"]
 
             onCurrentChanging: function(index, previousIndex) {
                 if (root.navigation) {
@@ -64,6 +64,7 @@ Item {
             UpdatePage   { id: updatePage;    updateCtrl: root.updateCtrl }
             LogPage      { id: logPage;       logBridge: root.logBridge }
             FeedbackPage { id: feedbackPage;  feedbackCtrl: root.feedbackCtrl }
+            AboutPage    { id: aboutPage }
         }
     }
 }
