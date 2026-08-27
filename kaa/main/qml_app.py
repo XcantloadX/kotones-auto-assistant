@@ -285,7 +285,7 @@ def _startup_task(
 
     # ── Step 2: 还原已保存 tabs ─────────────────────────────────
     try:
-        bridge.onStatusChanged("正在恢复标签页…")
+        bridge.onStatusChanged("正在启动…")
         tab_manager.restore_tabs()
     except Exception:
         logger.exception("Tab restoration failed; continuing.")
