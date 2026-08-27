@@ -6,6 +6,7 @@
 """
 
 import logging
+import signal
 import sys
 import threading
 from importlib.metadata import version as pkg_version, PackageNotFoundError
@@ -366,6 +367,18 @@ def apply_theme_color(app: QApplication, color_value: str | None) -> None:
     app.setPalette(palette)
 
 
+def _install_sigint_handler(app: QApplication) -> None:
+    """Convert Windows Ctrl+C into a normal Qt event-loop shutdown request."""
+    if sys.platform != "win32":
+        return
+
+    def _handle_sigint(_signum: int, _frame: object) -> None:
+        logger.info("SIGINT received; requesting Qt event loop shutdown.")
+        app.quit()
+
+    signal.signal(signal.SIGINT, _handle_sigint)
+
+
 def main() -> None:
     """
     启动 QML 主窗口，Multi-Profile 架构。
@@ -381,6 +394,9 @@ def main() -> None:
     app = QApplication(sys.argv)
     app.setApplicationName("琴音小助手")
     app.setWindowIcon(QIcon(str(_ICON_PATH)))
+
+    # 处理 Windows 上 Ctrl C 退出
+    _install_sigint_handler(app)
 
     if sys.platform == "win32":
         _font = QFont("Microsoft YaHei UI", 9)
