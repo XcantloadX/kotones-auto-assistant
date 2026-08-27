@@ -485,6 +485,209 @@ PageContainer {
         }
     }
 
+    // ── 行动优先级编辑器 ──────────────────────────────
+    Dialog {
+        id: actionsPriorityDialog
+        title: "行动优先级"
+        modal: true
+        anchors.centerIn: Overlay.overlay
+        width: 520
+    height: Math.min(root.height - 40, 620)
+    standardButtons: Dialog.Close
+
+    Timer {
+        id: autoScrollTimer
+        interval: 16
+        repeat: true
+        running: root._dragging && root._autoScrollVelocity !== 0
+        onTriggered: {
+            let f = actionsScrollView.contentItem
+            let maxY = Math.max(0, f.contentHeight - f.height)
+            f.contentY = Math.max(0, Math.min(f.contentY + root._autoScrollVelocity, maxY))
+        }
+    }
+
+    DelegateModel {
+        id: actionsDelegateModel
+        model: actionsModel
+
+        delegate: Item {
+            id: delegateRoot
+            required property int index
+            required property var modelData
+
+            property int visualIndex: DelegateModel.itemsIndex
+
+            readonly property bool isDragSource:
+                root._dragging && root._dragCurrentIndex === delegateRoot.visualIndex
+
+            width: ListView.view.width
+            height: rowContent.implicitHeight
+
+            ItemDelegate {
+                id: rowContent
+                width: parent.width
+                highlighted: delegateRoot.isDragSource
+                topPadding: 0
+                bottomPadding: 0
+                leftPadding: 8
+                rightPadding: 4
+
+                contentItem: RowLayout {
+                    spacing: 6
+
+                    Item {
+                        id: gripHandle
+                        implicitWidth: 20
+                        implicitHeight: 28
+                        Layout.alignment: Qt.AlignVCenter
+                        opacity: delegateRoot.isDragSource ? 0.4 : 1.0
+
+                        Column {
+                            anchors.centerIn: parent
+                            spacing: 3
+                            Repeater {
+                                model: 3
+                                delegate: Rectangle {
+                                    required property int index
+                                    width: 12
+                                    height: 2
+                                    radius: 1
+                                    color: rowContent.palette.mid
+                                }
+                            }
+                        }
+
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.SizeVerCursor
+                            preventStealing: true
+
+                            onPressed: (mouse) => {
+                                root._currentOrder = root.currentSolution.data.actions_order.slice()
+                                root._dragCurrentIndex = delegateRoot.visualIndex
+                                mouse.accepted = true
+                            }
+
+                            onPositionChanged: (mouse) => {
+                                if (!root._dragging) return
+                                let lv = delegateRoot.ListView.view
+                                let pt = mapToItem(lv, mouseX, mouseY)
+                                let h = delegateRoot.height
+                                let mouseIdx = Math.max(0, Math.min(
+                                    Math.floor(pt.y / h), lv.count - 1))
+                                if (mouseIdx !== root._dragCurrentIndex) {
+                                    root._moveDelegateItem(root._dragCurrentIndex, mouseIdx)
+                                    root._dragCurrentIndex = mouseIdx
+                                }
+                                root._updateAutoScroll(mapToItem(root, mouseX, mouseY).y)
+                            }
+
+                            onReleased: {
+                                root._autoScrollVelocity = 0
+                                let order = root._currentOrder
+                                root._dragCurrentIndex = -1
+                                root._currentOrder = []
+                                root.currentSolution.data.actions_order = order
+                                root.markDirty()
+                            }
+
+                            onCanceled: {
+                                root._autoScrollVelocity = 0
+                                let order = root._currentOrder
+                                root._dragCurrentIndex = -1
+                                root._currentOrder = []
+                                root.currentSolution.data.actions_order = order
+                                root.markDirty()
+                            }
+                        }
+                    }
+
+                    Label {
+                        Layout.fillWidth: true
+                        text: delegateRoot.modelData.label
+                    }
+
+                    Button {
+                        text: "✕"
+                        onClicked: {
+                            root.currentSolution.data.actions_order.splice(delegateRoot.visualIndex, 1)
+                            root._rebuildModel()
+                            root.markDirty()
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    ColumnLayout {
+            anchors.fill: parent
+            spacing: 6
+
+            Label {
+                text: "从上到下依次尝试"
+                color: palette.placeholderText
+                font.pixelSize: 11
+                Layout.fillWidth: true
+            }
+
+            ScrollView {
+                id: actionsScrollView
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                clip: true
+                ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+
+                ColumnLayout {
+                    width: actionsScrollView.availableWidth
+                    spacing: 0
+
+                    ListView {
+                        id: actionsListView
+                        Layout.fillWidth: true
+                        implicitHeight: contentHeight
+                        interactive: false
+                        clip: false
+                        model: actionsDelegateModel
+
+                        move: Transition {
+                            NumberAnimation { property: "y"; duration: 150; easing.type: Easing.OutQuad }
+                        }
+                        moveDisplaced: Transition {
+                            NumberAnimation { property: "y"; duration: 150; easing.type: Easing.OutQuad }
+                        }
+                    }
+                }
+            }
+
+            RowLayout {
+                spacing: 4
+                Layout.fillWidth: true
+                Select {
+                    id: addActionCombo
+                    Layout.fillWidth: true
+                    model: {
+                        var current = root.currentSolution ? root.currentSolution.data.actions_order : []
+                        return root.produceActions.filter(function(a) { return !current.includes(a.value) })
+                    }
+                    textRole: "display_name"
+                    valueRole: "value"
+                }
+                Button {
+                    text: "添加"
+                    enabled: addActionCombo.currentValue !== undefined
+                    onClicked: {
+                        root.currentSolution.data.actions_order.push(addActionCombo.currentValue)
+                        root._rebuildModel()
+                        root.markDirty()
+                        addActionCombo.currentIndex = 0
+                    }
+                }
+            }
+        }
+    }
+
     // ── 布局 ──────────────────────────────────────────
 
     Item {
@@ -804,196 +1007,14 @@ PageContainer {
                             field: "prefer_lesson_ap"
                             label: "SP 课程优先"
                         }
-                    }
-
-                    // ── 行动优先级 ────────────────────────────
-                    GroupBox {
-                        title: "行动优先级"
-                        Layout.fillWidth: true
-                        visible: root.currentSolution !== null
-
-                        Timer {
-                            id: autoScrollTimer
-                            interval: 16
-                            repeat: true
-                            running: root._dragging && root._autoScrollVelocity !== 0
-                            onTriggered: {
-                                let f = actionsScrollView.contentItem
-                                let maxY = Math.max(0, f.contentHeight - f.height)
-                                f.contentY = Math.max(0, Math.min(f.contentY + root._autoScrollVelocity, maxY))
-                            }
-                        }
-
-                        DelegateModel {
-                            id: actionsDelegateModel
-                            model: actionsModel
-
-                            delegate: Item {
-                                id: delegateRoot
-                                required property int index
-                                required property var modelData
-
-                                property int visualIndex: DelegateModel.itemsIndex
-
-                                readonly property bool isDragSource:
-                                    root._dragging && root._dragCurrentIndex === delegateRoot.visualIndex
-
-                                width: ListView.view.width
-                                height: rowContent.implicitHeight
-
-                                ItemDelegate {
-                                    id: rowContent
-                                    width: parent.width
-                                    highlighted: delegateRoot.isDragSource
-                                    topPadding: 0
-                                    bottomPadding: 0
-                                    leftPadding: 8
-                                    rightPadding: 4
-
-                                    contentItem: RowLayout {
-                                        spacing: 6
-
-                                        // Drag grip handle
-                                        Item {
-                                            id: gripHandle
-                                            implicitWidth: 20
-                                            implicitHeight: 28
-                                            Layout.alignment: Qt.AlignVCenter
-                                            opacity: delegateRoot.isDragSource ? 0.4 : 1.0
-
-                                            // Three short bars as a visual grip indicator
-                                            Column {
-                                                anchors.centerIn: parent
-                                                spacing: 3
-                                                Repeater {
-                                                    model: 3
-                                                    delegate: Rectangle {
-                                                        required property int index
-                                                        width: 12
-                                                        height: 2
-                                                        radius: 1
-                                                        color: rowContent.palette.mid
-                                                    }
-                                                }
-                                            }
-
-                                            MouseArea {
-                                                anchors.fill: parent
-                                                cursorShape: Qt.SizeVerCursor
-                                                preventStealing: true
-
-                                                onPressed: (mouse) => {
-                                                    root._currentOrder = root.currentSolution.data.actions_order.slice()
-                                                    root._dragCurrentIndex = delegateRoot.visualIndex
-                                                    mouse.accepted = true
-                                                }
-
-                                                onPositionChanged: (mouse) => {
-                                                    if (!root._dragging) return
-                                                    // Reorder
-                                                    let lv = delegateRoot.ListView.view
-                                                    let pt = mapToItem(lv, mouseX, mouseY)
-                                                    let h = delegateRoot.height
-                                                    let mouseIdx = Math.max(0, Math.min(
-                                                        Math.floor(pt.y / h), lv.count - 1))
-                                                    if (mouseIdx !== root._dragCurrentIndex) {
-                                                        root._moveDelegateItem(root._dragCurrentIndex, mouseIdx)
-                                                        root._dragCurrentIndex = mouseIdx
-                                                    }
-                                                    // Edge auto-scroll
-                                                    root._updateAutoScroll(mapToItem(root, mouseX, mouseY).y)
-                                                }
-
-                                                onReleased: {
-                                                    root._autoScrollVelocity = 0
-                                                    let order = root._currentOrder
-                                                    root._dragCurrentIndex = -1
-                                                    root._currentOrder = []
-                                                    root.currentSolution.data.actions_order = order
-                                                    root.markDirty()
-                                                }
-
-                                                onCanceled: {
-                                                    root._autoScrollVelocity = 0
-                                                    let order = root._currentOrder
-                                                    root._dragCurrentIndex = -1
-                                                    root._currentOrder = []
-                                                    root.currentSolution.data.actions_order = order
-                                                    root.markDirty()
-                                                }
-                                            }
-                                        }
-
-                                        Label {
-                                            Layout.fillWidth: true
-                                            text: delegateRoot.modelData.label
-                                        }
-
-                                        Button {
-                                            text: "✕"
-                                            onClicked: {
-                                                root.currentSolution.data.actions_order.splice(delegateRoot.visualIndex, 1)
-                                                root._rebuildModel()
-                                                root.markDirty()
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        ColumnLayout {
-                            width: parent.width; spacing: 4
-
-                            Label { text: "从上到下依次尝试"; color: palette.placeholderText; font.pixelSize: 11 }
-
-                            ScrollView {
-                                id: actionsScrollView
-                                Layout.fillWidth: true
-                                implicitHeight: Math.min(contentHeight, 300)
-                                clip: true
-                                ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
-
-                                ColumnLayout {
-                                    width: actionsScrollView.availableWidth
-                                    spacing: 0
-
-                                    ListView {
-                                        id: actionsListView
-                                        Layout.fillWidth: true
-                                        implicitHeight: contentHeight
-                                        interactive: false
-                                        clip: false
-                                        model: actionsDelegateModel
-
-                                        move: Transition {
-                                            NumberAnimation { property: "y"; duration: 150; easing.type: Easing.OutQuad }
-                                        }
-                                        moveDisplaced: Transition {
-                                            NumberAnimation { property: "y"; duration: 150; easing.type: Easing.OutQuad }
-                                        }
-                                    }
-                                }
-                            }
-
-                            RowLayout {
-                                spacing: 4
-                                Select {
-                                    id: addActionCombo
-                                    Layout.fillWidth: true
-                                    model: {
-                                        var current = root.currentSolution ? root.currentSolution.data.actions_order : []
-                                        return root.produceActions.filter(function(a) { return !current.includes(a.value) })
-                                    }
-                                    textRole: "display_name"; valueRole: "value"
-                                }
+                        FormField {
+                            labelText: "行动优先级"
+                            control: Component {
                                 Button {
-                                    text: "添加"; enabled: addActionCombo.currentValue !== undefined
+                                    text: "配置行动优先级"
                                     onClicked: {
-                                        root.currentSolution.data.actions_order.push(addActionCombo.currentValue)
                                         root._rebuildModel()
-                                        root.markDirty()
-                                        addActionCombo.currentIndex = 0
+                                        actionsPriorityDialog.open()
                                     }
                                 }
                             }
