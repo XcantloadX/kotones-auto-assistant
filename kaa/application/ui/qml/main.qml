@@ -64,6 +64,13 @@ ApplicationWindow {
         titleBar.setCurrentIndex(_prevTitleBarIndex)
     }
 
+    function minimizeWindow() {
+        if (Qt.platform.os === "windows")
+            windowStateBridge.minimize()
+        else
+            window.showMinimized()
+    }
+
     function requestAppClose() {
         var anyRunning = TabManager.anyRunning
         var closeRunner = function() {
@@ -349,7 +356,7 @@ ApplicationWindow {
             fullscreenMode: window.fullscreenMode
             onSettingsRequested: window.enterFullscreenMode("preferences")
             onBackRequested: window.exitFullscreenMode()
-            onMinimizeRequested: window.showMinimized()
+            onMinimizeRequested: window.minimizeWindow()
             onCloseRequested: window.requestAppClose()
         }
 

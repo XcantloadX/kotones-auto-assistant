@@ -37,6 +37,7 @@ if sys.platform == 'win32':
     from kaa.application.ui.platform_win32 import (
         MaxHoverBridge,
         TabBarHitTestBridge,
+        WindowStateBridge,
         WindowEventFilter,
         apply_window_style,
         resolve_window_style,
@@ -444,6 +445,7 @@ def main() -> None:
     # ── 创建平台相关桥接对象 ────────────────────────────────────
     max_hover_bridge = MaxHoverBridge() if sys.platform == 'win32' else None
     tab_bar_bridge = TabBarHitTestBridge() if sys.platform == 'win32' else None
+    window_state_bridge = None
 
     # 注册 QML 上下文属性
     engine.rootContext().setContextProperty("splash", bridge)
@@ -453,6 +455,7 @@ def main() -> None:
     engine.rootContext().setContextProperty("Notice", notice)
     engine.rootContext().setContextProperty('maxHoverBridge', max_hover_bridge)
     engine.rootContext().setContextProperty('tabBarBridge', tab_bar_bridge)
+    engine.rootContext().setContextProperty('windowStateBridge', window_state_bridge)
     engine.rootContext().setContextProperty('fluentFontPath',
         str(_UI_DIR / "fonts" / "FluentSystemIcons-Regular.ttf").replace("\\", "/"))
 
@@ -478,6 +481,8 @@ def main() -> None:
     if sys.platform == 'win32' and max_hover_bridge is not None and tab_bar_bridge is not None:
         window = cast(QQuickWindow, engine.rootObjects()[0])
         hwnd = int(window.winId())
+        window_state_bridge = WindowStateBridge(window)
+        engine.rootContext().setContextProperty('windowStateBridge', window_state_bridge)
         setup_frameless_window(hwnd)
         apply_window_style(hwnd, resolve_window_style(_shared.interface.window_style))
         _win_event_filter = WindowEventFilter(window, max_hover_bridge, tab_bar_bridge)
