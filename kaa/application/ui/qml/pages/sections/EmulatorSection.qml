@@ -124,14 +124,15 @@ Item {
         onCommitted: function(key, value) { root._commit("tasks.end_game", key, value) }
     }
 
-    // 模拟器实例选项（MuMu / 雷电复用）— 对齐 IAA: 未载入前返回 [] 以触发 FormInstancePicker.autoRefreshIfEmpty
+    // 模拟器实例选项（MuMu / 雷电复用）— 未载入前返回 [] 以触发 FormInstancePicker.autoRefreshIfEmpty。
+    // 枚举完成后只返回真实实例，避免把“请选择实例”作为一个可选值残留在列表中。
     readonly property var instanceOptions: {
         if (!root._hasEnumerated && root.emulatorInstances.length === 0 && !root.enumerationLoading)
             return []
         var opts = root.emulatorInstances.map(function(e) {
             return { label: "[" + e.id + "] " + e.name, value: e.id }
         })
-        return [{ label: "(请选择实例)", value: "" }].concat(opts)
+        return opts
     }
 
     ScrollView {
