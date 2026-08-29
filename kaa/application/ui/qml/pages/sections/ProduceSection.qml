@@ -127,8 +127,8 @@ Item {
                     field: "produce_engine"
                     label: "培育引擎"
                     options: [
-                        { label: "新版·实验性", value: "new" },
-                        { label: "旧版", value: "legacy" }
+                        { label: "新版", value: "new" },
+                        { label: "旧版（已废弃）", value: "legacy" }
                     ]
                 }
 

@@ -20,6 +20,8 @@ PageContainer {
     readonly property bool ctrl_paused:   runCtrl ? runCtrl.isPaused : false
     readonly property string ctrl_task:   runCtrl ? runCtrl.currentTaskName : ""
 
+    property bool produceEngineLegacy: false
+
 
     ScrollView {
         anchors.fill: parent
@@ -145,6 +147,14 @@ PageContainer {
                     text: "并发送给开发者反馈！"
                     color: palette.placeholderText
                 }
+            }
+
+            // ── 旧版培育引擎废弃警告 ──────────────────────
+            FormNotice {
+                Layout.fillWidth: true
+                visible: root.produceEngineLegacy
+                style: "warning"
+                content: "旧版培育引擎已废弃，请尽快在 设置→培育→培育引擎 切换到新版培育引擎。"
             }
 
             // ── 快速任务开关 ──────────────────────────────

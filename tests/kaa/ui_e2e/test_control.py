@@ -1,6 +1,7 @@
 from __future__ import annotations
 from PySide6.QtCore import QObject
 from PySide6.QtQml import QQmlApplicationEngine
+from PySide6.QtTest import QTest
 from .conftest import FakeRunController, load_qml, find_text, click
 
 
@@ -43,5 +44,30 @@ def test_control_quick_select_actions(qml_engine: QQmlApplicationEngine) -> None
     assert ("selectAllTasks", False) in run.calls
     assert ("selectOnlyProduce",) in run.calls
     assert ("selectExceptProduce",) in run.calls
+
+
+_LEGACY_WARNING = "旧版培育引擎已废弃，请尽快在 设置→培育→培育引擎 切换到新版培育引擎。"
+
+
+def _legacy_warning(page: QObject) -> QObject:
+    return find_text(page, _LEGACY_WARNING)
+
+
+def test_control_legacy_engine_warning_visible(
+    qml_engine: QQmlApplicationEngine,
+) -> None:
+    page, _ = make_control(qml_engine)
+    # 默认 produceEngineLegacy = false，警告应隐藏
+    assert _legacy_warning(page).property("visible") is False
+    page.setProperty("produceEngineLegacy", True)
+    QTest.qWait(30)
+    assert _legacy_warning(page).property("visible") is not False
+
+
+def test_control_legacy_engine_warning_hidden(
+    qml_engine: QQmlApplicationEngine,
+) -> None:
+    page, _ = make_control(qml_engine)
+    assert _legacy_warning(page).property("visible") is False
 
 

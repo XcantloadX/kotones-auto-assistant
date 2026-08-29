@@ -52,7 +52,7 @@ Item {
             visible: root.fullscreenMode === ""
             currentIndex: sideNav.currentIndex
 
-            ControlPage  { id: controlPage;   runCtrl: root.runCtrl; progressCtrl: root.progressCtrl; feedbackCtrl: root.feedbackCtrl; keepScreenshots: (root.settingsCtrl?.config?.profile?.keep_screenshots) ?? false }
+            ControlPage  { id: controlPage;   runCtrl: root.runCtrl; progressCtrl: root.progressCtrl; feedbackCtrl: root.feedbackCtrl; keepScreenshots: (root.settingsCtrl?.config?.profile?.keep_screenshots) ?? false; produceEngineLegacy: (root.settingsCtrl?.config?.profile?.tasks?.produce?.produce_engine) === "legacy" }
             TaskPage     { id: taskPage;      runCtrl: root.runCtrl }
             SettingsPage {
                 id: settingsPage
