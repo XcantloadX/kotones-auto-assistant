@@ -1008,7 +1008,7 @@ windows = [
 
 [[package]]
 name = "ksaa"
-version = "2026.8.9"
+version = "2026.8.10"
 source = { editable = "." }
 dependencies = [
     { name = "adbutils" },
