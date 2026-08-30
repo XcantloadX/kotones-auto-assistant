@@ -161,7 +161,7 @@ class _SceneCheckMixin:
         # if R.Daily.TextDateChangeDialog.exists():
         #     logger.debug("Scene detected: DATE_CHANGE")
         #     return Scene(SceneType.DATE_CHANGE)
-        
+
         # 第一次技能卡自选引导对话框
         if R.InProduce.TextSkillCardSelectGuideDialogTitle.exists():
             dialog.yes()
@@ -171,7 +171,7 @@ class _SceneCheckMixin:
         if R.InProduce.ProduceScore.TitleText.exists():
             logger.debug("Scene detected: PRODUCE_END (score)")
             return Scene(SceneType.PRODUCE_END)
-        
+
         if R.InProduce.End.ButtonGenerate.exists():
             logger.debug("Scene detected: PRODUCE_END (gen memory)")
             return Scene(SceneType.PRODUCE_END)
@@ -183,7 +183,7 @@ class _SceneCheckMixin:
         logger.verbose("Check skill card select...")
         if R.InProduce.TextSkillCard.exists():
             return Scene(SceneType.SELECT_CARD)
-        
+
         # P道具选择
         logger.verbose("Check PItem select...")
         if R.InProduce.TextPItem.exists():
@@ -205,11 +205,11 @@ class _SceneCheckMixin:
         # 技能卡自选强化
         if R.InProduce.IconTitleSkillCardEnhance.exists():
             return Scene(SceneType.SKILL_CARD_ENHANCE)
-        
+
         # 技能卡自选删除
         if R.InProduce.IconTitleSkillCardRemoval.exists():
             return Scene(SceneType.SKILL_CARD_REMOVAL)
-    
+
         # 技能卡自选变更 阶段 1
         if R.InProduce.DialogCardChange1.TipText.exists():
             return Scene(SceneType.SKILL_CARD_CHANGE_1)
@@ -222,7 +222,7 @@ class _SceneCheckMixin:
         """判断行动-like场景，右上角展示目标值的场景"""
         if not R.InProduce.TextReviewCriteria.exists():
             return None
-        
+
         # 行动选择
         if AnyOf[
             R.InProduce.TextPDiary,
@@ -237,7 +237,7 @@ class _SceneCheckMixin:
                 return Scene(SceneType.STUDY)
             else:
                 return Scene(SceneType.IDLE)
-        
+
         # おでかけ
         if R.InProduce.TitleIconOuting.exists():
             buttons = CommuEventButtonUI().all(False, False)
@@ -260,7 +260,7 @@ class _SceneCheckMixin:
         # HIF インターバル
         if R.InProduce.HifInterval.Title.exists():
             return Scene(SceneType.HIF_ROUND_INTERVAL)
-        
+
         # 培育初始饮料、卡片二选一
         ui = CommuEventButtonUI()
         buttons = ui.all(description=False, title=False)
@@ -268,7 +268,7 @@ class _SceneCheckMixin:
             # return InitialDrinkOrCardSelectScene(type=SceneType.INITIAL_DRINK_OR_CARD_SELECT, buttons=buttons)
             device.double_click(buttons[0])
             return Scene(SceneType.IDLE)
-        
+
     def _battle_scene(self) -> Scene | None:
         """判断打牌场景"""
         if AnyOf[
@@ -276,7 +276,7 @@ class _SceneCheckMixin:
             R.InProduce.TextPerfectUntil,
         ].exists():
             return Scene(SceneType.PRACTICE)
-        
+
         if AnyOf[
             R.InProduce.TextExamRankSmallFirst,
             R.InProduce.TextExamRankLargeFirst,
@@ -380,7 +380,7 @@ class DrinkSelectContext(Context):
             ].try_click()
             logger.debug("Skipped PDrink selection.")
             return
-    
+
         if drink.index < 0 or drink.index >= len(POSTIONS):
             raise ValueError(f"Invalid drink index: {drink.index}")
         for _ in Loop():
@@ -598,7 +598,7 @@ class ActionSelectContext(Context):
                 if obj := btn.find():
                     result.append(action)
                     buttons.append(obj)
-            
+
             # 课程与 SP 课程的处理
             # 三个课程一定都有或都没有
             vo = AnyOf[
@@ -623,13 +623,13 @@ class ActionSelectContext(Context):
                         da_sp = True
                     if da.rect.center[0] < cur_sp.rect.center[0] < vi.rect.center[0]:
                         vi_sp = True
-                
+
                 buttons.extend([da, vo, vi])
                 result.append(ProduceAction.DANCE_SP if da_sp else ProduceAction.DANCE)
                 result.append(ProduceAction.VOCAL_SP if vo_sp else ProduceAction.VOCAL)
                 result.append(ProduceAction.VISUAL_SP if vi_sp else ProduceAction.VISUAL)
             return result, buttons
-        
+
     @eval_once
     def fetch_sensei_tip(self) -> ProduceAction | None:
         """读取老师推荐的行动"""
@@ -651,12 +651,12 @@ class ActionSelectContext(Context):
                     R.InProduce.TextSenseiTipConsult,
                 ].find():
                     break
-    
+
         logger.debug("image.find_multi: %s", result)
         if result is None:
             logger.debug("No recommended lesson found")
             return None
-        
+
         result = result.prefab
         if result == R.InProduce.TextSenseiTipDance:
             return ProduceAction.DANCE
@@ -693,7 +693,7 @@ class ActionSelectContext(Context):
             PerformanceMetricsVal(current=cur_da, max=max_val, lesson=ProduceAction.DANCE),
             PerformanceMetricsVal(current=cur_vo, max=max_val, lesson=ProduceAction.VOCAL),
         ]
-    
+
     def has_sp_lesson(self) -> bool:
         actions = self.fetch_available_actions()[0]
         return (
@@ -720,7 +720,7 @@ class ActionSelectContext(Context):
         available = action in _actions[0]
         if not available:
             raise ValueError(f"Action {action} is not available now.")
-        
+
         index = _actions[0].index(action)
         button = _actions[1][index]
 
@@ -745,7 +745,7 @@ class ActionSelectContext(Context):
             for _ in range(3):
                 button.click()
                 sleep(0.3)
-            
+
             sleep(2)
             logger.info(f"Entered action: {action}")
             self.controller.wait_disappear(button.prefab)
@@ -755,7 +755,7 @@ class PracticeContext(Context):
         raise NotImplementedError
         img = device.screenshot()
         return skill_card_count(img)
-    
+
     def fetch_recommend_card(self, threshold_predicate: Callable[[int, CardDetectResult], bool]):
         raise NotImplementedError
         img = device.screenshot()
@@ -774,7 +774,7 @@ class ExamContext(Context):
         # 3. 计算 b 通道（黄蓝色轴）和 a 通道（红绿色轴）的平均值
         avg_b = np.mean(b)
         avg_a = np.mean(a)
-        
+
         is_final = avg_b > 145 or (avg_b > 138 and avg_a > 135)
         if is_final:
             return True
@@ -792,7 +792,7 @@ class StudyContext(Context):
             R.InProduce.TextSelfStudyVisual,
             R.InProduce.TextSelfStudyVocal
         ].exists()
-    
+
     @eval_once
     def fetch_options(self):
         ui = CommuEventButtonUI()
@@ -800,7 +800,7 @@ class StudyContext(Context):
         if not buttons:
             raise UnrecoverableError("Failed to find any buttons.")
         return buttons
-    
+
     def commit_self_study(self, lesson: Literal['dance', 'visual', 'vocal']):
         """执行自习课行动"""
         match lesson:
@@ -819,7 +819,7 @@ class StudyContext(Context):
         target_btn = buttons[index]
         device.double_click(target_btn)
         sleep(2)
-    
+
 
 class OutingContext(Context):
     @eval_once
@@ -837,7 +837,7 @@ class OutingContext(Context):
         # 双击 = 第一次点击建立选中、第二次点击确认执行，与 StudyContext.commit 保持一致。
         device.double_click(target_btn)
         sleep(2)
-        
+
 
         # pi = ProduceInterrupt()
         # for _ in Loop():
@@ -1067,7 +1067,14 @@ class SkillCardChangeContext(SkillFullScreenDialogContext):
                 logger.debug("Skill card change stage 2 detected.")
                 break
             else:
-                device.click(R.InProduce.DialogCardChange1.PointCard1)
+                letters = (
+                    R.InProduce.A.q(threshold=0.65, region=R.InProduce.DialogCardChange2.BoxCardArea).find_all()
+                    + R.InProduce.M.q(threshold=0.65, region=R.InProduce.DialogCardChange2.BoxCardArea).find_all()
+                )
+                if not letters:
+                    logger.error('SkillCardChangeContext stage 1 not cards found')
+                    return []
+                device.click(letters[0])
                 sleep(1)
 
     def commit_stage2(self, index: int = 0):
@@ -1146,7 +1153,7 @@ if __name__ == '__main__':
     # assert img is not None
     # print(find(img, R.InProduce.TextExamRankLargeFirst.template, threshold=0))
     # print(find(img, R.InProduce.TextExamRankLargeFirst.template, threshold=0, rect=R.InProduce.TextExamRankLargeFirst.template.slice_rect))
-    
+
     from kaa.kaa_context import init_produce_session
     from kaa.tasks.produce.session import ProduceSession
     init_produce_session(ProduceSession('', HifScenario.MAIN, True))
@@ -1157,7 +1164,7 @@ if __name__ == '__main__':
 
     # ui = CommuEventButtonUI()
     # buttons = ui.all()
-    # 1    
+    # 1
 
     # img = device.screenshot()
     # import cv2
@@ -1179,5 +1186,3 @@ if __name__ == '__main__':
     #     cv2.imshow('Binary', cv2.resize(binary, None, fx=0.75, fy=0.75))
     #     if cv2.waitKey(1) & 0xFF == ord('q'):
     #         break
-
-

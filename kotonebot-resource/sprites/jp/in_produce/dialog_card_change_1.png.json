@@ -31,14 +31,16 @@
         "fixed": true
       }
     },
-    "49a1f228-f7a3-4f87-bb04-7b7fb9fa7d94": {
-      "type": "hint-point",
-      "name": "InProduce.DialogCardChange1.PointCard1",
+    "b4eb7cc7-6d69-4237-acd4-2347233f7c4e": {
+      "type": "hint-box",
+      "name": "InProduce.DialogCardChange1.BoxCardLetters",
       "props": {
-        "point": {
-          "kind": "point",
-          "x": 220.83474906691555,
-          "y": 900.6442102626305
+        "rect": {
+          "kind": "rect",
+          "x1": 58.537102953767075,
+          "y1": 943.3134750866757,
+          "x2": 663.3990130559768,
+          "y2": 963.1422026886707
         }
       }
     }
