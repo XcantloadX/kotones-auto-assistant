@@ -12,7 +12,7 @@ import threading
 from importlib.metadata import version as pkg_version, PackageNotFoundError
 from typing import cast
 from pathlib import Path
-from PySide6.QtCore import Qt, QUrl, QObject, Property, Signal, Slot
+from PySide6.QtCore import Qt, QUrl, QObject, Property, Signal, Slot, QMetaObject
 from kaa.application.ui.error_bridge import ErrorDialogBridge, set_bridge
 from kaa.application.core.hotkeys import HotkeyManager
 from kaa.application.ui.controllers import (
@@ -26,6 +26,8 @@ from kaa.application.ui.controllers.debug_inspector_controller import DebugInspe
 from kaa.application.ui.controllers.skill_card_browser_controller import SkillCardBrowserController
 from kaa.application.ui.controllers.telemetry_consent_controller import TelemetryConsentController
 from kaa.application.ui.controllers.notice_backend import NoticeBackend
+from kaa.application.ui.controllers.schedule_controller import ScheduleController
+from kaa.application.services.scheduler_service import SchedulerService
 from kaa.util.progress import ProgressAggregator
 from PySide6.QtGui import QColor, QFont, QIcon, QPalette
 from PySide6.QtWidgets import QApplication
@@ -239,6 +241,7 @@ def _startup_task(
     tab_manager: TabManager,
     hotkey_mgr: HotkeyManager,
     game_data_ctrl: GameDataUpdateController,
+    scheduler_service: SchedulerService,
 ) -> None:
     """后台线程入口：应用 staging → 完整性校验 → (阻塞更新) → 还原 tabs → 就绪。"""
     # ── Step 0: 应用 pending staging ────────────────────────────────
@@ -296,6 +299,19 @@ def _startup_task(
         hotkey_mgr.start()
     except Exception:
         logger.exception("Failed to start hotkeys")
+
+    # ── Step 3.5: 启动定时调度 ───────────────────────────
+    # SchedulerService 及其 QTimer 归属主线程，本函数运行在后台线程，不能直接
+    # start()（否则触发 "Timers cannot be started from another thread"）。
+    # 用 QueuedConnection 投递到主线程事件循环执行。
+    try:
+        QMetaObject.invokeMethod(
+            scheduler_service,
+            "start",
+            Qt.ConnectionType.QueuedConnection,
+        )
+    except Exception:
+        logger.exception("Failed to start scheduler")
 
     # ── Step 4: 检查迁移和更新日志 ─────────────────────────────
     bridge._check_and_show_migration()
@@ -468,6 +484,20 @@ def main() -> None:
     debug_inspector = DebugInspectorController()
     engine.rootContext().setContextProperty("DebugInspector", debug_inspector)
 
+    # ── 定时任务调度 ──────────────────────────────────────────────
+    schedule_ctrl = ScheduleController()
+    scheduler_service = SchedulerService(tab_manager)
+    tab_manager.setSchedulerBusyCheck(scheduler_service.isProfileBusyByScheduler)
+    tab_manager.setScheduleHandlers(
+        on_remove=schedule_ctrl.handleProfileRemoved,
+        on_rename=schedule_ctrl.handleProfileRenamed,
+    )
+    engine.rootContext().setContextProperty("ScheduleController", schedule_ctrl)
+    engine.rootContext().setContextProperty("SchedulerService", scheduler_service)
+
+    # 调度器写回 last_run 后通知 UI 刷新（任务执行完立即更新下次触发描述）
+    scheduler_service.configChanged.connect(schedule_ctrl.entriesChanged)
+
     # 添加 QML 导入路径，使 qmldir 中注册的 AppTheme 单例对子目录组件可见
     engine.addImportPath(str(_QML_DIR))
 
@@ -491,7 +521,7 @@ def main() -> None:
     # ── 5. 后台线程：应用 staging / 完整性校验 → 恢复 tabs ──────
     _startup_thread = threading.Thread(
         target=_startup_task,
-        args=(bridge, tab_manager, hotkey_mgr, game_data_ctrl),
+        args=(bridge, tab_manager, hotkey_mgr, game_data_ctrl, scheduler_service),
         daemon=True,
     )
     _startup_thread.start()
@@ -502,6 +532,7 @@ def main() -> None:
     logger.info("Qt event loop exited with code %s.", exit_code)
 
     # ── 7. 清理 ─────────────────────────────────────────────────
+    scheduler_service.stop()
     hotkey_mgr.stop()
     set_bridge(None)
     del engine

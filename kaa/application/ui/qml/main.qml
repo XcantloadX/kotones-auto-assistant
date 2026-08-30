@@ -368,6 +368,7 @@ ApplicationWindow {
             // ── index 0: 总览页 ────────────────────────────
             OverviewPage {
                 configManagerDialog: configManagerDialog
+                scheduleManagerDialog: scheduleManagerDialog
             }
 
             // ── index 1: per-tab 内容区 ─────────────────────
@@ -463,6 +464,10 @@ ApplicationWindow {
     ConfigManagerDialog {
         id: configManagerDialog
         tabManager: TabManager
+    }
+
+    ScheduleManagerDialog {
+        id: scheduleManagerDialog
     }
 
     NoticeHost {

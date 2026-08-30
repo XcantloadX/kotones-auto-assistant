@@ -651,6 +651,63 @@ class _FakeProfileStore(QObject):
     profilesJson = Property(str, lambda s: '{"profiles": []}', constant=True)
 
 
+class FakeScheduleController(QObject):
+    entriesChanged = Signal()
+    operationSucceeded = Signal(str)
+    operationFailed = Signal(str)
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._entries: list = []
+        self._next_run = {"hasEntries": False, "nextRunDesc": "未设置"}
+        self._profiles: list[str] = []
+        self.calls: list[Call] = []
+
+    @Slot(result=str)
+    def entriesJson(self) -> str:
+        return json.dumps(self._entries, ensure_ascii=False)
+
+    @Slot(result=str)
+    def nextRunJson(self) -> str:
+        return json.dumps(self._next_run, ensure_ascii=False)
+
+    @Slot(result=str)
+    def profilesJson(self) -> str:
+        return json.dumps(self._profiles, ensure_ascii=False)
+
+    @Slot(str)
+    def addEntry(self, json_str: str) -> None:
+        self.calls.append(("addEntry", json_str))
+
+    @Slot(str, str)
+    def updateEntry(self, entry_id: str, json_str: str) -> None:
+        self.calls.append(("updateEntry", entry_id, json_str))
+
+    @Slot(str)
+    def removeEntry(self, entry_id: str) -> None:
+        self.calls.append(("removeEntry", entry_id))
+
+    @Slot(str, bool)
+    def setEntryEnabled(self, entry_id: str, enabled: bool) -> None:
+        self.calls.append(("setEntryEnabled", entry_id, enabled))
+
+
+class FakeSchedulerService(QObject):
+    entryTriggered = Signal(str, str)
+    entryFinished = Signal(str, str)
+    entrySkipped = Signal(str, str, str)
+    entryFailed = Signal(str, str, str)
+    configChanged = Signal()
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._busy_profiles: list[str] = []
+
+    @Slot(str, result=bool)
+    def isProfileBusyByScheduler(self, profile_name: str) -> bool:
+        return profile_name in self._busy_profiles
+
+
 qmlRegisterSingletonType(_FakeTheme, "QtQuick", 6, 0, cast(bytes, "AppThemeController"), _create_test_theme)
 
 def _install_production_context(engine: QQmlApplicationEngine) -> None:
@@ -671,6 +728,8 @@ def _install_production_context(engine: QQmlApplicationEngine) -> None:
         "maxHoverBridge": DummyController(),
         "tabBarBridge": DummyController(),
         "windowStateBridge": DummyController(),
+        "ScheduleController": FakeScheduleController(),
+        "SchedulerService": FakeSchedulerService(),
         "fluentFontPath": "",
     }
     for name, value in objects.items():

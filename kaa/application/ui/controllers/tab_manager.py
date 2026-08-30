@@ -8,6 +8,7 @@ import logging
 import threading
 import time
 from dataclasses import dataclass
+from typing import Callable
 
 from PySide6.QtCore import QObject, Property, Signal, Slot
 
@@ -64,6 +65,22 @@ class TabManager(QObject):
         self._stop_all_busy: bool = False
         self._seq_cancel: threading.Event | None = None
         self._lock = threading.Lock()
+        self._scheduler_busy_check: 'Callable[[str], bool] | None' = None
+        self._schedule_handlers: 'Callable[[str], None] | None' = None
+        self._schedule_rename_handler: 'Callable[[str, str], None] | None' = None
+
+    def setSchedulerBusyCheck(self, check: 'Callable[[str], bool]') -> None:
+        """注册调度器占用检查回调。"""
+        self._scheduler_busy_check = check
+
+    def setScheduleHandlers(
+        self,
+        on_remove: 'Callable[[str], None]',
+        on_rename: 'Callable[[str, str], None]',
+    ) -> None:
+        """注册调度器 profile 生命周期回调。"""
+        self._schedule_handlers = on_remove
+        self._schedule_rename_handler = on_rename
 
     # ── 内部工具 ──────────────────────────────────────────────────────
 
@@ -164,6 +181,9 @@ class TabManager(QObject):
         """在新 tab 中打开指定配置。同一配置不能重复打开。"""
         if any(t.config_name == config_name for t in self._tabs):
             self.operationFailed.emit(f'配置 "{config_name}" 已在某个 Tab 中打开')
+            return
+        if self._scheduler_busy_check is not None and self._scheduler_busy_check(config_name):
+            self.operationFailed.emit(f'配置 "{config_name}" 正在由定时任务执行')
             return
         try:
             entry = self._create_entry(config_name)
@@ -280,6 +300,8 @@ class TabManager(QObject):
                         self.closeTab(i)
                         break
                 self.openTab(new_name)
+            if self._schedule_rename_handler is not None:
+                self._schedule_rename_handler(old_name, new_name)
             self.operationSucceeded.emit(f'已将配置重命名为: {new_name}')
             return True
         except FileExistsError:
@@ -298,6 +320,8 @@ class TabManager(QObject):
         try:
             from kaa.config import manager
             manager.remove(name, not_exist='ok')
+            if self._schedule_handlers is not None:
+                self._schedule_handlers(name)
             self.operationSucceeded.emit(f'已删除配置: {name}')
             self.tabsChanged.emit()
             return True

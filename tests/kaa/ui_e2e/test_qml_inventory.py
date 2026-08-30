@@ -50,6 +50,7 @@ QML_ROOTS = [
     "components/form/HotkeyField.qml",
     "dialogs/ExportReportDialog.qml",
     "dialogs/ReportExportResultDialog.qml",
+    "dialogs/ScheduleManagerDialog.qml",
     "pages/AboutPage.qml",
     "pages/ControlPage.qml",
     "pages/LogPage.qml",
@@ -77,7 +78,7 @@ def _props(path: str) -> dict[str, object]:
     if path == "components/TitleBar.qml":
         return {"configManagerDialog": FakeDialog()}
     if path == "pages/OverviewPage.qml":
-        return {"configManagerDialog": FakeDialog()}
+        return {"configManagerDialog": FakeDialog(), "scheduleManagerDialog": FakeDialog()}
     if path == "pages/ControlPage.qml":
         return {"runCtrl": FakeRunController()}
     if path == "pages/SettingsPage.qml":
@@ -120,6 +121,8 @@ def _props(path: str) -> dict[str, object]:
         }
     if path == "dialogs/SchoolEventInspectorDialog.qml":
         return {"debugInspectorCtrl": DummyController()}
+    if path == "dialogs/ScheduleManagerDialog.qml":
+        return {}  # No required properties; uses context properties
     if path == "components/form/HotkeyField.qml":
         return {"label": "Test"}
     return {}

@@ -1,7 +1,7 @@
 from __future__ import annotations
 from PySide6.QtCore import QObject
 from PySide6.QtQml import QQmlApplicationEngine
-from .conftest import ConfigInfo, FakeDialog, FakeTabManager, load_qml, find, click, qml_variant
+from .conftest import ConfigInfo, FakeDialog, FakeTabManager, FakeScheduleController, load_qml, find, click, qml_variant
 
 
 def make_overview(
@@ -9,11 +9,12 @@ def make_overview(
 ) -> tuple[QObject, FakeDialog]:
     tab = tab or FakeTabManager()
     dialog = FakeDialog()
+    schedule_dialog = FakeDialog()
     page = load_qml(
         engine,
         "pages/OverviewPage.qml",
-        properties={"configManagerDialog": dialog},
-        context={"TabManager": tab},
+        properties={"configManagerDialog": dialog, "scheduleManagerDialog": schedule_dialog},
+        context={"TabManager": tab, "ScheduleController": FakeScheduleController()},
     )
     return page, dialog
 
