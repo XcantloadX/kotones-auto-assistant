@@ -254,7 +254,9 @@ def do_cards(
                 img=img
             ):
                 logger.info("Handle recommended card success with %d tries", tries)
-                sleep(4.5)
+                sleep(1)
+                skip()
+                sleep(3.5)
                 tries = 0
                 timeout_cd.reset()
                 continue
