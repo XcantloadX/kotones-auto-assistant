@@ -4,7 +4,7 @@ import QtQuick.Layouts
 import "../"
 import "formUtils.js" as F
 
-RowLayout {
+ColumnLayout {
     id: root
     Layout.fillWidth: true
     property string label: ""
@@ -25,26 +25,47 @@ RowLayout {
         return (_eb && field) ? _eb.get(field, "") : value
     }
 
+    FieldRegistrar {
+        id: _registrar
+        startParent: root.parent
+        binder: root._eb
+        field: root.field
+        label: root.label
+        prefixRevision: root._eb ? (root._eb.prefix.length) : 0
+    }
+    Connections {
+        target: root._eb
+        enabled: !!root._eb && !!root.field && !!root.label
+        function onPrefixChanged() { _registrar.prefixRevision++ }
+    }
+
     RowLayout {
-        Layout.preferredWidth: 120
-        spacing: 6
+        RowLayout {
+            Layout.preferredWidth: 120
+            spacing: 6
 
-        Label { text: root.label; Layout.alignment: Qt.AlignVCenter }
+            Label { text: root.label; Layout.alignment: Qt.AlignVCenter }
 
-        HelpTip {
-            visible: root.help.length > 0
-            richText: root.help
-            Layout.alignment: Qt.AlignVCenter
+            HelpTip {
+                visible: root.help.length > 0
+                richText: root.help
+                Layout.alignment: Qt.AlignVCenter
+            }
+        }
+
+        TextField {
+            Layout.fillWidth: true
+            text: root._val
+            placeholderText: root.placeholder
+            onTextEdited: {
+                if (root._eb && root.field) root._eb.set(root.field, text)
+                else root.userEdited(text)
+            }
         }
     }
 
-    TextField {
-        Layout.fillWidth: true
-        text: root._val
-        placeholderText: root.placeholder
-        onTextEdited: {
-            if (root._eb && root.field) root._eb.set(root.field, text)
-            else root.userEdited(text)
-        }
+    FormError {
+        Layout.leftMargin: 126
+        info: root._eb ? root._eb.error(root.field) : null
     }
 }

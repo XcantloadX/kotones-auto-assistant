@@ -3,7 +3,7 @@ import ctypes
 import sys
 from ctypes import wintypes
 
-from PySide6.QtCore import QAbstractNativeEventFilter, QObject, Property, Signal
+from PySide6.QtCore import QAbstractNativeEventFilter, QObject, Property, Qt, Signal, Slot
 from PySide6.QtQuick import QQuickWindow
 
 # ── DWM 背景特效 ──────────────────────────────────────────────────────────────
@@ -221,6 +221,21 @@ class MaxHoverBridge(QObject):
         if self._hovered != value:
             self._hovered = value
             self.hoveredChanged.emit(value)
+
+
+class WindowStateBridge(QObject):
+    """QML window-state operations that require QWindow's flag-based API."""
+
+    def __init__(self, window: QQuickWindow) -> None:
+        super().__init__()
+        self._window = window
+
+    @Slot()
+    def minimize(self) -> None:
+        """Minimize without discarding an existing maximized/fullscreen state."""
+        states = self._window.windowStates()
+        states &= ~Qt.WindowActive
+        self._window.setWindowStates(states | Qt.WindowMinimized)
 
 
 class WindowEventFilter(QAbstractNativeEventFilter):

@@ -5,6 +5,7 @@ Item {
     visible: false
 
     required property var unsavedChangesDialog
+    signal fullscreenModeRequested(string mode)
 
     // 当前活跃 tab 的 controller（由 main.qml 绑定，tab 切换时自动更新）
     property var settingsCtrl: null
@@ -46,6 +47,10 @@ Item {
         root.pendingActionLabel = label || "继续此操作"
         root.unsavedChangesDialog.actionLabel = root.pendingActionLabel
         root.unsavedChangesDialog.open()
+    }
+
+    function requestFullscreenMode(mode) {
+        root.fullscreenModeRequested(mode)
     }
 
     function saveAndContinuePendingAction() {

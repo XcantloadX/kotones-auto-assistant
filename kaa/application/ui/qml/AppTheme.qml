@@ -5,7 +5,7 @@ import QtQuick
 // TitleBar 区域统一从本单例获取色值，不再在各组件内重复判断。
 // 不使用 palette.windowText（Windows 10 浅色系统主题下值为 #000000，与 FluentWinUI3 暗色 palette 冲突）。
 QtObject {
-    readonly property bool isDark: Application.styleHints.colorScheme !== Qt.Light
+    readonly property bool isDark: Application.styleHints.colorScheme === Qt.Dark
     readonly property bool isSolid: AppThemeController.windowStyle === "solid"
 
     // 前景色（icon / 自定义 Text 颜色）
@@ -14,6 +14,11 @@ QtObject {
     // 悬停背景
     readonly property color hover:       isDark ? Qt.rgba(1,1,1,0.08) : Qt.rgba(0,0,0,0.08)
     readonly property color hoverStrong: isDark ? Qt.rgba(1,1,1,0.15) : Qt.rgba(0,0,0,0.15)
+
+    // 语义色：错误 / 警告 / 成功。与 NoticeHost（Toast）使用同一组色值，保证全应用一致。
+    readonly property color error:   isDark ? "#ff99a4" : "#c42b1c"
+    readonly property color warning: isDark ? "#fce100" : "#c05a00"
+    readonly property color success: isDark ? "#6ccb5f" : "#107c10"
 
     // TitleBar 背景
     //   solid → 不透明 Fluent 规范色

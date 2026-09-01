@@ -1,0 +1,57 @@
+{
+  "version": 3,
+  "definitions": {
+    "f61042d6-977a-49cd-85b8-25c5f5d67168": {
+      "type": "prefab",
+      "prefab_id": "GakumasScrollbarPrefab",
+      "name": "Daily.PassRewards.Scrollbar",
+      "props": {
+        "rect": {
+          "kind": "rect",
+          "x1": 699.634136001978,
+          "y1": 328.68449933013164,
+          "x2": 707.9027203296134,
+          "y2": 936.9219006261146
+        }
+      }
+    },
+    "4ce15e96-9699-4e80-ae1a-d51d2c0c4a1d": {
+      "type": "prefab",
+      "prefab_id": "GakumasSecondaryButtonPrefab",
+      "name": "Daily.PassRewards.ButtonClaim",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 42.091452731931724,
+          "y1": 610.3487377616716,
+          "x2": 111.50183585841478,
+          "y2": 645.8557537168647
+        },
+        "fixed": false,
+        "region": {
+          "kind": "rect",
+          "x1": 17.700027888389968,
+          "y1": 293.1057698485667,
+          "x2": 137.93612440575794,
+          "y2": 978.6859367813546
+        }
+      },
+      "displayName": "受取"
+    },
+    "a037a1d5-b801-4683-901f-d94cc5552add": {
+      "type": "prefab",
+      "prefab_id": "TemplateMatchPrefab",
+      "name": "Daily.PassRewards.IconTitle",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 8.951180794263792,
+          "y1": 33.66606804695001,
+          "x2": 64.39685588696625,
+          "y2": 76.3570616488915
+        },
+        "fixed": true
+      }
+    }
+  }
+}

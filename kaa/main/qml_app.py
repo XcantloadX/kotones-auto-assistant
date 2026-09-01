@@ -6,12 +6,13 @@
 """
 
 import logging
+import signal
 import sys
 import threading
 from importlib.metadata import version as pkg_version, PackageNotFoundError
 from typing import cast
 from pathlib import Path
-from PySide6.QtCore import Qt, QUrl, QObject, Property, Signal, Slot
+from PySide6.QtCore import Qt, QUrl, QObject, Property, Signal, Slot, QMetaObject
 from kaa.application.ui.error_bridge import ErrorDialogBridge, set_bridge
 from kaa.application.core.hotkeys import HotkeyManager
 from kaa.application.ui.controllers import (
@@ -23,7 +24,10 @@ from kaa.application.ui.controllers.game_data_controller import GameDataUpdateCo
 from kaa.application.ui.controllers.preferences_controller import PreferencesController
 from kaa.application.ui.controllers.debug_inspector_controller import DebugInspectorController
 from kaa.application.ui.controllers.skill_card_browser_controller import SkillCardBrowserController
+from kaa.application.ui.controllers.telemetry_consent_controller import TelemetryConsentController
 from kaa.application.ui.controllers.notice_backend import NoticeBackend
+from kaa.application.ui.controllers.schedule_controller import ScheduleController
+from kaa.application.services.scheduler_service import SchedulerService
 from kaa.util.progress import ProgressAggregator
 from PySide6.QtGui import QColor, QFont, QIcon, QPalette
 from PySide6.QtWidgets import QApplication
@@ -35,6 +39,7 @@ if sys.platform == 'win32':
     from kaa.application.ui.platform_win32 import (
         MaxHoverBridge,
         TabBarHitTestBridge,
+        WindowStateBridge,
         WindowEventFilter,
         apply_window_style,
         resolve_window_style,
@@ -236,6 +241,7 @@ def _startup_task(
     tab_manager: TabManager,
     hotkey_mgr: HotkeyManager,
     game_data_ctrl: GameDataUpdateController,
+    scheduler_service: SchedulerService,
 ) -> None:
     """后台线程入口：应用 staging → 完整性校验 → (阻塞更新) → 还原 tabs → 就绪。"""
     # ── Step 0: 应用 pending staging ────────────────────────────────
@@ -283,7 +289,7 @@ def _startup_task(
 
     # ── Step 2: 还原已保存 tabs ─────────────────────────────────
     try:
-        bridge.onStatusChanged("正在恢复标签页…")
+        bridge.onStatusChanged("正在启动…")
         tab_manager.restore_tabs()
     except Exception:
         logger.exception("Tab restoration failed; continuing.")
@@ -293,6 +299,19 @@ def _startup_task(
         hotkey_mgr.start()
     except Exception:
         logger.exception("Failed to start hotkeys")
+
+    # ── Step 3.5: 启动定时调度 ───────────────────────────
+    # SchedulerService 及其 QTimer 归属主线程，本函数运行在后台线程，不能直接
+    # start()（否则触发 "Timers cannot be started from another thread"）。
+    # 用 QueuedConnection 投递到主线程事件循环执行。
+    try:
+        QMetaObject.invokeMethod(
+            scheduler_service,
+            "start",
+            Qt.ConnectionType.QueuedConnection,
+        )
+    except Exception:
+        logger.exception("Failed to start scheduler")
 
     # ── Step 4: 检查迁移和更新日志 ─────────────────────────────
     bridge._check_and_show_migration()
@@ -352,15 +371,29 @@ def apply_color_scheme(app: QApplication, color_scheme: str) -> None:
 
 
 def apply_theme_color(app: QApplication, color_value: str | None) -> None:
-    palette = QPalette()
-    if color_value:
-        color = QColor(color_value)
-        if color.isValid():
-            palette.setColor(QPalette.ColorRole.Highlight, color)
-            accent_role = getattr(QPalette.ColorRole, 'Accent', None)
-            if accent_role is not None:
-                palette.setColor(accent_role, color)
+    if not color_value:
+        return
+    color = QColor(color_value)
+    if not color.isValid():
+        return
+    palette = app.palette()
+    palette.setColor(QPalette.ColorRole.Highlight, color)
+    accent_role = getattr(QPalette.ColorRole, 'Accent', None)
+    if accent_role is not None:
+        palette.setColor(accent_role, color)
     app.setPalette(palette)
+
+
+def _install_sigint_handler(app: QApplication) -> None:
+    """Convert Windows Ctrl+C into a normal Qt event-loop shutdown request."""
+    if sys.platform != "win32":
+        return
+
+    def _handle_sigint(_signum: int, _frame: object) -> None:
+        logger.info("SIGINT received; requesting Qt event loop shutdown.")
+        app.quit()
+
+    signal.signal(signal.SIGINT, _handle_sigint)
 
 
 def main() -> None:
@@ -379,6 +412,9 @@ def main() -> None:
     app.setApplicationName("琴音小助手")
     app.setWindowIcon(QIcon(str(_ICON_PATH)))
 
+    # 处理 Windows 上 Ctrl C 退出
+    _install_sigint_handler(app)
+
     if sys.platform == "win32":
         _font = QFont("Microsoft YaHei UI", 9)
     elif sys.platform == "darwin":
@@ -394,12 +430,19 @@ def main() -> None:
     app_theme = AppThemeController()
     prefs_ctrl = PreferencesController()
     skill_card_browser_ctrl = SkillCardBrowserController()
+    telemetry_consent_ctrl = TelemetryConsentController()
     hotkey_mgr = HotkeyManager(
         request_stop=lambda: _hotkey_stop(tab_manager),
         get_pause_status=lambda: _hotkey_get_pause(tab_manager),
         request_pause=lambda: _hotkey_pause(tab_manager),
         request_resume=lambda: _hotkey_resume(tab_manager),
     )
+
+    # ── 2.5 应用界面配色（必须在 QML 加载前设置，使 palette/暗色正确）──
+    from kaa.config import manager as config_manager
+    _shared = config_manager.read_shared()
+    apply_color_scheme(app, _shared.interface.color_scheme)
+    apply_theme_color(app, _shared.interface.theme_color)
 
     # ── 3. 创建 bridge，加载 QML ────────────────────────────────
     qml_file = _QML_DIR / "main.qml"
@@ -418,6 +461,7 @@ def main() -> None:
     # ── 创建平台相关桥接对象 ────────────────────────────────────
     max_hover_bridge = MaxHoverBridge() if sys.platform == 'win32' else None
     tab_bar_bridge = TabBarHitTestBridge() if sys.platform == 'win32' else None
+    window_state_bridge = None
 
     # 注册 QML 上下文属性
     engine.rootContext().setContextProperty("splash", bridge)
@@ -427,6 +471,7 @@ def main() -> None:
     engine.rootContext().setContextProperty("Notice", notice)
     engine.rootContext().setContextProperty('maxHoverBridge', max_hover_bridge)
     engine.rootContext().setContextProperty('tabBarBridge', tab_bar_bridge)
+    engine.rootContext().setContextProperty('windowStateBridge', window_state_bridge)
     engine.rootContext().setContextProperty('fluentFontPath',
         str(_UI_DIR / "fonts" / "FluentSystemIcons-Regular.ttf").replace("\\", "/"))
 
@@ -434,9 +479,24 @@ def main() -> None:
     engine.rootContext().setContextProperty("PreferencesController", prefs_ctrl)
     engine.rootContext().setContextProperty("SkillCardBrowserController", skill_card_browser_ctrl)
     engine.rootContext().setContextProperty("GameDataCtrl", game_data_ctrl)
+    engine.rootContext().setContextProperty("TelemetryConsentController", telemetry_consent_ctrl)
 
     debug_inspector = DebugInspectorController()
     engine.rootContext().setContextProperty("DebugInspector", debug_inspector)
+
+    # ── 定时任务调度 ──────────────────────────────────────────────
+    schedule_ctrl = ScheduleController()
+    scheduler_service = SchedulerService(tab_manager)
+    tab_manager.setSchedulerBusyCheck(scheduler_service.isProfileBusyByScheduler)
+    tab_manager.setScheduleHandlers(
+        on_remove=schedule_ctrl.handleProfileRemoved,
+        on_rename=schedule_ctrl.handleProfileRenamed,
+    )
+    engine.rootContext().setContextProperty("ScheduleController", schedule_ctrl)
+    engine.rootContext().setContextProperty("SchedulerService", scheduler_service)
+
+    # 调度器写回 last_run 后通知 UI 刷新（任务执行完立即更新下次触发描述）
+    scheduler_service.configChanged.connect(schedule_ctrl.entriesChanged)
 
     # 添加 QML 导入路径，使 qmldir 中注册的 AppTheme 单例对子目录组件可见
     engine.addImportPath(str(_QML_DIR))
@@ -447,16 +507,12 @@ def main() -> None:
         logger.error("Failed to load QML file. Exiting.")
         return
 
-    # ── 4. 应用界面偏好（配色、主题色、窗口样式）──
-    from kaa.config import manager as config_manager
-    _shared = config_manager.read_shared()
-    apply_color_scheme(app, _shared.interface.color_scheme)
-    apply_theme_color(app, _shared.interface.theme_color)
-
     # ── 5. 无边框窗口 + Win32 event filter + 窗口特效（仅 Windows）──
     if sys.platform == 'win32' and max_hover_bridge is not None and tab_bar_bridge is not None:
         window = cast(QQuickWindow, engine.rootObjects()[0])
         hwnd = int(window.winId())
+        window_state_bridge = WindowStateBridge(window)
+        engine.rootContext().setContextProperty('windowStateBridge', window_state_bridge)
         setup_frameless_window(hwnd)
         apply_window_style(hwnd, resolve_window_style(_shared.interface.window_style))
         _win_event_filter = WindowEventFilter(window, max_hover_bridge, tab_bar_bridge)
@@ -465,7 +521,7 @@ def main() -> None:
     # ── 5. 后台线程：应用 staging / 完整性校验 → 恢复 tabs ──────
     _startup_thread = threading.Thread(
         target=_startup_task,
-        args=(bridge, tab_manager, hotkey_mgr, game_data_ctrl),
+        args=(bridge, tab_manager, hotkey_mgr, game_data_ctrl, scheduler_service),
         daemon=True,
     )
     _startup_thread.start()
@@ -476,6 +532,7 @@ def main() -> None:
     logger.info("Qt event loop exited with code %s.", exit_code)
 
     # ── 7. 清理 ─────────────────────────────────────────────────
+    scheduler_service.stop()
     hotkey_mgr.stop()
     set_bridge(None)
     del engine

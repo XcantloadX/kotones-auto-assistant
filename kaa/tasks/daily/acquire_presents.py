@@ -4,7 +4,8 @@ import logging
 from kaa.tasks import R
 from kaa.config import conf
 from ..actions.scenes import at_home, goto_home
-from kotonebot import device, image, task, color, rect_expand, sleep
+from kotonebot import device, task, color, rect_expand, sleep
+from kotonebot.backend.loop import Loop
 
 logger = logging.getLogger(__name__)
 
@@ -14,24 +15,32 @@ def acquire_presents():
         logger.info('Presents acquisition is disabled.')
         return
 
-    if not at_home():
-        goto_home()
-    present = R.Daily.ButtonPresentsPartial.wait(timeout=1)
-    rect = present.rect
-    # 判断是否存在未领取礼物
-    color_rect = rect_expand(rect, top=50, right=50)
-    if not color.find('#ff1249', rect=color_rect):
-        logger.info('No presents to claim.')
-        return
-    # 点击礼物图标
-    logger.debug('Clicking presents icon.')
-    device.click()
+
+    goto_home()
+
+    for _ in Loop():
+        if R.Daily.Presents.ButtonClaimAllNoIcon.exists():
+            logger.debug('Presents page is already open.')
+            if R.Daily.Presents.ButtonClaimAllNoIcon.q(enabled=False).exists():
+                logger.info('No presents to claim.')
+                return
+            break
+
+        # 尝试进入礼物页面
+        R.Daily.ButtonPresentsPartial.try_click()
+        sleep(1)
+
+    # 领取全部礼物并关闭页面
     logger.debug('Claiming presents.')
-    R.Daily.ButtonClaimAllNoIcon.wait(timeout=5).click()
-    logger.debug('Cliking close button.')
-    R.Common.ButtonClose.wait(timeout=5).click()
+    for _ in Loop():
+        if R.Daily.Presents.ButtonClaimAllNoIcon.try_click():
+            logger.debug('Clicked claim all button.')
+            sleep(1)
+        elif R.Common.ButtonClose.try_click():
+            logger.debug('Clicked close button.')
+            sleep(1)
+            break
     logger.info('Claimed presents.')
-    sleep(0.7)
     goto_home()
 
 if __name__ == '__main__':
@@ -40,4 +49,3 @@ if __name__ == '__main__':
     logger.setLevel(logging.DEBUG)
     # acquire_presents()
     # print(image.find(R.Common.ButtonIconArrowShort, colored=True))
-

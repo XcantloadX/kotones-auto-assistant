@@ -45,6 +45,7 @@ PageContainer {
 
                 ListView {
                     id: taskList
+                    objectName: "taskList"
                     implicitHeight: contentHeight
                     width: parent.width
                     clip: true
@@ -59,6 +60,7 @@ PageContainer {
                             spacing: 12
 
                             Button {
+                                objectName: "taskStartButton_" + index
                                 text: root.ctrl_running
                                       ? (root.ctrl_stopping ? "停止中..." : "运行中")
                                       : "启动"

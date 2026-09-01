@@ -1,0 +1,19 @@
+{
+  "version": 3,
+  "definitions": {
+    "01d72f52-f9ad-4538-ad09-2857df4761b3": {
+      "type": "prefab",
+      "prefab_id": "TemplateMatchPrefab",
+      "name": "Produce.ResumeDialogHifMain",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 408.80467708611036,
+          "y1": 328.6204358570943,
+          "x2": 461.7961993468409,
+          "y2": 352.6000577952061
+        }
+      }
+    }
+  }
+}

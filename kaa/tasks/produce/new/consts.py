@@ -29,6 +29,8 @@ class SceneType(Enum):
     """相談"""
     ALLOWANCE = auto()
     """活動支給"""
+    HIF_ROUND_INTERVAL = auto()
+    """HIF 两轮 Round 之间的中场休息"""
 
 
     SELECT_DRINK = auto()
@@ -41,6 +43,10 @@ class SceneType(Enum):
     """技能卡自选强化"""
     SKILL_CARD_REMOVAL = auto()
     """技能卡自选删除"""
+    SKILL_CARD_CHANGE_1 = auto()
+    """技能卡自选变更，阶段 1"""
+    SKILL_CARD_CHANGE_2 = auto()
+    """技能卡自选变更，阶段 2"""
 
     INITIAL_DRINK_OR_CARD_SELECT = auto()
 
@@ -49,6 +55,9 @@ class SceneType(Enum):
 
     PDRINK_MAX_CONFIRM = auto()
     """P饮料到达上限确认弹窗"""
+
+    PRODUCE_END = auto()
+    """培育结算"""
 
 
 @dataclass

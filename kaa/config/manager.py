@@ -5,6 +5,7 @@ from typing import Literal, overload
 
 from .schema import KaaConfig
 from .shared import SharedConfig
+from .scheduler import SchedulerConfig
 from .migration import add_deferred_messages
 
 logger = logging.getLogger(__name__)
@@ -67,6 +68,46 @@ def write_shared(config: SharedConfig) -> None:
     d = Path(conf_dir)
     d.mkdir(parents=True, exist_ok=True)
     (d / '_shared.json').write_text(
+        json.dumps(config.model_dump(), indent=2, ensure_ascii=False),
+        encoding='utf-8',
+    )
+
+
+_scheduler: 'SchedulerConfig | None' = None
+
+
+def read_scheduler() -> SchedulerConfig:
+    """返回定时任务配置单例，首次调用从磁盘读取。"""
+    global _scheduler
+    if _scheduler is not None:
+        return _scheduler
+
+    d = Path(conf_dir)
+    d.mkdir(parents=True, exist_ok=True)
+
+    scheduler_file = d / '_scheduler.json'
+    if not scheduler_file.exists():
+        _scheduler = SchedulerConfig()
+        write_scheduler(_scheduler)
+        return _scheduler
+
+    try:
+        _scheduler = SchedulerConfig.model_validate(
+            json.loads(scheduler_file.read_text(encoding='utf-8'))
+        )
+    except Exception:
+        logger.warning('Invalid scheduler config, falling back to default')
+        _scheduler = SchedulerConfig()
+    return _scheduler
+
+
+def write_scheduler(config: SchedulerConfig) -> None:
+    """写入 _scheduler.json，同时更新内存缓存。"""
+    global _scheduler
+    _scheduler = config
+    d = Path(conf_dir)
+    d.mkdir(parents=True, exist_ok=True)
+    (d / '_scheduler.json').write_text(
         json.dumps(config.model_dump(), indent=2, ensure_ascii=False),
         encoding='utf-8',
     )

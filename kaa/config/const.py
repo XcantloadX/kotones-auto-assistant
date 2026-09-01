@@ -1,4 +1,5 @@
 from enum import IntEnum, Enum
+from typing import TypeAlias
 from typing_extensions import assert_never
 
 
@@ -222,7 +223,17 @@ class ProduceAction(Enum):
     DANCE_SP = 'dance_sp'
     OUTING = 'outing'
     STUDY = 'study'
+    """授業"""
+    STUDY_VISUAL_HIF = 'study_visual'
+    """授業（形象）。HIF 专用。"""
+    STUDY_VOCAL_HIF = 'study_vocal'
+    """授業（声乐）。HIF 专用。"""
+    STUDY_DANCE_HIF = 'study_dance'
+    """授業（舞蹈）。HIF 专用。"""
     ALLOWANCE = 'allowance'
+    """活动支给（活動支給）。初专用。"""
+    GIFT = 'gift'
+    """差し入れ。NIA/HIF 专用。"""
     REST = 'rest'
     CONSULT = 'consult'
 
@@ -235,6 +246,10 @@ class ProduceAction(Enum):
             ProduceAction.DANCE: '舞蹈课程',
             ProduceAction.OUTING: '外出（おでかけ）',
             ProduceAction.STUDY: '文化课（授業）',
+            ProduceAction.STUDY_VISUAL_HIF: '文化课（形象·HIF）',
+            ProduceAction.STUDY_VOCAL_HIF: '文化课（声乐·HIF）',
+            ProduceAction.STUDY_DANCE_HIF: '文化课（舞蹈·HIF）',
+            ProduceAction.GIFT: '赠礼（差し入れ）',
             ProduceAction.ALLOWANCE: '活动支给（活動支給）',
             ProduceAction.REST: '休息',
             ProduceAction.CONSULT: '咨询（相談）',
@@ -242,20 +257,7 @@ class ProduceAction(Enum):
             ProduceAction.VOCAL_SP: '声乐 SP 课程',
             ProduceAction.DANCE_SP: '舞蹈 SP 课程',
         }
-        return MAP[self]
-
-
-class RecommendCardDetectionMode(Enum):
-    NORMAL = 'normal'
-    STRICT = 'strict'
-
-    @property
-    def display_name(self):
-        MAP = {
-            RecommendCardDetectionMode.NORMAL: '正常模式',
-            RecommendCardDetectionMode.STRICT: '严格模式',
-        }
-        return MAP[self]
+        return MAP.get(self, self.value)
 
 
 class HajimeScenario(str, ConfigEnum):
@@ -269,10 +271,23 @@ class NiaScenario(str, ConfigEnum):
     MASTER = 'nia_master'
 
 
+class HifScenario(str, ConfigEnum):
+    """HIF（Hatsuboshi Idol Festival）剧本。难度分为选拔赛和正赛。"""
+    QUALIFY = 'hif_qualify'
+    """选拔赛"""
+    MAIN = 'hif_main'
+    """正赛"""
+
+
+class ProduceStrategy(str, ConfigEnum):
+    """培育策略。不同剧本支持的策略不同。"""
+    NORMAL = 'normal'
+    """普通"""
+    WITHDRAW_MAIN = 'withdraw_main'
+    """正赛弃赛（HIF 专用：培育至正赛时弃赛，用于快速刷取 HIF 点数）"""
+
+
 # class HajimeLegendScenario(str, ConfigEnum):
 #     LEGEND = 'hajime_legend'
 
-# class HifScenario(str, ConfigEnum):
-#     REGULAR = 'hif'
-
-Scenario = HajimeScenario | NiaScenario
+Scenario: TypeAlias = HajimeScenario | NiaScenario | HifScenario

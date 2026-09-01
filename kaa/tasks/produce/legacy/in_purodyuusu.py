@@ -14,8 +14,8 @@ from kaa.tasks.actions.commu import handle_unread_commu
 from kotonebot.errors import UnrecoverableError
 from kotonebot.util import Countdown, cropped
 from kotonebot.backend.loop import Loop
-from kaa.config import ProduceAction, RecommendCardDetectionMode
-from kaa.tasks.produce.shared.common import until_acquisition_clear, commu_event, ProduceInterrupt
+from kaa.config import ProduceAction
+from kaa.tasks.produce.shared.common import until_acquisition_clear, commu_event, ProduceInterrupt, use_strict_card_detection
 from kotonebot import ocr, device, contains, image, regex, action, sleep, wait
 from kotonebot.core import AnyOf
 from kaa.tasks.produce.shared.non_lesson_actions import (
@@ -200,7 +200,7 @@ def practice():
 
     def threshold_predicate(card_count: int, result: CardDetectResult):
         border_scores = (result.left_score, result.right_score, result.top_score, result.bottom_score)
-        is_strict_mode = produce_solution().data.recommend_card_detection_mode == RecommendCardDetectionMode.STRICT
+        is_strict_mode = use_strict_card_detection()
         if is_strict_mode:
             return (
                 result.score >= 0.043
@@ -235,7 +235,7 @@ def exam(type: Literal['mid', 'final']) -> bool:
     logger.info("Exam started")
 
     def threshold_predicate(card_count: int, result: CardDetectResult):
-        is_strict_mode = produce_solution().data.recommend_card_detection_mode == RecommendCardDetectionMode.STRICT
+        is_strict_mode = use_strict_card_detection()
         total = lambda t: result.score >= t  # noqa: E731
         def borders(t):
             # 卡片数量小于三时无遮挡，以及最后一张卡片也总是无遮挡

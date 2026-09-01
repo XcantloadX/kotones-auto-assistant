@@ -4,10 +4,11 @@ import QtQuick.Layouts
 import "../../components/controls"
 import "../../components/form"
 
-// 日常设置：商店 / 工作 / 竞赛 / 奖励
+// 日常设置：商店 / 工作 / 竞赛 / 社团 / 扭蛋机 / 奖励
 Item {
     id: root
     property var settingsCtrl
+    property var errors: ({})
 
     property var moneyItemModel: []
     property var apItemModel: []
@@ -16,6 +17,8 @@ Item {
     readonly property var _purchase:   settingsCtrl?.config?.profile?.tasks?.purchase   ?? {}
     readonly property var _assignment: settingsCtrl?.config?.profile?.tasks?.assignment ?? {}
     readonly property var _contest:    settingsCtrl?.config?.profile?.tasks?.contest    ?? {}
+    readonly property var _club:       settingsCtrl?.config?.profile?.tasks?.club_reward ?? {}
+    readonly property var _capsuleToys: settingsCtrl?.config?.profile?.tasks?.capsule_toys ?? {}
     readonly property var _tasks:      settingsCtrl?.config?.profile?.tasks             ?? {}
 
     function loadStaticData() {
@@ -46,17 +49,37 @@ Item {
     FormBinder {
         id: purchase
         data: root._purchase
+        prefix: "tasks.purchase"
+        errors: root.errors
         onCommitted: function(key, value) { root._commit("tasks.purchase", key, value) }
     }
     FormBinder {
         id: assignment
         data: root._assignment
+        prefix: "tasks.assignment"
+        errors: root.errors
         onCommitted: function(key, value) { root._commit("tasks.assignment", key, value) }
     }
     FormBinder {
         id: contest
         data: root._contest
+        prefix: "tasks.contest"
+        errors: root.errors
         onCommitted: function(key, value) { root._commit("tasks.contest", key, value) }
+    }
+    FormBinder {
+        id: club
+        data: root._club
+        prefix: "tasks.club_reward"
+        errors: root.errors
+        onCommitted: function(key, value) { root._commit("tasks.club_reward", key, value) }
+    }
+    FormBinder {
+        id: capsuleToys
+        data: root._capsuleToys
+        prefix: "tasks.capsule_toys"
+        errors: root.errors
+        onCommitted: function(key, value) { root._commit("tasks.capsule_toys", key, value) }
     }
 
     ScrollView {
@@ -95,6 +118,13 @@ Item {
                         Layout.leftMargin: 24
                         visible: root._purchase.money_enabled ?? false
 
+                        // 异形控件（非 Form*）手动注册 label 映射
+                        FieldRegistrar {
+                            startParent: parent
+                            binder: purchase
+                            field: "money_items"
+                            label: "金币商店购买物品"
+                        }
                         MultiSelect {
                             Layout.fillWidth: true
                             label: "金币商店购买物品"
@@ -120,6 +150,12 @@ Item {
                         Layout.leftMargin: 24
                         visible: root._purchase.ap_enabled ?? false
 
+                        FieldRegistrar {
+                            startParent: parent
+                            binder: purchase
+                            field: "ap_items"
+                            label: "AP商店购买物品"
+                        }
                         MultiSelect {
                             Layout.fillWidth: true
                             label: "AP商店购买物品"
@@ -215,6 +251,83 @@ Item {
                 }
             }
 
+            // ── 社团 ──────────────────────────────────────
+            FormGroupBox {
+                title: "社团"
+                binder: club
+
+                FormCheckBox {
+                    field: "enabled"
+                    label: "启用社团"
+                }
+
+                ColumnLayout {
+                    width: parent.width
+                    spacing: 8
+                    visible: root._club.enabled ?? false
+
+                    FormCheckBox {
+                        field: "enable_request"
+                        label: "请求获得笔记"
+                    }
+
+                    FormComboBox {
+                        Layout.leftMargin: 24
+                        visible: root._club.enable_request ?? false
+                        field: "selected_note"
+                        label: "想获得的笔记类型"
+                        options: root.noteModel.map(function(note) { return { label: note.text, value: note.value } })
+                    }
+
+                    FormCheckBox {
+                        field: "enable_send"
+                        label: "发送笔记给别人"
+                    }
+                }
+            }
+
+            // ── 扭蛋机 ────────────────────────────────────
+            FormGroupBox {
+                title: "扭蛋机"
+                binder: capsuleToys
+
+                FormCheckBox {
+                    field: "enabled"
+                    label: "启用扭蛋机"
+                }
+
+                ColumnLayout {
+                    width: parent.width
+                    spacing: 8
+                    visible: root._capsuleToys.enabled ?? false
+
+                    FormSpinBox {
+                        field: "friend_capsule_toys_count"
+                        label: "好友扭蛋机次数"
+                        from: 0
+                        to: 100
+                    }
+                    FormSpinBox {
+                        field: "sense_capsule_toys_count"
+                        label: "感性扭蛋机次数"
+                        from: 0
+                        to: 100
+                    }
+                    FormSpinBox {
+                        field: "logic_capsule_toys_count"
+                        label: "理性扭蛋机次数"
+                        from: 0
+                        to: 100
+                    }
+                    FormSpinBox {
+                        field: "anomaly_capsule_toys_count"
+                        label: "非凡扭蛋机次数"
+                        from: 0
+                        to: 100
+                    }
+                }
+            }
+
             // ── 奖励 ──────────────────────────────────────
             GroupBox {
                 title: "奖励"
@@ -229,19 +342,6 @@ Item {
                         onUserToggled: function(checked) { root._commit("tasks.mission_reward", "enabled", checked) }
                     }
                     FormCheckBox {
-                        label: "领取社团奖励"
-                        value: root._tasks.club_reward?.enabled ?? false
-                        onUserToggled: function(checked) { root._commit("tasks.club_reward", "enabled", checked) }
-                    }
-                    FormComboBox {
-                        Layout.leftMargin: 24
-                        visible: root._tasks.club_reward?.enabled ?? false
-                        label: "社团奖励笔记选择"
-                        options: root.noteModel.map(function(note) { return { label: note.text, value: note.value } })
-                        value: root._tasks.club_reward?.selected_note ?? 3
-                        onUserSelected: function(v) { root._commit("tasks.club_reward", "selected_note", v) }
-                    }
-                    FormCheckBox {
                         label: "收取礼物"
                         value: root._tasks.presents?.enabled ?? false
                         onUserToggled: function(checked) { root._commit("tasks.presents", "enabled", checked) }
@@ -250,11 +350,6 @@ Item {
                         label: "收取活动费"
                         value: root._tasks.activity_funds?.enabled ?? false
                         onUserToggled: function(checked) { root._commit("tasks.activity_funds", "enabled", checked) }
-                    }
-                    FormCheckBox {
-                        label: "扭蛋机"
-                        value: root._tasks.capsule_toys?.enabled ?? false
-                        onUserToggled: function(checked) { root._commit("tasks.capsule_toys", "enabled", checked) }
                     }
                     FormCheckBox {
                         label: "升级支援卡"

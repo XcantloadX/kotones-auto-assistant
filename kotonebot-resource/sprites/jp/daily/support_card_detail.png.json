@@ -4,7 +4,7 @@
     "b940d755-f380-436f-a887-34d81a438a75": {
       "type": "prefab",
       "prefab_id": "TemplateMatchPrefab",
-      "name": "Daily.ButtonSupportCardUpgrade",
+      "name": "Daily.SupportCard.ButtonUpgrade",
       "props": {
         "template": {
           "kind": "image",

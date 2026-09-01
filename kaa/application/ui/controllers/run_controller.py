@@ -47,14 +47,6 @@ class RunController(QObject):
     # ── 状态刷新（定时器）──────────────────────────────────
 
     def _refresh_state(self) -> None:
-        ts = self._session.task_service
-        if ts is not None:
-            try:
-                statuses = dict(ts.get_task_statuses())
-                if self._task_model is not None:
-                    self._task_model.set_all_running_statuses(statuses)
-            except Exception:
-                pass
         self.stateChanged.emit()
 
     def _on_config_changed(self) -> None:

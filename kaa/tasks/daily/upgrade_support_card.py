@@ -1,11 +1,11 @@
 """升级一张支援卡，优先升级低等级支援卡"""
 import logging
 
+from kotonebot import task, device, Loop, sleep
+
 from kaa.tasks import R
 from kaa.config import conf
-from kaa.game_ui.scrollable import Scrollable
 from ..actions.scenes import at_home, goto_home
-from kotonebot import task, device, image, sleep
 
 logger = logging.getLogger(__name__)
 
@@ -27,9 +27,13 @@ def upgrade_support_card():
     
     # 进入支援卡页面
     logger.info('Entering Support Card page')
-    R.Common.ButtonIdol.wait(timeout=5).click()
-    R.Common.ButtonIdolSupportCard.wait(timeout=5).click()
-    sleep(2)
+    for _ in Loop():
+        if R.Common.ButtonIdolSupportCard.try_click():
+            continue
+        if R.Common.ButtonIdol.try_click():
+            continue
+        if R.Daily.SupportCard.ButtonSeeDetails.exists():
+            break
 
     # 重试10次
     for retry_idx in range(10):
@@ -48,16 +52,13 @@ def upgrade_support_card():
     # 点击位置百分比: (0.18, 0.34)
     # 720p缩放后的位置: (130, 435)
     for _ in range(2):
-        device.click(
-            R.Daily.SupportCard.TargetSupportCard.x,
-            R.Daily.SupportCard.TargetSupportCard.y
-        )
+        device.click(R.Daily.SupportCard.TargetSupportCard)
         sleep(0.5)
     
-    # 点击两次升级按钮（两个按钮的logo不一样，但是文字是一样的，这里资源文件只包含文字）
-    R.Daily.ButtonSupportCardUpgrade.wait(timeout=5).click()
-    sleep(0.5)
-    R.Daily.ButtonSupportCardUpgrade.wait(timeout=5).click()
+    # 点击两次升级按钮
+    R.Daily.SupportCard.ButtonUpgrade.wait().click()
+    sleep(1)
+    R.Daily.SupportCard.ButtonUpgrade2.wait().click()
     sleep(1)
 
 if __name__ == '__main__':

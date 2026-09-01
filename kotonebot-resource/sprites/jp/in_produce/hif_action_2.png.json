@@ -1,0 +1,50 @@
+{
+  "version": 3,
+  "definitions": {
+    "a14e704e-e9e0-49fb-a4f3-6ba6ac3df724": {
+      "type": "prefab",
+      "prefab_id": "TemplateMatchPrefab",
+      "name": "InProduce.ButtonPracticeVocalHif",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 144.9971447496296,
+          "y1": 969.3800199771784,
+          "x2": 206.51998433901224,
+          "y2": 1038.2673843146035
+        }
+      },
+      "displayName": "Vo.公開レッスン"
+    },
+    "b89204bb-a92b-4a32-9d2f-80fa015d9051": {
+      "type": "prefab",
+      "prefab_id": "TemplateMatchPrefab",
+      "name": "InProduce.ButtonPracticeDanceHif",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 318.54939437762755,
+          "y1": 965.6318903648257,
+          "x2": 397.0695146921503,
+          "y2": 1029.523500131811
+        }
+      },
+      "displayName": "Da.公開レッスン"
+    },
+    "f09b8a7a-2ccd-4c29-b4dc-c5a38ac24f91": {
+      "type": "prefab",
+      "prefab_id": "TemplateMatchPrefab",
+      "name": "InProduce.ButtonPracticeVisualHif",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 505.845500820367,
+          "y1": 967.1279893669125,
+          "x2": 582.3659410495792,
+          "y2": 1036.0153537043375
+        }
+      },
+      "displayName": "Vi.公開レッスン"
+    }
+  }
+}

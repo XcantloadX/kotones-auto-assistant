@@ -184,11 +184,13 @@ def do_cards(
             else:
                 logger.warning('Unexpected use drink dialog.')
             continue
-        # 技能卡效果无法发动对话框
-        if R.Common.ButtonIconCheckMark.try_click():
-            logger.info("Confirmation dialog detected")
-            sleep(4)  # 等待卡片刷新
-            continue
+        # 技能卡效果无法发动对话框（同时检测对话框标题与确认按钮，避免单一按钮误触）
+        # 参考：R.Common.TextGameUpdate.exists() and R.Common.ButtonConfirm.exists() / R.InProduce.DialogCardChangeConfirm
+        if R.InProduce.DialogSkillCardUseConfirm.Title.exists() and R.InProduce.DialogSkillCardUseConfirm.ButtonConfirm.exists():
+            if R.InProduce.DialogSkillCardUseConfirm.ButtonConfirm.try_click():
+                logger.info("Skill card use confirm dialog detected")
+                sleep(4)  # 等待卡片刷新
+                continue
 
         # 匹配饮品
         # - 顺序应该在对话框检测之后、卡片更新之前
@@ -240,7 +242,9 @@ def do_cards(
         else:
             if try_battle_strategy():
                 logger.info("Handle battle strategy success with %d tries", tries)
-                sleep(4.5)
+                sleep(1)
+                skip()
+                sleep(3.5)
                 tries = 0
                 timeout_cd.reset()
                 continue
@@ -250,7 +254,9 @@ def do_cards(
                 img=img
             ):
                 logger.info("Handle recommended card success with %d tries", tries)
-                sleep(4.5)
+                sleep(1)
+                skip()
+                sleep(3.5)
                 tries = 0
                 timeout_cd.reset()
                 continue
@@ -286,6 +292,9 @@ def do_cards(
         else:
             logger.debug('reset break_cd')
             break_cd.stop()
+
+def do_skips():
+    pass
 
 @action("技能卡移动")
 def handle_skill_card_move():

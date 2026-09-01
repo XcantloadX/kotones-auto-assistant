@@ -19,8 +19,7 @@ ApplicationWindow {
             ? "PingFang SC"
             : "Noto Sans CJK SC"
 
-    SystemPalette { id: sysPalette }
-    color: sysPalette.window
+    color: palette.window
     flags: Qt.platform.os === "windows"
         ? (Qt.Window | Qt.FramelessWindowHint)
         : Qt.Window
@@ -63,6 +62,13 @@ ApplicationWindow {
     function exitFullscreenMode() {
         fullscreenMode = ""
         titleBar.setCurrentIndex(_prevTitleBarIndex)
+    }
+
+    function minimizeWindow() {
+        if (Qt.platform.os === "windows")
+            windowStateBridge.minimize()
+        else
+            window.showMinimized()
     }
 
     function requestAppClose() {
@@ -111,6 +117,15 @@ ApplicationWindow {
         }
     }
 
+    Connections {
+        target: TelemetryConsentController
+        function onTelemetryConsentRequiredChanged() {
+            if (TelemetryConsentController.telemetryConsentRequired) {
+                telemetryConsentDialog.open()
+            }
+        }
+    }
+
     Dialog {
         id: taskErrorDialog
         property string mainInstruction: ""
@@ -130,7 +145,7 @@ ApplicationWindow {
             Text {
                 text: taskErrorDialog.content
                 font.pixelSize: 13
-                color: sysPalette.windowText
+                color: palette.windowText
                 wrapMode: Text.Wrap
                 width: parent.width
                 lineHeight: 1.4
@@ -139,7 +154,7 @@ ApplicationWindow {
 
         footer: Rectangle {
             implicitHeight: 81
-            color: sysPalette.window
+            color: palette.window
             Rectangle {
                 width: parent.width; height: 1
                 color: AppTheme.isDark ? "#15FFFFFF" : "#0F000000"
@@ -194,7 +209,7 @@ ApplicationWindow {
                 width: changelogDialog.width - 48
                 text: changelogDialog.changelogText
                 wrapMode: Text.Wrap; font.pixelSize: 14; lineHeight: 1.5
-                color: sysPalette.windowText
+                color: palette.windowText
             }
         }
     }
@@ -221,7 +236,7 @@ ApplicationWindow {
                         Text {
                             text: modelData.level === "warning" ? "⚠️" : "ℹ️"
                             font.pixelSize: 13
-                            color: modelData.level === "warning" ? "#e65100" : sysPalette.windowText
+                            color: modelData.level === "warning" ? "#e65100" : palette.windowText
                             verticalAlignment: Text.AlignTop
                         }
                         Text {
@@ -233,7 +248,7 @@ ApplicationWindow {
                                 return vi + modelData.text
                             }
                             wrapMode: Text.Wrap; font.pixelSize: 13; lineHeight: 1.4
-                            color: sysPalette.windowText
+                            color: palette.windowText
                         }
                     }
                 }
@@ -244,6 +259,80 @@ ApplicationWindow {
     // ── Splash（启动时显示） ─────────────────────────────────────
     SplashOverlay { visible: !splash.ready }
 
+    // ── 匿名上报首次同意弹窗（启动时询问） ──────────────────────
+    Dialog {
+        id: telemetryConsentDialog
+        title: "数据收集"
+        modal: true
+        closePolicy: Popup.NoAutoClose
+        anchors.centerIn: parent
+        width: Math.min(420, window.width - 80)
+        standardButtons: Dialog.NoButton
+
+        Column {
+            width: parent.width
+            spacing: 10
+            Text {
+                text: "是否允许琴音小助手自动发送匿名错误报告？发送的信息仅用于改善琴音小助手，你也可以随时在“偏好设置”中更改。"
+                font.pixelSize: 13
+                color: palette.windowText
+                wrapMode: Text.Wrap
+                width: parent.width
+                lineHeight: 1.4
+            }
+
+            Switch {
+                id: staticsSwitch
+                text: "匿名收集统计数据"
+                checked: true
+            }
+
+            Switch {
+                id: sentrySwitch
+                text: "发送匿名错误报告"
+                checked: true
+            }
+
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: 2
+
+                Switch {
+                    id: screenshotSwitch
+                    text: "错误上报时附带游戏截图"
+                    checked: true
+                }
+
+                HelpTip {
+                    richText: "只包含游戏画面截图，不含电脑桌面或其他应用内容。<br>如果不希望发送截图，请关闭此选项。"
+                    Layout.alignment: Qt.AlignVCenter
+                }
+            }
+        }
+
+        footer: Rectangle {
+            implicitHeight: 81
+            color: palette.window
+            Rectangle {
+                width: parent.width; height: 1
+                color: AppTheme.isDark ? "#15FFFFFF" : "#0F000000"
+            }
+            Row {
+                anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter
+                anchors.rightMargin: 24; spacing: 8
+                Button {
+                    text: "确定"
+                    highlighted: true
+                    onClicked: {
+                        TelemetryConsentController.setTelemetryConsent(sentrySwitch.checked, screenshotSwitch.checked, staticsSwitch.checked)
+                        Notice.show("success", "数据收集设置将于下次启动时生效。")
+                        telemetryConsentDialog.close()
+                    }
+                }
+            }
+        }
+    }
+
     // ── NavigationCoordinator（页面切换守卫，不可见） ──────────
     NavigationCoordinator {
         id: navigation
@@ -251,6 +340,7 @@ ApplicationWindow {
         settingsCtrl: window.activeSettingsCtrl
         produceCtrl: window.activeProduceCtrl
         prefsCtrl: PreferencesController
+        onFullscreenModeRequested: window.enterFullscreenMode(mode)
     }
 
     // ── 主内容区（Splash 隐藏后显示） ──────────────────────────
@@ -266,7 +356,7 @@ ApplicationWindow {
             fullscreenMode: window.fullscreenMode
             onSettingsRequested: window.enterFullscreenMode("preferences")
             onBackRequested: window.exitFullscreenMode()
-            onMinimizeRequested: window.showMinimized()
+            onMinimizeRequested: window.minimizeWindow()
             onCloseRequested: window.requestAppClose()
         }
 
@@ -278,7 +368,7 @@ ApplicationWindow {
             // ── index 0: 总览页 ────────────────────────────
             OverviewPage {
                 configManagerDialog: configManagerDialog
-                onOpenSkillCardBrowser: window.enterFullscreenMode("skillCardBrowser")
+                scheduleManagerDialog: scheduleManagerDialog
             }
 
             // ── index 1: per-tab 内容区 ─────────────────────
@@ -376,6 +466,10 @@ ApplicationWindow {
         tabManager: TabManager
     }
 
+    ScheduleManagerDialog {
+        id: scheduleManagerDialog
+    }
+
     NoticeHost {
         id: noticeHost
     }
@@ -394,6 +488,11 @@ ApplicationWindow {
         _onTabsChanged()
         TabManager.tabsChanged.connect(window._onTabsChanged)
         TabManager.activeTabChanged.connect(window._onActiveTabChanged)
+
+        // 首次启动且未设置匿名上报时，弹出同意询问（对应 TelemetryConsentController）
+        if (TelemetryConsentController.telemetryConsentRequired) {
+            telemetryConsentDialog.open()
+        }
     }
 }
 

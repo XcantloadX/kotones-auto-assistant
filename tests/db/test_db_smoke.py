@@ -24,7 +24,9 @@ def test_drink_from_asset_id():
 def test_drink_all_cached():
     drinks = Drink.all()
     assert len(drinks) > 0
-    assert drinks is Drink.all()
+    # 缓存的是底层元组（_all_cached），all() 每次返回新的列表副本；
+    # 这里断言两次调用结果一致，而不是同一个对象。
+    assert drinks == Drink.all()
 
 
 def test_idol_card_all():

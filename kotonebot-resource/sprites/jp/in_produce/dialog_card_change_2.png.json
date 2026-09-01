@@ -1,0 +1,48 @@
+{
+  "version": 3,
+  "definitions": {
+    "e4623db6-6b79-4f8e-bc5d-ad4c0076c0d4": {
+      "type": "prefab",
+      "prefab_id": "TemplateMatchPrefab",
+      "name": "InProduce.DialogCardChange2.Title",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 15.867540322580652,
+          "y1": 36.69855176099904,
+          "x2": 189.83970774460147,
+          "y2": 77.66373923860672
+        },
+        "fixed": true
+      }
+    },
+    "170b9ad8-f22c-4789-b478-130f44374e19": {
+      "type": "prefab",
+      "prefab_id": "TemplateMatchPrefab",
+      "name": "InProduce.DialogCardChange2.ButtonConfirm",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 389.8077162756599,
+          "y1": 1135.6144922557103,
+          "x2": 437.8000383231139,
+          "y2": 1180.57628338967
+        },
+        "fixed": true
+      }
+    },
+    "b62fe116-f8ff-4a07-a23c-3da617313f80": {
+      "type": "hint-box",
+      "name": "InProduce.DialogCardChange2.BoxCardArea",
+      "props": {
+        "rect": {
+          "kind": "rect",
+          "x1": 66.93511038283123,
+          "y1": 623.8996704657986,
+          "x2": 641.79521257638,
+          "y2": 1106.6424320601548
+        }
+      }
+    }
+  }
+}

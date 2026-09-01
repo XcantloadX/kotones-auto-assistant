@@ -5,6 +5,7 @@ if TYPE_CHECKING:
     from kotonebot import Loop
 
 from kotonebot import device
+from kotonebot.backend.context.context import vars
 from kaa.tasks import R
 
 logger = logging.getLogger(__name__)
@@ -22,6 +23,10 @@ def handle_network_error() -> bool:
 
     :return: 是否处理了网络错误弹窗。
     """
+    # 无截图数据时跳过检测（例如 `Loop(auto_screenshot=False)` 之类未截图的上下文）
+    if vars.screenshot_data is None:
+        logger.debug('No screenshot data available, skipping network error check.')
+        return False
     # 横屏下跳过检测
     if device.detect_orientation() == 'landscape':
         logger.debug('Landscape orientation detected, skipping network error handling.')
@@ -53,6 +58,10 @@ def global_interrupt(loop: 'Loop') -> bool:
     :param loop: 当前正在执行的 Loop。
     :return: 是否处理了弹窗。
     """
-    if handle_network_error():
-        return True
+    try:
+        if handle_network_error():
+            return True
+    except Exception:
+        logger.exception('Error while handling global interrupt: %s')
+        return False
     return False

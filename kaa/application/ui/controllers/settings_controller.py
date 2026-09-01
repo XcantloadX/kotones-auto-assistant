@@ -87,7 +87,12 @@ class SettingsController(QObject):
             self.dirtyChanged.emit(False)
             self.operationSucceeded.emit("设置已保存并应用！")
             return True
-        self.operationFailed.emit("校验失败，请检查联动字段")
+        # 透出全部 error 级校验消息，帮助用户一次性定位问题；否则给通用提示。
+        errors = [i for i in self._draft.last_issues if i.severity == 'error']
+        if errors:
+            self.operationFailed.emit('；'.join(i.message for i in errors))
+        else:
+            self.operationFailed.emit("校验失败，请检查联动字段")
         return False
 
     @Slot(result=bool)
@@ -99,6 +104,27 @@ class SettingsController(QObject):
         self.configChanged.emit()
         self.dirtyChanged.emit(False)
         return True
+
+    @Slot(result=str)
+    def validateJson(self) -> str:
+        """校验当前草稿（base+dirty 合并），返回 ConfigIssue 列表 JSON。
+
+        供设置页内联展示校验问题，不影响草稿与 live 配置。
+        """
+        if self._draft is None:
+            return '[]'
+        try:
+            issues = self._draft.validate_view()
+            return json.dumps(
+                [i.model_dump() for i in issues],
+                ensure_ascii=False,
+            )
+        except Exception as exc:
+            logger.exception("Failed to validate settings draft")
+            return json.dumps(
+                [{'severity': 'error', 'field': None, 'message': f'校验失败：{exc}'}],
+                ensure_ascii=False,
+            )
 
     def _on_external(self):
         """外部 configChanged → 刷新 draft base，保留 dirty。"""

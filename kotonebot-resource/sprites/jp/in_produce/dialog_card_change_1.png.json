@@ -1,0 +1,48 @@
+{
+  "version": 3,
+  "definitions": {
+    "bf2c0d97-d940-4d5e-977d-0d62764e4ab7": {
+      "type": "prefab",
+      "prefab_id": "TemplateMatchPrefab",
+      "name": "InProduce.DialogCardChange1.TipText",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 76.85778292455348,
+          "y1": 284.65779563722265,
+          "x2": 643.7670871101041,
+          "y2": 339.61109591206224
+        },
+        "fixed": true
+      }
+    },
+    "15722cc3-4304-4f64-a930-1a74c3d19ff4": {
+      "type": "prefab",
+      "prefab_id": "GakumasPrimaryButtonPrefab",
+      "name": "InProduce.DialogCardChange1.ButtonNext",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 251.82979038922957,
+          "y1": 1065.58901967835,
+          "x2": 294.8229122234071,
+          "y2": 1117.5448672109255
+        },
+        "fixed": true
+      }
+    },
+    "b4eb7cc7-6d69-4237-acd4-2347233f7c4e": {
+      "type": "hint-box",
+      "name": "InProduce.DialogCardChange1.BoxCardLetters",
+      "props": {
+        "rect": {
+          "kind": "rect",
+          "x1": 58.537102953767075,
+          "y1": 943.3134750866757,
+          "x2": 663.3990130559768,
+          "y2": 963.1422026886707
+        }
+      }
+    }
+  }
+}

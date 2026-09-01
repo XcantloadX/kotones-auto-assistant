@@ -2,7 +2,8 @@
 import sys
 import logging
 import importlib.metadata
-from typing import Any, cast, Callable, Iterable
+from typing import Any, cast
+from collections.abc import Callable, Iterable
 
 from kotonebot.core.bot import BotContext, KotoneBot
 from kotonebot.backend.context import Task
@@ -24,7 +25,8 @@ from kaa.constants import GAME_PACKAGE_NAME, PLAYCOVER_BUNDLE_ID
 from ..util.paths import get_ahk_path
 from ..kaa_context import _set_instance
 from kaa.tasks import POST_TASK_REGISTRY, TASK_FUNCTIONS
-from kotonebot.errors import UserFriendlyError, StopCurrentTask
+from kotonebot.errors import UserFriendlyError, StopCurrentTask, UnscalableResolutionError
+from kotonebot.interop.window.model import WindowQueryError
 from kotonebot.core import NextHandler
 
 if is_windows():
@@ -37,26 +39,84 @@ from kotonebot.primitives.geometry import Size
 logger = logging.getLogger(__name__)
 
 
+def build_resolution_error_message(screen_size: tuple[int, int]) -> str:
+    """构造分辨率不兼容时的用户提示文案。
+
+    :param screen_size: 设备实际分辨率 (width, height)。
+    :return: 包含实际分辨率与修复指引的文案。
+    """
+    w, h = screen_size
+    return (
+        f'游戏窗口尺寸/模拟器分辨率（{w}x{h}）为不支持的分辨率。\n'
+        f'请调整尺寸/分辨率为 16:9 或 9:16 的比例（720x1280 最佳）。'
+    )
+
+
 def windows_gui_error_middleware(ctx: BotContext, task: Task, next_handler: NextHandler):
-    """负责处理 UserFriendlyError 并弹出对话框"""
+    """负责处理用户可预见的异常并弹出对话框、停止运行。
+
+    区分四类错误：
+    1. UserFriendlyError：业务侧主动抛出的友好错误。
+    2. WindowQueryError：游戏窗口未找到等可预期的运行态问题，同样以
+       友好提示处理并停止，而非被当作系统错误逐任务上报。
+    3. UnscalableResolutionError：游戏窗口分辨率不兼容，同样以友好提示
+       处理并停止，避免逐任务重复失败与上报。
+    4. 其余异常：真正的系统/程序缺陷，记录为 System Error。
+    """
     try:
         next_handler()
     except UserFriendlyError as e:
         ctx.has_error = True
         ctx.last_exception = e
-        logger.error(f"Task {task.name} failed: {e.message}")
+        # 用户可预见的业务错误（如配置了不存在的偶像卡/培育方案）已被本
+        # 中间件友好处理，不应以 error 级别上报遥测刷屏，故降级为 warning。
+        logger.warning(f"Task {task.name} failed: {e.message}")
         from kaa.application.ui.error_bridge import get_bridge
         bridge = get_bridge()
         if bridge is not None:
             bridge.show(e.message, e.action_buttons, e.invoke)
         ctx.stop()
 
+    except WindowQueryError as e:
+        # 窗口查询失败（典型如未找到游戏窗口「gakumas」）：属于可预期的
+        # 运行态问题而非程序缺陷，统一以友好提示弹出并停止，避免刷屏。
+        ctx.has_error = True
+        ctx.last_exception = e
+        logger.warning(f"Window query failed in {task.name}: {e}")
+        from kaa.application.ui.error_bridge import get_bridge
+        bridge = get_bridge()
+        if bridge is not None:
+            bridge.show(
+                '未找到游戏窗口，任务已停止。请确认游戏已启动，然后重新启动任务。',
+                [(0, '知道了')],
+                lambda _: None,
+            )
+        ctx.stop()
+
+    except UnscalableResolutionError as e:
+        # 窗口分辨率无法缩放到逻辑分辨率：属于可预期的运行态问题而非程序
+        # 缺陷，统一以友好提示处理并停止，避免逐任务重复失败与上报刷屏。
+        ctx.has_error = True
+        ctx.last_exception = e
+        w, h = e.screen_size
+        logger.warning(f"Resolution error in {task.name}: screen {w}x{h}.")
+        from kaa.application.ui.error_bridge import get_bridge
+        bridge = get_bridge()
+        message = build_resolution_error_message((w, h))
+        if bridge is not None:
+            bridge.show(message, [(0, '知道了')], lambda _: None)
+        else:
+            logger.error(message)
+        ctx.stop()
+
     except Exception as e:
         # 处理非用户友好错误
         ctx.has_error = True
         ctx.last_exception = e
-        logger.error(f"System Error in {task.name}: {e}", exc_info=True)
-        pass
+        # 真正的系统错误已由内层 sentry_middleware 上报（capture_exception），
+        # 此处无需再以 error 级别重复上报遥测（LoggingIntegration 会把 error
+        # 级日志转发为独立事件导致重复），降级为 warning 仅保留日志与面包屑。
+        logger.warning(f"System Error in {task.name}: {e}", exc_info=True)
 
 
 class KaaDeviceFactory:
@@ -67,6 +127,13 @@ class KaaDeviceFactory:
     def __call__(self) -> Device:
         from kaa.kaa_context import conf as get_conf  # noqa: PLC0415
         config = get_conf()
+        return self.create_device_for_config(config)
+
+    def create_device_for_config(self, config: KaaConfig) -> Device:
+        """为指定配置创建 Device，绕过 ContextVar，供跨线程截图等场景使用。
+
+        与 ``__call__`` 等价，但不依赖 ``kaa_context.conf()`` 的线程局部状态。
+        """
         self.target_screenshot_interval = config.backend.target_screenshot_interval
 
         from kotonebot.config.config import conf
@@ -103,6 +170,15 @@ class KaaDeviceFactory:
             assert isinstance(lc, CustomDevice)
             conn = config.backend.connection
             assert isinstance(conn, TcpConnection)
+            if conn._ip_contains_port():
+                # IP 字段误填了端口（如 '127.0.0.1:16384'）会导致 ADB 地址拼接
+                # 成非法的双端口形式（127.0.0.1:16384:5555），抛出友好错误以便
+                # 用户在设置页修正，而不是以晦涩的 AdbError 崩溃。
+                host, _, port = conn.ip.partition(':')
+                raise UserFriendlyError(
+                    f'ADB 连接配置错误：IP 地址中不能包含端口（当前填了 "{conn.ip}"）。'
+                    f'请在设置页将「ADB IP 地址」填为 "{host}"，「ADB 端口」填为 "{port}"。'
+                )
             exe = lc.emulator_path
             instance = create_custom(
                 adb_ip=conn.ip,
@@ -212,18 +288,18 @@ class KaaDeviceFactory:
                 from kotonebot.client.implements.windows import WindowsImpl
                 from kotonebot.interop.window import WindowQuery
                 ahk_path = get_ahk_path()
-                impl = WindowsImpl(device=d, window_query=WindowQuery(title_contains='gakumas'), ahk_exe_path=ahk_path)
+                impl = WindowsImpl(device=d, window_query=WindowQuery(title='gakumas'), ahk_exe_path=ahk_path)
                 d.setup(screenshot=impl, touch=impl)
             elif impl_name == 'windows_native':
                 from kotonebot.client.implements.windows import WindowsNativeImpl
                 from kotonebot.interop.window import WindowQuery
-                impl = WindowsNativeImpl(device=d, window_query=WindowQuery(title_contains='gakumas'))
+                impl = WindowsNativeImpl(device=d, window_query=WindowQuery(title='gakumas'))
                 d.setup(screenshot=impl, touch=impl)
             elif impl_name == 'windows_background':
                 from kotonebot.client.implements.windows.send_message import SendMessageImpl
                 from kotonebot.client.implements.windows.print_window import PrintWindowImpl
                 from kotonebot.interop.window import WindowQuery
-                query = WindowQuery(title_contains='gakumas')
+                query = WindowQuery(title='gakumas')
                 d.setup(
                     screenshot=PrintWindowImpl(d, query),
                     touch=SendMessageImpl(d, query, wait_cursor_idle=lc.cursor_wait_speed),
@@ -255,35 +331,63 @@ class KaaDeviceFactory:
             raise TypeError(f"Unknown instance type: {type(instance)}")
 
 def sentry_middleware(ctx: BotContext, task: Task, next_handler: Callable[[], None]):
+    from kaa.util.telemetry import use_sentry
+    sentry_sdk = use_sentry()
+
+    # 每次任务执行前，将当前运行 profile 的动态字段刷新为当前线程的 tag，
+    # 使任务线程内产生的日志事件（LoggingIntegration 转发）也能携带这些字段。
+    try:
+        from kaa.util.telemetry import collect_report_context  # noqa: PLC0415
+        for key, value in collect_report_context().items():
+            sentry_sdk.set_tag(key, value)
+    except Exception:
+        logger.warning('Failed to refresh report context.', exc_info=True)
+
     try:
         next_handler()
+    except WindowQueryError:
+        # 窗口查询类错误（如游戏窗口未找到）属于可预期的运行态问题而非程序
+        # 缺陷，不上报 Sentry，交由外层中间件（windows_gui_error_middleware）
+        # 统一以友好提示处理。
+        raise
+    except UnscalableResolutionError:
+        # 窗口分辨率无法缩放到逻辑分辨率：同属可预期的运行态问题而非程序
+        # 缺陷，不上报 Sentry，交由外层中间件统一以友好提示处理。
+        raise
+    except UserFriendlyError:
+        # 业务侧主动抛出的友好错误（如配置错误、需要游戏本体更新等）已被外层
+        # windows_gui_error_middleware 友好处理并弹窗提示，不应上报 Sentry，
+        # 交由外层中间件统一处理，避免遥测刷屏。
+        raise
     except Exception as e:
-        from kaa.util.telemetry import use_sentry
-        sentry_sdk = use_sentry()
         with sentry_sdk.push_scope() as scope:
             scope.set_tag('task_name', task.name)
             try:
+                from kaa.util.telemetry import collect_report_context  # noqa: PLC0415
+                for key, value in collect_report_context().items():
+                    scope.set_tag(key, value)
+            except Exception:
+                logger.warning('Failed to attach report context.', exc_info=True)
+            try:
                 from kaa.kaa_context import conf as get_conf  # noqa: PLC0415
-                scope.set_extra('config', get_conf().model_dump_json(indent=2))
+                scope.set_extra('config', get_conf().model_dump_json())  # minify：紧凑单行，减小上报体积
             except Exception:
                 logger.warning('Failed to attach config to Sentry report.', exc_info=True)
             try:
-                from kotonebot.backend.context import ContextStackVars
-                stack = ContextStackVars.current()
-                if stack and stack._screenshot is not None:
-                    import cv2
-                    buff = cv2.imencode('.png', stack._screenshot)[1].tobytes()
-                    scope.add_attachment(bytes=buff, filename="last_screenshot.png")
+                from kaa.config import manager as config_manager
+                shared = config_manager.read_shared()
+                scope.set_extra('shared_config', shared.model_dump_json())  # minify：紧凑单行，减小上报体积
             except Exception:
-                logger.warning('Failed to attach screenshot to Sentry report.', exc_info=True)
+                logger.warning('Failed to attach shared config to Sentry report.', exc_info=True)
             try:
-                from kotonebot import device
-                screenshot = device.screenshot()
-                import cv2
-                buff = cv2.imencode('.png', screenshot)[1].tobytes()
-                scope.add_attachment(bytes=buff, filename="screenshot_at_exception.png")
+                from kaa.config import manager as config_manager
+                if config_manager.read_shared().telemetry.upload_screenshot is True:
+                    from kaa.util.telemetry_screenshot import upload_report_screenshot
+                    screenshot_id = upload_report_screenshot()
+                    if screenshot_id:
+                        scope.set_tag('screenshot_id', screenshot_id)
             except Exception:
-                logger.warning('Failed to attach device screenshot to Sentry report.', exc_info=True)
+                logger.warning('Failed to upload screenshot to Sentry report.', exc_info=True)
             sentry_sdk.capture_exception(e)
         raise
 
@@ -315,8 +419,11 @@ class Kaa(KotoneBot):
         super().__init__(
             device_factory=self.factory,
             middlewares=[
-                sentry_middleware,
-                windows_gui_error_middleware
+                # 顺序说明：kotonebot 用 reversed() 递归包装，列表第一项为最外层。
+                # windows 在最外层作为异常最终吞没点（保证单任务失败不中断整轮 run），
+                # sentry 在内层紧贴 core，先捕获异常上报后再向上抛给 windows。
+                windows_gui_error_middleware,
+                sentry_middleware
             ]
         )
 
@@ -352,10 +459,65 @@ class Kaa(KotoneBot):
             force=True
         )
 
+        if self.factory.backend_instance is None:
+            raise RuntimeError('Backend instance was not initialized.')
+        _set_instance(self.factory.backend_instance)
+
         # 注册全局 Loop 回调：每次 Loop 迭代前自动处理网络错误等全局弹窗。
         from kotonebot.config.config import conf
         from kaa.tasks.globals import global_interrupt
         conf().loop.loop_callbacks = [global_interrupt]
+
+        # 启动时预检：截图验证窗口分辨率可缩放，不兼容则友好提示并阻止任务启动。
+        self._preflight_resolution(device)
+
+    def _preflight_resolution(self, device: Device) -> None:
+        """启动时用截图验证分辨率可缩放。
+
+        通过实际截图的缩放路径提前暴露 UnscalableResolutionError，以友好
+        弹窗提示用户调整窗口/模拟器分辨率，而不是等任务运行到一半才失败。
+
+        若设备或游戏窗口未就绪（无法截图），则跳过预检，交由运行时的
+        windows_gui_error_middleware 兜底。
+        """
+        try:
+            device.start()
+        except Exception:
+            logger.debug('Resolution preflight skipped: device not ready.', exc_info=True)
+            return
+
+        screen_size: tuple[int, int] | None = None
+        try:
+            device.screenshot()
+        except UnscalableResolutionError as e:
+            screen_size = cast('tuple[int, int] | None', e.screen_size)
+        except Exception:
+            # 窗口未就绪等其它异常不视为分辨率问题，静默跳过预检。
+            logger.debug('Resolution preflight skipped.', exc_info=True)
+            return
+        finally:
+            try:
+                device.stop()
+            except Exception:
+                logger.debug('Failed to stop device in resolution preflight.', exc_info=True)
+
+        if screen_size is None:
+            return
+
+        message = build_resolution_error_message(screen_size)
+        logger.warning("Incompatible device resolution %dx%d has been detected.",
+                       *screen_size)
+        from kaa.application.ui.error_bridge import get_bridge
+        bridge = get_bridge()
+        if bridge is not None:
+            bridge.show(message, [(0, '知道了')], lambda _: None)
+        else:
+            logger.error(message)
+        # 阻止 run 循环执行任何任务。
+        if self._ctx is not None:
+            self._ctx.stop()
+        else:
+            logger.warning("BotContext is None, cannot stop run loop after resolution preflight failure.")
 
     def set_log_level(self, level: int):
         handlers = logging.getLogger().handlers

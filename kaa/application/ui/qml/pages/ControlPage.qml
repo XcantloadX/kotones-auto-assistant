@@ -4,6 +4,7 @@ import QtQuick.Layouts
 import "../components"
 import "../components/controls"
 import "../components/form"
+import "../dialogs"
 
 // 控制页：任务运行控制 + 快速开关 + 状态列表 + 进度
 PageContainer {
@@ -11,6 +12,7 @@ PageContainer {
     title: "状态"
     required property var runCtrl
     property var progressCtrl: null
+    property var feedbackCtrl: null
     property bool keepScreenshots: false
 
     readonly property bool ctrl_running:  runCtrl ? runCtrl.running : false
@@ -18,15 +20,8 @@ PageContainer {
     readonly property bool ctrl_paused:   runCtrl ? runCtrl.isPaused : false
     readonly property string ctrl_task:   runCtrl ? runCtrl.currentTaskName : ""
 
-    function statusText(status) {
-        var map = {
-            pending: "等待",
-            running: "运行中",
-            finished: "完成",
-            error: "出错"
-        }
-        return map[status] || status
-    }
+    property bool produceEngineLegacy: false
+
 
     ScrollView {
         anchors.fill: parent
@@ -131,6 +126,37 @@ PageContainer {
                 }
             }
 
+            // ── 引导提示 ──────────────────────────────
+            RowLayout {
+                Layout.fillWidth: true
+
+                Label {
+                    text: "脚本报错或者卡住？点击"
+                    color: palette.placeholderText
+                }
+
+                Button {
+                    text: "导出报告"
+                    padding: 0
+                    leftPadding: 8
+                    rightPadding: 8
+                    onClicked: feedbackDialog.open()
+                }
+
+                Label {
+                    text: "并发送给开发者反馈！"
+                    color: palette.placeholderText
+                }
+            }
+
+            // ── 旧版培育引擎废弃警告 ──────────────────────
+            FormNotice {
+                Layout.fillWidth: true
+                visible: root.produceEngineLegacy
+                style: "warning"
+                content: "旧版培育引擎已废弃，请尽快在 设置→培育→培育引擎 切换到新版培育引擎。"
+            }
+
             // ── 快速任务开关 ──────────────────────────────
             GroupBox {
                 title: "快速设置"
@@ -172,48 +198,19 @@ PageContainer {
                 title: "调试模式"
                 content: "当前启用了调试功能「保留截图数据」，调试结束后正常使用时建议关闭此选项！"
             }
-
-            // ── 引导提示 ──────────────────────────────
-            Label {
-                text: '脚本报错或者卡住？前往「反馈」页面可以快速导出报告！'
-                color: palette.placeholderText
-                font.pixelSize: 12
-                Layout.fillWidth: true
-            }
-
-            // ── 任务状态列表 ──────────────────────────────
-            GroupBox {
-                title: "任务状态"
-                Layout.fillWidth: true
-
-                ListView {
-                    id: statusList
-                    implicitHeight: contentHeight
-                    width: parent.width
-                    clip: true
-                    model: runCtrl.taskModel
-                    spacing: 4
-
-                    delegate: ItemDelegate {
-                        width: statusList.width
-
-                        contentItem: RowLayout {
-                            width: parent.availableWidth
-                            Label {
-                                text: model.name
-                                Layout.fillWidth: true
-                                elide: Text.ElideRight
-                            }
-                            Label {
-                                text: root.statusText(model.statusText)
-                                color: model.statusText === "running" ? "#1976d2"
-                                         : model.statusText === "error" ? "#d32f2f"
-                                         : palette.placeholderText
-                            }
-                        }
-                    }
-                }
-            }
         }
+    }
+
+    ExportReportDialog {
+        id: feedbackDialog
+        feedbackCtrl: root.feedbackCtrl
+        onExportSucceeded: function(message) {
+            resultDialog.message = message
+            Qt.callLater(function() { resultDialog.open() })
+        }
+    }
+
+    ReportExportResultDialog {
+        id: resultDialog
     }
 }

@@ -123,12 +123,39 @@ def test_integrity_missing_sprite(fake_paths):
     assert updater.check_data_integrity() is False
 
 
+def test_integrity_missing_required_tables(fake_paths):
+    """game.db 可读但缺少关键表（旧/不完整 dump）→ False。"""
+    _write_valid_sqlite(fake_paths.data / "game.db", with_required_tables=False)
+    (fake_paths.data / "version.txt").write_text("v1")
+    for cat in updater._CATEGORIES:
+        (fake_paths.data / cat).mkdir(parents=True, exist_ok=True)
+    assert updater.check_data_integrity() is False
+
+
+def test_has_usable_baseline_requires_tables(fake_paths):
+    """has_usable_baseline 同样要求关键表存在。"""
+    db = fake_paths.data / "game.db"
+    _write_valid_sqlite(db, with_required_tables=False)
+    assert updater.has_usable_baseline() is False
+    db.unlink()
+    _write_valid_sqlite(db, with_required_tables=True)
+    assert updater.has_usable_baseline() is True
+
+
 # ── apply_pending ────────────────────────────────────────────────────────────
 
-def _write_valid_sqlite(path: Path) -> None:
+def _write_valid_sqlite(path: Path, *, with_required_tables: bool = True) -> None:
+    """写入合法的 SQLite 文件。
+
+    :param with_required_tables: 是否创建运行依赖的关键表（见
+        updater._REQUIRED_DB_TABLES）。为 False 时模拟旧/不完整 dump。
+    """
     import sqlite3
     conn = sqlite3.connect(str(path))
     conn.execute("CREATE TABLE t (id INTEGER PRIMARY KEY)")
+    if with_required_tables:
+        for table in updater._REQUIRED_DB_TABLES:
+            conn.execute(f"CREATE TABLE {table} (id TEXT PRIMARY KEY)")
     conn.execute("INSERT INTO t VALUES (1)")
     conn.commit()
     conn.close()
@@ -340,6 +367,72 @@ def test_check_and_update_cancelled(fake_paths, fake_shared, fake_prebuild_modul
     assert outcome is UpdateOutcome.CANCELLED
     assert not fake_paths.staging.exists()
     assert fake_shared.read_shared().misc.game_data_pending_version is None
+
+
+# ── check_only 版本号一致但 db 不符 ──────────────────────────────────────────
+
+class _FakeManifest:
+    """check_only 所需的 manifest 最小实现。"""
+
+    def __init__(self, version: str, files: dict) -> None:
+        self.version = version
+        self.files = files
+
+    def get_category_files(self, category: str) -> dict:
+        prefix = category + '/'
+        return {
+            k[len(prefix):]: v
+            for k, v in self.files.items()
+            if k.startswith(prefix)
+        }
+
+
+def test_check_only_version_match_db_mismatch(fake_paths, monkeypatch):
+    """版本号一致但本地 game.db 与 manifest 不符 → needs_update=True。"""
+    from kaa.game_data.updater import GameDataUpdater
+
+    _write_valid_sqlite(fake_paths.data / "game.db")
+    (fake_paths.data / "version.txt").write_text("v1")
+
+    mirror = SimpleNamespace(make_url=lambda p: f"https://mirror/{p}")
+    manifest = _FakeManifest(
+        version="v1",
+        files={"game.db": SimpleNamespace(md5="x" * 32, size=1)},
+    )
+    monkeypatch.setattr(updater, "_select_mirror", lambda log_cb=None: mirror)
+    monkeypatch.setattr(updater, "_download", lambda url, **kw: b"manifest")
+    monkeypatch.setattr(updater, "parse_manifest", lambda data: manifest)
+
+    result = GameDataUpdater().check_only()
+
+    assert result is not None
+    assert result.needs_update is True
+    assert result.needs_db is True
+
+
+def test_check_only_version_match_db_ok(fake_paths, monkeypatch):
+    """版本号一致且 game.db 与 manifest 一致 → needs_update=False（不重下）。"""
+    from kaa.game_data.updater import GameDataUpdater
+
+    _write_valid_sqlite(fake_paths.data / "game.db")
+    (fake_paths.data / "version.txt").write_text("v1")
+
+    # 用真实 _md5 计算本地 db 的指纹作为 manifest md5
+    db_md5 = updater._md5(fake_paths.data / "game.db")
+    mirror = SimpleNamespace(make_url=lambda p: f"https://mirror/{p}")
+    manifest = _FakeManifest(
+        version="v1",
+        files={"game.db": SimpleNamespace(md5=db_md5, size=1)},
+    )
+    monkeypatch.setattr(updater, "_select_mirror", lambda log_cb=None: mirror)
+    monkeypatch.setattr(updater, "_download", lambda url, **kw: b"manifest")
+    monkeypatch.setattr(updater, "parse_manifest", lambda data: manifest)
+
+    result = GameDataUpdater().check_only()
+
+    assert result is not None
+    assert result.needs_update is False
+    assert result.needs_db is False
 
 
 # ── P0: skill_card_index 缓存失效 ───────────────────────────────────────────

@@ -1,9 +1,6 @@
 """关闭游戏"""
 import os
-import sys
 import logging
-import _thread
-import threading
 
 from kotonebot.ui import user
 from ..kaa_context import instance
@@ -11,6 +8,7 @@ from kaa.config import Priority, conf
 from kaa.config.base_config import CustomDevice, DmmDevice
 from kaa.constants import GAME_PACKAGE_NAME, PLAYCOVER_BUNDLE_ID
 from kotonebot import task, action, device
+from ..util.app_lifecycle import request_exit
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +21,7 @@ def android_close():
     logger.info("Closing game")
     if device.current_package() == GAME_PACKAGE_NAME:
         logger.info("Force stopping game")
-        device.adb.shell(f"am force-stop {GAME_PACKAGE_NAME}")
+        device.commands.adb_shell(f"am force-stop {GAME_PACKAGE_NAME}")
 
     logger.info("Game closed successfully")
 
@@ -80,7 +78,7 @@ def end_game():
     # 关闭模拟器
     if conf().tasks.end_game.kill_emulator:
         lc = conf().backend.lifecycle
-        if not (isinstance(lc, (CustomDevice, DmmDevice)) and lc.emulator_path):
+        if isinstance(lc, (CustomDevice, DmmDevice)) and not lc.emulator_path:
             user.warning('未配置模拟器 exe 文件路径，无法关闭模拟器。跳过此次操作。')
         else:
             instance().stop()
@@ -113,10 +111,7 @@ def end_game():
     # 退出 kaa
     if conf().tasks.end_game.exit_kaa:
         logger.info("Exiting kaa")
-        # kaa 不在主线程中运行，一般是以 GUI 运行
-        if not threading.main_thread() is threading.current_thread():
-            _thread.interrupt_main()
-        sys.exit(0)
+        request_exit(0)
 
     logger.info("Game ended successfully")
 

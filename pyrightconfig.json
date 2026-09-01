@@ -1,0 +1,11 @@
+{
+  "include": ["tests/kaa/ui_e2e"],
+  "exclude": ["**/__pycache__"],
+  "venvPath": ".",
+  "venv": ".venv",
+  "extraPaths": [".venv/Lib/site-packages"],
+  "typeCheckingMode": "basic",
+  "reportMissingTypeStubs": false,
+  "reportMissingImports": false,
+  "reportMissingModuleSource": false
+}

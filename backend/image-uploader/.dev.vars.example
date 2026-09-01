@@ -1,0 +1,11 @@
+# 复制本文件为 .dev.vars 并填入真实值（仅用于本地 wrangler dev）
+# 第一步：在 Google Cloud Console 创建 OAuth 客户端 ID（类型：Web 应用），
+#         授权回调地址填 http://127.0.0.1:8788/oauth2callback
+GOOGLE_CLIENT_ID=xxxx.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=xxxxxxxxxxxxxxxx
+# 第二步：运行 node scripts/get-refresh-token.mjs 获取刷新令牌（一次授权长期有效）
+GOOGLE_REFRESH_TOKEN=1//0xxxxxxxxxxxx
+# 目标 Google Drive 文件夹 ID（也可直接写在 wrangler.toml 的 [vars] 中）
+GOOGLE_DRIVE_FOLDER_ID=your-drive-folder-id
+# Bugsink（Sentry 兼容）DSN，告警/异常上报用
+BUGSINK_DSN=https://<public_key>@<host>/<project_id>

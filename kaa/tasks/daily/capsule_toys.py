@@ -3,11 +3,12 @@ import logging
 
 from kaa.tasks import R
 from kaa.config import conf
-from kaa.game_ui.scrollable import Scrollable
 from ..actions.scenes import at_home, goto_home
-from kotonebot.backend.loop import Loop
-from kotonebot import task, device, image, action, sleep
+
 from kotonebot.core import GameObject
+from kotonebot.backend.loop import Loop
+from kotonebot.primitives import Point, Rect
+from kotonebot import task, device, ocr, action, sleep
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +36,7 @@ def draw_capsule_toys(button: GameObject, times: int):
     add_button = R.Daily.ButtonShopCountAdd.wait(timeout=5)
     for _ in range(times):
         add_button.click()
+        sleep(0.3)
     sleep(0.5)
 
     confirm_button = R.Common.ButtonConfirm.q(enabled=True).find()
@@ -44,12 +46,12 @@ def draw_capsule_toys(button: GameObject, times: int):
     else:
         # 硬币足够
         device.click(confirm_button)
-        sleep(0.5)
+        sleep(1.5)
     
     # 等待动画完成
     for _ in Loop():
         if R.Common.ButtonIconClose.try_click():
-            pass
+            sleep(1)
         elif R.Daily.CapsuleToys.IconTitle.exists():
             break
 
@@ -71,16 +73,6 @@ def capsule_toys():
     """
     扭蛋机，支持任意次数的任意扭蛋类型
     """
-    # 自动化思路：
-    # 进入扭蛋机页面后，可以发现扭蛋机总共有4种类型。
-    # 通过硬编码的滑动翻页，把每两种扭蛋分为同一页。
-    # 第一页：好友扭蛋+感性扭蛋；
-    # 第二页：逻辑扭蛋+非凡扭蛋。
-    # 划到某一页之后，识别截图中所有“抽扭蛋”按钮，再按照y轴排序，即可以实现选择扭蛋类型。
-    
-    # [screenshots/shop/capsule_toys_upper.png]
-    # [screenshots/shop/capsule_toys_lower.png]
-
     if not conf().tasks.capsule_toys.enabled:
         logger.info('"Capsule Toys" is disabled.')
         return
@@ -90,37 +82,68 @@ def capsule_toys():
     
     # 进入扭蛋机页面
     logger.info('Entering Capsule Toys page')
-    R.Daily.ButtonShop.wait(timeout=5).click()
-    sleep(0.5) # 动画未加载完毕时，提前点击按钮
-    R.Daily.ButtonShopCapsuleToys.wait(timeout=5).click()
-    # 等待加载
-    R.Daily.CapsuleToys.IconTitle.wait()
 
-    # 处理好友扭蛋和感性扭蛋
-    buttons = get_capsule_toys_draw_buttons()
-    if len(buttons) != 2:
-        return
+    for _ in Loop(interval=0.5):
+        # 已经位于扭蛋
+        if R.Daily.CapsuleToys.IconTitle.exists():
+            logger.debug('Now at coin gacha.')
+            break
+        # 打开商店
+        if R.Daily.ButtonShop.try_click():
+            logger.debug('Clicked shop button.')
+            sleep(0.5)
+            continue
+        # 进入每日商店
+        if R.Daily.ButtonShopCapsuleToys.try_click():
+            logger.debug('Clicked daily shop button.')
+            sleep(1)
 
-    if conf().tasks.capsule_toys.friend_capsule_toys_count > 0:
-        draw_capsule_toys(buttons[0], conf().tasks.capsule_toys.friend_capsule_toys_count)
-    
-    if conf().tasks.capsule_toys.sense_capsule_toys_count > 0:
-        draw_capsule_toys(buttons[1], conf().tasks.capsule_toys.sense_capsule_toys_count)
-    
-    # 划到第二页
+    logger.info('Now at Capsule Toys page.')
+
     sc = R.Daily.CapsuleToys.Scrollbar.require()
-    sc.next(page=1)
 
-    # 处理逻辑扭蛋扭蛋和非凡扭蛋
-    buttons = get_capsule_toys_draw_buttons()
-    if len(buttons) != 2:
-        return
-    
-    if conf().tasks.capsule_toys.logic_capsule_toys_count > 0:
-        draw_capsule_toys(buttons[0], conf().tasks.capsule_toys.logic_capsule_toys_count)
-    
-    if conf().tasks.capsule_toys.anomaly_capsule_toys_count > 0:
-        draw_capsule_toys(buttons[1], conf().tasks.capsule_toys.anomaly_capsule_toys_count)
+    friend_done = False
+    sense_done = False
+    logic_done = False
+    anomaly_done = False
+    for _ in sc(step=0.33):
+        buttons = R.Daily.ButtonShopCapsuleToysDraw.find_all()
+        # 600 100，往上 160，往左 300
+        for button in buttons:
+            logger.debug(f'Found capsule toys button at {button.rect}.')
+            rect_tl = button.rect.center + Point(-300, -160)
+            rect = Rect(x=rect_tl.x, y=rect_tl.y, w=600, h=100)
+            # 识别按钮上的文字
+            texts = ocr.ocr(rect).squash().text
+            if 'フレンド' in texts:
+                logger.debug('Found friend capsule toys button.')
+                if not friend_done and conf().tasks.capsule_toys.friend_capsule_toys_count > 0:
+                    logger.info(f'Drawing friend capsule toys {conf().tasks.capsule_toys.friend_capsule_toys_count} times.')
+                    draw_capsule_toys(button, conf().tasks.capsule_toys.friend_capsule_toys_count)
+                    friend_done = True
+            elif 'センス' in texts:
+                logger.debug('Found sense capsule toys button.')
+                if not sense_done and conf().tasks.capsule_toys.sense_capsule_toys_count > 0:
+                    logger.info(f'Drawing sense capsule toys {conf().tasks.capsule_toys.sense_capsule_toys_count} times.')
+                    draw_capsule_toys(button, conf().tasks.capsule_toys.sense_capsule_toys_count)
+                    sense_done = True
+            elif 'ロジック' in texts:
+                logger.debug('Found logic capsule toys button.')
+                if not logic_done and conf().tasks.capsule_toys.logic_capsule_toys_count > 0:
+                    logger.info(f'Drawing logic capsule toys {conf().tasks.capsule_toys.logic_capsule_toys_count} times.')
+                    draw_capsule_toys(button, conf().tasks.capsule_toys.logic_capsule_toys_count)
+                    logic_done = True
+            elif 'アノマリー' in texts:
+                logger.debug('Found anomaly capsule toys button.')
+                if not anomaly_done and conf().tasks.capsule_toys.anomaly_capsule_toys_count > 0:
+                    logger.info(f'Drawing anomaly capsule toys {conf().tasks.capsule_toys.anomaly_capsule_toys_count} times.')
+                    draw_capsule_toys(button, conf().tasks.capsule_toys.anomaly_capsule_toys_count)
+                    anomaly_done = True
+            else:
+                logger.debug(f'Unknown capsule toys button text: {texts}')
+
 
 if __name__ == '__main__':
     capsule_toys()
+    # while True:
+    #     print(R.Daily.CapsuleToys.IconTitle.exists())

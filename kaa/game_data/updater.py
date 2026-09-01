@@ -36,6 +36,17 @@ logger = logging.getLogger(__name__)
 _CATEGORIES = all_resource_categories()
 _IMAGE_CACHE_KEYS = all_cache_keys()
 
+# 运行依赖的关键表：缺失时判定数据不完整（阻止旧/不完整 dump 注入）。
+# 参照 kaa/db 下实际查询的 game.db 表。
+_REQUIRED_DB_TABLES = frozenset({
+    'ProduceCard',
+    'ProduceExamEffect',
+    'IdolCard',
+    'SupportCard',
+    'ProduceDrink',
+    'EffectGroup',
+})
+
 # 不读取系统代理：镜像站本身就是代理，叠加系统代理会导致 SSL 握手失败
 _session = requests.Session()
 _session.trust_env = False
@@ -179,8 +190,33 @@ def _update_misc(fn: Callable[['SharedMiscConfig'], None]) -> None:
         config_manager.write_shared(shared)
 
 
+def _db_has_required_tables(db: Path) -> bool:
+    """检查 game.db 是否包含运行所需的关键表。
+
+    只查询 sqlite_master 元数据，不做全表扫描。旧版本或不完整 dump
+    可能缺少新功能依赖的表（如 ProduceCard），需识别并触发重新下载。
+    """
+    if not db.exists() or db.stat().st_size < 1024:
+        return False
+    try:
+        conn = sqlite3.connect(f"file:{db}?mode=ro", uri=True)
+        try:
+            rows = conn.execute(
+                "SELECT name FROM sqlite_master WHERE type = 'table'"
+            ).fetchall()
+        finally:
+            conn.close()
+    except Exception:
+        return False
+    names = {r[0] for r in rows}
+    return _REQUIRED_DB_TABLES.issubset(names)
+
+
 def has_usable_baseline() -> bool:
-    """本地是否已有可运行的 game.db 基线（允许跳过本次下载）。"""
+    """本地是否已有可运行的 game.db 基线（允许跳过本次下载）。
+
+    除文件可读外，还需包含运行依赖的关键表（见 _REQUIRED_DB_TABLES）。
+    """
     db = game_db_path()
     if not db.exists() or db.stat().st_size < 1024:
         return False
@@ -188,15 +224,18 @@ def has_usable_baseline() -> bool:
         conn = sqlite3.connect(f"file:{db}?mode=ro", uri=True)
         conn.execute("SELECT 1")
         conn.close()
-        return True
     except Exception:
         return False
+    if not _db_has_required_tables(db):
+        return False
+    return True
 
 
 def check_data_integrity() -> bool:
     """轻量检查本地数据是否完整可用，用于决定是否需要阻塞更新。
 
-    检查项：game.db 存在且可读、version.txt 存在、各 sprite 目录存在。
+    检查项：game.db 存在且可读、包含关键表（_REQUIRED_DB_TABLES）、
+    version.txt 存在、各 sprite 目录存在。
     注意：不做 md5 全量比对（那是 check_only 的职责），仅保证可运行。
     """
     db = game_db_path()
@@ -209,12 +248,38 @@ def check_data_integrity() -> bool:
         conn.close()
     except Exception:
         return False
+    if not _db_has_required_tables(db):
+        return False
     if not version_path().exists():
         return False
     for cat in _CATEGORIES:
         if not sprites_path(cat).exists():
             return False
     return True
+
+
+def _try_replace(src: Path, dst: Path, label: str) -> bool:
+    """尽力用 ``os.replace`` 以 src 覆盖 dst，失败记日志并返回 False。
+
+    在 Windows 上，若 ``dst`` 正被其他进程以无 ``FILE_SHARE_DELETE`` 的方式
+    占用（典型场景：另一个 kaa / 残留 python.exe 实例还开着 game.db，或杀软
+    瞬时扫描），``os.replace`` 会抛 ``PermissionError``(WinError 5)。这是环境
+    状况而非代码缺陷，无需上报；当前调用路径保留 staging/pending 供下次启动
+
+    :param src: 源文件（staging 内的新数据）
+    :param dst: 目标文件（活跃数据）
+    :param label: 用于日志描述的文件名（如 'game.db'）
+    :return: 替换成功返回 True；被占用失败返回 False
+    """
+    try:
+        os.replace(src, dst)
+        return True
+    except OSError as e:
+        logger.info(
+            "暂无法应用更新「%s」: %s。文件可能正被其他进程占用，"
+            "本次跳过并保留 staging，将在下次启动时重试。", label, e,
+        )
+        return False
 
 
 def apply_pending() -> bool:
@@ -228,6 +293,11 @@ def apply_pending() -> bool:
     ``pending_version`` 尚未清除，下次启动会重新应用（``os.replace`` 覆盖
     已替换的文件是幂等且安全的）。只有 ``pending_version`` 已清除后才
     删除 staging，避免删除后无法恢复。
+
+    占用失败：若活跃文件被其他进程占用导致替换失败，本函数记内部日志并
+    提前返回 False（此时不清除 pending_version、不删除 staging），下次启动
+    仍会重试；即便已替换了部分数据也无碍，``os.replace`` 幂等，重试会覆盖
+    补齐，不会留下新旧混杂的永久不一致。
     """
     staging = staging_dir()
     if not staging_complete_marker().exists():
@@ -242,10 +312,10 @@ def apply_pending() -> bool:
     # 1. 关闭 SQLite 连接
     invalidate_connections()
 
-    # 2. 替换 game.db
+    # 2. 替换 game.db（被占用则提前返回，保留 staging 下次重试）
     s_db = staging_game_db_path()
-    if s_db.exists():
-        os.replace(s_db, game_db_path())
+    if s_db.exists() and not _try_replace(s_db, game_db_path(), 'game.db'):
+        return False
 
     # 3. 替换 sprite 目录（整体替换）
     for category in _CATEGORIES:
@@ -254,7 +324,8 @@ def apply_pending() -> bool:
             active_cat = sprites_path(category)
             if active_cat.exists():
                 shutil.rmtree(active_cat)
-            os.replace(s_cat, active_cat)
+            if not _try_replace(s_cat, active_cat, category):
+                return False
 
     # 4. 写版本号
     version_path().write_text(staging_version_path().read_text())
@@ -268,7 +339,7 @@ def apply_pending() -> bool:
                 active = Path('./cache') / cache_key
                 if active.exists():
                     shutil.rmtree(active)
-                os.replace(staged, active)
+                _try_replace(staged, active, cache_key)
         shutil.rmtree(s_cache, ignore_errors=True)
 
     # 6. 清理所有缓存（包含 skill_card_index.cache_clear）与内存中的图像数据库实例
@@ -433,7 +504,15 @@ class GameDataUpdater:
 
         ver_file = version_path()
         local_version = ver_file.read_text().strip() if ver_file.exists() else ""
-        if local_version == manifest.version:
+
+        db_path = game_db_path()
+        db_entry = manifest.files.get('game.db')
+        needs_db = not db_path.exists() or (
+            db_entry is not None and _md5(db_path) != db_entry.md5
+        )
+
+        # 版本号一致但本地 game.db 与 manifest 不符（旧/不完整 dump）时仍需更新
+        if local_version == manifest.version and not needs_db:
             log("游戏数据已是最新版本")
             return CheckResult(
                 mirror=mirror,
@@ -444,13 +523,10 @@ class GameDataUpdater:
                 category_missing={},
             )
 
-        log(f"发现新版本: {manifest.version[:8]}")
-
-        db_path = game_db_path()
-        db_entry = manifest.files.get('game.db')
-        needs_db = not db_path.exists() or (
-            db_entry is not None and _md5(db_path) != db_entry.md5
-        )
+        if local_version != manifest.version:
+            log(f"发现新版本: {manifest.version[:8]}")
+        else:
+            log("版本号一致但 game.db 与清单不符，重新校验数据")
 
         category_missing: dict[str, set[str]] = {}
         for category in _CATEGORIES:

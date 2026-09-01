@@ -11,21 +11,39 @@ PageContainer {
     padding: 0
 
     required property var configManagerDialog
-
-    signal openSkillCardBrowser()
+    required property var scheduleManagerDialog
 
     property var _allConfigs: []
+    property var _nextRun: {"hasEntries": false, "nextRunDesc": "未设置"}
+
+    function _refreshNextRun() {
+        _nextRun = JSON.parse(ScheduleController.nextRunJson())
+    }
 
     function _reload() {
         _allConfigs = JSON.parse(TabManager.allConfigsJson())
+        _refreshNextRun()
     }
 
     Component.onCompleted: _reload()
+
+    // 每分钟刷新一次下次触发描述，使"x 分钟后"的相对时间随时间流逝更新
+    Timer {
+        interval: 60_000
+        repeat: true
+        running: true
+        onTriggered: root._refreshNextRun()
+    }
 
     Connections {
         target: TabManager
         function onTabsChanged() { root._reload() }
         function onActiveTabChanged() { root._reload() }
+    }
+
+    Connections {
+        target: ScheduleController
+        function onEntriesChanged() { root._reload() }
     }
 
     ScrollView {
@@ -87,6 +105,7 @@ PageContainer {
 
                     Button {
                         id: seqBtn
+                        objectName: "overviewSequentialButton"
                         readonly property bool isStopMode: TabManager.batchMode === "sequential"
                         highlighted: true
                         enabled: TabManager.batchMode === ""
@@ -125,6 +144,7 @@ PageContainer {
 
                     Button {
                         id: parBtn
+                        objectName: "overviewParallelButton"
                         readonly property bool isStopMode: TabManager.batchMode === "parallel"
                         highlighted: true
                         enabled: TabManager.batchMode === ""
@@ -162,15 +182,63 @@ PageContainer {
                     }
                 }
 
-                // ── 工具入口 ──────────────────────────────────
+                // ── 定时任务卡片 ──────────────────────────────────────
                 RowLayout {
-                    Layout.topMargin: 16
-                    Layout.alignment: Qt.AlignHCenter
-                    spacing: 8
+                    Layout.topMargin: 24
+                    Layout.leftMargin: 40
+                    Layout.rightMargin: 40
+                    Layout.fillWidth: true
 
-                    Button {
-                        text: "技能卡图鉴"
-                        onClicked: root.openSkillCardBrowser()
+                    Rectangle {
+                        id: scheduleCard
+                        Layout.fillWidth: true
+                        height: 56
+                        radius: 8
+                        color: scheduleCardMouse.containsMouse
+                            ? App.AppTheme.isDark ? Qt.rgba(1,1,1,0.06) : Qt.rgba(0,0,0,0.06)
+                            : App.AppTheme.isDark ? Qt.rgba(1,1,1,0.03) : Qt.rgba(0,0,0,0.03)
+                        border.color: App.AppTheme.isDark ? Qt.rgba(1,1,1,0.1) : Qt.rgba(0,0,0,0.1)
+                        border.width: 1
+
+                        MouseArea {
+                            id: scheduleCardMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            onClicked: root.scheduleManagerDialog.open()
+                        }
+
+                        RowLayout {
+                            anchors.fill: parent
+                            anchors.leftMargin: 16
+                            anchors.rightMargin: 16
+                            spacing: 12
+
+                            FluentIcon {
+                                glyph: App.FluentIcons.clock_20_regular
+                                font.pixelSize: 18
+                                opacity: 0.7
+                            }
+
+                            ColumnLayout {
+                                Layout.fillWidth: true
+                                spacing: 1
+
+                                Label {
+                                    Layout.fillWidth: true
+                                    text: "定时任务"
+                                    font.pixelSize: 14
+                                    font.weight: Font.Medium
+                                }
+
+                                Label {
+                                    Layout.fillWidth: true
+                                    text: root._nextRun.nextRunDesc || "未设置"
+                                    font.pixelSize: 12
+                                    opacity: 0.6
+                                    elide: Text.ElideRight
+                                }
+                            }
+                        }
                     }
                 }
 
@@ -293,6 +361,7 @@ PageContainer {
 
                     Button {
                         id: createBtn
+                        objectName: "overviewCreateConfigButton"
                         highlighted: true
                         text: "创建配置"
                         font.pixelSize: 14

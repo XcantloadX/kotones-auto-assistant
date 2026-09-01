@@ -83,9 +83,10 @@ def parse_id_list(raw: str | None, *, context: str = '') -> list[str]:
 def collect_ids(rows: Iterable[Any], *json_columns: str) -> set[str]:
     ids: set[str] = set()
     for row in rows:
-        row_id = row['id'] if isinstance(row, dict) else row['id']
+        # row 可能是不含 id 键的普通 dict（如测试数据），也可能是 sqlite3.Row / 含 id 的 dict
+        row_id = row.get('id', '') if isinstance(row, dict) else row['id']
         for column in json_columns:
-            value = row[column] if isinstance(row, dict) else row[column]
+            value = row.get(column) if isinstance(row, dict) else row[column]
             ids.update(parse_id_list(value, context=f'{row_id}.{column}'))
     return ids
 

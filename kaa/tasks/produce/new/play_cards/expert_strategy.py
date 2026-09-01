@@ -113,6 +113,14 @@ class ExpertSystemStrategy(AbstractBattleStrategy):
                     score_effects += 100.0
                 case ProduceExamEffectType.ExamStatusEnchant:
                     score_effects += 100.0
+                case ProduceExamEffectType.ExamStatusEnchantEncore:
+                    # 再演：课程结束前满足条件时自动免费再使用自身（最多 effect_count 次）。
+                    # 每次再演 ≈ 0.3 次"额外出牌（1000 分）"，折损掉触发条件的不确定性。
+                    cast_count = _default(produce_effect.effect_count, 1)
+                    score_effects += cast_count * 300.0
+                    if early_stage:
+                        # 尽早打出，扩大再演的触发窗口（多数触发为每回合一次）。
+                        multiplier += 0.1
                 case ProduceExamEffectType.ExamAddGrowEffect:
                     score_effects += 100.0
                     if early_stage:

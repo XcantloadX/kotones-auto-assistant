@@ -5,8 +5,9 @@ import "../"
 import "formUtils.js" as F
 
 // 数字输入框。使用 TextField + IntValidator 限制只能输入数字。
-RowLayout {
+ColumnLayout {
     id: root
+    Layout.fillWidth: true
     property string label: ""
     property string help: ""
     property int from: 0
@@ -29,40 +30,61 @@ RowLayout {
         return (_eb && field) ? _eb.get(field, from) : value
     }
 
-    RowLayout {
-        Layout.preferredWidth: root.labelWidth
-        spacing: 6
+    FieldRegistrar {
+        id: _registrar
+        startParent: root.parent
+        binder: root._eb
+        field: root.field
+        label: root.label
+        prefixRevision: root._eb ? (root._eb.prefix.length) : 0
+    }
+    Connections {
+        target: root._eb
+        enabled: !!root._eb && !!root.field && !!root.label
+        function onPrefixChanged() { _registrar.prefixRevision++ }
+    }
 
-        Label {
-            text: root.label
-            enabled: root.enabled
-            Layout.alignment: Qt.AlignVCenter
+    RowLayout {
+        RowLayout {
+            Layout.preferredWidth: root.labelWidth
+            spacing: 6
+
+            Label {
+                text: root.label
+                enabled: root.enabled
+                Layout.alignment: Qt.AlignVCenter
+            }
+
+            HelpTip {
+                visible: root.help.length > 0
+                richText: root.help
+                Layout.alignment: Qt.AlignVCenter
+            }
         }
 
-        HelpTip {
-            visible: root.help.length > 0
-            richText: root.help
-            Layout.alignment: Qt.AlignVCenter
+        TextField {
+            id: inputField
+            Layout.fillWidth: true
+            text: root.read(root._val).toString()
+            enabled: root.enabled
+            validator: IntValidator { bottom: root.from; top: root.to }
+
+            onActiveFocusChanged: { if (!activeFocus) commit() }
+
+            function commit() {
+                var v = parseInt(text, 10)
+                if (isNaN(v)) v = root.from
+                v = Math.max(root.from, Math.min(root.to, v))
+                text = v.toString()
+                var out = root.write(v)
+                if (root._eb && root.field) root._eb.set(root.field, out)
+                else { root.value = out; root.valueModified(out) }
+            }
         }
     }
 
-    TextField {
-        id: inputField
-        Layout.fillWidth: true
-        text: root.read(root._val).toString()
-        enabled: root.enabled
-        validator: IntValidator { bottom: root.from; top: root.to }
-
-        onActiveFocusChanged: { if (!activeFocus) commit() }
-
-        function commit() {
-            var v = parseInt(text, 10)
-            if (isNaN(v)) v = root.from
-            v = Math.max(root.from, Math.min(root.to, v))
-            text = v.toString()
-            var out = root.write(v)
-            if (root._eb && root.field) root._eb.set(root.field, out)
-            else { root.value = out; root.valueModified(out) }
-        }
+    FormError {
+        Layout.leftMargin: root.labelWidth + 6
+        info: root._eb ? root._eb.error(root.field) : null
     }
 }

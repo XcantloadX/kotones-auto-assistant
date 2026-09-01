@@ -8,7 +8,8 @@ from pydantic import BaseModel, ConfigDict, ValidationError
 
 from kaa.errors import ProduceSolutionInvalidError, ProduceSolutionNotFoundError
 
-from .const import ProduceAction, HajimeScenario, RecommendCardDetectionMode, Scenario
+from .const import ProduceAction, HajimeScenario, HifScenario, ProduceStrategy, Scenario
+from .validation import ConfigIssue
 
 logger = logging.getLogger(__name__)
 
@@ -19,11 +20,19 @@ class ConfigBaseModel(BaseModel):
 class ProduceData(ConfigBaseModel):
     mode: Scenario = HajimeScenario.REGULAR
     """
-    培育模式（剧本 + 难度，如 hajime_regular / nia_pro）。
+    培育模式（剧本 + 难度，如 hajime_regular / nia_pro / hif_qualify）。
+    """
+    produce_strategy: ProduceStrategy = ProduceStrategy.NORMAL
+    """
+    培育策略。
+
+    不同剧本支持的策略不同：初/NIA 仅支持「普通」，HIF 仅支持「正赛弃赛」。
     """
     idol: str | None = None
     """
     要培育偶像的 IdolCardSkin.id。
+
+    仅适用于 初/NIA 剧本；HIF 剧本下该字段无效（UI 隐藏且流程不使用）。
     """
     memory_set: int | None = None
     """要使用的回忆编成编号，从 1 开始。"""
@@ -66,12 +75,6 @@ class ProduceData(ConfigBaseModel):
 
     每一周的行动将会按这里设置的优先级执行。
     """
-    recommend_card_detection_mode: RecommendCardDetectionMode = RecommendCardDetectionMode.NORMAL
-    """
-    推荐卡检测模式
-
-    严格模式下，识别速度会降低，但识别准确率会提高。
-    """
     use_ap_drink: bool = False
     """
     AP 不足时自动使用 AP 饮料
@@ -100,6 +103,73 @@ class ProduceSolution(ConfigBaseModel):
     """培育数据"""
 
 
+def validate_produce_solution(solution: ProduceSolution) -> list[ConfigIssue]:
+    """校验培育方案的业务规则（纯逻辑，不访问游戏数据）。
+
+    用于两个场景：
+    1. UI 保存时调用，阻止写入无效配置；
+    2. 培育任务启动时调用，以友好提示替代运行时崩溃（如 step3 的 assert）。
+
+    :param solution: 待校验的培育方案。
+    :return: 校验问题列表，为空表示无问题。
+    """
+    data = solution.data
+    issues: list[ConfigIssue] = []
+    is_hif = isinstance(data.mode, HifScenario)
+
+    # 培育策略必须匹配剧本：初/NIA 仅支持「普通」，HIF 仅支持「正赛弃赛」
+    if is_hif:
+        if data.produce_strategy != ProduceStrategy.WITHDRAW_MAIN:
+            issues.append(ConfigIssue(
+                severity='error',
+                field='produce_strategy',
+                message='HIF 剧本仅支持培育策略「正赛弃赛」。',
+            ))
+    elif data.produce_strategy != ProduceStrategy.NORMAL:
+        issues.append(ConfigIssue(
+            severity='error',
+            field='produce_strategy',
+            message='初 / NIA 剧本仅支持培育策略「普通」。',
+        ))
+
+    # 回忆/支援卡编成与偶像选择仅在非 HIF 剧本下要求；
+    # HIF 使用游戏内自动选中的回忆，这些字段不参与流程。
+    if not is_hif:
+        # 回忆编成必须配置「编号」或「自动编成」至少其一，否则 STEP3 无法继续
+        if data.memory_set is None and not data.auto_set_memory:
+            issues.append(ConfigIssue(
+                severity='error',
+                field='memory_set',
+                message='回忆编成未配置：请填写「回忆编成编号」，或勾选「自动编成回忆」。',
+            ))
+
+        # 支援卡编成必须配置「编号」或「自动编成」至少其一，否则 STEP2 无法继续
+        if data.support_card_set is None and not data.auto_set_support_card:
+            issues.append(ConfigIssue(
+                severity='error',
+                field='support_card_set',
+                message='支援卡编成未配置：请填写「支援卡编成编号」，或勾选「自动编成支援卡」。',
+            ))
+
+        # 偶像必选
+        if not data.idol:
+            issues.append(ConfigIssue(
+                severity='error',
+                field='idol',
+                message='未选择要培育的偶像。',
+            ))
+
+    # 行动优先级列表不能为空，否则培育时找不到可执行行动
+    if not data.actions_order:
+        issues.append(ConfigIssue(
+            severity='error',
+            field='actions_order',
+            message='行动优先级列表不能为空。',
+        ))
+
+    return issues
+
+
 class ProduceSolutionManager:
     """培育方案管理器（单例）"""
 
@@ -110,6 +180,10 @@ class ProduceSolutionManager:
             cls._instance = super().__new__(cls)
             cls._instance._cached_list = None
         return cls._instance
+
+    def __init__(self) -> None:
+        """初始化管理器，确保方案目录存在。"""
+        os.makedirs(self.SOLUTIONS_DIR, exist_ok=True)
 
     SOLUTIONS_DIR = "conf/produce"
 

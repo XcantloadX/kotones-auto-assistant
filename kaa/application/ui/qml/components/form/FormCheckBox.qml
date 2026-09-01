@@ -4,8 +4,9 @@ import QtQuick.Layouts
 import "../"
 import "formUtils.js" as F
 
-RowLayout {
+ColumnLayout {
     id: root
+    Layout.fillWidth: true
     property string label: ""
     property string help: ""
     property bool value: false
@@ -25,19 +26,43 @@ RowLayout {
         return (_eb && field) ? _eb.get(field, false) : value
     }
 
-    CheckBox {
-        text: root.label
-        checked: root._val
-        font: root.font
-        onToggled: {
-            if (root._eb && root.field) root._eb.set(root.field, checked)
-            else root.userToggled(checked)
+    // 自动注册 label ↔ field 映射至 SettingsPage（仅当通过 binder+field 使用时）
+    FieldRegistrar {
+        id: _registrar
+        startParent: root.parent
+        binder: root._eb
+        field: root.field
+        label: root.label
+        // binder.prefix 变化时触发重同步
+        prefixRevision: root._eb ? (root._eb.prefix.length) : 0
+    }
+    // prefix 字符串变化需额外监听（length 不足以覆盖同长度不同值，补充 Connections）
+    Connections {
+        target: root._eb
+        enabled: !!root._eb && !!root.field && !!root.label
+        function onPrefixChanged() { _registrar.prefixRevision++ }
+    }
+
+    RowLayout {
+        CheckBox {
+            text: root.label
+            checked: root._val
+            font: root.font
+            onToggled: {
+                if (root._eb && root.field) root._eb.set(root.field, checked)
+                else root.userToggled(checked)
+            }
+        }
+
+        HelpTip {
+            visible: root.help.length > 0
+            richText: root.help
+            Layout.alignment: Qt.AlignVCenter
         }
     }
 
-    HelpTip {
-        visible: root.help.length > 0
-        richText: root.help
-        Layout.alignment: Qt.AlignVCenter
+    FormError {
+        Layout.leftMargin: 4
+        info: root._eb ? root._eb.error(root.field) : null
     }
 }

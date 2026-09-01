@@ -1,0 +1,30 @@
+{
+  "name": "image-uploader",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Cloudflare Worker 图片上传服务：校验图片并转发存储到 Google Drive",
+  "type": "module",
+  "scripts": {
+    "dev": "vite dev",
+    "build": "vite build",
+    "preview": "npm run build && vite preview",
+    "deploy": "npm run build && wrangler deploy",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "cf-typegen": "wrangler types",
+    "get-refresh-token": "node scripts/get-refresh-token.mjs"
+  },
+  "dependencies": {
+    "@sentry/cloudflare": "^10.70.0",
+    "hono": "^4.13.1"
+  },
+  "devDependencies": {
+    "@cloudflare/vite-plugin": "^1.51.3",
+    "@sentry/vite-plugin": "^5.4.0",
+    "@types/node": "^26.2.0",
+    "typescript": "^7.0.2",
+    "vite": "^8.2.1",
+    "vitest": "^4.1.10",
+    "wrangler": "^4.121.0"
+  }
+}

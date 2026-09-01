@@ -9,6 +9,7 @@ import "../../components/form"
 Item {
     id: root
     property var settingsCtrl
+    property var errors: ({})
 
     readonly property var produceCtrl: typeof TabManager !== "undefined" ? TabManager.activeProduceController : null
     readonly property var _produce: settingsCtrl?.config?.profile?.tasks?.produce ?? {}
@@ -38,6 +39,8 @@ Item {
     FormBinder {
         id: pb
         data: root._produce
+        prefix: "tasks.produce"
+        errors: root.errors
         onCommitted: function(key, value) {
             root._commit("tasks.produce", key, value)
         }
@@ -60,6 +63,8 @@ Item {
                 FormCheckBox {
                     field: "enabled"
                     label: "启用培育"
+                    // 没有可用的培育方案，或尚未选择方案时，禁用开关避免保存校验失败
+                    enabled: root.solutions.length > 0 && !!root._produce.selected_solution_id
                 }
 
                 FormComboBox {
@@ -122,8 +127,8 @@ Item {
                     field: "produce_engine"
                     label: "培育引擎"
                     options: [
-                        { label: "新版·实验性", value: "new" },
-                        { label: "旧版", value: "legacy" }
+                        { label: "新版", value: "new" },
+                        { label: "旧版（已废弃）", value: "legacy" }
                     ]
                 }
 

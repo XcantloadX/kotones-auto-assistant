@@ -39,8 +39,8 @@ PageContainer {
 
     property var idolCards: []
     property var produceActions: []
-    property var detectModes: []
     property var cardDecks: []
+    property var validationIssues: []
 
     // 拖拽排序状态（行动优先级列表）
     property int _dragCurrentIndex: -1
@@ -92,6 +92,7 @@ PageContainer {
         onCommitted: function(key, value) {
             root.currentSolution.data[key] = value
             root.markDirty()
+            root.refreshValidation()
         }
     }
 
@@ -117,8 +118,62 @@ PageContainer {
         var parts = String(mode).split("_")
         return parts.length >= 2 ? parts.slice(1).join("_") : "regular"
     }
+
+    // 各剧本的难度选项（HIF 暂仅展示 正赛，选拔赛不在 UI 中暴露）
+    function _difficultyOptions(script) {
+        if (script === "nia")
+            return [
+                { label: "PRO", value: "pro" },
+                { label: "MASTER", value: "master" }
+            ]
+        if (script === "hif")
+            return [
+                { label: "正赛", value: "main" }
+            ]
+        return [
+            { label: "REGULAR", value: "regular" },
+            { label: "PRO", value: "pro" },
+            { label: "MASTER", value: "master" }
+        ]
+    }
+
+    // 各剧本的培育策略选项（初/NIA 仅「普通」；HIF 仅「正赛弃赛」）。
+    // 直接按剧本调整选项列表，而不是通过 disabled 显示不可选项。
+    function _strategyOptions(script) {
+        if (script === "hif")
+            return [ { label: "正赛弃赛", value: "withdraw_main" } ]
+        return [ { label: "普通", value: "normal" } ]
+    }
+
+    // 当前剧本下合法的培育策略值；切换剧本后残留的旧值会被回退到首个合法选项
+    readonly property string _strategyValue: {
+        var _ = sb._revision
+        var opts = root._strategyOptions(root._modeScript)
+        var v = sb.get("produce_strategy", opts.length > 0 ? opts[0].value : null)
+        for (var i = 0; i < opts.length; ++i)
+            if (opts[i].value === v) return v
+        return opts.length > 0 ? opts[0].value : null
+    }
+
     function _setMode(script, difficulty) {
-        sb.set("mode", script + "_" + difficulty)
+        // 剧本切换后难度可能不再适用（如 hajime_regular → hif），回退到首个合法难度
+        var diffOpts = root._difficultyOptions(script)
+        var diff = difficulty
+        var diffValid = false
+        for (var i = 0; i < diffOpts.length; ++i) {
+            if (diffOpts[i].value === diff) { diffValid = true; break }
+        }
+        if (!diffValid && diffOpts.length > 0) diff = diffOpts[0].value
+        // 剧本切换后培育策略可能不再适用，重置为当前剧本的首个合法策略
+        var strategyOpts = root._strategyOptions(script)
+        var strategy = sb.get("produce_strategy", strategyOpts.length > 0 ? strategyOpts[0].value : null)
+        var strategyValid = false
+        for (var i = 0; i < strategyOpts.length; ++i) {
+            if (strategyOpts[i].value === strategy) { strategyValid = true; break }
+        }
+        if (!strategyValid && strategyOpts.length > 0)
+            sb.set("produce_strategy", strategyOpts[0].value)
+        sb.set("mode", script + "_" + diff)
     }
 
     // ── 初始化 ────────────────────────────────────────
@@ -126,7 +181,6 @@ PageContainer {
         if (!produceCtrl) return
         idolCards      = JSON.parse(produceCtrl.idolCardsJson())
         produceActions = JSON.parse(produceCtrl.produceActionsJson())
-        detectModes    = JSON.parse(produceCtrl.detectModesJson())
         cardDecks      = JSON.parse(produceCtrl.cardDecksJson())
     }
 
@@ -134,13 +188,45 @@ PageContainer {
     function markDirty() { dirty = true;  if (produceCtrl) produceCtrl.markDirty() }
 
     function selectSolution(id) {
-        if (!produceCtrl || !id) { currentSolution = null; markClean(); return }
+        if (!produceCtrl || !id) { currentSolution = null; validationIssues = []; markClean(); return }
         var raw = produceCtrl.solutionJson(id)
-        if (raw && raw !== '{}') { currentSolution = JSON.parse(raw); markClean() }
+        if (raw && raw !== '{}') { currentSolution = JSON.parse(raw); markClean(); refreshValidation() }
+    }
+
+    // 校验当前方案，刷新 validationIssues（供内联 FormNotice 展示）
+    function refreshValidation() {
+        validationIssues = []
+        if (!produceCtrl || !currentSolution) return
+        try {
+            var raw = produceCtrl.validateSolution(JSON.stringify(currentSolution))
+            validationIssues = JSON.parse(raw) || []
+        } catch (err) {
+            validationIssues = []
+        }
+    }
+
+    // 是否存在 error 级校验问题
+    function hasValidationErrors() {
+        for (var i = 0; i < validationIssues.length; ++i) {
+            if (validationIssues[i].severity === "error") return true
+        }
+        return false
+    }
+
+    function validationSummary() {
+        var lines = []
+        for (var i = 0; i < validationIssues.length; ++i)
+            lines.push("• " + validationIssues[i].message)
+        return lines.join("\n")
     }
 
     function save() {
         if (!produceCtrl || !currentSolution) return
+        refreshValidation()
+        if (root.hasValidationErrors()) {
+            Notice.show("error", "存在配置错误，请修正后再保存。")
+            return
+        }
         if (root.solutionNameExists(currentSolution.name, currentSolution.id)) {
             renameConflictDialog.open()
             return
@@ -399,6 +485,209 @@ PageContainer {
         }
     }
 
+    // ── 行动优先级编辑器 ──────────────────────────────
+    Dialog {
+        id: actionsPriorityDialog
+        title: "行动优先级"
+        modal: true
+        anchors.centerIn: Overlay.overlay
+        width: 520
+    height: Math.min(root.height - 40, 620)
+    standardButtons: Dialog.Close
+
+    Timer {
+        id: autoScrollTimer
+        interval: 16
+        repeat: true
+        running: root._dragging && root._autoScrollVelocity !== 0
+        onTriggered: {
+            let f = actionsScrollView.contentItem
+            let maxY = Math.max(0, f.contentHeight - f.height)
+            f.contentY = Math.max(0, Math.min(f.contentY + root._autoScrollVelocity, maxY))
+        }
+    }
+
+    DelegateModel {
+        id: actionsDelegateModel
+        model: actionsModel
+
+        delegate: Item {
+            id: delegateRoot
+            required property int index
+            required property var modelData
+
+            property int visualIndex: DelegateModel.itemsIndex
+
+            readonly property bool isDragSource:
+                root._dragging && root._dragCurrentIndex === delegateRoot.visualIndex
+
+            width: ListView.view.width
+            height: rowContent.implicitHeight
+
+            ItemDelegate {
+                id: rowContent
+                width: parent.width
+                highlighted: delegateRoot.isDragSource
+                topPadding: 0
+                bottomPadding: 0
+                leftPadding: 8
+                rightPadding: 4
+
+                contentItem: RowLayout {
+                    spacing: 6
+
+                    Item {
+                        id: gripHandle
+                        implicitWidth: 20
+                        implicitHeight: 28
+                        Layout.alignment: Qt.AlignVCenter
+                        opacity: delegateRoot.isDragSource ? 0.4 : 1.0
+
+                        Column {
+                            anchors.centerIn: parent
+                            spacing: 3
+                            Repeater {
+                                model: 3
+                                delegate: Rectangle {
+                                    required property int index
+                                    width: 12
+                                    height: 2
+                                    radius: 1
+                                    color: rowContent.palette.mid
+                                }
+                            }
+                        }
+
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.SizeVerCursor
+                            preventStealing: true
+
+                            onPressed: (mouse) => {
+                                root._currentOrder = root.currentSolution.data.actions_order.slice()
+                                root._dragCurrentIndex = delegateRoot.visualIndex
+                                mouse.accepted = true
+                            }
+
+                            onPositionChanged: (mouse) => {
+                                if (!root._dragging) return
+                                let lv = delegateRoot.ListView.view
+                                let pt = mapToItem(lv, mouseX, mouseY)
+                                let h = delegateRoot.height
+                                let mouseIdx = Math.max(0, Math.min(
+                                    Math.floor(pt.y / h), lv.count - 1))
+                                if (mouseIdx !== root._dragCurrentIndex) {
+                                    root._moveDelegateItem(root._dragCurrentIndex, mouseIdx)
+                                    root._dragCurrentIndex = mouseIdx
+                                }
+                                root._updateAutoScroll(mapToItem(root, mouseX, mouseY).y)
+                            }
+
+                            onReleased: {
+                                root._autoScrollVelocity = 0
+                                let order = root._currentOrder
+                                root._dragCurrentIndex = -1
+                                root._currentOrder = []
+                                root.currentSolution.data.actions_order = order
+                                root.markDirty()
+                            }
+
+                            onCanceled: {
+                                root._autoScrollVelocity = 0
+                                let order = root._currentOrder
+                                root._dragCurrentIndex = -1
+                                root._currentOrder = []
+                                root.currentSolution.data.actions_order = order
+                                root.markDirty()
+                            }
+                        }
+                    }
+
+                    Label {
+                        Layout.fillWidth: true
+                        text: delegateRoot.modelData.label
+                    }
+
+                    Button {
+                        text: "✕"
+                        onClicked: {
+                            root.currentSolution.data.actions_order.splice(delegateRoot.visualIndex, 1)
+                            root._rebuildModel()
+                            root.markDirty()
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    ColumnLayout {
+            anchors.fill: parent
+            spacing: 6
+
+            Label {
+                text: "从上到下依次尝试"
+                color: palette.placeholderText
+                font.pixelSize: 11
+                Layout.fillWidth: true
+            }
+
+            ScrollView {
+                id: actionsScrollView
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                clip: true
+                ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+
+                ColumnLayout {
+                    width: actionsScrollView.availableWidth
+                    spacing: 0
+
+                    ListView {
+                        id: actionsListView
+                        Layout.fillWidth: true
+                        implicitHeight: contentHeight
+                        interactive: false
+                        clip: false
+                        model: actionsDelegateModel
+
+                        move: Transition {
+                            NumberAnimation { property: "y"; duration: 150; easing.type: Easing.OutQuad }
+                        }
+                        moveDisplaced: Transition {
+                            NumberAnimation { property: "y"; duration: 150; easing.type: Easing.OutQuad }
+                        }
+                    }
+                }
+            }
+
+            RowLayout {
+                spacing: 4
+                Layout.fillWidth: true
+                Select {
+                    id: addActionCombo
+                    Layout.fillWidth: true
+                    model: {
+                        var current = root.currentSolution ? root.currentSolution.data.actions_order : []
+                        return root.produceActions.filter(function(a) { return !current.includes(a.value) })
+                    }
+                    textRole: "display_name"
+                    valueRole: "value"
+                }
+                Button {
+                    text: "添加"
+                    enabled: addActionCombo.currentValue !== undefined
+                    onClicked: {
+                        root.currentSolution.data.actions_order.push(addActionCombo.currentValue)
+                        root._rebuildModel()
+                        root.markDirty()
+                        addActionCombo.currentIndex = 0
+                    }
+                }
+            }
+        }
+    }
+
     // ── 布局 ──────────────────────────────────────────
 
     Item {
@@ -524,6 +813,15 @@ PageContainer {
                         }
                     }
 
+                    // 方案校验提示：存在配置问题时内联展示，阻止保存
+                    FormNotice {
+                        Layout.fillWidth: true
+                        visible: root.validationIssues.length > 0
+                        style: root.hasValidationErrors() ? "error" : "warning"
+                        title: root.hasValidationErrors() ? "存在配置错误，请修正后保存" : "配置提示"
+                        content: root.validationSummary()
+                    }
+
                     // ── 方案信息 ──────────────────────────────
                     FormGroupBox {
                         title: "方案信息"
@@ -550,24 +848,28 @@ PageContainer {
                             label: "剧本"
                             options: [
                                 { label: "初", value: "hajime" },
-                                { label: "NIA", value: "nia", enabled: false }
+                                { label: "HIF", value: "hif" }
                             ]
                             value: root._modeScript
                             onUserSelected: function(v) { root._setMode(v, root._modeDifficulty) }
                         }
                         FormSegmentedButton {
                             label: "难度"
-                            options: [
-                                { label: "REGULAR", value: "regular" },
-                                { label: "PRO", value: "pro" },
-                                { label: "MASTER", value: "master" }
-                            ]
+                            options: root._difficultyOptions(root._modeScript)
                             value: root._modeDifficulty
                             onUserSelected: function(v) { root._setMode(root._modeScript, v) }
+                        }
+                        FormSegmentedButton {
+                            label: "培育策略"
+                            options: root._strategyOptions(root._modeScript)
+                            value: root._strategyValue
+                            onUserSelected: function(v) { sb.set("produce_strategy", v) }
                         }
                         RowLayout {
                             Layout.fillWidth: true
                             spacing: 6
+                            // HIF 剧本无需选择偶像（由游戏内自动选中），隐藏选择器
+                            visible: root._modeScript !== "hif"
 
                             RowLayout {
                                 Layout.preferredWidth: 120
@@ -616,7 +918,7 @@ PageContainer {
                     // ── 编成设置 ──────────────────────────────
                     FormGroupBox {
                         title: "编成设置"
-                        visible: root.currentSolution !== null
+                        visible: root.currentSolution !== null && root._modeScript !== "hif"
                         binder: sb
 
                         FormCheckBox {
@@ -652,6 +954,18 @@ PageContainer {
                             title: ""
                             visible: sb.get("auto_set_support_card", false)
                             content: "此编号的支援卡编成会被覆盖，注意选择空闲编号槽位。"
+                        }
+                    }
+
+                    // ── HIF 编成设置 ────────────────────────────
+                    FormGroupBox {
+                        title: "HIF 编成设置"
+                        visible: root.currentSolution !== null && root._modeScript === "hif"
+                        binder: sb
+                        Text {
+                            text: "暂不支持指定 HIF 回忆编成。将会使用游戏内自动选中的回忆。"
+                            color: palette.windowText
+                            font.pixelSize: 14
                         }
                     }
 
@@ -694,196 +1008,14 @@ PageContainer {
                             field: "prefer_lesson_ap"
                             label: "SP 课程优先"
                         }
-                    }
-
-                    // ── 行动优先级 ────────────────────────────
-                    GroupBox {
-                        title: "行动优先级"
-                        Layout.fillWidth: true
-                        visible: root.currentSolution !== null
-
-                        Timer {
-                            id: autoScrollTimer
-                            interval: 16
-                            repeat: true
-                            running: root._dragging && root._autoScrollVelocity !== 0
-                            onTriggered: {
-                                let f = actionsScrollView.contentItem
-                                let maxY = Math.max(0, f.contentHeight - f.height)
-                                f.contentY = Math.max(0, Math.min(f.contentY + root._autoScrollVelocity, maxY))
-                            }
-                        }
-
-                        DelegateModel {
-                            id: actionsDelegateModel
-                            model: actionsModel
-
-                            delegate: Item {
-                                id: delegateRoot
-                                required property int index
-                                required property var modelData
-
-                                property int visualIndex: DelegateModel.itemsIndex
-
-                                readonly property bool isDragSource:
-                                    root._dragging && root._dragCurrentIndex === delegateRoot.visualIndex
-
-                                width: ListView.view.width
-                                height: rowContent.implicitHeight
-
-                                ItemDelegate {
-                                    id: rowContent
-                                    width: parent.width
-                                    highlighted: delegateRoot.isDragSource
-                                    topPadding: 0
-                                    bottomPadding: 0
-                                    leftPadding: 8
-                                    rightPadding: 4
-
-                                    contentItem: RowLayout {
-                                        spacing: 6
-
-                                        // Drag grip handle
-                                        Item {
-                                            id: gripHandle
-                                            implicitWidth: 20
-                                            implicitHeight: 28
-                                            Layout.alignment: Qt.AlignVCenter
-                                            opacity: delegateRoot.isDragSource ? 0.4 : 1.0
-
-                                            // Three short bars as a visual grip indicator
-                                            Column {
-                                                anchors.centerIn: parent
-                                                spacing: 3
-                                                Repeater {
-                                                    model: 3
-                                                    delegate: Rectangle {
-                                                        required property int index
-                                                        width: 12
-                                                        height: 2
-                                                        radius: 1
-                                                        color: rowContent.palette.mid
-                                                    }
-                                                }
-                                            }
-
-                                            MouseArea {
-                                                anchors.fill: parent
-                                                cursorShape: Qt.SizeVerCursor
-                                                preventStealing: true
-
-                                                onPressed: (mouse) => {
-                                                    root._currentOrder = root.currentSolution.data.actions_order.slice()
-                                                    root._dragCurrentIndex = delegateRoot.visualIndex
-                                                    mouse.accepted = true
-                                                }
-
-                                                onPositionChanged: (mouse) => {
-                                                    if (!root._dragging) return
-                                                    // Reorder
-                                                    let lv = delegateRoot.ListView.view
-                                                    let pt = mapToItem(lv, mouseX, mouseY)
-                                                    let h = delegateRoot.height
-                                                    let mouseIdx = Math.max(0, Math.min(
-                                                        Math.floor(pt.y / h), lv.count - 1))
-                                                    if (mouseIdx !== root._dragCurrentIndex) {
-                                                        root._moveDelegateItem(root._dragCurrentIndex, mouseIdx)
-                                                        root._dragCurrentIndex = mouseIdx
-                                                    }
-                                                    // Edge auto-scroll
-                                                    root._updateAutoScroll(mapToItem(root, mouseX, mouseY).y)
-                                                }
-
-                                                onReleased: {
-                                                    root._autoScrollVelocity = 0
-                                                    let order = root._currentOrder
-                                                    root._dragCurrentIndex = -1
-                                                    root._currentOrder = []
-                                                    root.currentSolution.data.actions_order = order
-                                                    root.markDirty()
-                                                }
-
-                                                onCanceled: {
-                                                    root._autoScrollVelocity = 0
-                                                    let order = root._currentOrder
-                                                    root._dragCurrentIndex = -1
-                                                    root._currentOrder = []
-                                                    root.currentSolution.data.actions_order = order
-                                                    root.markDirty()
-                                                }
-                                            }
-                                        }
-
-                                        Label {
-                                            Layout.fillWidth: true
-                                            text: delegateRoot.modelData.label
-                                        }
-
-                                        Button {
-                                            text: "✕"
-                                            onClicked: {
-                                                root.currentSolution.data.actions_order.splice(delegateRoot.visualIndex, 1)
-                                                root._rebuildModel()
-                                                root.markDirty()
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        ColumnLayout {
-                            width: parent.width; spacing: 4
-
-                            Label { text: "从上到下依次尝试"; color: palette.placeholderText; font.pixelSize: 11 }
-
-                            ScrollView {
-                                id: actionsScrollView
-                                Layout.fillWidth: true
-                                implicitHeight: Math.min(contentHeight, 300)
-                                clip: true
-                                ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
-
-                                ColumnLayout {
-                                    width: actionsScrollView.availableWidth
-                                    spacing: 0
-
-                                    ListView {
-                                        id: actionsListView
-                                        Layout.fillWidth: true
-                                        implicitHeight: contentHeight
-                                        interactive: false
-                                        clip: false
-                                        model: actionsDelegateModel
-
-                                        move: Transition {
-                                            NumberAnimation { property: "y"; duration: 150; easing.type: Easing.OutQuad }
-                                        }
-                                        moveDisplaced: Transition {
-                                            NumberAnimation { property: "y"; duration: 150; easing.type: Easing.OutQuad }
-                                        }
-                                    }
-                                }
-                            }
-
-                            RowLayout {
-                                spacing: 4
-                                Select {
-                                    id: addActionCombo
-                                    Layout.fillWidth: true
-                                    model: {
-                                        var current = root.currentSolution ? root.currentSolution.data.actions_order : []
-                                        return root.produceActions.filter(function(a) { return !current.includes(a.value) })
-                                    }
-                                    textRole: "display_name"; valueRole: "value"
-                                }
+                        FormField {
+                            labelText: "行动优先级"
+                            control: Component {
                                 Button {
-                                    text: "添加"; enabled: addActionCombo.currentValue !== undefined
+                                    text: "配置行动优先级"
                                     onClicked: {
-                                        root.currentSolution.data.actions_order.push(addActionCombo.currentValue)
                                         root._rebuildModel()
-                                        root.markDirty()
-                                        addActionCombo.currentIndex = 0
+                                        actionsPriorityDialog.open()
                                     }
                                 }
                             }
@@ -896,13 +1028,6 @@ PageContainer {
                         visible: root.currentSolution !== null
                         binder: sb
 
-                        FormComboBox {
-                            field: "recommend_card_detection_mode"
-                            label: "推荐卡检测模式"
-                            options: root.detectModes.map(function(mode) {
-                                return { label: mode.display_name, value: mode.value }
-                            })
-                        }
                         FormCheckBox {
                             field: "use_ap_drink"
                             label: "AP 不足时自动使用 AP 饮料"

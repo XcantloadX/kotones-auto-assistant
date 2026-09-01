@@ -1,0 +1,35 @@
+{
+  "version": 3,
+  "definitions": {
+    "c8d8de37-a02c-46de-9dcc-778b90de4fc1": {
+      "type": "prefab",
+      "prefab_id": "TemplateMatchPrefab",
+      "name": "InProduce.HifIntervalConfirm.Title",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 57.860822114102916,
+          "y1": 760.7630822903117,
+          "x2": 388.80787623300455,
+          "y2": 809.7214770806232
+        },
+        "fixed": true
+      }
+    },
+    "c2ad9449-7472-41d4-9f3f-c713baa2b436": {
+      "type": "prefab",
+      "prefab_id": "GakumasPrimaryButtonPrefab",
+      "name": "InProduce.HifIntervalConfirm.ButtonConfirm",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 385.8083561050387,
+          "y1": 1136.6136431697983,
+          "x2": 441.799398493735,
+          "y2": 1184.5728870460218
+        },
+        "fixed": true
+      }
+    }
+  }
+}

@@ -49,7 +49,7 @@ class KaaSession:
         self._task_service = TaskService(self._kaa)
         self._produce_solution_service = ProduceSolutionService()
         self._update_service = UpdateService()
-        self._feedback_service = FeedbackService()
+        self._feedback_service = FeedbackService(kaa_getter=lambda: self._kaa)
         self._instance_service = InstantService()
         self._initialized = True
         logger.info("KaaSession: initialized for '%s'", self._profile_name)

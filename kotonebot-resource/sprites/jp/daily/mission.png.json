@@ -16,6 +16,60 @@
         "fixed": true
       },
       "displayName": "ミッションパス 按钮图标"
+    },
+    "5751d9f6-e1eb-4023-9ac7-5f9209be36a6": {
+      "type": "prefab",
+      "prefab_id": "TemplateMatchPrefab",
+      "name": "Daily.MissonRewards.TitleIcon",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 9.752891289353101,
+          "y1": 34.92122578225877,
+          "x2": 64.28962088873271,
+          "y2": 74.88726234577848
+        },
+        "fixed": true
+      },
+      "displayName": "ミッション 标题图标"
+    },
+    "e2e360be-03aa-4e58-9f9f-1dc93e2a289c": {
+      "type": "hint-point",
+      "name": "Daily.MissonRewards.PointDaily",
+      "props": {
+        "point": {
+          "kind": "point",
+          "x": 91.55798568842243,
+          "y": 981.7982058059499
+        }
+      }
+    },
+    "e85bf51e-b8cb-46ca-830a-76b5498c5f79": {
+      "type": "hint-point",
+      "name": "Daily.MissonRewards.PointWeekly",
+      "props": {
+        "point": {
+          "kind": "point",
+          "x": 223.536871318921,
+          "y": 979.799903977774
+        }
+      }
+    },
+    "f095b899-3a3e-4223-a668-91c1ea820193": {
+      "type": "prefab",
+      "prefab_id": "GakumasPrimaryButtonPrefab",
+      "name": "Daily.MissonRewards.ButtonClaim",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 247.53303234264803,
+          "y1": 1058.7328261907253,
+          "x2": 302.5242346886891,
+          "y2": 1109.689522809213
+        },
+        "fixed": true
+      },
+      "displayName": "一括受取 图标"
     }
   }
 }

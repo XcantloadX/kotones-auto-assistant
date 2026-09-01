@@ -9,10 +9,12 @@ import "../../components/form"
 Item {
     id: root
     property var settingsCtrl
+    property var errors: ({})
 
     property var emulatorInstances: []
     property bool enumerationLoading: false
     property bool emulatorNotInstalled: false
+    property bool _hasEnumerated: false
 
     readonly property var emulatorTypeNames: ({
         mumu12: "MuMu 12 v4.x",
@@ -64,6 +66,8 @@ Item {
         if (valid && !valid.some(function(o) { return o.value === root.backend.screenshot_impl }))
             _commit("backend", "screenshot_impl", valid[0].value)
         root.emulatorNotInstalled = false
+        root._hasEnumerated = false
+        root.emulatorInstances = []
         root.enumerationLoading = true
         if (settingsCtrl) settingsCtrl.listEmulatorInstancesAsync(type)
     }
@@ -74,40 +78,61 @@ Item {
             if (type !== root.emuType) return
             root.emulatorInstances = JSON.parse(json)
             root.enumerationLoading = false
+            root._hasEnumerated = true
         }
         function onEmulatorNotInstalled(type) {
             if (type !== root.emuType) return
             root.emulatorNotInstalled = true
+            root.enumerationLoading = false
+            root._hasEnumerated = true
         }
     }
 
     FormBinder {
         id: lifecycle_b
         data: root.lifecycle
+        prefix: "backend.lifecycle"
+        errors: root.errors
         onCommitted: function(key, value) { root._commit("backend.lifecycle", key, value) }
     }
     FormBinder {
         id: backend_b
         data: root.backend
+        prefix: "backend"
+        errors: root.errors
         onCommitted: function(key, value) { root._commit("backend", key, value) }
+    }
+    FormBinder {
+        id: connection_b
+        data: root.connection
+        prefix: "backend.connection"
+        errors: root.errors
+        onCommitted: function(key, value) { root._commit("backend.connection", key, value) }
     }
     FormBinder {
         id: startGame_b
         data: root.startGame
+        prefix: "tasks.start_game"
+        errors: root.errors
         onCommitted: function(key, value) { root._commit("tasks.start_game", key, value) }
     }
     FormBinder {
         id: endGame_b
         data: root.endGame
+        prefix: "tasks.end_game"
+        errors: root.errors
         onCommitted: function(key, value) { root._commit("tasks.end_game", key, value) }
     }
 
-    // 模拟器实例选项（MuMu / 雷电复用）
+    // 模拟器实例选项（MuMu / 雷电复用）— 未载入前返回 [] 以触发 FormInstancePicker.autoRefreshIfEmpty。
+    // 枚举完成后只返回真实实例，避免把“请选择实例”作为一个可选值残留在列表中。
     readonly property var instanceOptions: {
+        if (!root._hasEnumerated && root.emulatorInstances.length === 0 && !root.enumerationLoading)
+            return []
         var opts = root.emulatorInstances.map(function(e) {
             return { label: "[" + e.id + "] " + e.name, value: e.id }
         })
-        return [{ label: "(请选择实例)", value: "" }].concat(opts)
+        return opts
     }
 
     ScrollView {
@@ -282,8 +307,15 @@ Item {
 
                 FormTextField {
                     label: "ADB IP 地址"
-                    value: root.connection.ip ?? "127.0.0.1"
-                    onUserEdited: function(v) { root._commit("backend.connection", "ip", v) }
+                    help: "仅填 IP（如 127.0.0.1），不要包含端口；端口请在下方单独填写。"
+                    binder: connection_b
+                    field: "ip"
+                }
+                FieldRegistrar {
+                    startParent: parent
+                    binder: connection_b
+                    field: "port"
+                    label: "ADB 端口"
                 }
                 FormTextField {
                     label: "ADB 端口"
@@ -379,28 +411,17 @@ Item {
 
                 FormCheckBox {
                     binder: startGame_b
-                    field: "enabled"
-                    label: "启用自动启动游戏"
+                    field: "disable_gakumas_localify"
+                    label: "自动禁用 Gakumas Localify 汉化"
+                    enabled: root.emuType === "dmm"
+                    font.strikeout: !enabled
                 }
-                ColumnLayout {
-                    width: parent.width
-                    spacing: 8
-                    visible: root.startGame.enabled ?? false
-
-                    FormCheckBox {
-                        binder: startGame_b
-                        field: "disable_gakumas_localify"
-                        label: "自动禁用 Gakumas Localify 汉化"
-                        enabled: root.emuType === "dmm"
-                        font.strikeout: !enabled
-                    }
-                    FormCheckBox {
-                        binder: startGame_b
-                        field: "start_through_kuyo"
-                        label: "通过Kuyo来启动游戏"
-                        enabled: root.emuType === "mumu12" || root.emuType === "mumu12v5" || root.emuType === "leidian" || root.emuType === "custom"
-                        font.strikeout: !enabled
-                    }
+                FormCheckBox {
+                    binder: startGame_b
+                    field: "start_through_kuyo"
+                    label: "通过Kuyo来启动游戏"
+                    enabled: root.emuType === "mumu12" || root.emuType === "mumu12v5" || root.emuType === "leidian" || root.emuType === "custom"
+                    font.strikeout: !enabled
                 }
             }
         }

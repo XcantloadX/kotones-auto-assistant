@@ -1,35 +1,6 @@
 {
   "version": 3,
   "definitions": {
-    "a85fbf42-f94c-4f53-8976-6e8d16be4d26": {
-      "type": "hint-box",
-      "name": "Daily.Club.NoteRequestHintBox",
-      "displayName": "日常 社团 笔记请求HintBox",
-      "props": {
-        "image": {
-          "kind": "rect",
-          "x1": 314,
-          "y1": 1071,
-          "x2": 450,
-          "y2": 1099
-        }
-      }
-    },
-    "d0ce9428-9f55-446a-827e-10fa8e021154": {
-      "type": "prefab",
-      "name": "Daily.ButtonClubSendGift",
-      "displayName": "button_club_send_gift.png",
-      "prefab_id": "TemplateMatchPrefab",
-      "props": {
-        "template": {
-          "kind": "image",
-          "x1": 494,
-          "y1": 932,
-          "x2": 637,
-          "y2": 959
-        }
-      }
-    },
     "724d15c9-149d-41a2-beb7-51fffe813172": {
       "type": "prefab",
       "name": "Daily.ButtonClubSendGiftNext",
@@ -45,20 +16,53 @@
         }
       }
     },
-    "8353e556-6b59-466f-afd9-cdd9fd93a537": {
+    "c5d0fd9d-eba8-443e-bc41-b659025ef3bb": {
       "type": "prefab",
-      "name": "Daily.ButtonClubCollectReward",
-      "displayName": "button_club_collect_reward.png",
       "prefab_id": "TemplateMatchPrefab",
+      "name": "Daily.Club.TitleIcon",
       "props": {
         "template": {
           "kind": "image",
-          "x1": 427,
-          "y1": 1039,
-          "x2": 494,
-          "y2": 1132
-        }
-      }
+          "x1": 11.213840504182883,
+          "y1": 32.732934927102164,
+          "x2": 60.296897143624506,
+          "y2": 76.33224754185089
+        },
+        "fixed": true
+      },
+      "displayName": "社团页面 标题图标"
+    },
+    "fba79f21-a20f-4746-9c84-f568712dfe54": {
+      "type": "prefab",
+      "prefab_id": "TemplateMatchPrefab",
+      "name": "Daily.Club.ButtonRequest",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 308.4390168208015,
+          "y1": 1066.3407384009708,
+          "x2": 456.5971322324493,
+          "y2": 1106.3067749644904
+        },
+        "fixed": true
+      },
+      "displayName": "リクエスト"
+    },
+    "6cbe56c3-d1e4-40f1-aa0c-7c2a95b544c5": {
+      "type": "prefab",
+      "prefab_id": "GakumasPrimaryButtonPrefab",
+      "name": "Daily.ButtonClubSendGift",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 493.3929021154815,
+          "y1": 926.7553022738167,
+          "x2": 636.119880405869,
+          "y2": 964.2891457782492
+        },
+        "fixed": true
+      },
+      "displayName": "寄付する"
     }
   }
 }

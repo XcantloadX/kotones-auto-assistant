@@ -3,6 +3,7 @@ from turtle import color
 from typing import Literal, Callable
 
 from cv2.typing import MatLike
+from kaa.config.const import HifScenario
 from kotonebot import (
     ocr,
     device,
@@ -29,11 +30,25 @@ from kaa.config import conf
 from .p_drink import acquire_p_drink
 from kaa.tasks.actions.loading import loading
 from kaa.kaa_context import produce_solution
+from kaa.db.constants import CharacterId
+from kaa.db.idol_card import IdolCard
 from kaa.tasks.start_game import wait_for_home
 from kaa.tasks.actions.commu import handle_unread_commu
 from kaa.game_ui import CommuEventButtonUI, dialog, badge
 
 logger = getLogger(__name__)
+
+def use_strict_card_detection() -> bool:
+    """是否使用严格模式的推荐卡检测。
+
+    当培育偶像为 fktn（藤田ことね）时，识别准确率优先，采用严格模式；
+    否则采用默认（正常）模式。
+    """
+    idol_skin_id = produce_solution().data.idol
+    if not idol_skin_id:
+        return False
+    idol = IdolCard.from_skin_id(idol_skin_id)
+    return idol is not None and idol.character_id == CharacterId.fktn.value
 
 @action('领取技能卡', screenshot_mode='manual-inherit')
 def acquire_skill_card():
@@ -162,7 +177,7 @@ def handle_skill_card_removal():
     logger.debug("Handle skill card removal finished.")
 
 @action('继续当前培育.进入培育', screenshot_mode='manual-inherit')
-def resume_produce_pre() -> tuple[HajimeScenario, int, str]:
+def resume_produce_pre() -> tuple[Scenario, int, str]:
     """
     继续当前培育.进入培育\n
     该函数用于处理‘日期变更’等情况；单独执行此函数时，要确保代码已经处于培育状态。
@@ -182,7 +197,8 @@ def resume_produce_pre() -> tuple[HajimeScenario, int, str]:
     mode_result = AnyOf[
         R.Produce.ResumeDialogRegular,
         R.Produce.ResumeDialogPro,
-        R.Produce.ResumeDialogMaster
+        R.Produce.ResumeDialogMaster,
+        R.Produce.ResumeDialogHifMain
     ].find()
     if not mode_result:
         raise ValueError('Failed to detect produce scenario.')
@@ -190,8 +206,12 @@ def resume_produce_pre() -> tuple[HajimeScenario, int, str]:
         scenario = HajimeScenario.REGULAR
     elif mode_result.prefab == R.Produce.ResumeDialogPro:
         scenario = HajimeScenario.PRO
-    else:
+    elif mode_result.prefab == R.Produce.ResumeDialogMaster:
         scenario = HajimeScenario.MASTER
+    elif mode_result.prefab == R.Produce.ResumeDialogHifMain:
+        scenario = HifScenario.MAIN
+    else:
+        raise ValueError('Failed to detect produce scenario.')
     logger.info(f'Produce scenario: {scenario}')
 
     # 识别偶像卡

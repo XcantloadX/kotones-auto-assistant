@@ -33,6 +33,7 @@ class GameDataUpdateController(QObject):
     updateAvailableChanged = Signal(bool)
     updateStatusChanged = Signal(str)
     availableVersionChanged = Signal(str)
+    currentVersionChanged = Signal(str)
     downloadFilesChanged = Signal(list)
     restartNeededChanged = Signal(bool)
     progressChanged = Signal(str)
@@ -52,6 +53,7 @@ class GameDataUpdateController(QObject):
         self._update_available = False
         self._update_status = self.STATUS_IDLE
         self._available_version = ""
+        self._current_version = ""
         self._download_files: list = []
         self._restart_needed = False
         self._pending_version = ""
@@ -61,6 +63,8 @@ class GameDataUpdateController(QObject):
         self._progress_message = ""
         self._build_percent = 0.0
         self._build_message = ""
+
+        self._load_current_version()
 
         # 启动时检查是否有未应用的 staging
         self._check_pending_staging()
@@ -98,6 +102,23 @@ class GameDataUpdateController(QObject):
 
     def _get_available_version(self) -> str:
         return self._available_version
+
+    def _get_current_version(self) -> str:
+        return self._current_version
+
+    def _set_current_version(self, v: str) -> None:
+        if self._current_version != v:
+            self._current_version = v
+            self.currentVersionChanged.emit(v)
+
+    def _load_current_version(self) -> None:
+        try:
+            from kaa.game_data.paths import version_path
+            path = version_path()
+            if path.is_file():
+                self._current_version = path.read_text(encoding="utf-8").strip()
+        except Exception:
+            logger.debug("Failed to load current game data version.", exc_info=True)
 
     def _set_available_version(self, v: str) -> None:
         if self._available_version != v:
@@ -146,6 +167,7 @@ class GameDataUpdateController(QObject):
     updateAvailable = Property(bool, _get_update_available, _set_update_available, notify=updateAvailableChanged)
     updateStatus = Property(str, _get_update_status, _set_update_status, notify=updateStatusChanged)
     availableVersion = Property(str, _get_available_version, _set_available_version, notify=availableVersionChanged)
+    currentVersion = Property(str, _get_current_version, notify=currentVersionChanged, constant=False)
     downloadFiles = Property(list, _get_download_files, _set_download_files, notify=downloadFilesChanged)
     restartNeeded = Property(bool, _get_restart_needed, _set_restart_needed, notify=restartNeededChanged)
     progressMessage = Property(str, _get_progress_message, _set_progress_message, notify=progressChanged)
@@ -167,7 +189,7 @@ class GameDataUpdateController(QObject):
     def _background_check(self):
         try:
             from kaa.config import manager as config_manager
-            from kaa.game_data.updater import GameDataUpdater, should_check
+            from kaa.game_data.updater import GameDataUpdateCancelled, GameDataUpdater, should_check
 
             shared = config_manager.read_shared()
             if not should_check(shared.misc):
@@ -199,6 +221,10 @@ class GameDataUpdateController(QObject):
                 # 提示用户手动更新
                 self._set_update_available(True)
                 self._set_update_status(self.STATUS_IDLE)
+        except GameDataUpdateCancelled:
+            # 用户主动跳过下载（skipDownload 设置取消事件），属预期流程，非错误。
+            logger.info("Background game data check cancelled by user.")
+            self._set_update_status(self.STATUS_IDLE)
         except Exception:
             logger.exception("Background game data check failed.")
             self._set_update_status(self.STATUS_FAILED)
@@ -268,7 +294,7 @@ class GameDataUpdateController(QObject):
 
     def _do_manual_download(self):
         try:
-            from kaa.game_data.updater import GameDataUpdater
+            from kaa.game_data.updater import GameDataUpdateCancelled, GameDataUpdater
             self._set_update_status(self.STATUS_CHECKING)
             updater = GameDataUpdater(cancel=self._cancel_event)
             result = updater.check_only()
@@ -277,6 +303,11 @@ class GameDataUpdateController(QObject):
                 self._set_progress_message("目前已是最新版本，无需更新。")
                 return
             self._do_staging_download(updater, result)
+        except GameDataUpdateCancelled:
+            # 用户主动取消下载（skipDownload 设置取消事件），属预期流程，非错误。
+            logger.info("Manual game data download cancelled by user.")
+            self._set_update_status(self.STATUS_IDLE)
+            self._set_progress_message("已取消下载。")
         except Exception as e:
             logger.exception("Manual game data download failed.")
             self._set_update_status(self.STATUS_FAILED)

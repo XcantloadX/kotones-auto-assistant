@@ -1,0 +1,51 @@
+{
+  "version": 3,
+  "definitions": {
+    "f1e85290-17b6-4091-8fd6-057c486c348f": {
+      "type": "prefab",
+      "prefab_id": "TemplateMatchPrefab",
+      "name": "Produce.ButtonHifQualify",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 93.85506364969342,
+          "y1": 861.6773246131988,
+          "x2": 155.84514629432152,
+          "y2": 920.6272285443904
+        },
+        "fixed": true
+      }
+    },
+    "a1d2c54c-5754-41f2-9d29-777bab9def05": {
+      "type": "prefab",
+      "prefab_id": "TemplateMatchPrefab",
+      "name": "Produce.ButtonHifMain",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 448.7982787923221,
+          "y1": 858.6798718709349,
+          "x2": 517.7872417355372,
+          "y2": 923.6246812866543
+        },
+        "fixed": true
+      }
+    },
+    "e90c015e-e6af-4780-b94f-15bc9bf60961": {
+      "type": "prefab",
+      "prefab_id": "TemplateMatchPrefab",
+      "name": "Produce.LogoHif",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 164.69644666730812,
+          "y1": 289.1679524322803,
+          "x2": 362.7574902802113,
+          "y2": 490.310769763262
+        },
+        "fixed": true,
+        "threshold": 0.7
+      }
+    }
+  }
+}

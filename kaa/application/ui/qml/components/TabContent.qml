@@ -33,7 +33,7 @@ Item {
             id: sideNav
             Layout.fillHeight: true
             visible: root.fullscreenMode === ""
-            model: ["控制", "任务", "设置", "方案", "更新", "日志", "反馈"]
+            model: ["控制", "任务", "设置", "方案", "更新", "日志", "关于"]
 
             onCurrentChanging: function(index, previousIndex) {
                 if (root.navigation) {
@@ -52,13 +52,18 @@ Item {
             visible: root.fullscreenMode === ""
             currentIndex: sideNav.currentIndex
 
-            ControlPage  { id: controlPage;   runCtrl: root.runCtrl; progressCtrl: root.progressCtrl; keepScreenshots: (root.settingsCtrl?.config?.profile?.keep_screenshots) ?? false }
+            ControlPage  { id: controlPage;   runCtrl: root.runCtrl; progressCtrl: root.progressCtrl; feedbackCtrl: root.feedbackCtrl; keepScreenshots: (root.settingsCtrl?.config?.profile?.keep_screenshots) ?? false; produceEngineLegacy: (root.settingsCtrl?.config?.profile?.tasks?.produce?.produce_engine) === "legacy" }
             TaskPage     { id: taskPage;      runCtrl: root.runCtrl }
-            SettingsPage { id: settingsPage;  settingsCtrl: root.settingsCtrl; runCtrl: root.runCtrl }
+            SettingsPage {
+                id: settingsPage
+                settingsCtrl: root.settingsCtrl
+                runCtrl: root.runCtrl
+                navigation: root.navigation
+            }
             ProducePage  { id: producePage;   produceCtrl: root.produceCtrl }
             UpdatePage   { id: updatePage;    updateCtrl: root.updateCtrl }
             LogPage      { id: logPage;       logBridge: root.logBridge }
-            FeedbackPage { id: feedbackPage;  feedbackCtrl: root.feedbackCtrl }
+            AboutPage    { id: aboutPage }
         }
     }
 }

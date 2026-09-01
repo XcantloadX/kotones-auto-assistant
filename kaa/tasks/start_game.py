@@ -274,10 +274,6 @@ def start_game():
     """
     启动游戏，直到游戏进入首页为止。
     """
-    if not conf().tasks.start_game.enabled:
-        logger.info('"Start game" is disabled.')
-        return
-    
     if device.platform == 'android':
         android_launch()
     elif device.platform == 'windows':

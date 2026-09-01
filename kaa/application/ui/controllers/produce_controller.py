@@ -158,6 +158,30 @@ class ProduceController(QObject):
             self.operationFailed.emit(f"保存失败：{exc}")
             return False
 
+    # ── 校验 ─────────────────────────────────────────────
+
+    @Slot(str, result=str)
+    def validateSolution(self, json_str: str) -> str:
+        """校验培育方案，返回结构化问题列表 JSON。
+
+        :param json_str: ProduceSolution 的 JSON 字符串。
+        :return: ConfigIssue 列表的 JSON（[{severity, field, message}, ...]）。
+        """
+        try:
+            from kaa.config.produce import ProduceSolution, validate_produce_solution
+            solution = ProduceSolution.model_validate_json(json_str)
+            issues = validate_produce_solution(solution)
+            return json.dumps(
+                [i.model_dump() for i in issues],
+                ensure_ascii=False,
+            )
+        except Exception as exc:
+            logger.exception("Failed to validate produce solution")
+            return json.dumps(
+                [{'severity': 'error', 'field': None, 'message': f'校验失败：{exc}'}],
+                ensure_ascii=False,
+            )
+
     # ── CRUD ─────────────────────────────────────────────
 
     @Slot(str, result=str)
@@ -228,6 +252,9 @@ class ProduceController(QObject):
                     'character_id': c.character_id,
                     'character_name': c.character_name,
                     'image_path': (sprite_dir / f'{c.skin_id}_0.png').resolve().as_uri(),
+                    'has_prima_stella': bool(c.prima_stella_consumption_set_id),
+                    'image_path_2': (sprite_dir / f'{c.skin_id}_2.png').resolve().as_uri()
+                        if c.prima_stella_consumption_set_id else '',
                 }
                 for c in cards
             ], ensure_ascii=False)
@@ -245,18 +272,6 @@ class ProduceController(QObject):
             ], ensure_ascii=False)
         except Exception:
             logger.exception("Failed to load produce actions")
-            return '[]'
-
-    @Slot(result=str)
-    def detectModesJson(self) -> str:
-        try:
-            from kaa.config.const import RecommendCardDetectionMode
-            return json.dumps([
-                {'value': m.value, 'display_name': m.display_name}
-                for m in RecommendCardDetectionMode
-            ], ensure_ascii=False)
-        except Exception:
-            logger.exception("Failed to load detect modes")
             return '[]'
 
     @Slot(result=str)

@@ -52,6 +52,21 @@
         },
         "fixed": true
       }
+    },
+    "6df10150-26e4-47f0-8b25-70c6a3c682c4": {
+      "type": "prefab",
+      "prefab_id": "GakumasSecondaryButtonPrefab",
+      "name": "Daily.Shop.PurchaseConfirmDialog.ButtonCancel",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 116.3825884474478,
+          "y1": 1136.0596704247073,
+          "x2": 320.6444254411792,
+          "y2": 1183.3442835005287
+        },
+        "fixed": true
+      }
     }
   }
 }

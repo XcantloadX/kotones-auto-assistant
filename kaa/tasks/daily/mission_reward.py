@@ -3,48 +3,23 @@ import logging
 
 from kaa.tasks import R
 
-from kotonebot.primitives import Rect
 from kaa.config import conf, Priority
-from ..actions.loading import wait_loading_end
-from ..actions.scenes import at_home, goto_home
-from kotonebot import device, image, color, task, action, rect_expand, sleep
+from ..actions.scenes import goto_home
+from kotonebot import device, task, action, sleep
 from kotonebot.backend.loop import Loop
 
 logger = logging.getLogger(__name__)
-
-@action('检查任务')
-def check_and_goto_mission() -> bool:
-    """
-    检查任务。如果需要领取，
-    则前往任务页面，并返回 True。
-    否则返回 False。
-    
-    :return: 是否需要领取任务奖励
-    """
-    rect = R.Daily.ButtonMission.wait(timeout=1).rect
-    # 向上、向右扩展 50px
-    color_rect = rect_expand(rect, top=50, right=50)
-    if not color.find('#ff1249', rect=color_rect):
-        logger.info('No mission reward to claim.')
-        return False
-    # 点击任务奖励图标
-    logger.debug('Clicking mission reward icon.')
-    device.click()
-    sleep(0.5)
-    # 加载
-    wait_loading_end()
-    return True
 
 @action('任务奖励')
 def claim_mission_reward(name: str):
     """领取任务奖励"""
     # [screenshots/mission/daily.png]
-    R.Common.ButtonIconArrowShort.wait()
-    if R.Common.ButtonIconArrowShort.q(enabled=True).try_click():
+    R.Daily.MissonRewards.ButtonClaim.wait()
+    if R.Daily.MissonRewards.ButtonClaim.q(enabled=True).try_click():
         logger.info(f'Claiming {name} mission reward.')
         sleep(0.5)
         for _ in Loop(interval=0.5):
-            if not R.Common.ButtonIconArrowShort.q(enabled=False).exists():
+            if not R.Daily.MissonRewards.ButtonClaim.q(enabled=False).exists():
                 if R.Common.ButtonIconClose.try_click():
                     logger.debug('Closed popup dialog.')
                     sleep(1)
@@ -56,47 +31,69 @@ def claim_mission_reward(name: str):
 @action('领取任务页面奖励')
 def claim_mission_rewards():
     """领取任务奖励"""
-    # [screenshots/mission/daily.png]
-    logger.info('Claiming daily mission rewards.')
-    red_dots = color.find_all('#ff1249', rect=R.Daily.BoxMissonTabs)
-    logger.debug(f'Found {len(red_dots)} red dots.')
-    for i, dot in enumerate(red_dots, 1):
-        logger.debug(f'Red dot at {dot.position} with similarity {dot.confidence:.2f}.')
-        device.click(*dot.position)
-        sleep(0.2)
-        claim_mission_reward(f'#{i} {dot.position}')
-    logger.info('All daily mission rewards claimed.')
+    goto_home()
+
+    for _ in Loop(interval=0.5):
+        if R.Daily.MissonRewards.TitleIcon.exists():
+            logger.debug('Pass screen loaded.')
+            sleep(1)
+            break
+        R.Daily.ButtonMission.try_click()
+        logger.debug('Clicking 任务 button.')
+
+    device.click(R.Daily.MissonRewards.PointDaily)
+    sleep(1.5)
+    if R.Daily.MissonRewards.ButtonClaim.q(enabled=True).exists():
+        claim_mission_reward('daily')
+
+    device.click(R.Daily.MissonRewards.PointWeekly)
+    sleep(1.5)
+    if R.Daily.MissonRewards.ButtonClaim.q(enabled=True).exists():
+        claim_mission_reward('weekly')
 
 @action('通行证奖励')
 def claim_pass_reward():
     """领取通行证奖励"""
-    # [screenshots/mission/daily.png]
-    pass_rect = R.Daily.ButtonIconPass.wait(timeout=1).rect
-    # 向右扩展 150px，向上扩展 35px
-    color_rect = (pass_rect.x1, pass_rect.y1 - 35, pass_rect.w + 150, pass_rect.h + 35)
-    if not color.find('#ff1249', rect=Rect(xywh=color_rect)):
-        logger.info('No pass reward to claim.')
-        return
-    logger.info('Claiming pass reward.')
-    logger.debug('Clicking パス button.')
-    device.click()
-    # [screenshots/mission/pass.png]
-    # 对话框 [screenshots/mission/pass_dialog.png]
-    for _ in Loop(interval=0.2):
-        if R.Common.ButtonIconClose.try_click():
-            logger.debug('Closed popup dialog.')
-        elif R.Daily.IconTitlePass.exists():
+    goto_home()
+
+    for _ in Loop(interval=0.5):
+        if R.Daily.PassRewards.IconTitle.exists():
+            logger.debug('Pass screen loaded.')
             break
-    logger.debug('Pass screen loaded.')
-    for _ in Loop():
-        claim_btn = R.Daily.ButtonPassClaim.find()
-        if R.Common.ButtonIconClose.try_click():
-            logger.debug('Closed popup dialog.')
-        elif claim_btn and claim_btn.enabled:
-            logger.debug('Clicking 受取 button.')
-            device.click(claim_btn)
-        elif (claim_btn and claim_btn.disabled) and R.Daily.IconTitlePass.exists():
-            break
+        R.Daily.ButtonPass.try_click()
+        logger.debug('Clicking パス button.')
+
+    sc = R.Daily.PassRewards.Scrollbar.require()
+    for _ in sc(step=0.1, start=None):
+        # 先扫描所有领取按钮并尝试挨个领取
+        for _ in Loop():
+            if R.Daily.PassRewards.ButtonClaim.exists():
+                # 点击并等待弹窗
+                for _ in Loop():
+                    if R.Common.ButtonIconClose.exists():
+                        logger.debug('Now at popup dialog.')
+                        break
+                    # TODO: 理论上，ButtonClaim 要加 .q(enabled=True) 才能保证不会找到 enabled=False 的按钮
+                    # 但是不知道为什么，不加也不会找到禁用的按钮。可能是潜在的 bug
+                    if R.Daily.PassRewards.ButtonClaim.try_click():
+                        logger.info('Found pass reward to claim.')
+                        logger.debug('Clicked pass reward claim.')
+                        sleep(1)
+                # 确认并等待结束
+                for _ in Loop():
+                    if R.Common.ButtonIconClose.try_click():
+                        logger.debug('Closed popup dialog.')
+                        sleep(1)
+                        continue
+                    if R.Daily.PassRewards.IconTitle.exists():
+                        logger.info('Pass reward item claimed.')
+                        break
+            else:
+                break
+
+        sleep(0.5)
+        logger.debug('Scrolling pass reward list.')
+
     logger.info('All pass rewards claimed.')
 
 @action('活动奖励')
@@ -114,16 +111,11 @@ def mission_reward():
         logger.info('Mission reward is disabled.')
         return
     logger.info('Claiming mission rewards.')
-    if not at_home():
-        goto_home()
-    # TODO: 这个 MISSION 按钮上的红点只会指示 MISSON 的领取
-    # PASS 的领取需要另外判断
-    if not check_and_goto_mission():
-        return
-    R.Daily.ButtonIconPass.wait()
+
     claim_mission_rewards()
-    sleep(0.5)
+    sleep(1)
     claim_pass_reward()
+
     logger.info('All mission rewards claimed.')
 
 
@@ -139,5 +131,5 @@ if __name__ == '__main__':
     #     sleep(0.5)
     # device.click(image.expect(R.Daily.ButtonIconSkip, colored=True, transparent=True, threshold=0.999))
     # mission_reward()
-    claim_pass_reward()
+    mission_reward()
     # claim_mission_rewards()

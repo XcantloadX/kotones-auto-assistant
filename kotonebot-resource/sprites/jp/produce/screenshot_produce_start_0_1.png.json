@@ -50,7 +50,7 @@
       "variant_policy": {}
     },
     "aca9e953-1955-46eb-920c-77b1750bcb34": {
-      "name": "Produce.PointHajimeToNia",
+      "name": "Produce.PointNext",
       "displayName": "Hajime 右侧翻页箭头",
       "type": "hint-point",
       "props": {

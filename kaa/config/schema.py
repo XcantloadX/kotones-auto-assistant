@@ -104,10 +104,16 @@ class MissionRewardConfig(ConfigBaseModel):
 
 class ClubRewardConfig(ConfigBaseModel):
     enabled: bool = False
-    """是否启用领取社团奖励"""
+    """是否启用社团"""
+
+    enable_request: bool = True
+    """启用请求获得笔记"""
 
     selected_note: DailyMoneyShopItems = DailyMoneyShopItems.AnomalyNoteVisual
-    """想在社团奖励中获取到的笔记"""
+    """想获得的笔记类型"""
+
+    enable_send: bool = True
+    """启用发送笔记"""
 
 class UpgradeSupportCardConfig(ConfigBaseModel):
     enabled: bool = False
@@ -138,9 +144,6 @@ class TraceConfig(ConfigBaseModel):
     """跟踪选卡识别结果"""
 
 class StartGameConfig(ConfigBaseModel):
-    enabled: bool = True
-    """是否启用自动启动游戏。默认为True"""
-
     start_through_kuyo: bool = False
     """是否通过Kuyo来启动游戏"""
 
