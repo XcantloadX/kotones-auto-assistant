@@ -360,7 +360,7 @@ def sentry_middleware(ctx: BotContext, task: Task, next_handler: Callable[[], No
         # 交由外层中间件统一处理，避免遥测刷屏。
         raise
     except Exception as e:
-        with sentry_sdk.push_scope() as scope:
+        with sentry_sdk.isolation_scope() as scope:
             scope.set_tag('task_name', task.name)
             try:
                 from kaa.util.telemetry import collect_report_context  # noqa: PLC0415
