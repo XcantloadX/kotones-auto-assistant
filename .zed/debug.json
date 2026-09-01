@@ -1,0 +1,56 @@
+[
+  {
+    "label": "Python Debugger: Current File",
+    "adapter": "Debugpy",
+    "request": "launch",
+    "program": "$ZED_FILE"
+  },
+  {
+    "label": "Python: Current Module",
+    "adapter": "Debugpy",
+    "request": "launch",
+    "module": "kaa.debug_entry",
+    "args": [
+      "$ZED_RELATIVE_FILE"
+    ]
+  },
+  {
+    "label": "Kbot: Hot reload",
+    "adapter": "Debugpy",
+    "request": "launch",
+    "module": "kaa.hotload_entry",
+    "args": [
+      "$ZED_RELATIVE_FILE"
+    ]
+  },
+  {
+    "label": "QML UI",
+    "adapter": "Debugpy",
+    "request": "launch",
+    "module": "kaa.main.cli",
+    "justMyCode": false
+  },
+  {
+    "label": "QML UI (Coverage)",
+    "adapter": "Debugpy",
+    "request": "launch",
+    "module": "coverage",
+    "args": [
+      "run",
+      "-m",
+      "kaa.main.cli"
+    ]
+  },
+  {
+    "label": "QML UI (Accumulated Coverage)",
+    "adapter": "Debugpy",
+    "request": "launch",
+    "module": "coverage",
+    "args": [
+      "run",
+      "-m",
+      "--append",
+      "kaa.main.cli"
+    ]
+  }
+]
