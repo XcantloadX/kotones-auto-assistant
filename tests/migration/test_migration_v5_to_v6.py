@@ -48,7 +48,7 @@ class TestMigrationV5ToV6(unittest.TestCase):
         """测试没有 options 的配置"""
         self._write_config({
             'version': 5,
-            'user_configs': [{'name': 'default', 'backend': {'type': 'mumu12'}}],
+            'user_configs': [{'name': 'default', 'backend': {'type': 'mumu12v5'}}],
         })
         self.step.apply(self.ctx)
 

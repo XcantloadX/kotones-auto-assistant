@@ -195,7 +195,7 @@ class IdleModeConfig(ConfigBaseModel):
 
 
 
-CONFIG_VERSION_CODE = 13
+CONFIG_VERSION_CODE = 14
 
 
 class TasksConfig(ConfigBaseModel):

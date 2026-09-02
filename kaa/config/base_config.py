@@ -4,16 +4,6 @@ from pydantic import BaseModel, ConfigDict, Field
 
 # ── 设备生命周期 ──────────────────────────────────────────────────────────────
 
-class MuMu12Device(BaseModel):
-    type: Literal['mumu12']
-    instance_id: str | None = None
-    """模拟器实例 ID。"""
-    mumu_background_mode: bool = False
-    """MuMu12 模拟器后台保活模式"""
-    check_and_start: bool = False
-    """启动脚本时，若模拟器未运行则自动启动（通过 MuMu SDK）。"""
-
-
 class MuMu12V5Device(BaseModel):
     type: Literal['mumu12v5']
     instance_id: str | None = None
@@ -71,7 +61,7 @@ class CustomDevice(BaseModel):
 
 
 DeviceLifecycle = Annotated[
-    MuMu12Device | MuMu12V5Device | LeidianDevice | DmmDevice | PlayCoverDevice | CustomDevice,
+    MuMu12V5Device | LeidianDevice | DmmDevice | PlayCoverDevice | CustomDevice,
     Field(discriminator='type')
 ]
 

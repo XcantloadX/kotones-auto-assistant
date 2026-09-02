@@ -230,9 +230,9 @@ class SettingsController(QObject):
     def _enumerate_instances(self, emulator_type: str) -> list:
         from kotonebot.errors import EmulatorNotFoundError
         try:
-            if emulator_type in ('mumu12', 'mumu12v5'):
-                from kotonebot.client.host.mumu12_host import Mumu12Host, Mumu12V5Host
-                host_cls = Mumu12V5Host if emulator_type == 'mumu12v5' else Mumu12Host
+            if emulator_type == 'mumu12v5':
+                from kotonebot.client.host.mumu12_host import Mumu12V5Host
+                host_cls = Mumu12V5Host
                 instances = host_cls.list()
                 return [{'id': str(i.id) if hasattr(i, 'id') else '', 'name': str(getattr(i, 'name', '') or '')} for i in instances]
             if emulator_type == 'leidian':

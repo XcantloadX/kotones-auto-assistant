@@ -195,8 +195,8 @@ def collect_report_context() -> dict[str, str]:
 
     静态系统信息（平台/系统内存/剩余可用内存/系统版本/locale/显示器分辨率）在 setup() 中已通过
     全局 tag 附加，这里只收集运行期可能变化的数据：进程自身内存占用、游戏数据版本、
-    当前 profile 的设备平台与截图方式、模拟器分辨率，以及 MuMu 模拟器版本号（仅 v5，
-    v4 无版本查询 API）。所有字段采集失败均静默跳过。
+    当前 profile 的设备平台与截图方式、模拟器分辨率，以及 MuMu 模拟器版本号。
+    所有字段采集失败均静默跳过。
     """
     ctx: dict[str, str] = {}
 
@@ -234,7 +234,7 @@ def collect_report_context() -> dict[str, str]:
     except Exception:
         logger.debug('Failed to collect emulator resolution.', exc_info=True)
 
-    # MuMu 模拟器版本号（仅 v5；v4 无版本查询 API，非 Windows 亦跳过）
+    # MuMu 模拟器版本号（非 Windows 亦跳过）
     if ctx.get('device_platform') == 'mumu12v5':
         try:
             from kotonebot.client.host.mumu12_host import Mumu12V5Host  # noqa: PLC0415

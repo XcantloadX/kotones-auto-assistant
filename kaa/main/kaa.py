@@ -9,7 +9,7 @@ from kotonebot.core.bot import BotContext, KotoneBot
 from kotonebot.backend.context import Task
 from kotonebot.client.device import Device, WindowsDevice
 from kotonebot.client.host import (
-    Mumu12Host, LeidianHost, Mumu12Instance,
+    LeidianHost, Mumu12Instance,
     LeidianInstance, CustomInstance
 )
 from kotonebot.client.host.mumu12_host import Mumu12V5Host, MuMu12HostConfig
@@ -160,7 +160,7 @@ class KaaDeviceFactory:
         """
         from kotonebot.client.host import create_custom
         from kaa.config.base_config import (  # noqa: PLC0415
-            MuMu12Device, MuMu12V5Device, LeidianDevice, DmmDevice, CustomDevice, TcpConnection,
+            MuMu12V5Device, LeidianDevice, DmmDevice, CustomDevice, TcpConnection,
         )
         lc = config.backend.lifecycle
         b_type = lc.type
@@ -195,15 +195,6 @@ class KaaDeviceFactory:
                 if not os.path.exists(exe):
                     user.error('「模拟器 exe 文件路径」对应的文件不存在！请检查路径是否正确。')
                     raise FileNotFoundError(f'Emulator executable not found: {exe}')
-            return instance
-
-        elif b_type == 'mumu12':
-            assert isinstance(lc, MuMu12Device)
-            if lc.instance_id is None:
-                raise ValueError('MuMu12 instance ID is not set.')
-            instance = Mumu12Host.query(id=lc.instance_id)
-            if instance is None:
-                raise ValueError(f'MuMu12 instance not found: {lc.instance_id}')
             return instance
 
         elif b_type == 'mumu12v5':
@@ -274,7 +265,7 @@ class KaaDeviceFactory:
         """
         创建设备。
         """
-        from kaa.config.base_config import MuMu12Device, MuMu12V5Device, DmmDevice  # noqa: PLC0415
+        from kaa.config.base_config import MuMu12V5Device, DmmDevice  # noqa: PLC0415
         impl_name = config.backend.screenshot_impl
         lc = config.backend.lifecycle
 
@@ -310,7 +301,7 @@ class KaaDeviceFactory:
 
         elif isinstance(instance, (CustomInstance, Mumu12Instance, LeidianInstance)):
             if impl_name == 'nemu_ipc' and isinstance(instance, Mumu12Instance):
-                assert isinstance(lc, (MuMu12Device, MuMu12V5Device))
+                assert isinstance(lc, MuMu12V5Device)
                 timeout = 180
                 args = {}
                 if lc.mumu_background_mode:

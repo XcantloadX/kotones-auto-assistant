@@ -999,10 +999,62 @@ class ProfileV12ToV13(MigrationStep):
 
 
 # ---------------------------------------------------------------------------
+# V13 → V14：移除 MuMu 12 v4.x 支持，自动升级为 v5.x
+# ---------------------------------------------------------------------------
+
+class ProfileV13ToV14(MigrationStep):
+    """将 lifecycle.type 为 'mumu12' 的 profile 自动升级为 'mumu12v5'。"""
+
+    def check_needed(self, ctx: MigrationContext) -> bool:
+        profiles_dir = ctx.config_dir / 'profiles'
+        if not profiles_dir.exists():
+            return False
+        for f in profiles_dir.glob('*.json'):
+            try:
+                data = json.loads(f.read_text(encoding='utf-8'))
+            except Exception:
+                continue
+            if data.get('version', 0) < 14:
+                lifecycle = data.get('backend', {}).get('lifecycle', {})
+                if lifecycle.get('type') == 'mumu12':
+                    return True
+        return False
+
+    def apply(self, ctx: MigrationContext) -> None:
+        profiles_dir = ctx.config_dir / 'profiles'
+        if not profiles_dir.exists():
+            return
+        upgraded: list[str] = []
+        for f in profiles_dir.glob('*.json'):
+            try:
+                data = json.loads(f.read_text(encoding='utf-8'))
+            except Exception:
+                continue
+            if data.get('version', 0) >= 14:
+                continue
+            lifecycle = data.get('backend', {}).get('lifecycle', {})
+            if lifecycle.get('type') == 'mumu12':
+                lifecycle['type'] = 'mumu12v5'
+                data.setdefault('backend', {})['lifecycle'] = lifecycle
+                upgraded.append(f.stem)
+            data['version'] = 14
+            f.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding='utf-8')
+        if upgraded:
+            ctx.messages.append(MigrationMessage(
+                text=(
+                    "已将以下 profile 的模拟器类型从 MuMu 12 v4.x 自动升级为 v5.x。"
+                    "如果模拟器仍为旧版 v4.x，请尽快升级模拟器，否则将无法正常连接。"
+                ),
+                old_version='v13',
+                new_version='v14',
+            ))
+
+
+# ---------------------------------------------------------------------------
 # 迁移链
 # ---------------------------------------------------------------------------
 
-LATEST_VERSION: int = 13
+LATEST_VERSION: int = 14
 
 profile_migration_chain = MigrationChain(steps=[
     ProfileV1ToV2(),
@@ -1018,6 +1070,7 @@ profile_migration_chain = MigrationChain(steps=[
     ProfileV10ToV11(),
     ProfileV11ToV12(),
     ProfileV12ToV13(),
+    ProfileV13ToV14(),
 ])
 
 

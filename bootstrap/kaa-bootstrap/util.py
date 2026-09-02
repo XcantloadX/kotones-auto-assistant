@@ -12,7 +12,7 @@ from typing import Dict, Any, TypedDict, Literal, List
 from terminal import print_status
 
 class BackendConfig(TypedDict, total=False):
-    type: Literal['custom', 'mumu12', 'mumu12v5', 'leidian', 'dmm']
+    type: Literal['custom', 'mumu12v5', 'leidian', 'dmm']
     screenshot_impl: Literal['adb', 'uiautomator2', 'windows', 'nemu_ipc', 'windows_background']
 
 
