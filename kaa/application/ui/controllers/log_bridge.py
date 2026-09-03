@@ -162,8 +162,12 @@ class LogBridge(QObject):
                     sys.__excepthook__(exc_type, exc_value, exc_tb)
                 return
 
-            text = "".join(traceback.format_exception(exc_type, exc_value, exc_tb))
-            logging.getLogger("uncaught").critical(text)
+            try:
+                from kaa.util.error_handler import handle_global_exception
+                handle_global_exception(exc_type, exc_value, exc_tb, thread_name="main")
+            except Exception:
+                text = "".join(traceback.format_exception(exc_type, exc_value, exc_tb))
+                logging.getLogger("uncaught").critical(text)
 
         sys.excepthook = excepthook
 
@@ -171,12 +175,16 @@ class LogBridge(QObject):
             self._original_threading_excepthook = threading.excepthook
 
             def threading_excepthook(args):
-                text = "".join(traceback.format_exception(
-                    args.exc_type,
-                    args.exc_value,
-                    args.exc_traceback,
-                ))
-                logging.getLogger("threading").critical(text)
+                try:
+                    from kaa.util.error_handler import handle_global_exception
+                    handle_global_exception(args.exc_type, args.exc_value, args.exc_traceback, thread_name=getattr(args.thread, "name", "thread"))
+                except Exception:
+                    text = "".join(traceback.format_exception(
+                        args.exc_type,
+                        args.exc_value,
+                        args.exc_traceback,
+                    ))
+                    logging.getLogger("threading").critical(text)
 
             threading.excepthook = threading_excepthook
 
