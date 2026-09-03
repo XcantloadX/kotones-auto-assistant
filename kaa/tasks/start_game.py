@@ -2,7 +2,6 @@
 import os
 import re
 import json
-import ctypes
 import logging
 import subprocess
 
@@ -18,7 +17,7 @@ from .actions.commu import handle_unread_commu
 from kaa.tasks.common import skip
 from ..kaa_context import save_config
 from kaa.constants import GAME_PACKAGE_NAME, KUYO_PACKAGE_NAME, PLAYCOVER_BUNDLE_ID
-from kaa.errors import ElevationRequiredError, GameUpdateNeededError, DmmGameLaunchError
+from kaa.errors import GameUpdateNeededError, DmmGameLaunchError
 
 logger = logging.getLogger(__name__)
 
@@ -183,14 +182,6 @@ def windows_launch():
     前置条件：-
     结束状态：游戏窗口出现
     """
-    # 检查管理员权限
-    try:
-        is_admin = os.getuid() == 0 # type: ignore
-    except AttributeError:
-        is_admin = ctypes.windll.shell32.IsUserAnAdmin() != 0
-    if not is_admin:
-        raise ElevationRequiredError()
-    
     # 处理汉化插件
     if conf().tasks.start_game.disable_gakumas_localify:
         logger.info('Disabling Gakumas Localify...')

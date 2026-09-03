@@ -20,7 +20,7 @@ from kaa.config import manager as config_manager
 from kotonebot.primitives.geometry import Size
 from kotonebot.ui import user
 from kotonebot.util import is_windows
-from kaa.errors import WindowsOnlyError
+from kaa.errors import ElevationRequiredError, WindowsOnlyError
 from kaa.constants import GAME_PACKAGE_NAME, PLAYCOVER_BUNDLE_ID
 
 from ..kaa_context import _set_instance
@@ -38,6 +38,18 @@ from kotonebot.primitives.geometry import Size
 
 logger = logging.getLogger(__name__)
 
+
+def _is_admin() -> bool:
+    import ctypes
+    import os
+
+    try:
+        return os.getuid() == 0  # type: ignore[attr-defined]
+    except AttributeError:
+        try:
+            return ctypes.windll.shell32.IsUserAnAdmin() != 0
+        except Exception:
+            return False
 
 def build_resolution_error_message(screen_size: tuple[int, int]) -> str:
     """构造分辨率不兼容时的用户提示文案。
@@ -218,6 +230,8 @@ class KaaDeviceFactory:
         elif b_type == 'dmm':
             if not is_windows():
                 raise WindowsOnlyError('DMM 版')
+            if not _is_admin():
+                raise ElevationRequiredError()
             assert DmmHost is not None
             return DmmHost.instance
 
@@ -394,13 +408,13 @@ class Kaa(KotoneBot):
             self._config = manager.read(profile_name, not_exist='create')
 
         self.version = importlib.metadata.version('ksaa')
-        
+
         logger.info('Version: %s', self.version)
         logger.info('Python Version: %s', sys.version)
         logger.info('Python Executable: %s', sys.executable)
-        
+
         self.factory = KaaDeviceFactory()
-        
+
         super().__init__(
             device_factory=self.factory,
             middlewares=[
@@ -434,11 +448,11 @@ class Kaa(KotoneBot):
     def _initialize(self):
         from kotonebot.backend.context import init_context
         from kotonebot.core.bot import BotContext
-        
+
         logger.info("Initializing Device...")
         device = self.device_factory()
         self._ctx = BotContext(bot=self, device=device)
-        
+
         init_context(
             target_device=device,
             force=True
@@ -526,7 +540,7 @@ class Kaa(KotoneBot):
 
     def run_all(self):
         return self.run(self._task_generator())
-    
+
     def start_all(self):
         return self.start(self._task_generator())
 
@@ -539,8 +553,7 @@ class Kaa(KotoneBot):
         self._config = config_manager.read(self._profile_name)
         kaa_init(self._config, self._profile_name)
         return super().run(tasks)
-    
+
     def stop(self):
         if self._ctx is not None:
             self._ctx.stop()
-
