@@ -96,26 +96,26 @@ def select_set(index: int):
                 logger.warning('Failed to get current set number. Retrying...')
                 sleep(0.2)
         return numbers[0]
-    
+
     max_retries = 3
     retry_count = 0
-    
+
     while retry_count < max_retries:
         current = _current()
         logger.info(f'Navigate to set #{index}. Now at set #{current}.')
-        
+
         # 计算需要点击的次数
         click_count = abs(index - current)
         if click_count == 0:
             logger.info(f'Already at set #{current}.')
             return
         click_target = R.Produce.PointProduceNextSet if current < index else R.Produce.PointProducePrevSet
-        
+
         # 点击
         for _ in range(click_count):
             device.click(click_target)
             sleep(0.1)
-        
+
         # 确认
         final_current = _current()
         if final_current == index:
@@ -124,9 +124,9 @@ def select_set(index: int):
         else:
             retry_count += 1
             logger.warning(f'Failed to navigate to set #{index}. Current set is #{final_current}. Retrying... ({retry_count}/{max_retries})')
-    
+
     logger.error(f'Failed to navigate to set #{index} after {max_retries} retries.')
-    
+
 @action('继续当前培育.继续培育', screenshot_mode='manual-inherit')
 def resume_produce_lst(
     scenario: Scenario,
@@ -216,7 +216,7 @@ def do_produce(
             if R.Produce.BreakProduceDialog.ButtonConfirm.try_click():
                 logger.info('Confirmed break produce dialog.')
                 continue
-            
+
         if (
             R.Produce.LogoHajime.exists()
             or R.Produce.LogoNia.exists()
@@ -308,7 +308,7 @@ def do_produce(
                     pass
                 elif btn := find_target_button():
                     btn.click()
-                elif R.Produce.ButtonPIdolOverview.exists():
+                elif R.Produce.TextStepIndicator1.exists():
                     break
         else:
             logger.info('AP insufficient. Exiting produce.')
