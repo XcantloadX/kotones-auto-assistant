@@ -28,7 +28,7 @@ Item {
         mumu12v5:  [{ value: "nemu_ipc", label: "nemu_ipc" }, { value: "adb", label: "adb" }, { value: "uiautomator2", label: "uiautomator2" }],
         leidian:   [{ value: "adb", label: "adb" }, { value: "uiautomator2", label: "uiautomator2" }],
         custom:    [{ value: "adb", label: "adb" }, { value: "uiautomator2", label: "uiautomator2" }],
-        dmm:       [{ value: "windows_native", label: "前台挂机" }, { value: "windows_background", label: "后台挂机" }, { value: "windows", label: "前台挂机（旧）" }],
+        dmm:       [{ value: "windows_native", label: "前台挂机" }, { value: "windows_background", label: "后台挂机" }],
         playcover: [{ value: "macos", label: "macos" }]
     })
 
@@ -333,20 +333,12 @@ Item {
                         + "<b>nemu_ipc</b> — MuMu 模拟器专属（推荐）<br>"
                         + "<b>windows_native</b> — DMM 版前台挂机<br>"
                         + "<b>windows_background</b> — DMM 版后台挂机（实验性）<br>"
-                        + "<b>windows</b> — DMM 版前台挂机（旧，即将移除）<br>"
                         + "<b>macos</b> — macOS 原生窗口控制"
                     options: root.validMethods
                     binder: backend_b
                     field: "screenshot_impl"
                 }
 
-                FormNotice {
-                    Layout.fillWidth: true
-                    visible: (root.backend.screenshot_impl ?? "") === "windows"
-                    style: "warning"
-                    title: "截图方法已废弃"
-                    content: "「windows」控制方法已废弃，将在后续版本中移除。建议使用新的「windows_native」控制方法。"
-                }
                 FormNotice {
                     Layout.fillWidth: true
                     visible: root.emuType === "mumu12v5" && (root.backend.screenshot_impl ?? "") !== "nemu_ipc"

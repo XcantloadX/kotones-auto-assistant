@@ -22,7 +22,7 @@ from kotonebot.ui import user
 from kotonebot.util import is_windows
 from kaa.errors import WindowsOnlyError
 from kaa.constants import GAME_PACKAGE_NAME, PLAYCOVER_BUNDLE_ID
-from ..util.paths import get_ahk_path
+
 from ..kaa_context import _set_instance
 from kaa.tasks import POST_TASK_REGISTRY, TASK_FUNCTIONS
 from kotonebot.errors import UserFriendlyError, StopCurrentTask, UnscalableResolutionError
@@ -275,13 +275,7 @@ class KaaDeviceFactory:
         if DmmInstance and isinstance(instance, DmmInstance):
             assert isinstance(lc, DmmDevice)
             d = WindowsDevice()
-            if impl_name == 'windows':
-                from kotonebot.client.implements.windows import WindowsImpl
-                from kotonebot.interop.window import WindowQuery
-                ahk_path = get_ahk_path()
-                impl = WindowsImpl(device=d, window_query=WindowQuery(title='gakumas'), ahk_exe_path=ahk_path)
-                d.setup(screenshot=impl, touch=impl)
-            elif impl_name == 'windows_native':
+            if impl_name == 'windows_native':
                 from kotonebot.client.implements.windows import WindowsNativeImpl
                 from kotonebot.interop.window import WindowQuery
                 impl = WindowsNativeImpl(device=d, window_query=WindowQuery(title='gakumas'))

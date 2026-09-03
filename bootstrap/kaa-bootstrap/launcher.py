@@ -81,7 +81,7 @@ def setup_logging():
 def test_url_availability(url: str) -> bool:
     """
     测试URL是否可访问（返回200状态码）。
-    
+
     :param url: 要测试的URL
     :type url: str
     :return: 如果URL可访问返回True，否则返回False
@@ -98,7 +98,7 @@ def test_url_availability(url: str) -> bool:
 def get_working_pip_server() -> Optional[str]:
     """
     获取可用的pip服务器。
-    
+
     :return: 第一个可用的pip服务器URL，如果都不可用返回None
     :rtype: Optional[str]
     """
@@ -119,21 +119,21 @@ def get_working_pip_server() -> Optional[str]:
 def package_version(package_name: str) -> Optional[str]:
     """
     获取指定包的版本信息。
-    
+
     :param package_name: 包名称
     :type package_name: str
     :return: 包版本字符串，如果包不存在则返回 None
     :rtype: Optional[str]
-    
+
     :Example:
-    
+
     .. code-block:: python
-    
+
         >>> package_version("requests")
         '2.31.0'
         >>> package_version("nonexistent_package")
         None
-    
+
     :raises: 无异常抛出，包不存在时返回 None
     """
     try:
@@ -144,7 +144,7 @@ def package_version(package_name: str) -> Optional[str]:
 def get_ksaa_version_from_filesystem() -> Optional[str]:
     """
     通过文件系统检测 ksaa 版本信息。
-    
+
     :return: ksaa 版本字符串，如果检测失败则返回 None
     :rtype: Optional[str]
     """
@@ -152,15 +152,15 @@ def get_ksaa_version_from_filesystem() -> Optional[str]:
         # 查找 ksaa 包的安装路径
         import site
         import glob
-        
+
         # 在 site-packages 中查找 ksaa-*.dist-info 目录
         for site_path in site.getsitepackages():
             site_path_obj = Path(site_path)
-            
+
             # 使用 glob 查找匹配的 dist-info 目录
             dist_info_pattern = str(site_path_obj / "ksaa-*.dist-info")
             dist_info_dirs = glob.glob(dist_info_pattern)
-            
+
             for dist_info_dir in dist_info_dirs:
                 # 从目录名提取版本号
                 # 例如: ksaa-2025.7.13.0.dist-info -> 2025.7.13.0
@@ -169,9 +169,9 @@ def get_ksaa_version_from_filesystem() -> Optional[str]:
                     version = dir_name[5:-10]  # 去掉 "ksaa-" 前缀和 ".dist-info" 后缀
                     if version:
                         return version
-        
+
         return None
-        
+
     except Exception as e:
         logging.warning(f"通过文件系统检测 ksaa 版本失败: {e}")
         return None
@@ -179,7 +179,7 @@ def get_ksaa_version_from_filesystem() -> Optional[str]:
 def print_update_notice(current_version: str, latest_version: str):
     """
     打印更新提示信息。
-    
+
     :param current_version: 当前版本
     :type current_version: str
     :param latest_version: 最新版本
@@ -221,7 +221,7 @@ def install_ksaa_version(version: str) -> bool:
     :rtype: bool
     """
     clean()
-    
+
     print_status(f"安装琴音小助手 v{version}", status='info')
     return pip_ksaa.install(version)
 
@@ -357,7 +357,7 @@ def install_pip_and_ksaa(pip_server: str, check_update: bool = True, install_upd
 def load_config() -> Optional[Config]:
     """
     加载config.json配置文件。
-    
+
     :return: 配置字典，如果加载失败返回None
     """
     try:
@@ -375,7 +375,7 @@ def load_config() -> Optional[Config]:
 def get_update_settings(config: Config) -> tuple[bool, bool, Literal['release', 'beta']]:
     """
     从配置中获取更新设置。
-    
+
     :param config: 配置字典
     :type config: Config
     :return: (是否检查更新, 是否自动安装更新, 更新通道)
@@ -389,7 +389,7 @@ def get_update_settings(config: Config) -> tuple[bool, bool, Literal['release', 
 def check_admin(config: Config) -> bool:
     """
     检查Windows截图权限（管理员权限）。
-    
+
     :param config: 配置字典
     :type config: Config
     :return: 权限检查是否通过
@@ -402,13 +402,13 @@ def check_admin(config: Config) -> bool:
         print_status(msg, status='warning')
         logging.warning(msg)
         return True # Not a fatal error, allow to continue
-    
+
     # 检查第一个用户配置的截图方式
     first_config = user_configs[0]
     backend = first_config.get("backend", {})
     screenshot_impl = backend.get("screenshot_impl")
-    
-    if screenshot_impl == "windows":
+
+    if screenshot_impl == "windows_native":
         msg = "检测到Windows截图模式，检查管理员权限..."
         print_status(msg, status='info')
         logging.info(msg)
@@ -416,56 +416,56 @@ def check_admin(config: Config) -> bool:
             msg1 = "无管理员权限，正在尝试以管理员身份重启..."
             print_status(msg1, status='info')
             logging.info(msg1)
-            
+
             restart_as_admin()
             return False
         else:
             msg = "管理员权限检查通过"
             print_status(msg, status='success')
             logging.info(msg)
-    
+
     return True
 
 def run_kaa(args: list[str]) -> bool:
     """
     运行琴音小助手。
-    
+
     :return: 运行是否成功
     :rtype: bool
     """
     print_header("运行琴音小助手", color=Color.GREEN)
     clear_screen()
-    
+
     # 设置环境变量
     os.environ["no_proxy"] = "localhost, 127.0.0.1, ::1"
-    
+
     # 根据版本选择程序入口
     entry_point = "kaa.main.cli"
-    
+
     # 检测 ksaa 版本（优先使用文件系统检测，失败时使用 pip 检测）
     detected_version = get_ksaa_version_from_filesystem() or package_version("ksaa")
-    
+
     if detected_version:
         try:
             current_version = Version(detected_version)
             target_version = Version("2025.9b2")
-            
+
             if current_version < target_version:
                 entry_point = "kotonebot.kaa.main.cli"
-            
+
             print_status(f"kaa 版本 {detected_version} {'<' if current_version < target_version else '>='} 25.9，使用入口点: {entry_point}", status='info')
-            
+
         except Exception as e:
             print_status(f"版本比较失败: {e}，使用默认入口点: {entry_point}", status='warning')
             logging.warning(f"版本比较失败: {e}")
     else:
         print_status(f"无法检测到 ksaa 版本，使用默认入口点: {entry_point}", status='warning')
-    
+
     # 运行kaa命令
     retcode, _ = run_command(f'"{PYTHON_EXECUTABLE}" -m {entry_point} {" ".join(args)}', verbatim=True, log_output=False)
     if retcode != 0:
         return False
-    
+
     print_header("运行结束", color=Color.GREEN)
     return True
 
@@ -479,7 +479,7 @@ def recovery_mode():
     if not package_versions:
         print_status("没有找到可用的 ksaa 版本，请检查网络连接。", status='error')
         return False
-    
+
     clear_screen()
     print_status("可用版本:", status='info')
     versions = [str(v.version) for v in package_versions]
@@ -487,7 +487,7 @@ def recovery_mode():
         print_status("  " + "\t\t".join(versions[i:i+3]), status='info', indent=1)
     print_status("当前版本:", status='info')
     print_status(f"  {local}", status='info', indent=1)
-    
+
     while True:
         user_input = input("请输入要安装的版本号: ")
 
@@ -556,7 +556,7 @@ def main_launch():
         if args.install_version or args.install_from_zip or args.install_from_package or args.skip_update:
             check_update = False
             auto_install_update = False
-        
+
         # 4. 根据配置决定是否检查更新
         print_status("正在寻找最快的 PyPI 镜像源...", status='info')
         logging.info("正在寻找最快的 PyPI 镜像源...")
