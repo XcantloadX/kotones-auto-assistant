@@ -137,7 +137,7 @@ def enter_allowance():
     logger.info("活動支給 completed.")
 
 # TODO: 将逻辑用循环改写
-@action('执行相談', screenshot_mode='manual-inherit')
+@action('执行相談', screenshot_mode='manual')
 def enter_consult():
     """
     执行相談。

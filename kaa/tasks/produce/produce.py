@@ -48,7 +48,7 @@ def unify(arr: list[int]):
         i = j
     return result
 
-@action('选择P偶像', screenshot_mode='manual-inherit')
+@action('选择P偶像', screenshot_mode='manual')
 def select_idol(skin_id: str):
     """
     选择目标P偶像
@@ -77,7 +77,7 @@ def select_idol(skin_id: str):
         else:
             break
 
-@action('培育开始.编成翻页', screenshot_mode='manual-inherit')
+@action('培育开始.编成翻页', screenshot_mode='manual')
 def select_set(index: int):
     """
     选择指定编号的支援卡/回忆编成。
@@ -127,7 +127,7 @@ def select_set(index: int):
 
     logger.error(f'Failed to navigate to set #{index} after {max_retries} retries.')
 
-@action('继续当前培育.继续培育', screenshot_mode='manual-inherit')
+@action('继续当前培育.继续培育', screenshot_mode='manual')
 def resume_produce_lst(
     scenario: Scenario,
     current_week: int
@@ -152,7 +152,7 @@ def resume_produce_lst(
         case _:
             raise NotImplementedError(f'Unsupported resume scenario: {scenario}')
 
-@action('继续当前培育', screenshot_mode='manual-inherit')
+@action('继续当前培育', screenshot_mode='manual')
 def resume_produce():
     """
     继续当前培育
@@ -180,7 +180,7 @@ def resume_produce():
     finally:
         clear_produce_session()
 
-@action('执行培育', screenshot_mode='manual-inherit')
+@action('执行培育', screenshot_mode='manual')
 def do_produce(
     idol_skin_id: str,
     scenario: Scenario,

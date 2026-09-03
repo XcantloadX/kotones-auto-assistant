@@ -139,7 +139,7 @@ def match_idol(skin_id: str, idol_img: MatLike) -> DatabaseQueryResult | None:
     else:
         return None
 
-@action('定位偶像', screenshot_mode='manual-inherit')
+@action('定位偶像', screenshot_mode='manual')
 def locate_idol(skin_id: str) -> Rect | None:
     """
     定位并选中指定偶像。

@@ -35,21 +35,21 @@ kotonebot 框架定义了 @task 与 @action 两个函数装饰器，用于定义
 ```python
 from kotonebot import task, action
 
-@task('任务名称', screenshot_mode='manual-inherit')
+@task('任务名称', screenshot_mode='manual')
 def my_task():
     ...
 
-@action('行动名称', screenshot_mode='manual-inherit')
+@action('行动名称', screenshot_mode='manual')
 def my_action():
     ...
 ```
 
 `screenshot_mode` 参数决定了截图方式是自动还是手动。可选值：
 ```python
-ScreenshotMode = Literal['auto', 'manual', 'manual-inherit']
+ScreenshotMode = Literal['auto', 'manual']
 ```
 
-kaa 早期代码都采用自动模式 `auto`，每次找图、OCR 都会自动更新截图。后来发现这样在低速设备上会严重拖慢运行速度，因此新代码一律改用手动模式 `manual-inherit`。
+kaa 早期代码都采用自动模式 `auto`，每次找图、OCR 都会自动更新截图。后来发现这样在低速设备上会严重拖慢运行速度，因此新代码一律改用手动模式 `manual`。
 
 考虑到兼容性，`screenshot_mode` 参数可选，默认为 `auto`。
 

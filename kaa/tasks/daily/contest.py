@@ -16,7 +16,7 @@ from kotonebot.ui import user as ui_user
 
 logger = logging.getLogger(__name__)
 
-@action('前往竞赛页面', screenshot_mode='manual-inherit')
+@action('前往竞赛页面', screenshot_mode='manual')
 def goto_contest() -> bool:
     """
     前置条件：位于首页 \n
@@ -56,7 +56,7 @@ def goto_contest() -> bool:
             device.click(R.Daily.PointDissmissContestReward)
     return has_ongoing_contest
 
-@action('处理竞赛挑战', screenshot_mode='manual-inherit')
+@action('处理竞赛挑战', screenshot_mode='manual')
 def handle_challenge() -> bool:
     """
 

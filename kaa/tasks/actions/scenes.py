@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 def at_home() -> bool:
     return R.Daily.ButtonHomeCurrent.exists()
 
-@action('返回首页', screenshot_mode='manual-inherit')
+@action('返回首页', screenshot_mode='manual')
 def goto_home():
     """
     从其他场景返回首页。

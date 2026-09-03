@@ -15,7 +15,7 @@ def toolbar_home(critical: Literal[True]) -> TemplateMatchResult:
     """寻找工具栏上的首页按钮。若未找到，则抛出异常。"""
     ...
 
-@action('工具栏按钮.寻找首页', screenshot_mode='manual-inherit')
+@action('工具栏按钮.寻找首页', screenshot_mode='manual')
 def toolbar_home(critical: bool = False):
     from ..tasks import R
     device.screenshot()
@@ -35,7 +35,7 @@ def toolbar_menu(critical: Literal[True]) -> TemplateMatchResult:
     ...
 
 _TOOLBAR_THRESHOLD = 0.6
-@action('工具栏按钮.寻找菜单', screenshot_mode='manual-inherit')
+@action('工具栏按钮.寻找菜单', screenshot_mode='manual')
 def toolbar_menu(critical: bool = False):
     from ..tasks import R
     device.screenshot()

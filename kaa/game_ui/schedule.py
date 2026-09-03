@@ -44,7 +44,7 @@ class Schedule:
         """
         pass
 
-    @action('检测日程是否有课程', screenshot_mode='manual-inherit')
+    @action('检测日程是否有课程', screenshot_mode='manual')
     def have_lesson(self) -> bool:
         """
         判断是否有课程，依据是课程的名字的图片
@@ -58,7 +58,7 @@ class Schedule:
         ].find()
         return result is not None
 
-    @action('识别日程，课程抉择，', screenshot_mode='manual-inherit')
+    @action('识别日程，课程抉择，', screenshot_mode='manual')
     def select_lesson(self) -> Lesson:
         """
         选择课程，根据推荐、属性进行抉择
@@ -90,7 +90,7 @@ class Schedule:
         logger.info(f'Recommended is not sp, calculate result:  {cal_lesson}')
         return cal_lesson
 
-    @action('读取日程中课程数据', screenshot_mode='manual-inherit')
+    @action('读取日程中课程数据', screenshot_mode='manual')
     def read_lesson_data(self) -> list[Lesson]:
         """
         读取当前课程数据，包括位置，是否为sp，当前属性对应数值和最大值
@@ -120,7 +120,7 @@ class Schedule:
             logger.info(f'Lesson: {lesson}')
         return lesson_data
 
-    @action('读取日程中老师的推荐行动', screenshot_mode='manual-inherit')
+    @action('读取日程中老师的推荐行动', screenshot_mode='manual')
     def read_sensei_recommended(self) -> ProduceAction:
         """
         读取老师的推荐行动

@@ -58,7 +58,7 @@ def handle_sp_lesson():
     else:
         return False
 
-@action('执行推荐行动', screenshot_mode='manual-inherit')
+@action('执行推荐行动', screenshot_mode='manual')
 def handle_recommended_action(final_week: bool = False) -> ProduceAction | None:
     """
     在行动选择页面，执行推荐行动
@@ -479,7 +479,7 @@ def produce_end(has_live: bool = True):
             break
     logger.info("Produce completed.")
 
-@action('执行行动', screenshot_mode='manual-inherit')
+@action('执行行动', screenshot_mode='manual')
 def handle_action(action: ProduceAction, final_week: bool = False) -> ProduceAction | None:
     """
     执行行动
@@ -640,7 +640,7 @@ def week_final_exam() -> bool:
     produce_end()
     return False
 
-@action('执行 Regular 培育', screenshot_mode='manual-inherit')
+@action('执行 Regular 培育', screenshot_mode='manual')
 def hajime_regular(week: int = -1, start_from: int = 1):
     """
     「初」 Regular 模式
@@ -675,7 +675,7 @@ def hajime_regular(week: int = -1, start_from: int = 1):
                 logger.info("Exit produce after week %d.", i + start_from)
                 break
 
-@action('执行 PRO 培育', screenshot_mode='manual-inherit')
+@action('执行 PRO 培育', screenshot_mode='manual')
 def hajime_pro(week: int = -1, start_from: int = 1):
     """
     「初」 PRO 模式
@@ -711,7 +711,7 @@ def hajime_pro(week: int = -1, start_from: int = 1):
                 logger.info("Exit produce after week %d.", i + start_from)
                 break
 
-@action("执行 MASTER 培育", screenshot_mode='manual-inherit')
+@action("执行 MASTER 培育", screenshot_mode='manual')
 def hajime_master(week: int = -1, start_from: int = 1):
     """
     「初」 MASTER 模式

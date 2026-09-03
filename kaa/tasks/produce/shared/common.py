@@ -50,7 +50,7 @@ def use_strict_card_detection() -> bool:
     idol = IdolCard.from_skin_id(idol_skin_id)
     return idol is not None and idol.character_id == CharacterId.fktn.value
 
-@action('领取技能卡', screenshot_mode='manual-inherit')
+@action('领取技能卡', screenshot_mode='manual')
 def acquire_skill_card():
     """获取技能卡（スキルカード）"""
     # TODO: 识别卡片内容，而不是固定选卡
@@ -125,7 +125,7 @@ def select_p_item():
     device.click(ocr.expect_wait('受け取る'))
 
 
-@action('技能卡自选强化', screenshot_mode='manual-inherit')
+@action('技能卡自选强化', screenshot_mode='manual')
 def handle_skill_card_enhance():
     """
     前置条件：技能卡强化对话框\n
@@ -155,7 +155,7 @@ def handle_skill_card_enhance():
     logger.debug("Handle skill card enhance finished.")
     return True
 
-@action('技能卡自选删除', screenshot_mode='manual-inherit')
+@action('技能卡自选删除', screenshot_mode='manual')
 def handle_skill_card_removal():
     """
     前置条件：技能卡删除对话框\n
@@ -176,7 +176,7 @@ def handle_skill_card_removal():
             break
     logger.debug("Handle skill card removal finished.")
 
-@action('继续当前培育.进入培育', screenshot_mode='manual-inherit')
+@action('继续当前培育.进入培育', screenshot_mode='manual')
 def resume_produce_pre() -> tuple[Scenario, int, str]:
     """
     继续当前培育.进入培育\n
@@ -508,7 +508,7 @@ def until_acquisition_clear():
     while ProduceInterrupt.check():
         interval.wait()
 
-@action('处理交流事件', screenshot_mode='manual-inherit')
+@action('处理交流事件', screenshot_mode='manual')
 def commu_event():
     ui = CommuEventButtonUI()
     buttons = ui.all(description=False, title=True)

@@ -336,7 +336,7 @@ def handle_skill_card_move():
             dialog.yes()
     logger.debug("Handle skill card move finished.")
 
-@action('获取当前卡牌信息', screenshot_mode='manual-inherit')
+@action('获取当前卡牌信息', screenshot_mode='manual')
 def obtain_cards(img: MatLike | None = None):
     img = use_screenshot(img)
     cards_rects = AnyOf[
@@ -365,7 +365,7 @@ def handle_recommended_card(
     return None
 
 
-@action('获取当前卡片数量', screenshot_mode='manual-inherit')
+@action('获取当前卡片数量', screenshot_mode='manual')
 def skill_card_count(img: MatLike | None = None):
     """获取当前持有的技能卡数量"""
     img = use_screenshot(img)

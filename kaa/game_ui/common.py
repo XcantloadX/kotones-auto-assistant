@@ -49,7 +49,7 @@ def filter_rectangles(
     result_rects.sort(key=lambda x: x.y1)
     return result_rects
 
-@action('按钮是否禁用', screenshot_mode='manual-inherit')
+@action('按钮是否禁用', screenshot_mode='manual')
 def button_state(*, target: Image | None = None, rect: Rect | None = None) -> bool | None:
     """
     判断按钮是否处于禁用状态。

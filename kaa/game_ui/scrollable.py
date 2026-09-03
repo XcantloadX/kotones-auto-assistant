@@ -177,7 +177,7 @@ class Scrollable:
         if color_schema == 'dark':
             raise NotImplementedError('Dark color schema is not implemented yet.')
 
-    @action('滚动.更新数据', screenshot_mode='manual-inherit')
+    @action('滚动.更新数据', screenshot_mode='manual')
     def update(self) -> bool:
         """
         立即更新滚动数据。
@@ -220,7 +220,7 @@ class Scrollable:
             logger.warning('Unable to find scrollbar. (2)')
             return False
 
-    @action('滚动.下一页', screenshot_mode='manual-inherit')
+    @action('滚动.下一页', screenshot_mode='manual')
     def next(self, *, page: float) -> bool:
         """
         滚动到下一页。
@@ -242,7 +242,7 @@ class Scrollable:
         self.by(pixels=delta)
         return True
 
-    @action('滚动.滚动', screenshot_mode='manual-inherit')
+    @action('滚动.滚动', screenshot_mode='manual')
     def by(self, percentage: float | None = None, *, pixels: int | None = None) -> bool:
         """
         滚动指定距离。
@@ -277,7 +277,7 @@ class Scrollable:
             self.update()
         return True
     
-    @action('滚动.滚动到', screenshot_mode='manual-inherit')
+    @action('滚动.滚动到', screenshot_mode='manual')
     def to(self, position: float) -> bool:
         """
         滚动到指定位置。

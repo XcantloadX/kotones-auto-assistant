@@ -12,7 +12,7 @@ from ..util.app_lifecycle import request_exit
 
 logger = logging.getLogger(__name__)
 
-@action('关闭游戏.Android', screenshot_mode='manual-inherit')
+@action('关闭游戏.Android', screenshot_mode='manual')
 def android_close():
     """
     前置条件：-
@@ -25,7 +25,7 @@ def android_close():
 
     logger.info("Game closed successfully")
 
-@action('关闭游戏.Windows', screenshot_mode='manual-inherit')
+@action('关闭游戏.Windows', screenshot_mode='manual')
 def windows_close():
     """
     前置条件：-
@@ -35,7 +35,7 @@ def windows_close():
     os.system('taskkill /f /im gakumas.exe')
     logger.info("Game closed successfully")
 
-@action('关闭游戏.macOS', screenshot_mode='manual-inherit')
+@action('关闭游戏.macOS', screenshot_mode='manual')
 def macos_close():
     """
     前置条件：-

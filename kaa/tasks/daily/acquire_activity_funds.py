@@ -26,7 +26,7 @@ def need_acquire() -> bool:
     ) is not None
     return needed
 
-@task('收取活动费', screenshot_mode='manual-inherit')
+@task('收取活动费', screenshot_mode='manual')
 def acquire_activity_funds():
     if not conf().tasks.activity_funds.enabled:
         logger.info('Activity funds acquisition is disabled.')

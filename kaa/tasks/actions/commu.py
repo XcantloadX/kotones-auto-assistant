@@ -11,7 +11,7 @@ from kotonebot import device, image, user, action, use_screenshot
 
 logger = logging.getLogger(__name__)
 
-@action('获取 SKIP 按钮', screenshot_mode='manual-inherit')
+@action('获取 SKIP 按钮', screenshot_mode='manual')
 def skip_button():
     device.screenshot()
     return image.find(
@@ -23,7 +23,7 @@ def skip_button():
         preprocessors=[WhiteFilter()]
     )
 
-@action('获取 FASTFORWARD 按钮', screenshot_mode='manual-inherit')
+@action('获取 FASTFORWARD 按钮', screenshot_mode='manual')
 def fastforward_button():
     device.screenshot()
     return image.find(

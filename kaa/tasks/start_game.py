@@ -95,7 +95,7 @@ def start_windows_bypass():
         raise DmmGameLaunchError(f'Failed to start the game directly: {e}')
 
 # TODO: 这个函数功能和 kaa\tasks\actions\scenes.py 中的 goto_home 重复了，后续需要合并
-@action('启动游戏.进入首页', screenshot_mode='manual-inherit')
+@action('启动游戏.进入首页', screenshot_mode='manual')
 def wait_for_home():
     """
     前置条件：游戏已启动\n
@@ -142,7 +142,7 @@ def wait_for_home():
             skip()
             click_cd.reset()
 
-@action('启动游戏.Android', screenshot_mode='manual-inherit')
+@action('启动游戏.Android', screenshot_mode='manual')
 def android_launch():
     """
     前置条件：-
@@ -176,7 +176,7 @@ def android_launch():
         # 点击"K空间启动"
         R.Kuyo.ButtonStartGame.wait(timeout=10).click()
 
-@action('启动游戏.Windows', screenshot_mode='manual-inherit')
+@action('启动游戏.Windows', screenshot_mode='manual')
 def windows_launch():
     """
     前置条件：-
@@ -238,7 +238,7 @@ def windows_launch():
             break
         logger.debug('Waiting for game window...')
 
-@action('启动游戏.macOS', screenshot_mode='manual-inherit')
+@action('启动游戏.macOS', screenshot_mode='manual')
 def macos_launch():
     """
     前置条件：-
