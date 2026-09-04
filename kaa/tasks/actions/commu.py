@@ -7,7 +7,7 @@ from kaa.tasks import R
 from kaa.game_ui import dialog
 from kotonebot.util import Countdown
 from kaa.game_ui import WhiteFilter
-from kotonebot import device, image, user, action, use_screenshot
+from kotonebot import device, image, action, use_screenshot
 
 logger = logging.getLogger(__name__)
 
@@ -77,7 +77,7 @@ def handle_unread_commu(img: MatLike | None = None) -> bool:
         if dialog.yes():
             logger.debug('Clicked confirm button.')
             logger.debug('Pushing notification...')
-            user.info('发现未读交流', images=[img])
+            logger.info('发现未读交流')
             return True
         else:
             return False

@@ -2,7 +2,6 @@
 import os
 import logging
 
-from kotonebot.ui import user
 from ..kaa_context import instance
 from kaa.config import Priority, conf
 from kaa.config.base_config import CustomDevice, DmmDevice
@@ -79,7 +78,7 @@ def end_game():
     if conf().tasks.end_game.kill_emulator:
         lc = conf().backend.lifecycle
         if isinstance(lc, (CustomDevice, DmmDevice)) and not lc.emulator_path:
-            user.warning('未配置模拟器 exe 文件路径，无法关闭模拟器。跳过此次操作。')
+            logger.warning('未配置模拟器 exe 文件路径，无法关闭模拟器。跳过此次操作。')
         else:
             instance().stop()
 
@@ -88,7 +87,6 @@ def end_game():
         logger.info('Restoring Gakumas Localify...')
         game_path = conf().tasks.start_game.dmm_game_path
         if not game_path:
-            # user.info
             raise ValueError('dmm_game_path unset.')
         plugin_path = os.path.join(os.path.dirname(game_path), 'version.dll')
         if not os.path.exists(plugin_path + '.disabled'):

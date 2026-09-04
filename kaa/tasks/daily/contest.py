@@ -12,7 +12,6 @@ from kaa.tasks.common import skip
 from kotonebot import device, image, ocr, color, action, task, rect_expand, sleep, contains, Interval
 from kotonebot.backend.loop import Loop
 from kotonebot.backend.context.context import vars
-from kotonebot.ui import user as ui_user
 
 logger = logging.getLogger(__name__)
 

@@ -12,7 +12,6 @@ from kaa.tasks.produce.legacy.in_purodyuusu import (
     hajime_regular, hajime_pro, hajime_master,
     resume_regular_produce, resume_pro_produce, resume_master_produce,
 )
-from kotonebot.ui import user
 from kaa.tasks import R
 from kaa.config import conf
 from kaa.game_ui import dialog
@@ -375,10 +374,10 @@ def produce():
     scenario = solution.data.mode
     # 数据验证
     if count < 0:
-        user.warning('配置有误', '培育次数不能小于 0。将跳过本次培育。')
+        logger.warning('培育次数不能小于 0。将跳过本次培育。')
         return
     if isinstance(solution.data.mode, HajimeScenario) and idol is None:
-        user.warning('配置有误', '未设置要培育的偶像。将跳过本次培育。')
+        logger.warning('未设置要培育的偶像。将跳过本次培育。')
         return
     # 业务规则校验（如编成未配置等），以友好提示替代运行时崩溃
     from kaa.config.produce import validate_produce_solution
@@ -395,7 +394,7 @@ def produce():
             f'idol: {idol}, scenario: {scenario.value}, memory_set: #{memory_set_to_use}, support_card_set: #{support_card_set_to_use}'
         )
         if not do_produce(idol, scenario, memory_set_to_use, support_card_set_to_use):
-            user.info('AP 不足', f'由于 AP 不足，跳过了 {count - i} 次培育。')
+            logger.info('AP 不足，跳过了 %d 次培育。', count - i)
             logger.info('%d produce(s) skipped because of insufficient AP.', count - i)
             break
         end_time = time.time()

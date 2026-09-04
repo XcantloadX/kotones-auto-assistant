@@ -18,7 +18,6 @@ from kaa.config.schema import KaaConfig
 from kaa.config import upgrade_config
 from kaa.config import manager as config_manager
 from kotonebot.primitives.geometry import Size
-from kotonebot.ui import user
 from kotonebot.util import is_windows
 from kaa.errors import ElevationRequiredError, WindowsOnlyError
 from kaa.constants import GAME_PACKAGE_NAME, PLAYCOVER_BUNDLE_ID
@@ -144,10 +143,8 @@ class KaaDeviceFactory:
             if lc.check_and_start:
                 import os
                 if exe is None:
-                    user.error('「检查并启动模拟器」已开启但未配置「模拟器 exe 文件路径」。')
                     raise ValueError('Emulator executable path is not set.')
                 if not os.path.exists(exe):
-                    user.error('「模拟器 exe 文件路径」对应的文件不存在！请检查路径是否正确。')
                     raise FileNotFoundError(f'Emulator executable not found: {exe}')
             return instance
 
