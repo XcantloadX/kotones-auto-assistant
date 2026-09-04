@@ -2,7 +2,6 @@ import logging
 
 from kaa.tasks import R
 from kotonebot.backend.loop import Loop
-from kaa.game_ui import toolbar_home
 from kotonebot import device, action, sleep
 
 logger = logging.getLogger(__name__)
