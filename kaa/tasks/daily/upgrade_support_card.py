@@ -56,14 +56,18 @@ def upgrade_support_card():
         sleep(0.5)
     
     # 点击两次升级按钮
-    R.Daily.SupportCard.ButtonUpgrade.wait().click()
-    sleep(1)
-    R.Daily.SupportCard.ButtonUpgrade2.wait().click()
-    sleep(1)
+    for _ in Loop():
+        if R.Daily.SupportCard.ButtonUpgrade.try_click():
+            logger.debug('Clicked ButtonUpgrade')
+            sleep(1)
+            continue
+        if R.Daily.SupportCard.ButtonUpgrade2.try_click():
+            logger.debug('Clicked ButtonUpgrade')
+            sleep(1)
+            break
 
 if __name__ == '__main__':
     import logging
     logging.basicConfig(level=logging.INFO, format='[%(asctime)s] [%(levelname)s] [%(name)s] [%(funcName)s] [%(lineno)d] %(message)s')
     logger.setLevel(logging.DEBUG)
     upgrade_support_card()
-
