@@ -58,11 +58,6 @@ def request_note():
         if R.Daily.Club.ButtonRequestOngoing.exists():
             logger.info('Note request is ongoing.')
             break
-        # 点击发起请求按钮，打开笔记选择窗口
-        if R.Daily.Club.ButtonRequest.try_click():
-            logger.debug('Clicked request button.')
-            sleep(0.5)
-            continue
         # 笔记选择窗口：选择配置中指定的书籍并确认
         if R.Common.ButtonConfirm.exists():
             note = conf().tasks.club_reward.selected_note.to_resource()
@@ -73,6 +68,11 @@ def request_note():
                 if R.Common.ButtonConfirm.try_click():
                     logger.debug('Clicked confirm button.')
                     sleep(0.5)
+        # 点击发起请求按钮，打开笔记选择窗口
+        if R.Daily.Club.ButtonRequest.try_click():
+            logger.debug('Clicked request button.')
+            sleep(0.5)
+            continue
 
 @action('发送社团礼物')
 def send_club_gifts():
@@ -123,7 +123,7 @@ def club_reward():
     if not conf().tasks.club_reward.enabled:
         logger.info('"Club reward" is disabled.')
         return
-    
+
     if not at_home():
         goto_home()
 
