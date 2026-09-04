@@ -28,8 +28,7 @@ def goto_home():
         if R.Common.ButtonHome.try_click():
             logger.debug("Clicked home button.")
             sleep(0.2)
-        elif home := toolbar_home():
-            device.click(home)
+        elif R.Common.ButtonToolbarHome.try_click():
             logger.debug("Clicked toolbar home button.")
             sleep(1)
         # 課題CLEAR [screenshots/go_home/quest_clear.png]
@@ -40,4 +39,3 @@ def goto_home():
 
 if __name__ == "__main__":
     goto_home()
-

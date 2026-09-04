@@ -222,6 +222,7 @@ def purchase():
     pack_enabled = conf().tasks.purchase.weekly_enabled
 
     if ap_enabled or money_enabled:
+        goto_home()
         goto_daily_shop()
         if money_enabled:
             purchase_money()
