@@ -23,7 +23,7 @@ from kaa.errors import ElevationRequiredError, WindowsOnlyError
 from kaa.constants import GAME_PACKAGE_NAME, PLAYCOVER_BUNDLE_ID
 
 from ..kaa_context import _set_instance
-from kaa.tasks import POST_TASK_REGISTRY, TASK_FUNCTIONS
+from kaa.tasks import POST_TASK_REGISTRY, TASK_REGISTRY
 from kotonebot.errors import UserFriendlyError, StopCurrentTask, UnscalableResolutionError
 from kotonebot.interop.window.model import WindowQueryError
 from kotonebot.core import NextHandler
@@ -429,12 +429,16 @@ class Kaa(KotoneBot):
         return self._ctx is not None and self._ctx.is_running
 
     def _task_generator(self):
-        for task in (func.task for func in TASK_FUNCTIONS):
+        config = self._config
+        for info in TASK_REGISTRY.values():
+            if config is not None and not info.get_enabled(config):
+                logger.info('Skipping disabled task: %s', info.task_id)
+                continue
             try:
-                yield task
+                yield info.func.task
             except Exception:
                 break
-        yield from (func.task for func in POST_TASK_REGISTRY.values())
+        yield from (info.func.task for info in POST_TASK_REGISTRY.values())
 
     def run_all(self):
         return self.run(self._task_generator())

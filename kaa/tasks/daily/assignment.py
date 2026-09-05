@@ -161,9 +161,6 @@ def at_assignment():
 @task('工作')
 def assignment():
     """领取工作奖励并重新分配工作"""
-    if not conf().tasks.assignment.enabled:
-        logger.info('Assignment is disabled.')
-        return
     if not at_home():
         goto_home()
     btn_assignment = R.Daily.ButtonAssignmentPartial.wait()

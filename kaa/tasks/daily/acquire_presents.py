@@ -2,7 +2,6 @@
 import logging
 
 from kaa.tasks import R
-from kaa.config import conf
 from ..actions.scenes import at_home, goto_home
 from kotonebot import device, task, color, rect_expand, sleep
 from kotonebot.backend.loop import Loop
@@ -11,11 +10,6 @@ logger = logging.getLogger(__name__)
 
 @task('领取礼物')
 def acquire_presents():
-    if not conf().tasks.presents.enabled:
-        logger.info('Presents acquisition is disabled.')
-        return
-
-
     goto_home()
 
     for _ in Loop():

@@ -5,7 +5,6 @@ from kaa.game_ui import dialog
 from kotonebot import task, device, color, sleep, action, Loop
 
 from kaa.tasks import R
-from kaa.config import conf
 from ..actions.scenes import goto_home
 
 logger = logging.getLogger(__name__)
@@ -28,10 +27,6 @@ def need_acquire() -> bool:
 
 @task('收取活动费', screenshot_mode='manual')
 def acquire_activity_funds():
-    if not conf().tasks.activity_funds.enabled:
-        logger.info('Activity funds acquisition is disabled.')
-        return
-
     goto_home()
     sleep(1)
     for _ in Loop():

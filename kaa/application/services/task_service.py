@@ -22,7 +22,7 @@ class TaskService:
         self.is_stopping: bool = False
         self._run_status: RunStatus | None = None
 
-        self._task_status = {task.task: "pending" for task in TASK_REGISTRY.values()}
+        self._task_status = {info.func.task: "pending" for info in TASK_REGISTRY.values()}
 
         def _on_stopped(reason: str, exception: Exception | None):
             self.is_running_all = False

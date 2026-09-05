@@ -237,6 +237,16 @@ class TasksConfig(ConfigBaseModel):
     end_game: EndGameConfig = EndGameConfig()
     """关闭游戏配置"""
 
+    def is_enabled(self, field: str) -> bool:
+        """按 config.tasks 字段名反查该任务是否启用。
+
+        启用判断集中在此处，任务自身不再自行判断。
+        """
+        task_conf = getattr(self, field, None)
+        if task_conf is None or not hasattr(task_conf, 'enabled'):
+            raise ValueError(f"Unknown or non-toggleable task: {field!r}")
+        return bool(task_conf.enabled)
+
 
 class KaaConfig(ConfigBaseModel):
     version: int = CONFIG_VERSION_CODE

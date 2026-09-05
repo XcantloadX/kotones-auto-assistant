@@ -159,9 +159,6 @@ def handle_pick_contestant(has_ongoing_contest: bool = False) -> tuple[bool, boo
 
 @task('竞赛')
 def contest():
-    if not conf().tasks.contest.enabled:
-        logger.info('Contest is disabled.')
-        return
     logger.info('Contest started.')
     if not at_home():
         goto_home()

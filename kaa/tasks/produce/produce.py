@@ -362,9 +362,6 @@ def produce():
     """
     培育任务
     """
-    if not conf().tasks.produce.enabled:
-        logger.info('Produce is disabled.')
-        return
     import time
     count = conf().tasks.produce.produce_count
     solution = produce_solution()

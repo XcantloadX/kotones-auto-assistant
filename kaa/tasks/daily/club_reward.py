@@ -120,10 +120,6 @@ def club_reward():
     领取社团奖励，并尽可能地给其他人送礼物
     """
 
-    if not conf().tasks.club_reward.enabled:
-        logger.info('"Club reward" is disabled.')
-        return
-
     if not at_home():
         goto_home()
 
