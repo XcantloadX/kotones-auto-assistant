@@ -1068,8 +1068,8 @@ class SkillCardChangeContext(SkillFullScreenDialogContext):
                 break
             else:
                 letters = (
-                    R.InProduce.A.q(threshold=0.65, region=R.InProduce.DialogCardChange2.BoxCardArea).find_all()
-                    + R.InProduce.M.q(threshold=0.65, region=R.InProduce.DialogCardChange2.BoxCardArea).find_all()
+                    R.InProduce.A.q(threshold=0.65, region=R.InProduce.DialogCardChange1.BoxCardLetters).find_all()
+                    + R.InProduce.M.q(threshold=0.65, region=R.InProduce.DialogCardChange1.BoxCardLetters).find_all()
                 )
                 if not letters:
                     logger.error('SkillCardChangeContext stage 1 not cards found')
