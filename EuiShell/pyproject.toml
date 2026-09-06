@@ -1,0 +1,52 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+version = "0.1.0"
+name = "euishell"
+description = "EuiShell is a generic PySide6 QML shell UI framework with plugin slots for downstream applications."
+readme = "README.md"
+requires-python = "~=3.10.0"
+dependencies = [
+    # GUI
+    "PySide6~=6.9.2",
+    # Spec / payload models
+    "pydantic~=2.10",
+    "typing-extensions~=4.12",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-qt>=4.4,<5",
+    "ruff>=0.6",
+    "pyright>=1.1.390",
+]
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+euishell = ["qml/**/*.qml", "qml/qmldir", "fonts/*.ttf"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "B", "UP", "RUF"]
+ignore = [
+    # 禁用 isort 导入排序检查（I001）与中文标点歧义检查（RUF001-003，本项目注释为中文）。
+    "I001", "RUF001", "RUF002", "RUF003",
+    # 不强制行宽（沿用 kaa 代码风格）。
+    "E501",
+    # 抽象基类中的可选生命周期钩子允许空实现。
+    "B027",
+]
+
+[tool.pyright]
+# 完整配置见 pyrightconfig.json（防止向上搜索命中仓库根的 pyrightconfig.json）。
+
+[tool.pytest.ini_options]
+qt_api = "pyside6"
+testpaths = ["tests"]
