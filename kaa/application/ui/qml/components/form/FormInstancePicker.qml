@@ -3,8 +3,10 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
-import "../controls"
 import "../"
+import EuiShell
+import "../"
+import EuiShell
 import "formUtils.js" as F
 
 // Form 版本的 InstancePicker，复刻自 IAA 的 DslInstancePicker。

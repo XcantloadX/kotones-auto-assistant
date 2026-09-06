@@ -35,10 +35,12 @@ class TelemetryConsentController(QObject):
         self._sentry = telemetry_cfg.sentry is True
         self._screenshot = telemetry_cfg.upload_screenshot is True
         self._statics = telemetry_cfg.statics is True
+        # 开发环境不弹首次同意询问
         self._consent_required = (
-            (telemetry_cfg.sentry is None
-             or telemetry_cfg.upload_screenshot is None
-             or telemetry_cfg.statics is None)
+            (not telemetry.is_dev())
+            and (telemetry_cfg.sentry is None
+                 or telemetry_cfg.upload_screenshot is None
+                 or telemetry_cfg.statics is None)
         )
 
     def _get_sentry(self) -> bool:

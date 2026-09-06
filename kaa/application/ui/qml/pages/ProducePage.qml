@@ -3,8 +3,7 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import QtQml.Models
 import "../components"
-import "../components/controls"
-import "../components/form"
+import EuiShell
 
 // 培育方案管理：左侧方案列表（使用 ProduceSolutionsModel）+ 右侧编辑表单
 PageContainer {
@@ -31,7 +30,11 @@ PageContainer {
         }
     }
 
-    required property var produceCtrl
+    // 页面统一契约：tab / navigation / fullscreenMode
+    required property var tab
+    property var navigation: null
+    property string fullscreenMode: ""
+    readonly property var produceCtrl: tab ? tab.controller("produce") : null
 
     // ── 数据 ──────────────────────────────────────────
     property var currentSolution: null

@@ -1,15 +1,16 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
-import "../../components/controls"
-import "../../components/form"
+import EuiShell
+import EuiShell
 
 // 培育设置：方案下拉使用共享 solutionsModel 判定空状态，
 // options 列表通过 JSON 桥接（FormComboBox 尚未支持直接绑定 model）
 Item {
     id: root
-    property var settingsCtrl
+    required property var settingsCtrl
     property var errors: ({})
+    property var navigation: null
 
     readonly property var produceCtrl: typeof TabManager !== "undefined" ? TabManager.activeProduceController : null
     readonly property var _produce: settingsCtrl?.config?.profile?.tasks?.produce ?? {}

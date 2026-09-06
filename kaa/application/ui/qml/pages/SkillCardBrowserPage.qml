@@ -2,14 +2,16 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import "../components"
-import ".." as App
+import EuiShell
+import EuiShell as App
 
 // 技能卡图鉴：列表/网格 + 无限滚动（底层按页加载）
 Page {
     id: root
     background: Rectangle { color: palette.window }
 
-    property var browserCtrl: null
+    property var navigation: null
+    readonly property var browserCtrl: SkillCardBrowserController
 
     property var _staticIcons: ({})
     property string _search: ""

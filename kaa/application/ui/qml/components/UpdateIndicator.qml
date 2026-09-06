@@ -1,7 +1,8 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
-import ".." as App
+import EuiShell
+import EuiShell as App
 
 // 标题栏更新指示器：后台检查 / 下载 / 构建索引时显示「↑ 更新中」，
 // 样式与「配置 / 偏好」按钮一致；hover 弹出当前更新详情弹层
@@ -16,9 +17,9 @@ Item {
         || GameDataCtrl.updateStatus === "building"
 
     visible: _active
-    // TabStrip 的交互行是普通 Row，隐藏项仍会占宽，故非激活时宽度归零
-    width: _active ? rowContent.implicitWidth + 16 : 0
-    height: parent.height
+    // SlotHost 的 Loader 以 implicit 尺寸参与布局；隐藏时宽度归零避免占位
+    implicitWidth: _active ? rowContent.implicitWidth + 16 : 0
+    implicitHeight: 34
 
     // 指示器、弹层背景、弹层内按钮 任一被 hover 时保持弹层开启
     readonly property bool _hovering:

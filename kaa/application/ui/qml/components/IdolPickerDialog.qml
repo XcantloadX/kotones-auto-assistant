@@ -1,8 +1,8 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
-import ".." as App
-import "./controls"
+import EuiShell
+import EuiShell as App
 
 // 偶像选择弹窗：搜索 + 分类列表 + 卡片网格。
 // 使用方式：

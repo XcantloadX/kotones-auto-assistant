@@ -15,7 +15,9 @@ from PySide6.QtQuick import QQuickItem
 from PySide6.QtTest import QTest
 
 ROOT = Path(__file__).resolve().parents[3]
-QML_DIR = ROOT / "kaa" / "application" / "ui" / "qml"
+KAA_QML_DIR = ROOT / "kaa" / "application" / "ui" / "qml"
+SHELL_QML_DIR = ROOT / "EuiShell" / "src" / "euishell" / "qml"
+QML_DIR = KAA_QML_DIR
 TEST_DIR = ROOT / "tests" / "kaa" / "ui_e2e"
 
 JsonScalar: TypeAlias = str | int | float | bool | None
@@ -206,7 +208,8 @@ class FakeSettingsController(QObject):
         self._config: dict[str, JsonValue] = config or {}
 
     dirty = Property(bool, lambda s: s._dirty, notify=dirtyChanged)
-    config = Property(object, lambda s: s._config, notify=configChanged)
+    # QVariantMap：QML 侧按 JS 对象读取 dict（object 类型会被包装为 PyObjectWrapper）
+    config = Property("QVariantMap", lambda s: s._config, notify=configChanged)
 
     @Slot(result=str)
     def validateJson(self) -> str:
@@ -569,6 +572,81 @@ class FakeRunController(QObject):
     def setTaskEnabled(self, p: str, v: bool) -> None:
         self.calls.append(("setTaskEnabled", str(p), bool(v)))
 
+    @Slot(result=str)
+    def bulkActionsJson(self) -> str:
+        return json.dumps(
+            [{"label": "全选"}, {"label": "清空"}, {"label": "只选培育"}, {"label": "只不选培育"}],
+            ensure_ascii=False,
+        )
+
+    @Slot(int)
+    def invokeBulkAction(self, index: int) -> None:
+        mapped: list[Call] = [
+            ("selectAllTasks", True),
+            ("selectAllTasks", False),
+            ("selectOnlyProduce",),
+            ("selectExceptProduce",),
+        ]
+        self.calls.append(mapped[index])
+
+    @Slot(str, bool)
+    def setTaskEnabled(self, p: str, v: bool) -> None:
+        self.calls.append(("setTaskEnabled", str(p), bool(v)))
+
+
+class FakeTabController(QObject):
+    """TabController 假件：页面统一契约 tab 的数据源。"""
+
+    def __init__(
+        self,
+        run: FakeRunController | None = None,
+        progress: QObject | None = None,
+        log: QObject | None = None,
+        settings: QObject | None = None,
+        controllers: dict[str, QObject] | None = None,
+    ) -> None:
+        super().__init__()
+        self._run = run
+        self._progress = progress
+        self._log = log
+        self._settings = settings
+        self._controllers = controllers or {}
+        self._dirty_guards: list[QObject] = []
+
+    def _get_run(self) -> QObject | None:
+        return self._run
+
+    def _get_progress(self) -> QObject | None:
+        return self._progress
+
+    def _get_log(self) -> QObject | None:
+        return self._log
+
+    def _get_settings(self) -> QObject | None:
+        return self._settings
+
+    def _get_guards(self) -> list:
+        return list(self._dirty_guards)
+
+    runCtrl = Property(QObject, _get_run, constant=True)
+    progressCtrl = Property(QObject, _get_progress, constant=True)
+    logBridge = Property(QObject, _get_log, constant=True)
+    settingsCtrl = Property(QObject, _get_settings, constant=True)
+    dirtyGuards = Property("QVariantList", _get_guards, constant=True)
+
+    @Slot(str, result="QVariant")
+    def controller(self, role: str):
+        return self._controllers.get(role)
+
+
+def _fake_tab_controller(
+    run: FakeRunController | None = None,
+    settings: QObject | None = None,
+    controllers: dict[str, QObject] | None = None,
+) -> FakeTabController:
+    """构造带统一契约属性的假 TabController。"""
+    return FakeTabController(run=run, settings=settings, controllers=controllers)
+
 
 @pytest.fixture(scope="session")
 def qapp():
@@ -623,10 +701,6 @@ class _FakeSplash(QObject):
         pass
 
 
-def _create_test_theme(_engine: QQmlEngine) -> _FakeTheme:
-    """Provide the controller as a real QML singleton for AppTheme.qml."""
-    return _FakeTheme()
-
 class _FakeTheme(QObject):
     windowStyleChanged = Signal()
 
@@ -649,6 +723,42 @@ class _FakeErrorDialog(QObject):
 class _FakeProfileStore(QObject):
     profilesChanged = Signal()
     profilesJson = Property(str, lambda s: '{"profiles": []}', constant=True)
+
+
+class _FakeShellRegistry(QObject):
+    """ShellRegistry 假件：slot / section 注册表为空。"""
+
+    @Slot(str, result=str)
+    def slotItemsJson(self, name: str) -> str:
+        return "[]"
+
+    @Slot(result=bool)
+    def hasOverview(self) -> bool:
+        return True
+
+    @Slot(result=str)
+    def customPagesJson(self) -> str:
+        return "[]"
+
+    @Slot(result=str)
+    def settingsSectionsJson(self) -> str:
+        return "[]"
+
+    @Slot(result=str)
+    def preferenceSectionsJson(self) -> str:
+        return "[]"
+
+    @Slot(result=str)
+    def fullscreenPagesJson(self) -> str:
+        return "[]"
+
+    @Slot(result=str)
+    def aboutJson(self) -> str:
+        return json.dumps({"appName": "kaa", "links": []}, ensure_ascii=False)
+
+    @Slot(str, result="QVariant")
+    def globalController(self, role: str):
+        return None
 
 
 class FakeScheduleController(QObject):
@@ -708,8 +818,6 @@ class FakeSchedulerService(QObject):
         return profile_name in self._busy_profiles
 
 
-qmlRegisterSingletonType(_FakeTheme, "QtQuick", 6, 0, cast(bytes, "AppThemeController"), _create_test_theme)
-
 def _install_production_context(engine: QQmlApplicationEngine) -> None:
     """Install every global used by the QML application before loading QML."""
     context = engine.rootContext()
@@ -717,7 +825,9 @@ def _install_production_context(engine: QQmlApplicationEngine) -> None:
         "splash": _FakeSplash(),
         "errorDialog": _FakeErrorDialog(),
         "TabManager": FakeTabManager(),
-        "AppThemeController": _FakeTheme(),
+        "AppearanceController": _FakeTheme(),
+        "ShellRegistry": _FakeShellRegistry(),
+        "globalGuards": [],
         "PreferencesController": FakePrefsController(),
         "GameDataCtrl": FakeGameDataController(),
         "UpdateCtrl": FakeGameDataController(),
@@ -738,17 +848,22 @@ def _install_production_context(engine: QQmlApplicationEngine) -> None:
     _retain_test_objects(engine, objects)
 
 
+# 进程级保留全部 engine：销毁 engine 会引发 shiboken 悬垂回收，
+# 在 pytest-qt 事件处理中触发访问违例；测试进程结束后由 OS 统一回收
+_ALL_ENGINES: list[QQmlApplicationEngine] = []
+
+
 @pytest.fixture
 def qml_engine(qapp: QGuiApplication) -> Generator[QQmlApplicationEngine, None, None]:
     """Create a QML engine with the same global dependency contract as KAA."""
 
     engine = QQmlApplicationEngine()
-    engine.addImportPath(str(QML_DIR))
+    engine.addImportPath(str(SHELL_QML_DIR))
+    engine.addImportPath(str(KAA_QML_DIR))
     _install_production_context(engine)
     _retain_test_components(engine)
+    _ALL_ENGINES.append(engine)
     yield engine
-    engine.clearComponentCache()
-    engine.deleteLater()
 
 
 @pytest.fixture(scope="session")
@@ -836,6 +951,16 @@ def load_qml(
     return load_path(engine, QML_DIR / filename, properties, context)
 
 
+def load_shell_qml(
+    engine: QQmlApplicationEngine,
+    filename: str,
+    properties: dict[str, object] | None = None,
+    context: dict[str, object] | None = None,
+) -> QObject:
+    """从 EuiShell Shell QML 模块目录加载组件。"""
+    return load_path(engine, SHELL_QML_DIR / "EuiShell" / filename, properties, context)
+
+
 def load_test_qml(
     engine: QQmlApplicationEngine,
     filename: str,
@@ -870,6 +995,18 @@ def find_text(root: QObject, text: str) -> QObject:
         except RuntimeError:
             pass
     raise AssertionError(f"QML text not found: {text!r}")
+
+
+def find_text_visual(root: QQuickItem, text: str) -> QObject:
+    """在视觉子树（childItems）中按 text 查找（Repeater 委托不走 QObject 父链）。"""
+    if str(root.property("text")) == text:
+        return root
+    for child in root.childItems():
+        try:
+            return find_text_visual(child, text)
+        except AssertionError:
+            continue
+    raise AssertionError(f"QML visual text not found: {text!r}")
 
 
 def click(o: QObject) -> None:

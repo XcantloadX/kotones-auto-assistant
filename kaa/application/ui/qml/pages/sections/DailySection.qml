@@ -1,14 +1,15 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
-import "../../components/controls"
-import "../../components/form"
+import EuiShell
+import EuiShell
 
 // 日常设置：商店 / 工作 / 竞赛 / 社团 / 扭蛋机 / 奖励
 Item {
     id: root
-    property var settingsCtrl
+    required property var settingsCtrl
     property var errors: ({})
+    property var navigation: null
 
     property var moneyItemModel: []
     property var apItemModel: []

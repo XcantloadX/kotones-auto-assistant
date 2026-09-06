@@ -2,36 +2,33 @@ from __future__ import annotations
 from PySide6.QtQml import QQmlApplicationEngine
 import pytest
 from .conftest import (
-    DummyController,
     FakeDialog,
-    FakeRunController,
     load_path,
-    QML_DIR,
+    KAA_QML_DIR,
+    SHELL_QML_DIR,
 )
 
-
-QML_ROOTS = [
+# Shell（EuiShell）侧 QML：框架组件与内置页面
+SHELL_QML_ROOTS = [
     "AppTheme.qml",
     "FluentIcons.qml",
     "LoadingOverlay.qml",
     "SplashOverlay.qml",
-    "components/CostNumberIcon.qml",
-    "components/EffectDescription.qml",
-    "components/ExamEffectIcon.qml",
+    "SlotHost.qml",
+    "SlotName.qml",
     "components/FluentIcon.qml",
-    "components/FormField.qml",
     "components/HelpTip.qml",
     "components/Link.qml",
     "components/NoticeHost.qml",
     "components/PageContainer.qml",
     "components/PageHeader.qml",
     "components/SideNavigationBar.qml",
-    "components/SkillCardIcon.qml",
-    "components/TabContent.qml",
     "components/TabStrip.qml",
+    "components/TabContent.qml",
     "components/TitleBar.qml",
-    "components/UpdateIndicator.qml",
-    "components/controls/InstancePicker.qml",
+    "components/WindowControls.qml",
+    "components/NavigationCoordinator.qml",
+    "components/ProfileManagerDialog.qml",
     "components/controls/MultiSelect.qml",
     "components/controls/SegmentedButton.qml",
     "components/controls/Select.qml",
@@ -40,102 +37,129 @@ QML_ROOTS = [
     "components/form/FormCheckBox.qml",
     "components/form/FormComboBox.qml",
     "components/form/FormError.qml",
+    "components/form/FormField.qml",
     "components/form/FormGroupBox.qml",
-    "components/form/FormInstancePicker.qml",
     "components/form/FormNotice.qml",
     "components/form/FormSection.qml",
     "components/form/FormSegmentedButton.qml",
     "components/form/FormSpinBox.qml",
     "components/form/FormTextField.qml",
     "components/form/HotkeyField.qml",
+    "pages/ControlPage.qml",
+    "pages/TaskPage.qml",
+    "pages/SettingsPage.qml",
+    "pages/LogPage.qml",
+    "pages/AboutPage.qml",
+    "pages/PreferencesPage.qml",
+]
+
+# KAA 侧 QML：业务页面 / section / 对话框 / slot
+KAA_QML_ROOTS = [
+    "components/CostNumberIcon.qml",
+    "components/EffectDescription.qml",
+    "components/ExamEffectIcon.qml",
+    "components/InstancePicker.qml",
+    "components/SkillCardIcon.qml",
+    "components/IdolPickerDialog.qml",
+    "components/UpdateIndicator.qml",
+    "components/form/FormInstancePicker.qml",
     "dialogs/ExportReportDialog.qml",
     "dialogs/ReportExportResultDialog.qml",
     "dialogs/ScheduleManagerDialog.qml",
-    "pages/AboutPage.qml",
-    "pages/ControlPage.qml",
-    "pages/LogPage.qml",
+    "dialogs/SchoolEventInspectorDialog.qml",
     "pages/OverviewPage.qml",
-    "pages/PreferencesPage.qml",
     "pages/ProducePage.qml",
-    "pages/SettingsPage.qml",
     "pages/SkillCardBrowserPage.qml",
-    "pages/TaskPage.qml",
     "pages/UpdatePage.qml",
     "pages/sections/DailySection.qml",
     "pages/sections/EmulatorSection.qml",
     "pages/sections/MiscSection.qml",
     "pages/sections/ProduceSection.qml",
+    "pages/preferences/InterfaceExtraSection.qml",
+    "pages/preferences/UpdateSection.qml",
+    "pages/preferences/GameDataSection.qml",
+    "pages/preferences/NotifySection.qml",
+    "pages/preferences/HotkeysSection.qml",
+    "pages/preferences/TelemetrySection.qml",
+    "slots/OverviewSlot.qml",
+    "slots/KaaDialogs.qml",
+    "slots/EndActionRow.qml",
+    "slots/ProduceEngineNotice.qml",
+    "slots/ControlFooterExtras.qml",
+    "slots/GameDataVersionRow.qml",
 ]
 
 
-def _props(path: str) -> dict[str, object]:
+def _shell_props(path: str) -> dict[str, object]:
+    from .conftest import (
+        FakeLogBridge,
+        FakePrefsController,
+        _fake_tab_controller,
+        FakeRunController,
+    )
+
     if path == "components/FluentIcon.qml":
         return {"glyph": "\uf001"}
-    if path == "components/TabContent.qml":
-        return {"runCtrl": FakeRunController()}
-    if path == "components/TabStrip.qml":
-        return {"configManagerDialog": FakeDialog()}
-    if path == "components/TitleBar.qml":
-        return {"configManagerDialog": FakeDialog()}
-    if path == "pages/OverviewPage.qml":
-        return {"configManagerDialog": FakeDialog(), "scheduleManagerDialog": FakeDialog()}
-    if path == "pages/ControlPage.qml":
-        return {"runCtrl": FakeRunController()}
-    if path == "pages/SettingsPage.qml":
-        return {
-            "settingsCtrl": __import__(
-                "tests.kaa.ui_e2e.conftest", fromlist=["FakeSettingsController"]
-            ).FakeSettingsController()
-        }
-    if path == "pages/PreferencesPage.qml":
-        return {
-            "prefsCtrl": __import__(
-                "tests.kaa.ui_e2e.conftest", fromlist=["FakePrefsController"]
-            ).FakePrefsController()
-        }
-    if path == "pages/ProducePage.qml":
-        return {
-            "produceCtrl": __import__(
-                "tests.kaa.ui_e2e.conftest", fromlist=["FakeProduceController"]
-            ).FakeProduceController()
-        }
-    if path == "pages/TaskPage.qml":
-        return {"runCtrl": FakeRunController()}
+    if path in ("components/TabStrip.qml", "components/TitleBar.qml", "components/ProfileManagerDialog.qml"):
+        return {"configManagerDialog": FakeDialog(), "tabManager": FakeDialog()}
+    if path in ("components/TabContent.qml", "pages/ControlPage.qml", "pages/TaskPage.qml", "pages/SettingsPage.qml"):
+        return {"tab": _fake_tab_controller(run=FakeRunController())}
     if path == "pages/LogPage.qml":
-        return {
-            "logBridge": __import__(
-                "tests.kaa.ui_e2e.conftest", fromlist=["FakeLogBridge"]
-            ).FakeLogBridge()
-        }
-    if path == "pages/SkillCardBrowserPage.qml":
-        return {
-            "browserCtrl": __import__(
-                "tests.kaa.ui_e2e.conftest", fromlist=["FakeBrowserController"]
-            ).FakeBrowserController()
-        }
-    if path == "pages/UpdatePage.qml":
-        return {
-            "updateCtrl": __import__(
-                "tests.kaa.ui_e2e.conftest", fromlist=["FakeUpdateController"]
-            ).FakeUpdateController()
-        }
-    if path == "dialogs/SchoolEventInspectorDialog.qml":
-        return {"debugInspectorCtrl": DummyController()}
-    if path == "dialogs/ScheduleManagerDialog.qml":
-        return {}  # No required properties; uses context properties
+        return {"tab": _fake_tab_controller(), "logBridge": FakeLogBridge()}
+    if path == "components/NavigationCoordinator.qml":
+        return {"unsavedChangesDialog": FakeDialog()}
+    if path == "components/WindowControls.qml":
+        return {"window": None}
     if path == "components/form/HotkeyField.qml":
         return {"label": "Test"}
+    if path == "pages/AboutPage.qml":
+        return {"tab": _fake_tab_controller()}
+    if path == "pages/PreferencesPage.qml":
+        return {"prefsCtrl": FakePrefsController()}
+    return {}
+
+
+def _kaa_props(path: str) -> dict[str, object]:
+    from .conftest import (
+        FakePrefsController,
+        FakeProduceController,
+        FakeSettingsController,
+        FakeUpdateController,
+        _fake_tab_controller,
+        FakeRunController,
+    )
+    if path == "pages/OverviewPage.qml":
+        return {"configManagerDialog": FakeDialog(), "scheduleManagerDialog": FakeDialog()}
+    if path == "pages/ProducePage.qml":
+        return {"tab": _fake_tab_controller(controllers={"produce": FakeProduceController()})}
+    if path == "pages/UpdatePage.qml":
+        return {"tab": _fake_tab_controller(controllers={"update": FakeUpdateController()})}
+    if path == "pages/SkillCardBrowserPage.qml":
+        return {}
+    if path == "dialogs/SchoolEventInspectorDialog.qml":
+        from .conftest import DummyController
+        return {"debugInspectorCtrl": DummyController()}
+    if path in ("slots/EndActionRow.qml", "slots/ProduceEngineNotice.qml", "slots/ControlFooterExtras.qml"):
+        return {"tab": _fake_tab_controller(run=FakeRunController())}
+    if path.startswith("pages/sections/"):
+        return {"settingsCtrl": FakeSettingsController()}
+    if path.startswith("pages/preferences/"):
+        return {"prefsCtrl": FakePrefsController()}
     return {}
 
 
 def test_app_theme_resolves_controller_from_qml_singleton_scope(qml_engine: QQmlApplicationEngine) -> None:
-    root = load_path(qml_engine, QML_DIR / "AppTheme.qml")
+    root = load_path(qml_engine, SHELL_QML_DIR / "EuiShell" / "AppTheme.qml")
     assert bool(root.property("isSolid")) is True
 
 
-@pytest.mark.parametrize("path", QML_ROOTS)
-def test_every_ui_qml_component_can_be_instantiated(qml_engine: QQmlApplicationEngine, path: str) -> None:
-    root = load_path(qml_engine, QML_DIR / path, _props(path))
+@pytest.mark.parametrize("path", SHELL_QML_ROOTS)
+def test_every_shell_qml_component_can_be_instantiated(qml_engine: QQmlApplicationEngine, path: str) -> None:
+    root = load_path(qml_engine, SHELL_QML_DIR / "EuiShell" / path, _shell_props(path))
     assert root is not None
 
 
+@pytest.mark.parametrize("path", KAA_QML_ROOTS)
+def test_every_kaa_qml_component_can_be_instantiated(qml_engine: QQmlApplicationEngine, path: str) -> None:
+    root = load_path(qml_engine, KAA_QML_DIR / path, _kaa_props(path))
+    assert root is not None

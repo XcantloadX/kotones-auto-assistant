@@ -2,14 +2,17 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import QtQuick.Dialogs
-import "../components"
-import "../components/controls"
+import EuiShell
 
 // 更新页：版本检查 + 更新日志
 PageContainer {
     id: root
     title: "更新"
-    property var updateCtrl: null
+    // 页面统一契约：tab / navigation / fullscreenMode
+    required property var tab
+    property var navigation: null
+    property string fullscreenMode: ""
+    readonly property var updateCtrl: tab ? tab.controller("update") : null
 
     // ── 状态 ──────────────────────────────────────────
     property var versionInfo: null  // {installed, latest, launcher, versions:[]}

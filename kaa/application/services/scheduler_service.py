@@ -22,7 +22,7 @@ from kaa.config.scheduler import (
 )
 
 if TYPE_CHECKING:
-    from kaa.application.ui.controllers.tab_manager import TabManager
+    from euishell.controllers.tab_manager import TabManager
 
 logger = logging.getLogger(__name__)
 

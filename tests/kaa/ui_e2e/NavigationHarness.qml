@@ -1,6 +1,6 @@
 import QtQuick
 import QtQuick.Controls
-import "../../../kaa/application/ui/qml/components"
+import EuiShell
 
 Item {
     id: root
@@ -10,17 +10,13 @@ Item {
 
     property int actionCount: 0
     property var settingsCtrl
-    property var produceCtrl
-    property var prefsCtrl
     property var dialog
 
     NavigationCoordinator {
         id: coordinator
 
         unsavedChangesDialog: root.dialog
-        settingsCtrl: root.settingsCtrl
-        produceCtrl: root.produceCtrl
-        prefsCtrl: root.prefsCtrl
+        tabGuards: root.settingsCtrl ? [root.settingsCtrl] : []
     }
 
     Button {

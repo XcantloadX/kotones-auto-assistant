@@ -1,8 +1,8 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
-import "../components" as Components
-import ".." as App
+import EuiShell
+import EuiShell as App
 
 Dialog {
     id: root
@@ -36,7 +36,7 @@ Dialog {
                 flat: true
                 contentItem: Row {
                     spacing: 6
-                    Components.FluentIcon {
+                    FluentIcon {
                         glyph: App.FluentIcons.add_16_regular
                         font.pixelSize: 16
                         anchors.verticalCenter: parent.verticalCenter
@@ -69,7 +69,7 @@ Dialog {
             flat: true
             implicitWidth: 32
             implicitHeight: 32
-            contentItem: Components.FluentIcon {
+            contentItem: FluentIcon {
                 glyph: App.FluentIcons.dismiss_16_regular
                 font.pixelSize: 14
             }
@@ -167,7 +167,7 @@ Dialog {
                         Layout.preferredWidth: 32
                         Layout.preferredHeight: 32
                         flat: true
-                        contentItem: Components.FluentIcon {
+                        contentItem: FluentIcon {
                             glyph: App.FluentIcons.edit_16_regular
                             font.pixelSize: 15
                         }
@@ -187,7 +187,7 @@ Dialog {
                         Layout.preferredWidth: 32
                         Layout.preferredHeight: 32
                         flat: true
-                        contentItem: Components.FluentIcon {
+                        contentItem: FluentIcon {
                             glyph: App.FluentIcons.delete_16_regular
                             font.pixelSize: 15
                             color: App.AppTheme.error

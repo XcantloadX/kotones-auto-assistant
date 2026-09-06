@@ -71,7 +71,7 @@ def windows_gui_error_middleware(ctx: BotContext, task: Task, next_handler: Next
         # 用户可预见的业务错误（如配置了不存在的偶像卡/培育方案）已被本
         # 中间件友好处理，不应以 error 级别上报遥测刷屏，故降级为 warning。
         logger.warning(f"Task {task.name} failed: {e.message}")
-        from kaa.application.ui.error_bridge import get_bridge
+        from euishell.bridges.error_dialog import get_bridge
         bridge = get_bridge()
         if bridge is not None:
             bridge.show(e.message, e.action_buttons, e.invoke)
@@ -83,7 +83,7 @@ def windows_gui_error_middleware(ctx: BotContext, task: Task, next_handler: Next
         ctx.has_error = True
         ctx.last_exception = e
         logger.warning(f"Window query failed in {task.name}: {e}")
-        from kaa.application.ui.error_bridge import get_bridge
+        from euishell.bridges.error_dialog import get_bridge
         bridge = get_bridge()
         if bridge is not None:
             bridge.show(
@@ -100,7 +100,7 @@ def windows_gui_error_middleware(ctx: BotContext, task: Task, next_handler: Next
         ctx.last_exception = e
         w, h = e.screen_size
         logger.warning(f"Resolution error in {task.name}: screen {w}x{h}.")
-        from kaa.application.ui.error_bridge import get_bridge
+        from euishell.bridges.error_dialog import get_bridge
         bridge = get_bridge()
         message = build_resolution_error_message((w, h))
         if bridge is not None:
@@ -507,7 +507,7 @@ class Kaa(KotoneBot):
         message = build_resolution_error_message(screen_size)
         logger.warning("Incompatible device resolution %dx%d has been detected.",
                        *screen_size)
-        from kaa.application.ui.error_bridge import get_bridge
+        from euishell.bridges.error_dialog import get_bridge
         bridge = get_bridge()
         if bridge is not None:
             bridge.show(message, [(0, '知道了')], lambda _: None)

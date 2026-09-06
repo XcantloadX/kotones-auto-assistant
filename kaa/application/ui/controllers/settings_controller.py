@@ -8,6 +8,8 @@ import threading
 
 from PySide6.QtCore import Property, QObject, Signal, Slot
 
+from euishell.controllers.settings_controller import SettingsControllerBase
+
 from kaa.application.ui.kaa_session import KaaSession
 from kaa.application.ui.config_draft import ConfigDraft
 from kaa.application.ui.controllers.shared_settings_controller import SharedSettingsController
@@ -15,13 +17,9 @@ from kaa.application.ui.controllers.shared_settings_controller import SharedSett
 logger = logging.getLogger(__name__)
 
 
-class SettingsController(QObject):
+class SettingsController(SettingsControllerBase):
     """配置控制器：草稿模式 + Python-only 副作用 Slot。"""
 
-    configChanged = Signal()
-    dirtyChanged = Signal(bool)
-    operationSucceeded = Signal(str)
-    operationFailed = Signal(str)
     emulatorInstancesReady = Signal(str, str)
     emulatorNotInstalled = Signal(str)
     gameDataProgress = Signal(str)
@@ -45,7 +43,7 @@ class SettingsController(QObject):
 
     # ── 核心读写 ─────────────────────────────────────────────
 
-    @Property('QVariantMap', notify=configChanged)  # type: ignore[arg-type]
+    @Property('QVariantMap', notify=SettingsControllerBase.configChanged)  # type: ignore[arg-type]
     def config(self) -> dict:
         """草稿视图：base + dirty 合并，shared 从缓存读（不读盘）。"""
         profile = self._draft.view() if self._draft is not None else {}

@@ -9,25 +9,26 @@ from .conftest import (
     FakeDialog,
     FakeLogBridge,
     FakeProduceController,
-    FakeUpdateController,
     FakeTabManager,
+    FakeUpdateController,
+    _fake_tab_controller,
     click,
     find_text,
     load_qml,
+    load_shell_qml,
     qml_variant,
 )
 
 
 def test_about_page_shows_identity_and_versions(qml_engine: QQmlApplicationEngine) -> None:
-    page = load_qml(qml_engine, "pages/AboutPage.qml")
-    assert find_text(page, "琴音小助手 kaa")
+    page = load_shell_qml(qml_engine, "pages/AboutPage.qml", {"tab": _fake_tab_controller()})
+    assert find_text(page, "kaa")
     assert find_text(page, "版本 test")
-    assert find_text(page, "游戏数据 test-data")
 
 
 def test_log_page_buffers_and_flushes_lines(qml_engine: QQmlApplicationEngine) -> None:
     bridge = FakeLogBridge([{"text": "hello\n[ERROR] bad\n", "stream": "normal"}])
-    page = load_qml(qml_engine, "pages/LogPage.qml", {"logBridge": bridge})
+    page = load_shell_qml(qml_engine, "pages/LogPage.qml", {"tab": _fake_tab_controller(), "logBridge": bridge})
     QTest.qWait(80)
     assert page.property("pendingText") == ""
     resolve_color = cast(Callable[[str, str], object], getattr(page, "resolveColor"))
@@ -40,7 +41,7 @@ def test_log_page_buffers_and_flushes_lines(qml_engine: QQmlApplicationEngine) -
 
 
 def test_log_page_wrap_toggle_and_clear(qml_engine: QQmlApplicationEngine) -> None:
-    page = load_qml(qml_engine, "pages/LogPage.qml", {"logBridge": FakeLogBridge()})
+    page = load_shell_qml(qml_engine, "pages/LogPage.qml", {"tab": _fake_tab_controller(), "logBridge": FakeLogBridge()})
     cast(Callable[[str, str], None], getattr(page, "appendText"))("one\ntwo\n", "normal")
     QTest.qWait(80)
     assert page.property("wrapEnabled") is True
@@ -50,7 +51,7 @@ def test_log_page_wrap_toggle_and_clear(qml_engine: QQmlApplicationEngine) -> No
 
 def test_update_page_load_and_success_state(qml_engine: QQmlApplicationEngine) -> None:
     ctrl = FakeUpdateController()
-    page = load_qml(qml_engine, "pages/UpdatePage.qml", {"updateCtrl": ctrl})
+    page = load_qml(qml_engine, "pages/UpdatePage.qml", {"tab": _fake_tab_controller(controllers={"update": ctrl})})
     button = find_text(page, "载入信息")
     click(button)
     assert ctrl.calls == ["loadVersionsAsync"]
@@ -68,7 +69,7 @@ def test_update_page_load_and_success_state(qml_engine: QQmlApplicationEngine) -
 
 def test_update_page_error_state(qml_engine: QQmlApplicationEngine) -> None:
     ctrl = FakeUpdateController()
-    page = load_qml(qml_engine, "pages/UpdatePage.qml", {"updateCtrl": ctrl})
+    page = load_qml(qml_engine, "pages/UpdatePage.qml", {"tab": _fake_tab_controller(controllers={"update": ctrl})})
     ctrl.loadFailed.emit("网络错误")
     QTest.qWait(20)
     assert page.property("errorMessage") == "网络错误"
@@ -77,7 +78,7 @@ def test_update_page_error_state(qml_engine: QQmlApplicationEngine) -> None:
 
 def test_skill_card_browser_initializes_and_switches_view(qml_engine: QQmlApplicationEngine) -> None:
     ctrl = FakeBrowserController()
-    page = load_qml(qml_engine, "pages/SkillCardBrowserPage.qml", {"browserCtrl": ctrl})
+    page = load_qml(qml_engine, "pages/SkillCardBrowserPage.qml", {}, {"SkillCardBrowserController": ctrl})
     assert "ensureLoaded" in ctrl.calls
     assert page.property("_viewMode") == "list"
     page.setProperty("_viewMode", "grid")
@@ -88,7 +89,7 @@ def test_skill_card_browser_initializes_and_switches_view(qml_engine: QQmlApplic
 
 def test_skill_card_browser_filter_contract(qml_engine: QQmlApplicationEngine) -> None:
     ctrl = FakeBrowserController()
-    page = load_qml(qml_engine, "pages/SkillCardBrowserPage.qml", {"browserCtrl": ctrl})
+    page = load_qml(qml_engine, "pages/SkillCardBrowserPage.qml", {}, {"SkillCardBrowserController": ctrl})
     cast(Callable[[], None], getattr(page, "_pushFilter"))()
     QTest.qWait(220)
     assert any(c[0] == "applyFilter" for c in ctrl.calls if isinstance(c, tuple))
@@ -106,7 +107,7 @@ def test_produce_page_core_state_and_helpers(qml_engine: QQmlApplicationEngine) 
             {"id": "b", "name": "B", "description": ""},
         ]
     )
-    page = load_qml(qml_engine, "pages/ProducePage.qml", {"produceCtrl": ctrl})
+    page = load_qml(qml_engine, "pages/ProducePage.qml", {"tab": _fake_tab_controller(controllers={"produce": ctrl})})
     assert page.property("dirty") is False
     solution_name_exists = cast(Callable[[str, str], bool], getattr(page, "solutionNameExists"))
     has_validation_errors = cast(Callable[[], bool], getattr(page, "hasValidationErrors"))
@@ -125,7 +126,9 @@ def test_produce_page_core_state_and_helpers(qml_engine: QQmlApplicationEngine) 
 
 def test_produce_page_mode_helpers(qml_engine: QQmlApplicationEngine) -> None:
     page = load_qml(
-        qml_engine, "pages/ProducePage.qml", {"produceCtrl": FakeProduceController()}
+        qml_engine,
+        "pages/ProducePage.qml",
+        {"tab": _fake_tab_controller(controllers={"produce": FakeProduceController()})},
     )
     page.setProperty(
         "currentSolution", {"mode": "hajime_regular", "produce_strategy": "normal"}
@@ -144,9 +147,11 @@ def test_produce_page_mode_helpers(qml_engine: QQmlApplicationEngine) -> None:
 
 
 def test_config_manager_dialog_initial_state_and_create_contract(qml_engine: QQmlApplicationEngine) -> None:
+    from .conftest import FakeTabManager
+
     tab = FakeTabManager()
-    dialog = load_qml(
-        qml_engine, "dialogs/ConfigManagerDialog.qml", {"tabManager": tab}
+    dialog = load_shell_qml(
+        qml_engine, "components/ProfileManagerDialog.qml", {"tabManager": tab}
     )
     names = dialog.property("configNames")
     names = qml_variant(names)
@@ -162,10 +167,10 @@ def test_config_manager_dialog_initial_state_and_create_contract(qml_engine: QQm
 def test_tab_strip_overview_and_config_model(qml_engine: QQmlApplicationEngine) -> None:
     dialog = FakeDialog()
     tab = FakeTabManager()
-    strip = load_qml(
+    strip = load_shell_qml(
         qml_engine,
         "components/TabStrip.qml",
-        {"configManagerDialog": dialog},
+        {"configManagerDialog": dialog, "tabManager": tab},
         {"TabManager": tab},
     )
     assert strip.property("currentIndex") == 0

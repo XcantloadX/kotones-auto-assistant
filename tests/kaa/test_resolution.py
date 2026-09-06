@@ -54,7 +54,7 @@ class TestWindowsGuiErrorMiddleware(TestCase):
 
         task = Task(name='测试任务', id='test', description='', func=lambda: None, priority=0)
 
-        with patch('kaa.application.ui.error_bridge.get_bridge', return_value=bridge):
+        with patch('euishell.bridges.error_dialog.get_bridge', return_value=bridge):
             windows_gui_error_middleware(ctx, task, next_handler)
 
     def test_unscalable_resolution_is_friendly_and_stops(self):

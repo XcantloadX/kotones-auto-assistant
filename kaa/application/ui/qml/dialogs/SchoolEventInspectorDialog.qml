@@ -1,7 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
-import ".." as App
+import EuiShell as App
 
 Dialog {
     id: root

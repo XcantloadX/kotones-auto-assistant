@@ -18,7 +18,7 @@ dependencies = [
     "adbutils~=2.8",
     "uiautomator2~=3.2",
     # GUI
-    "PySide6~=6.7",
+    "PySide6~=6.9.2",
     # Configuration
     "pydantic~=2.10",
     # Resource
@@ -44,7 +44,12 @@ dependencies = [
     "sentry-sdk>=2.52.0",
     "psutil~=6.1",
     "faiss-cpu>=1.14.3",
+    # Shell UI 框架
+    "euishell>=0.1.0,<0.2",
 ]
+
+[tool.uv.sources]
+euishell = { path = "EuiShell", editable = true }
 
 [project.optional-dependencies]
 dev = [

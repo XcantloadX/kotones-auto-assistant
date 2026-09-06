@@ -1,15 +1,15 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
-import "../../components"
-import "../../components/controls"
+import EuiShell
 import "../../components/form"
 
 // 基本设置：模拟器 + 启动/结束游戏
 Item {
     id: root
-    property var settingsCtrl
+    required property var settingsCtrl
     property var errors: ({})
+    property var navigation: null
 
     property var emulatorInstances: []
     property bool enumerationLoading: false

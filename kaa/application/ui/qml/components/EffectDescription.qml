@@ -1,6 +1,6 @@
 import QtQuick
 import QtQuick.Controls
-import ".." as App
+import EuiShell as App
 
 // 对齐 hatsuboshi EffectDescription：
 // segments: [{kind, text, icon?, bg?, stamina?, tone?}, ...]

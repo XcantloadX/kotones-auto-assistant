@@ -2,14 +2,14 @@ from __future__ import annotations
 from PySide6.QtCore import QObject
 from PySide6.QtQml import QQmlApplicationEngine
 from PySide6.QtTest import QTest
-from .conftest import FakeRunController, load_qml, find_text, click
+from .conftest import FakeRunController, _fake_tab_controller, load_shell_qml, find_text, find_text_visual, click
 
 
 def make_control(
     engine: QQmlApplicationEngine, run: FakeRunController | None = None
 ) -> tuple[QObject, FakeRunController]:
     run = run or FakeRunController()
-    page = load_qml(engine, "pages/ControlPage.qml", properties={"runCtrl": run})
+    page = load_shell_qml(engine, "pages/ControlPage.qml", properties={"tab": _fake_tab_controller(run=run)})
     return page, run
 
 
@@ -36,10 +36,11 @@ def test_control_pause_resume(qml_engine: QQmlApplicationEngine) -> None:
 
 def test_control_quick_select_actions(qml_engine: QQmlApplicationEngine) -> None:
     page, run = make_control(qml_engine)
-    click(find_text(page, "全选"))
-    click(find_text(page, "清空"))
-    click(find_text(page, "只选培育"))
-    click(find_text(page, "只不选培育"))
+    # 批量按钮由 Repeater 动态生成，需走视觉子树查找
+    click(find_text_visual(page, "全选"))
+    click(find_text_visual(page, "清空"))
+    click(find_text_visual(page, "只选培育"))
+    click(find_text_visual(page, "只不选培育"))
     assert ("selectAllTasks", True) in run.calls
     assert ("selectAllTasks", False) in run.calls
     assert ("selectOnlyProduce",) in run.calls
@@ -49,25 +50,34 @@ def test_control_quick_select_actions(qml_engine: QQmlApplicationEngine) -> None
 _LEGACY_WARNING = "旧版培育引擎已废弃，请尽快在 设置→培育→培育引擎 切换到新版培育引擎。"
 
 
-def _legacy_warning(page: QObject) -> QObject:
-    return find_text(page, _LEGACY_WARNING)
+def _legacy_notice(
+    engine: QQmlApplicationEngine, config: dict[str, object]
+) -> QObject:
+    from .conftest import FakeSettingsController, load_qml
+
+    settings = FakeSettingsController(config=config)
+    return load_qml(
+        engine,
+        "slots/ProduceEngineNotice.qml",
+        properties={"tab": _fake_tab_controller(settings=settings)},
+    )
 
 
 def test_control_legacy_engine_warning_visible(
     qml_engine: QQmlApplicationEngine,
 ) -> None:
-    page, _ = make_control(qml_engine)
-    # 默认 produceEngineLegacy = false，警告应隐藏
-    assert _legacy_warning(page).property("visible") is False
-    page.setProperty("produceEngineLegacy", True)
+    notice = _legacy_notice(
+        qml_engine,
+        {"profile": {"tasks": {"produce": {"produce_engine": "legacy"}}}},
+    )
     QTest.qWait(30)
-    assert _legacy_warning(page).property("visible") is not False
+    assert find_text(notice, _LEGACY_WARNING).property("visible") is not False
 
 
 def test_control_legacy_engine_warning_hidden(
     qml_engine: QQmlApplicationEngine,
 ) -> None:
-    page, _ = make_control(qml_engine)
-    assert _legacy_warning(page).property("visible") is False
+    notice = _legacy_notice(qml_engine, {})
+    assert find_text(notice, _LEGACY_WARNING).property("visible") is False
 
 

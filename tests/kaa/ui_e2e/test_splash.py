@@ -1,5 +1,5 @@
 from __future__ import annotations
-from .conftest import load_qml, find, click
+from .conftest import load_shell_qml, find, click
 from PySide6.QtCore import QObject, Property, Signal, Slot
 from PySide6.QtQml import QQmlApplicationEngine
 
@@ -40,7 +40,7 @@ class Splash(QObject):
 
 
 def make_splash(engine: QQmlApplicationEngine, splash: Splash) -> QObject:
-    return load_qml(engine, "SplashOverlay.qml", context={"splash": splash})
+    return load_shell_qml(engine, "SplashOverlay.qml", context={"splash": splash})
 
 
 def test_splash_ready_stops_busy_indicator(qml_engine: QQmlApplicationEngine) -> None:

@@ -1,8 +1,8 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
-import "../components"
-import ".." as App
+import EuiShell
+import EuiShell as App
 
 // 总览页：品牌 + 启动按钮 + 配置卡片网格。
 PageContainer {

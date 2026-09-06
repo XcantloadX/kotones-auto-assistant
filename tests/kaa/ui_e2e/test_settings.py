@@ -4,7 +4,8 @@ from PySide6.QtQml import QQmlApplicationEngine
 from .conftest import (
     FakeRunController,
     FakeSettingsController,
-    load_qml,
+    _fake_tab_controller,
+    load_shell_qml,
     find,
     click,
 )
@@ -17,10 +18,10 @@ def make_settings(
 ) -> tuple[QObject, FakeSettingsController, FakeRunController]:
     settings = settings or FakeSettingsController()
     run = run or FakeRunController()
-    page = load_qml(
+    page = load_shell_qml(
         engine,
         "pages/SettingsPage.qml",
-        properties={"settingsCtrl": settings, "runCtrl": run},
+        properties={"tab": _fake_tab_controller(run=run, settings=settings)},
     )
     return page, settings, run
 

@@ -4,14 +4,14 @@ from PySide6.QtCore import QObject
 from PySide6.QtQml import QQmlApplicationEngine
 from PySide6.QtQuick import QQuickItem
 
-from .conftest import FakeRunController, click, find_visual, load_qml, qml_variant
+from .conftest import FakeRunController, _fake_tab_controller, click, find_visual, load_shell_qml, qml_variant
 
 
 def make_tasks(
     engine: QQmlApplicationEngine, run: FakeRunController | None = None
 ) -> tuple[QObject, FakeRunController]:
     run = run or FakeRunController()
-    page = load_qml(engine, "pages/TaskPage.qml", properties={"runCtrl": run})
+    page = load_shell_qml(engine, "pages/TaskPage.qml", properties={"tab": _fake_tab_controller(run=run)})
     return page, run
 
 

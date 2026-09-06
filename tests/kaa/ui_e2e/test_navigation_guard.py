@@ -21,10 +21,9 @@ def make_navigation(
         "NavigationHarness.qml",
         properties={
             "settingsCtrl": settings,
-            "produceCtrl": None,
-            "prefsCtrl": prefs,
             "dialog": dialog,
         },
+        context={"globalGuards": [prefs]},
     )
     return page, dialog, prefs
 
