@@ -88,6 +88,9 @@ class KaaPlugin(EuiShellPlugin):
     def icon_path(self) -> Path:
         return ICON_PATH
 
+    def entry_qml(self) -> Path:
+        return QML_DIR / 'index.qml'
+
     def about_links(self) -> list[AboutLink]:
         return [
             AboutLink(label='GitHub', url='https://github.com/XcantloadX/kotones-auto-assistant'),

@@ -355,6 +355,13 @@ class EuiShellPlugin(ABC):
         """应用图标 PNG 路径。"""
 
     @abstractmethod
+    def entry_qml(self) -> Path:
+        """返回下游组合根 index.qml 路径；根元素须为 EuiShellApp。
+
+        :returns: index.qml 文件路径
+        """
+
+    @abstractmethod
     def register(self, registry: ShellRegistry) -> None:
         """注册页面、slot、section 等自定义内容。
 

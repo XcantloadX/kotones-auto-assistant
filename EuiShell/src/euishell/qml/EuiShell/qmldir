@@ -3,6 +3,11 @@ singleton AppTheme AppTheme.qml
 singleton FluentIcons FluentIcons.qml
 singleton SlotName SlotName.qml
 SlotHost SlotHost.qml
+EuiShellApp EuiShellApp.qml
+EuiPageSpec EuiPageSpec.qml
+EuiFullscreenPageSpec EuiFullscreenPageSpec.qml
+EuiSectionSpec EuiSectionSpec.qml
+EuiLink EuiLink.qml
 SplashOverlay SplashOverlay.qml
 LoadingOverlay LoadingOverlay.qml
 FluentIcon components/FluentIcon.qml
