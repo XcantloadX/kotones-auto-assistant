@@ -7,7 +7,7 @@ import "../../dialogs"
 // 杂项设置：闲置挂机 / 调试
 Item {
     id: root
-    required property var settingsCtrl
+    property var settingsCtrl
     property var errors: ({})
     property var navigation: null
 

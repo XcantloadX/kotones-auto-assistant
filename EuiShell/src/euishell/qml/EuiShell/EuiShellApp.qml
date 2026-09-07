@@ -4,6 +4,10 @@ import QtQuick.Layouts
 import "components"
 import "pages"
 
+// Shell 组合根：下游在自己的 index.qml 中实例化本类型，
+// 通过以下扩展点属性传入全部插槽内容（Component / spec 对象）。
+// 实例化策略由框架内部决定：Component 属性为窗口级 1 份或每 Tab 1 份，
+// spec 列表按声明顺序渲染；下游不得在声明处捕获 per-tab 状态。
 ApplicationWindow {
     id: window
     title: splash.appName
@@ -27,22 +31,57 @@ ApplicationWindow {
         source: fluentFontPath
     }
 
+    // ── 下游扩展点 ────────────────────────────────────────────────
+    // 窗口级 Component：整个 Shell 生命周期内仅实例化 1 份。
+    property Component overviewContent: null
+    // 总览 Tab 内容；null 时总览 Tab 整体隐藏。
+    property Component titleBarTrailing: null
+    // 标题栏按钮区末尾。
+    property Component windowDialogs: null
+    // 主窗口级对话框 / 非可视组件。
+    property Component controlNotices: null
+    // 控制页顶部通知区（每 Tab 1 份）。
+    property Component controlRunExtras: null
+    // 控制页运行控制行内附加控件（每 Tab 1 份）。
+    property Component controlFooter: null
+    // 控制页底部附加区（每 Tab 1 份）。
+    property Component aboutExtra: null
+    // 关于页附加内容（每 Tab 1 份）。
+
+    property list<EuiPageSpec> pages: []
+    // Tab 内自定义页面，位于设置页之后、日志页之前。
+    property list<EuiFullscreenPageSpec> fullscreenPages: []
+    // 全屏覆盖页（经 NavigationCoordinator 进入）。
+    property list<EuiSectionSpec> settingsSections: []
+    // 设置页 section。
+    property list<EuiSectionSpec> preferenceSections: []
+    // 偏好页 section（外观 section 内置并置首）。
+    property list<EuiLink> aboutLinks: []
+    // 关于页外链。
+
     // ── Per-tab 数据模型 ──────────────────────────────────────────
     property var tabList: []
     property int activeTabIndex: 0
-    property string fullscreenMode: ""  // "" / "preferences" / 注册的全屏页面 id
+    property string fullscreenMode: ""  // "" / "preferences" / 下游全屏页 id
     property int _prevTitleBarIndex: 0
     property bool allowImmediateClose: false
     property var activeTabCtrl: null
 
-    // 全屏页面注册表（preferences 内置 + 下游注册）
-    readonly property var fullscreenPages: {
-        var pages = [{ id: "preferences", url: Qt.resolvedUrl("pages/PreferencesPage.qml").toString() }]
-        var registered = JSON.parse(ShellRegistry.fullscreenPagesJson())
-        for (var i = 0; i < registered.length; i++) pages.push(registered[i])
-        return pages
+    // 内置偏好页（preferences 全屏页）
+    Component {
+        id: preferencesFullscreenPage
+        PreferencesPage { }
     }
-    readonly property bool hasOverview: ShellRegistry.hasOverview()
+
+    // 全屏页列表：内置偏好页 + 下游声明
+    readonly property var allFullscreenPages: {
+        var list = [{ id: "preferences", source: preferencesFullscreenPage }]
+        for (var i = 0; i < window.fullscreenPages.length; i++)
+            list.push({ id: window.fullscreenPages[i].id, source: window.fullscreenPages[i].source })
+        return list
+    }
+
+    readonly property bool hasOverview: window.overviewContent !== null
     // tab 内容区在 StackLayout 中的下标（无总览时前移一位）
     readonly property int tabIndex: hasOverview ? 1 : 0
 
@@ -191,6 +230,8 @@ ApplicationWindow {
             Layout.fillWidth: true
             configManagerDialog: profileManagerDialog
             fullscreenMode: window.fullscreenMode
+            showOverview: window.hasOverview
+            titleBarTrailing: window.titleBarTrailing
             onSettingsRequested: window.enterFullscreenMode("preferences")
             onBackRequested: window.exitFullscreenMode()
             onMinimizeRequested: window.minimizeWindow()
@@ -202,16 +243,15 @@ ApplicationWindow {
             Layout.fillHeight: true
             currentIndex: titleBar.currentIndex
 
-            // ── index 0: 总览页（下游 slot；未注册时无此页）───
+            // ── index 0: 总览页（overviewContent 为 null 时整页隐藏）───
             Item {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 visible: window.hasOverview
 
-                SlotHost {
+                Loader {
                     anchors.fill: parent
-                    slotName: SlotName.overviewContent
-                    fill: true
+                    sourceComponent: window.overviewContent
                 }
             }
 
@@ -231,6 +271,13 @@ ApplicationWindow {
                             tab: TabManager.tabControllerAt(index)
                             navigation: navigation
                             fullscreenMode: window.fullscreenMode
+                            pages: window.pages
+                            controlNotices: window.controlNotices
+                            controlRunExtras: window.controlRunExtras
+                            controlFooter: window.controlFooter
+                            aboutExtra: window.aboutExtra
+                            settingsSections: window.settingsSections
+                            aboutLinks: window.aboutLinks
                         }
                     }
                 }
@@ -238,28 +285,27 @@ ApplicationWindow {
         }
     }
 
-    // ── 全屏模式覆盖层（preferences + 下游注册页面）────────────
+    // ── 全屏模式覆盖层（preferences + 下游声明页面）────────────
     Item {
         anchors.fill: parent
         visible: splash.ready && window.fullscreenMode !== ""
 
         Repeater {
-            model: window.fullscreenPages
+            model: window.allFullscreenPages
             delegate: Loader {
                 required property var modelData
                 anchors.fill: parent
                 visible: window.fullscreenMode === modelData.id
+                sourceComponent: modelData.source
 
-                Component.onCompleted: {
-                    // preferences 需要注入 prefsCtrl；其余页面按需在 onLoaded 补充可选属性
-                    if (modelData.id === "preferences")
-                        setSource(modelData.url, { "prefsCtrl": PreferencesController })
-                    else
-                        setSource(modelData.url, {})
-                }
                 onLoaded: {
-                    if (item && item.hasOwnProperty("navigation"))
+                    // 内置偏好页注入 prefsCtrl；下游页面按需回填可选注入属性
+                    if (modelData.id === "preferences") {
+                        if (item && item.hasOwnProperty("prefsCtrl"))
+                            item.prefsCtrl = PreferencesController
+                    } else if (item && item.hasOwnProperty("navigation")) {
                         item.navigation = navigation
+                    }
                 }
             }
         }
@@ -321,10 +367,10 @@ ApplicationWindow {
         id: noticeHost
     }
 
-    // ── 下游窗口级对话框 / 非可视组件 slot ────────────────────
+    // ── 下游窗口级对话框 / 非可视组件 ────────────────────────
     Item {
-        SlotHost {
-            slotName: SlotName.windowDialogs
+        Loader {
+            sourceComponent: window.windowDialogs
         }
     }
 

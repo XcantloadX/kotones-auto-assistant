@@ -2,9 +2,9 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import "../components"
-import ".." as App
+import ".."
 
-// 关于页：应用信息 + 外链 + 下游附加内容 slot。
+// 关于页：应用信息 + 外链 + 下游附加内容。
 // 页面统一契约：tab / navigation / fullscreenMode。
 PageContainer {
     id: root
@@ -14,11 +14,9 @@ PageContainer {
     property var navigation: null
     property string fullscreenMode: ""
 
-    property var about: ({appName: "", links: []})
-
-    Component.onCompleted: {
-        about = JSON.parse(ShellRegistry.aboutJson())
-    }
+    // 下游扩展点（由 EuiShellApp 透传）
+    property list<EuiLink> aboutLinks: []
+    property Component aboutExtra: null
 
     ColumnLayout {
         anchors.centerIn: parent
@@ -40,7 +38,7 @@ PageContainer {
         }
 
         Label {
-            text: root.about.appName || splash.appName
+            text: splash.appName
             font.pixelSize: 28
             Layout.alignment: Qt.AlignHCenter
         }
@@ -55,7 +53,7 @@ PageContainer {
             Layout.fillWidth: false
 
             Repeater {
-                model: root.about.links
+                model: root.aboutLinks
                 delegate: Link {
                     required property var modelData
                     label: modelData.label
@@ -65,10 +63,10 @@ PageContainer {
         }
 
         // ── 下游附加内容 slot ─────────────────────────
-        App.SlotHost {
-            slotName: App.SlotName.aboutExtra
-            tab: root.tab
+        Loader {
+            sourceComponent: root.aboutExtra
             Layout.alignment: Qt.AlignHCenter
+            onLoaded: if (item && item.hasOwnProperty("tab")) item.tab = root.tab
         }
     }
 }

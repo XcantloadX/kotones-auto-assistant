@@ -12,6 +12,8 @@ Item {
     property int currentIndex: 0
     property var tabs: []
     property bool showOverview: true
+    // 标题栏尾部内容（如后台任务指示器），由 EuiShellApp 透传
+    property Component titleBarTrailing: null
 
     signal settingsRequested()
 
@@ -49,9 +51,10 @@ Item {
             height: parent.height
             spacing: 2
 
-            // ── 总览 Tab（固定，不可关闭；未注册时隐藏）──────────
+            // ── 总览 Tab（固定，不可关闭；overviewContent 为 null 时隐藏）──
             Item {
                 id: overviewTab
+                objectName: "overviewTab"
                 visible: root.showOverview
                 width: visible ? Math.min(240, Math.max(120, overviewLabel.implicitWidth + 24)) : 0
                 height: parent.height
@@ -355,8 +358,8 @@ Item {
         }
 
         // ── 标题栏尾部 slot（如后台任务指示器）─────────────────
-        App.SlotHost {
-            slotName: App.SlotName.titlebarTrailing
+        Loader {
+            sourceComponent: root.titleBarTrailing
         }
     }
 }

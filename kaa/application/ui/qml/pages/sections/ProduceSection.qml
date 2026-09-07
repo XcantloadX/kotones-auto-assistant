@@ -8,7 +8,7 @@ import EuiShell
 // options 列表通过 JSON 桥接（FormComboBox 尚未支持直接绑定 model）
 Item {
     id: root
-    required property var settingsCtrl
+    property var settingsCtrl
     property var errors: ({})
     property var navigation: null
 

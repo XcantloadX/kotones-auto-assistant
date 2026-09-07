@@ -6,18 +6,7 @@ from pathlib import Path
 
 from PySide6.QtCore import QMetaObject, Qt, QObject
 
-from euishell.exceptions import RegistrationError
-from euishell.plugin import (
-    AboutLink,
-    EuiShellPlugin,
-    PageSpec,
-    ShellRegistry,
-    SlotItemSpec,
-    SlotName,
-    SlotSpec,
-    SectionSpec,
-    StartupContext,
-)
+from euishell.plugin import EuiShellPlugin, StartupContext
 from euishell.bridges.splash import SplashBridge
 from euishell.controllers.preferences_controller import PreferencesControllerBase
 from euishell.session import (
@@ -54,14 +43,6 @@ def _app_version() -> str:
         return 'dev'
 
 
-def _qml(relative: str) -> Path:
-    """返回 KAA QML 文件路径，并在注册期 fail-fast 校验存在性。"""
-    path = QML_DIR / relative
-    if not path.exists():
-        raise RegistrationError(f'QML 文件不存在: {path}')
-    return path
-
-
 class KaaPlugin(EuiShellPlugin):
     """KAA 业务插件：把 KAA 的页面 / 控制器 / 服务接入 EuiShell Shell。"""
 
@@ -88,87 +69,8 @@ class KaaPlugin(EuiShellPlugin):
     def icon_path(self) -> Path:
         return ICON_PATH
 
-    def about_links(self) -> list[AboutLink]:
-        return [
-            AboutLink(label='GitHub', url='https://github.com/XcantloadX/kotones-auto-assistant'),
-            AboutLink(label='Bilibili', url='https://space.bilibili.com/3546853903698457'),
-            AboutLink(label='教程文档', url='https://www.kdocs.cn/l/cetCY8mGKHLj'),
-            AboutLink(label='QQ 群', url='https://qm.qq.com/q/OI0C3rMmAs'),
-        ]
-
-    # ── 注册 ─────────────────────────────────────────────────
-
-    def register(self, registry: ShellRegistry) -> None:
-        """注册 KAA 的 slot 内容、自定义页面与设置/偏好 section。"""
-        # Tab 内自定义页面
-        registry.register_page(PageSpec(
-            id='produce', title='方案', qml_file=_qml('pages/ProducePage.qml'), after='settings',
-        ))
-        registry.register_page(PageSpec(
-            id='update', title='更新', qml_file=_qml('pages/UpdatePage.qml'), after='produce',
-        ))
-
-        # 全屏页面
-        registry.register_fullscreen_page(PageSpec(
-            id='skillCardBrowser', title='卡片浏览', qml_file=_qml('pages/SkillCardBrowserPage.qml'),
-        ))
-
-        # 具名 slot
-        registry.register_slot(SlotSpec(name=SlotName.OVERVIEW, items=[
-            SlotItemSpec(qml_file=_qml('slots/OverviewSlot.qml')),
-        ]))
-        registry.register_slot(SlotSpec(name=SlotName.TITLEBAR_TRAILING, items=[
-            SlotItemSpec(qml_file=_qml('components/UpdateIndicator.qml')),
-        ]))
-        registry.register_slot(SlotSpec(name=SlotName.WINDOW_DIALOGS, items=[
-            SlotItemSpec(qml_file=_qml('slots/KaaDialogs.qml')),
-        ]))
-        registry.register_slot(SlotSpec(name=SlotName.ABOUT_EXTRA, items=[
-            SlotItemSpec(qml_file=_qml('slots/GameDataVersionRow.qml')),
-        ]))
-        registry.register_slot(SlotSpec(name=SlotName.CONTROL_RUN_EXTRAS, items=[
-            SlotItemSpec(qml_file=_qml('slots/EndActionRow.qml')),
-        ]))
-        registry.register_slot(SlotSpec(name=SlotName.CONTROL_NOTICES, items=[
-            SlotItemSpec(qml_file=_qml('slots/ProduceEngineNotice.qml')),
-        ]))
-        registry.register_slot(SlotSpec(name=SlotName.CONTROL_FOOTER, items=[
-            SlotItemSpec(qml_file=_qml('slots/ControlFooterExtras.qml')),
-        ]))
-
-        # 设置页 section
-        registry.register_settings_section(SectionSpec(
-            id='emulator', title='基本', qml_file=_qml('pages/sections/EmulatorSection.qml'),
-        ))
-        registry.register_settings_section(SectionSpec(
-            id='daily', title='日常', qml_file=_qml('pages/sections/DailySection.qml'),
-        ))
-        registry.register_settings_section(SectionSpec(
-            id='produce', title='培育', qml_file=_qml('pages/sections/ProduceSection.qml'),
-        ))
-        registry.register_settings_section(SectionSpec(
-            id='misc', title='杂项', qml_file=_qml('pages/sections/MiscSection.qml'),
-        ))
-
-        # 偏好页 section（外观由 Shell 内置）
-        registry.register_preference_section(SectionSpec(
-            id='startup', title='启动', qml_file=_qml('pages/preferences/InterfaceExtraSection.qml'),
-        ))
-        registry.register_preference_section(SectionSpec(
-            id='update', title='更新', qml_file=_qml('pages/preferences/UpdateSection.qml'),
-        ))
-        registry.register_preference_section(SectionSpec(
-            id='gameData', title='游戏资源', qml_file=_qml('pages/preferences/GameDataSection.qml'),
-        ))
-        registry.register_preference_section(SectionSpec(
-            id='notify', title='通知', qml_file=_qml('pages/preferences/NotifySection.qml'),
-        ))
-        registry.register_preference_section(SectionSpec(
-            id='hotkeys', title='快捷键', qml_file=_qml('pages/preferences/HotkeysSection.qml'),
-        ))
-        registry.register_preference_section(SectionSpec(
-            id='telemetry', title='数据收集', qml_file=_qml('pages/preferences/TelemetrySection.qml'),
-        ))
+    def entry_qml(self) -> Path:
+        return QML_DIR / 'index.qml'
 
     # ── 会话与后端 ───────────────────────────────────────────
 

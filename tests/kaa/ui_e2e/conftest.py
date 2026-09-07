@@ -663,6 +663,7 @@ def qapp():
 class _FakeSplash(QObject):
     readyChanged = Signal()
     iconPathChanged = Signal()
+    appNameChanged = Signal()
     appVersionChanged = Signal()
     statusTextChanged = Signal()
 
@@ -670,6 +671,7 @@ class _FakeSplash(QObject):
         super().__init__()
         self._ready = True
         self._iconPath = ""
+        self._appName = "kaa"
         self._appVersion = "test"
         self._statusText = ""
         self.gameDataDownloading = False
@@ -681,6 +683,10 @@ class _FakeSplash(QObject):
     @Property(str, notify=iconPathChanged)
     def iconPath(self) -> str:
         return self._iconPath
+
+    @Property(str, notify=appNameChanged)
+    def appName(self) -> str:
+        return self._appName
 
     @Property(str, notify=appVersionChanged)
     def appVersion(self) -> str:
@@ -723,42 +729,6 @@ class _FakeErrorDialog(QObject):
 class _FakeProfileStore(QObject):
     profilesChanged = Signal()
     profilesJson = Property(str, lambda s: '{"profiles": []}', constant=True)
-
-
-class _FakeShellRegistry(QObject):
-    """ShellRegistry 假件：slot / section 注册表为空。"""
-
-    @Slot(str, result=str)
-    def slotItemsJson(self, name: str) -> str:
-        return "[]"
-
-    @Slot(result=bool)
-    def hasOverview(self) -> bool:
-        return True
-
-    @Slot(result=str)
-    def customPagesJson(self) -> str:
-        return "[]"
-
-    @Slot(result=str)
-    def settingsSectionsJson(self) -> str:
-        return "[]"
-
-    @Slot(result=str)
-    def preferenceSectionsJson(self) -> str:
-        return "[]"
-
-    @Slot(result=str)
-    def fullscreenPagesJson(self) -> str:
-        return "[]"
-
-    @Slot(result=str)
-    def aboutJson(self) -> str:
-        return json.dumps({"appName": "kaa", "links": []}, ensure_ascii=False)
-
-    @Slot(str, result="QVariant")
-    def globalController(self, role: str):
-        return None
 
 
 class FakeScheduleController(QObject):
@@ -826,7 +796,6 @@ def _install_production_context(engine: QQmlApplicationEngine) -> None:
         "errorDialog": _FakeErrorDialog(),
         "TabManager": FakeTabManager(),
         "AppearanceController": _FakeTheme(),
-        "ShellRegistry": _FakeShellRegistry(),
         "globalGuards": [],
         "PreferencesController": FakePrefsController(),
         "GameDataCtrl": FakeGameDataController(),

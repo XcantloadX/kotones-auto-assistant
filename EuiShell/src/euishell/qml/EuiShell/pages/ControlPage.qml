@@ -14,6 +14,11 @@ PageContainer {
     property var navigation: null
     property string fullscreenMode: ""
 
+    // 下游扩展点（每 Tab 1 份，由 EuiShellApp 透传）
+    property Component controlNotices: null
+    property Component controlRunExtras: null
+    property Component controlFooter: null
+
     readonly property var runCtrl: tab ? tab.runCtrl : null
     readonly property var progressCtrl: tab ? tab.progressCtrl : null
 
@@ -44,10 +49,10 @@ PageContainer {
             spacing: 12
 
             // ── 页面顶部通知 slot ─────────────────────────
-            App.SlotHost {
-                slotName: App.SlotName.controlNotices
-                tab: root.tab
+            Loader {
+                sourceComponent: root.controlNotices
                 Layout.fillWidth: true
+                onLoaded: if (item && item.hasOwnProperty("tab")) item.tab = root.tab
             }
 
             // ── 运行控制 + 进度 ──────────────────────────
@@ -77,9 +82,9 @@ PageContainer {
                         }
 
                         // ── 运行控制行内附加控件 slot ──────────
-                        App.SlotHost {
-                            slotName: App.SlotName.controlRunExtras
-                            tab: root.tab
+                        Loader {
+                            sourceComponent: root.controlRunExtras
+                            onLoaded: if (item && item.hasOwnProperty("tab")) item.tab = root.tab
                         }
 
                         Item { Layout.fillWidth: true }
@@ -172,10 +177,10 @@ PageContainer {
             }
 
             // ── 页面底部附加区 slot ───────────────────────
-            App.SlotHost {
-                slotName: App.SlotName.controlFooter
-                tab: root.tab
+            Loader {
+                sourceComponent: root.controlFooter
                 Layout.fillWidth: true
+                onLoaded: if (item && item.hasOwnProperty("tab")) item.tab = root.tab
             }
         }
     }

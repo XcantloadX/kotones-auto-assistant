@@ -7,7 +7,7 @@ import "../../components/form"
 // 基本设置：模拟器 + 启动/结束游戏
 Item {
     id: root
-    required property var settingsCtrl
+    property var settingsCtrl
     property var errors: ({})
     property var navigation: null
 

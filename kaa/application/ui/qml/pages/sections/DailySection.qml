@@ -7,7 +7,7 @@ import EuiShell
 // 日常设置：商店 / 工作 / 竞赛 / 社团 / 扭蛋机 / 奖励
 Item {
     id: root
-    required property var settingsCtrl
+    property var settingsCtrl
     property var errors: ({})
     property var navigation: null
 

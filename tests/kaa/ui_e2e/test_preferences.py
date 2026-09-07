@@ -1,9 +1,8 @@
 from __future__ import annotations
 from pathlib import Path
 
-from PySide6.QtCore import QObject
-
-from euishell.plugin import SectionSpec, ShellRegistry
+from PySide6.QtCore import QObject, QUrl
+from PySide6.QtQml import QQmlApplicationEngine, QQmlComponent
 
 from .conftest import (
     KAA_QML_DIR,
@@ -15,6 +14,31 @@ from .conftest import (
     load_path,
     click,
 )
+
+_PREFERENCES_DIR = KAA_QML_DIR / "pages" / "preferences"
+
+
+def _telemetry_spec(engine: QQmlApplicationEngine) -> QObject:
+    """构造 KAA 遥测偏好 section 的 EuiSectionSpec。"""
+    comp = QQmlComponent(engine)
+    comp.setData(
+        (
+            'import EuiShell\n'
+            'EuiSectionSpec {\n'
+            '    title: "数据收集"\n'
+            '    source: TelemetrySection { }\n'
+            '}\n'
+        ).encode(),
+        QUrl.fromLocalFile(str(_PREFERENCES_DIR / "_spec.qml")),
+    )
+    assert comp.status() == QQmlComponent.Status.Ready, "\n".join(
+        e.toString() for e in comp.errors()
+    )
+    spec = comp.create()
+    assert spec is not None
+    # spec 由 QML 侧 preferenceSections 持有指针但无所有权,挂到 engine 下防止 Python 局部引用消失后 C++ 对象被回收
+    spec.setParent(engine)
+    return spec
 
 
 def make_preferences(
@@ -43,18 +67,12 @@ def make_preferences(
         }
     )
     game_data = FakeGameDataController()
-    # 注册 KAA 遥测偏好 section（外观 section 由 Shell 内置）
-    registry = ShellRegistry()
-    registry.register_preference_section(SectionSpec(
-        id="telemetry",
-        title="数据收集",
-        qml_file=Path(KAA_QML_DIR) / "pages" / "preferences" / "TelemetrySection.qml",
-    ))
+    spec = _telemetry_spec(engine)
     page = load_path(
         engine,
         Path(SHELL_QML_DIR) / "EuiShell" / "pages" / "PreferencesPage.qml",
-        properties={"prefsCtrl": prefs},
-        context={"GameDataCtrl": game_data, "ShellRegistry": registry},
+        properties={"prefsCtrl": prefs, "preferenceSections": [spec]},
+        context={"GameDataCtrl": game_data},
     )
     return page, prefs, game_data
 

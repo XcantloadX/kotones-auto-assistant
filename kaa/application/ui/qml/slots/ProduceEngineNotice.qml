@@ -8,7 +8,7 @@ import "../components/form"
 ColumnLayout {
     id: root
 
-    required property var tab
+    property var tab
 
     readonly property var settingsCtrl: tab ? tab.settingsCtrl : null
     readonly property bool produceEngineLegacy: (settingsCtrl?.config?.profile?.tasks?.produce?.produce_engine) === "legacy"

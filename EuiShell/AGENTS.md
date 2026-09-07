@@ -170,31 +170,64 @@ EuiShell 只提供 **Shell UI**，不包含任何业务逻辑：
 
 ## 下游接入方式
 
-下游项目实现 `euishell.plugin.EuiShellPlugin`，构造 `ShellApp(plugin).run()` 即可启动 Shell：
+下游项目实现 `euishell.plugin.EuiShellPlugin`，构造 `ShellApp(plugin).run()` 即可启动 Shell。
+engine 加载 `plugin.entry_qml()` 指向的下游组合根 `index.qml`（根元素须为 `EuiShellApp`），
+加载失败抛 `QmlLoadError` fail-fast：
 
-- `register(registry)` — 注册自定义页面、slot 内容、设置/偏好 section、全屏页面。
+- `app_name` / `app_version` / `icon_path` — 应用元信息。QApplication 名称 / 窗口图标与
+  Splash 配置都在 QML engine 加载之前需要，因此留在 Python 侧。
+- `entry_qml()` — 返回下游组合根 `index.qml` 路径，插槽内容由 QML 扩展点属性声明（见下节）。
 - `create_session(profile_id)` — 为每个 Tab 创建一个 `ShellSession`（下游业务会话）。
-- `startup(ctx)` / `post_startup(ctx)` / `post_ready(ctx)` — 后台线程生命周期钩子。
-- `global_controllers()` — 下游全局控制器，以 role 名注册为 QML 上下文属性。
+- `startup(ctx)` / `post_startup(ctx)` / `post_ready(ctx)` / `shutdown(ctx)` — 后台线程生命周期钩子。
+- `global_controllers(ctx)` — 下游全局控制器，以 role 名注册为 QML context property，
+  QML 中裸名引用。
 - 其余接口见 `src/euishell/plugin.py` 与 `src/euishell/session.py` 的 docstring。
 
-## QML slot 约定
+## QML 扩展点约定
 
-Shell QML 中预留了具名 slot（见 `euishell.plugin.SlotName`），下游通过
-`registry.register_slot(SlotSpec(...))` 注入自己的 QML 组件：
+下游在 `entry_qml()` 指向的 `index.qml` 中实例化 `EuiShellApp`，通过扩展点属性声明式传入
+全部插槽内容（Component / spec 对象），实例化策略由框架内部决定：
 
-| Slot | 位置 |
-|------|------|
-| `overview.content` | 总览 Tab 内容（不注册则隐藏总览 Tab） |
-| `titlebar.trailing` | 标题栏按钮区末尾 |
-| `window.dialogs` | 主窗口级对话框/非可视组件 |
-| `about.extra` | 关于页附加内容 |
-| `control.runExtras` | 控制页运行控制行内附加控件 |
-| `control.notices` | 控制页顶部通知区 |
-| `control.footer` | 控制页底部附加区 |
+| 属性 | 类型 | 实例化策略 |
+|------|------|-----------|
+| `overviewContent` | `Component`（默认 null） | 窗口级 1 份；null → 总览 Tab 整体隐藏 |
+| `titleBarTrailing` | `Component` | 窗口级 1 份 |
+| `windowDialogs` | `Component` | 窗口级 1 份 |
+| `controlNotices` | `Component` | 每 Tab 1 份 |
+| `controlRunExtras` | `Component` | 每 Tab 1 份 |
+| `controlFooter` | `Component` | 每 Tab 1 份 |
+| `aboutExtra` | `Component` | 每 Tab 1 份 |
+| `pages` | `list<EuiPageSpec>` | 每 Tab 1 份；声明顺序即导航顺序，位于设置页之后、日志页之前 |
+| `fullscreenPages` | `list<EuiFullscreenPageSpec>` | 窗口级；经 NavigationCoordinator 进入 |
+| `settingsSections` | `list<EuiSectionSpec>` | 每 Tab 1 份 |
+| `preferenceSections` | `list<EuiSectionSpec>` | 窗口级 1 份（偏好页全屏独占，外观 section 内置并置首） |
+| `aboutLinks` | `list<EuiLink>` | 纯数据 |
 
-slot 内的 QML 组件可通过 `controllerRole` 声明所需控制器：Tab 内 slot 由当前
-`TabController.controller(role)` 解析，全局 slot 由 `ShellRegistry.globalController(role)` 解析。
+spec 类型：
+
+- `EuiPageSpec { title; source: Component }`
+- `EuiFullscreenPageSpec { id: string; source: Component }` — id 与 `window.fullscreenMode`
+  字符串匹配；内置偏好页 id 为 `"preferences"`
+- `EuiSectionSpec { title; source: Component }`
+- `EuiLink { label; url }`
+
+### 下游内容根元素契约
+
+下游组件被框架以 `Loader { sourceComponent: <下游 Component> }` 实例化，Component 的创建
+上下文是 `index.qml`（而非挂载点页面），required 属性无法经创建上下文自动解析。约定：
+
+- 根元素声明**非 required** 的可选注入属性：`property var tab`、`property var navigation`、
+  `property var settingsCtrl`、`property var prefsCtrl`、`property var errors`、
+  `property string fullscreenMode` 等；
+- 框架 mount 在 `onLoaded` 中按 `hasOwnProperty` 逐个回填；
+- 上下文捕获纪律：窗口级声明的对象天然被所有克隆共享（可依赖全局 context property）；
+  **per-tab 状态只允许经注入的 `tab` / 控制器获取**，禁止在声明处捕获窗口级有状态对象。
+
+### 控制器访问
+
+- 全局控制器：`global_controllers()` 的 role → context property，裸名引用（如 `GameDataCtrl`）。
+- Tab 内控制器：组件根元素经注入的 `tab` 访问 `tab.controller(role)` / `tab.settingsCtrl` /
+  `tab.runCtrl`。
 
 ## 外观配置保留键
 

@@ -14,8 +14,11 @@ SHELL_QML_ROOTS = [
     "FluentIcons.qml",
     "LoadingOverlay.qml",
     "SplashOverlay.qml",
-    "SlotHost.qml",
-    "SlotName.qml",
+    "EuiShellApp.qml",
+    "EuiPageSpec.qml",
+    "EuiFullscreenPageSpec.qml",
+    "EuiSectionSpec.qml",
+    "EuiLink.qml",
     "components/FluentIcon.qml",
     "components/HelpTip.qml",
     "components/Link.qml",
@@ -55,6 +58,7 @@ SHELL_QML_ROOTS = [
 
 # KAA 侧 QML：业务页面 / section / 对话框 / slot
 KAA_QML_ROOTS = [
+    "index.qml",
     "components/CostNumberIcon.qml",
     "components/EffectDescription.qml",
     "components/ExamEffectIcon.qml",

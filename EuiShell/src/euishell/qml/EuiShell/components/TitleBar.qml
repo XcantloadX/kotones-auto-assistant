@@ -14,6 +14,10 @@ Item {
 
     required property var configManagerDialog
 
+    property bool showOverview: true
+    // 标题栏尾部内容，透传给 TabStrip
+    property Component titleBarTrailing: null
+
     readonly property int currentIndex: tabStrip.currentIndex
     property string fullscreenMode: ""  // "" / "preferences" / 注册的全屏页面 id
 
@@ -110,7 +114,8 @@ Item {
                 visible: root.fullscreenMode === ""
                 configManagerDialog: root.configManagerDialog
                 tabs: root._tabs
-                showOverview: ShellRegistry.hasOverview()
+                showOverview: root.showOverview
+                titleBarTrailing: root.titleBarTrailing
                 onSettingsRequested: root.settingsRequested()
             }
 

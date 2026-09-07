@@ -14,13 +14,7 @@ from PySide6.QtQml import QQmlApplicationEngine
 from euishell import paths
 from euishell.controllers.preferences_controller import PreferencesControllerBase
 from euishell.exceptions import ProfileError, TaskControlError
-from euishell.plugin import (
-    EuiShellPlugin,
-    ShellRegistry,
-    SlotSpec,
-    SlotName,
-    StartupContext,
-)
+from euishell.plugin import EuiShellPlugin, StartupContext
 from euishell.session import (
     AppearanceSettingsStore,
     OpenTabsState,
@@ -244,6 +238,16 @@ class DummyPlugin(EuiShellPlugin):
             'Item { implicitWidth: 10; implicitHeight: 10 }\n',
             encoding='utf-8',
         )
+        # 最小组合根：带总览内容以验证总览路径
+        self.index_qml = tmp_dir / 'index.qml'
+        self.index_qml.write_text(
+            'import QtQuick\n'
+            'import EuiShell\n'
+            'EuiShellApp {\n'
+            '    overviewContent: Component { Item { implicitWidth: 10; implicitHeight: 10 } }\n'
+            '}\n',
+            encoding='utf-8',
+        )
         self._session = DummySession('p1')
         self.last_splash = None
         self.startup_called = False
@@ -261,9 +265,8 @@ class DummyPlugin(EuiShellPlugin):
     def icon_path(self) -> Path:
         return self.icon
 
-    def register(self, registry: ShellRegistry) -> None:
-        registry.register_slot(SlotSpec(name=SlotName.OVERVIEW, items=[]))
-        registry.register_slot(SlotSpec(name=SlotName.WINDOW_DIALOGS, items=[]))
+    def entry_qml(self) -> Path:
+        return self.index_qml
 
     def create_session(self, profile_id: str) -> ShellSession:
         return DummySession(profile_id)
