@@ -8,7 +8,7 @@ import EuiShell
 RowLayout {
     id: root
 
-    required property var tab
+    property var tab
 
     readonly property var controlCtrl: tab ? tab.controller("control") : null
 

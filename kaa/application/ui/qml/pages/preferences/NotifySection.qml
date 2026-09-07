@@ -6,7 +6,7 @@ import EuiShell
 ColumnLayout {
     id: root
 
-    required property var prefsCtrl
+    property var prefsCtrl
 
     function _get(path) {
         var parts = path.split('.')

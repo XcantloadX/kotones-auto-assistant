@@ -18,7 +18,7 @@ from euishell.bridges.notice import NoticeBackend
 from euishell.controllers.profile_store import ProfileStoreBackend
 from euishell.controllers.tab_manager import TabManager
 from euishell.exceptions import QmlLoadError
-from euishell.plugin import EuiShellPlugin, ShellRegistry, StartupContext
+from euishell.plugin import EuiShellPlugin, StartupContext
 from euishell.theme import AppearanceController
 
 if sys.platform == 'win32':
@@ -91,12 +91,7 @@ class ShellApp:
         """
         plugin = self._plugin
 
-        # ── 1. 插件注册 ─────────────────────────────────────────
-        registry = ShellRegistry()
-        registry.set_app_info(plugin.app_name, plugin.about_links())
-        plugin.register(registry)
-
-        # ── 2. Shell 控制器 ────────────────────────────────────
+        # ── 1. Shell 控制器 ────────────────────────────────────
         appearance = AppearanceController(plugin.appearance_store())
         prefs_ctrl = plugin.create_preferences_controller()
         tab_manager = TabManager(
@@ -116,10 +111,9 @@ class ShellApp:
             icon_path=paths.file_url(plugin.icon_path),
         )
 
-        # ── 3. 插件全局控制器（需要 Tab 管理器，先于 QML 加载）──
+        # ── 2. 插件全局控制器（需要 Tab 管理器，先于 QML 加载）──
         startup_ctx = StartupContext(splash=splash, tab_manager=tab_manager)
         global_controllers = plugin.global_controllers(startup_ctx)
-        registry.set_global_controllers(global_controllers)
 
         # 外观必须在 QML 加载前应用，保证 palette / 暗色正确
         appearance.apply_to_app(app)
@@ -127,7 +121,6 @@ class ShellApp:
 
         # ── 3. QML 引擎与上下文属性 ────────────────────────────
         engine = QQmlApplicationEngine()
-
         max_hover_bridge = MaxHoverBridge() if sys.platform == 'win32' else None
         tab_bar_bridge = TabBarHitTestBridge() if sys.platform == 'win32' else None
 
@@ -139,7 +132,6 @@ class ShellApp:
         context.setContextProperty('Notice', notice)
         context.setContextProperty('AppearanceController', appearance)
         context.setContextProperty('PreferencesController', prefs_ctrl)
-        context.setContextProperty('ShellRegistry', registry)
         context.setContextProperty('globalGuards', plugin.global_dirty_guards())
         context.setContextProperty('maxHoverBridge', max_hover_bridge)
         context.setContextProperty('tabBarBridge', tab_bar_bridge)
@@ -151,13 +143,13 @@ class ShellApp:
 
         engine.addImportPath(str(paths.QML_DIR))
 
-        qml_file = paths.QML_MODULE_DIR / 'main.qml'
-        engine.load(QUrl.fromLocalFile(str(qml_file)))
+        entry = plugin.entry_qml()
+        engine.load(QUrl.fromLocalFile(str(entry)))
 
         if not engine.rootObjects():
-            logger.error('Failed to load QML file: %s', qml_file)
+            logger.error('Failed to load QML file: %s', entry)
             set_bridge(None)
-            raise QmlLoadError(qml_file)
+            raise QmlLoadError(entry)
 
         # ── 4. 无边框窗口 + Win32 event filter（仅原生窗口平台）──
         # offscreen（测试/CI）平台没有真实系统窗口，跳过 Win32 特效装配

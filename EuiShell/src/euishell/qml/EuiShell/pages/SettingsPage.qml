@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import ".."
 import "../components"
 
 // 设置页：草稿保存框架 + 下游注册的 section TabBar。
@@ -23,13 +24,10 @@ PageContainer {
     // 自动注册的 field → label 映射（由各 Form* 通过 FieldRegistrar 上报）
     property var fieldLabelMap: ({})
 
-    // 下游注册的设置 section
-    property var sections: []
+    // 下游注册的设置 section（由 EuiShellApp 透传）
+    property list<EuiSectionSpec> settingsSections: []
 
-    Component.onCompleted: {
-        sections = JSON.parse(ShellRegistry.settingsSectionsJson())
-        refreshValidation()
-    }
+    Component.onCompleted: refreshValidation()
 
     function registerField(path, label) {
         if (!path || !label) return
@@ -206,10 +204,10 @@ PageContainer {
         TabBar {
             id: settingsTabs
             Layout.fillWidth: true
-            visible: root.sections.length > 0
+            visible: root.settingsSections.length > 0
 
             Repeater {
-                model: root.sections
+                model: root.settingsSections
                 delegate: TabButton {
                     required property var modelData
                     text: modelData.title
@@ -224,21 +222,20 @@ PageContainer {
             currentIndex: settingsTabs.currentIndex
 
             Repeater {
-                model: root.sections
+                model: root.settingsSections
                 delegate: Loader {
                     required property var modelData
-                    Component.onCompleted: {
-                        // section 统一契约：settingsCtrl / errors / navigation
-                        setSource(modelData.url, {
-                            "settingsCtrl": root.settingsCtrl,
-                            "errors": root.errors,
-                            "navigation": root.navigation
-                        })
+                    sourceComponent: modelData.source
+                    onLoaded: {
+                        // section 根元素按契约声明可选注入属性，挂载时回填
+                        if (item && item.hasOwnProperty("settingsCtrl")) item.settingsCtrl = root.settingsCtrl
+                        if (item && item.hasOwnProperty("errors")) item.errors = root.errors
+                        if (item && item.hasOwnProperty("navigation")) item.navigation = root.navigation
                     }
                     Connections {
                         target: root
                         function onErrorsChanged() {
-                            if (item) item.errors = root.errors
+                            if (item && item.hasOwnProperty("errors")) item.errors = root.errors
                         }
                     }
                 }

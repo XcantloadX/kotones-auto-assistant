@@ -8,7 +8,7 @@ import "../dialogs"
 ColumnLayout {
     id: root
 
-    required property var tab
+    property var tab
 
     readonly property var settingsCtrl: tab ? tab.settingsCtrl : null
     readonly property bool keepScreenshots: (settingsCtrl?.config?.profile?.keep_screenshots) ?? false

@@ -11,10 +11,6 @@ class MissingResourceError(EuiShellError):
     """框架内置资源缺失。"""
 
 
-class RegistrationError(EuiShellError):
-    """插件注册信息非法（重复 id、未知 slot 等）。"""
-
-
 class PluginLifecycleError(EuiShellError):
     """插件生命周期调用失败。"""
 

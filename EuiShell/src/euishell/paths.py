@@ -17,7 +17,7 @@ QML_DIR: Path = PACKAGE_DIR / 'qml'
 """QML import path 根目录（其下 EuiShell/ 为命名模块目录）。"""
 
 QML_MODULE_DIR: Path = QML_DIR / 'EuiShell'
-"""EuiShell 命名模块目录（main.qml 与全部 Shell QML 所在）。"""
+"""EuiShell 命名模块目录（EuiShellApp.qml 与全部 Shell QML 所在）。"""
 
 FONTS_DIR: Path = PACKAGE_DIR / 'fonts'
 """内置字体目录。"""
@@ -33,15 +33,6 @@ def file_url(path: Path) -> str:
     :returns: 以 file:/// 开头、使用正斜杠的 URL 字符串
     """
     return 'file:///' + str(path.resolve()).replace('\\', '/')
-
-
-def qml_url(path: Path) -> str:
-    """将 QML 文件路径转换为 Loader 可用的 URL 字符串。
-
-    :param path: QML 文件路径
-    :returns: file:// URL 字符串
-    """
-    return file_url(path)
 
 
 if not FLUENT_ICON_FONT_PATH.exists():

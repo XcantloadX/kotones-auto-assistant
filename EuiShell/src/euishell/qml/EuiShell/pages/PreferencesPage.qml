@@ -1,23 +1,30 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import ".."
 import "../components"
 
-// 偏好页（全屏）：内置外观 section + 下游注册的偏好 section。
+// 偏好页（全屏）：内置外观 section + 下游 preferenceSections。
 PageContainer {
     id: root
     title: "偏好"
 
-    required property var prefsCtrl
+    property var prefsCtrl
     property bool dirty: false
 
-    // section 列表：内置外观 + registry 注册（保持顺序）
-    property var sections: []
-    Component.onCompleted: {
-        var list = [{ id: "_appearance", title: "外观", url: Qt.resolvedUrl("AppearanceSection.qml").toString() }]
-        var registered = JSON.parse(ShellRegistry.preferenceSectionsJson())
-        for (var i = 0; i < registered.length; i++) list.push(registered[i])
-        sections = list
+    // 下游注册的偏好 section（由 EuiShellApp 透传；外观 section 内置并置首）
+    property list<EuiSectionSpec> preferenceSections: []
+
+    Component {
+        id: appearanceSectionComponent
+        AppearanceSection { }
+    }
+
+    readonly property var sections: {
+        var list = [{ title: "外观", source: appearanceSectionComponent }]
+        for (var i = 0; i < root.preferenceSections.length; i++)
+            list.push(root.preferenceSections[i])
+        return list
     }
 
     function save() {
@@ -81,9 +88,10 @@ PageContainer {
                 delegate: Loader {
                     required property var modelData
                     Layout.fillWidth: true
-                    Component.onCompleted: {
-                        // 偏好 section 统一契约：prefsCtrl
-                        setSource(modelData.url, { "prefsCtrl": root.prefsCtrl })
+                    sourceComponent: modelData.source
+                    onLoaded: {
+                        // section 根元素按契约声明可选注入属性，挂载时回填
+                        if (item && item.hasOwnProperty("prefsCtrl")) item.prefsCtrl = root.prefsCtrl
                     }
                 }
             }

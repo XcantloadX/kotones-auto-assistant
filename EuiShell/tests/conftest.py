@@ -14,13 +14,7 @@ from PySide6.QtQml import QQmlApplicationEngine
 from euishell import paths
 from euishell.controllers.preferences_controller import PreferencesControllerBase
 from euishell.exceptions import ProfileError, TaskControlError
-from euishell.plugin import (
-    EuiShellPlugin,
-    ShellRegistry,
-    SlotSpec,
-    SlotName,
-    StartupContext,
-)
+from euishell.plugin import EuiShellPlugin, StartupContext
 from euishell.session import (
     AppearanceSettingsStore,
     OpenTabsState,
@@ -273,10 +267,6 @@ class DummyPlugin(EuiShellPlugin):
 
     def entry_qml(self) -> Path:
         return self.index_qml
-
-    def register(self, registry: ShellRegistry) -> None:
-        registry.register_slot(SlotSpec(name=SlotName.OVERVIEW, items=[]))
-        registry.register_slot(SlotSpec(name=SlotName.WINDOW_DIALOGS, items=[]))
 
     def create_session(self, profile_id: str) -> ShellSession:
         return DummySession(profile_id)

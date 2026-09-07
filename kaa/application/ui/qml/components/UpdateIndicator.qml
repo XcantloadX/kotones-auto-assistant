@@ -17,7 +17,7 @@ Item {
         || GameDataCtrl.updateStatus === "building"
 
     visible: _active
-    // SlotHost 的 Loader 以 implicit 尺寸参与布局；隐藏时宽度归零避免占位
+    // 挂载 Loader 以 implicit 尺寸参与布局；隐藏时宽度归零避免占位
     implicitWidth: _active ? rowContent.implicitWidth + 16 : 0
     implicitHeight: 34
 

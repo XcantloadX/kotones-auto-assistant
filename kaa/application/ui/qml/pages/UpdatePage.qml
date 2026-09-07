@@ -9,7 +9,7 @@ PageContainer {
     id: root
     title: "更新"
     // 页面统一契约：tab / navigation / fullscreenMode
-    required property var tab
+    property var tab
     property var navigation: null
     property string fullscreenMode: ""
     readonly property var updateCtrl: tab ? tab.controller("update") : null
