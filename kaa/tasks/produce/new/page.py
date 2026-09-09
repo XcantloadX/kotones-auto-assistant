@@ -838,19 +838,15 @@ class OutingContext(Context):
         device.double_click(target_btn)
         sleep(2)
 
-
-        # pi = ProduceInterrupt()
-        # for _ in Loop():
-        #     if AnyOf[
-        #         R.InProduce.TextPDiary,
-        #         R.InProduce.ButtonFinalPracticeDance,
-        #     ].exists():
-        #         break
-        #     if pi.handle():
-        #         continue
-        #     if R.Common.ButtonSelect2.try_click():
-        #         logger.info("AP max out dialog found. Clicked continue button.")
-        #         sleep(0.1)
+        cd = Countdown(3).start()
+        for _ in Loop():
+            if cd.expired():
+                break
+            if R.InProduce.OutingApMaxOutDialog.Title.exists():
+                logger.info("AP max out dialog found.")
+                if R.InProduce.OutingApMaxOutDialog.ButtonConfirm.try_click():
+                    logger.info("AP max out dialog closed.")
+                sleep(0.1)
 
 class _ConsultFlow(Flow):
     def __init__(self, controller: 'ProduceController') -> None:
