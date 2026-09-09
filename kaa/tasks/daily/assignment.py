@@ -66,6 +66,8 @@ def assign(type: Literal['mini', 'online']) -> bool:
     logger.info('Now at assignment idol selection scene.')
     # 选择好调偶像
     selected = False
+    swipe_count = 0
+    MAX_SWIPE_COUNT = 2
     max_attempts = 4
     attempts = 0
     while not selected:
@@ -74,8 +76,19 @@ def assign(type: Literal['mini', 'online']) -> bool:
         logger.debug(f'Found {len(results)} kouchou icons.')
         if not results:
             logger.warning('No kouchou icons found. Trying again...')
+            swipe_count += 1
+            if swipe_count > MAX_SWIPE_COUNT:
+                logger.info('No kouchou idol. Using first 4 idol.')
+                results = [
+                    R.Daily.Assignment.PointIdol1,
+                    R.Daily.Assignment.PointIdol2,
+                    R.Daily.Assignment.PointIdol3,
+                    R.Daily.Assignment.PointIdol4,
+                ]
+                break
             continue
         results.sort(key=lambda r: r.rect.x1)
+        results = [x.rect.center for x in results]
 
         # 尝试点击所有目标
         for target in results:
