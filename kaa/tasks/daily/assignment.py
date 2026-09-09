@@ -5,9 +5,10 @@ from datetime import timedelta
 
 import cv2
 from cv2.typing import MatLike
+from kaa.tasks.common import skip
 from kotonebot.core import AnyOf
 from kotonebot.backend import image as raw_image
-from kotonebot import task, device, action, ocr, contains, color, sleep, regex
+from kotonebot import task, device, action, ocr, contains, color, sleep, regex, Loop
 
 from kaa.tasks import R
 from kaa.config import conf
@@ -188,15 +189,25 @@ def assignment():
         
     # 重新分配
     if conf().tasks.assignment.mini_live_reassign_enabled:
-        if R.Daily.IconAssignMiniLive.exists():
-            assign('mini')
+        for _ in Loop(interval=0.5):
+            if R.Daily.IconAssignMiniLive.exists():
+                break
+            else:
+                logger.debug('Waiting for mini live entry')
+                skip()
+        assign('mini')
     else:
         logger.info('MiniLive reassign is disabled.')
     while not at_assignment():
         pass
     if conf().tasks.assignment.online_live_reassign_enabled:
-        if R.Daily.IconAssignOnlineLive.exists():
-            assign('online')
+        for _ in Loop(interval=0.5):
+            if R.Daily.IconAssignOnlineLive.exists():
+                break
+            else:
+                logger.debug('Waiting for online live entry')
+                skip()
+        assign('online')
     else:
         logger.info('OnlineLive reassign is disabled.')
     # 等待动画结束
