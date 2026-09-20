@@ -10,6 +10,7 @@ import click
 
 from kaa.main.kaa import Kaa
 from kotonebot.backend.context import tasks_from_id, task_registry
+from kaa.application.services.task_service import TaskService
 from kaa.config import manager as config_manager
 
 
@@ -108,10 +109,11 @@ def invoke(ctx: click.Context, task_ids: tuple[str, ...], raw_kwargs: str | None
 
     kwargs = json.loads(raw_kwargs) if raw_kwargs else None
 
+    task_service = TaskService(kaa)
     if '*' in task_ids_list:
         if len(task_ids_list) > 1:
             raise click.UsageError('Cannot specify other tasks when using wildcard.')
-        kaa.run_all()
+        outcome = task_service.run_all_blocking()
     else:
         for task_id in task_ids_list:
             task_cfg = _task_configs.get(task_id)
@@ -120,12 +122,14 @@ def invoke(ctx: click.Context, task_ids: tuple[str, ...], raw_kwargs: str | None
             task_kwargs = kwargs
             if task_cfg and task_cfg.kwargs_transform and task_kwargs is not None:
                 task_kwargs = task_cfg.kwargs_transform(task_kwargs)
-        kaa.run(tasks_from_id(task_ids_list))
+        outcome = task_service.run_tasks_blocking(tasks_from_id(task_ids_list))
 
     if ctx.obj['kill_dmm']:
         os.system('taskkill /f /im DMMGamePlayer.exe')
     if ctx.obj['kill_game']:
         os.system('taskkill /f /im gakumas.exe')
+
+    outcome.raise_if_failed()
 
 
 @task.command(name='list')
