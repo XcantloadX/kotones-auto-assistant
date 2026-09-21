@@ -64,9 +64,6 @@ class ContestConfig(ConfigBaseModel):
     enabled: bool = False
     """是否启用竞赛"""
 
-    select_which_contestant: Literal[1, 2, 3] = 1
-    """选择第几个挑战者"""
-
     when_no_set: Literal['auto_set', 'skip'] = 'auto_set'
     """竞赛队伍未编成时：auto_set=自动编成，skip=跳过任务"""
 

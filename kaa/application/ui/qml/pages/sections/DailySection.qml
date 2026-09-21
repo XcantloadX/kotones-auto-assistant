@@ -232,15 +232,6 @@ Item {
                     visible: root._contest.enabled ?? false
 
                     FormSegmentedButton {
-                        field: "select_which_contestant"
-                        label: "选择第几个挑战者"
-                        options: [
-                            { label: "1号", value: 1 },
-                            { label: "2号", value: 2 },
-                            { label: "3号", value: 3 }
-                        ]
-                    }
-                    FormSegmentedButton {
                         field: "when_no_set"
                         label: "竞赛队伍未编成时"
                         options: [

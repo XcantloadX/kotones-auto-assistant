@@ -115,6 +115,35 @@ def handle_challenge() -> bool:
 
     return False
 
+# 三个对手的综合力分数 OCR 区域（由上到下依次对应 1、2、3 号对手）
+_SCORE_BOXES = (
+    R.Daily.Contest.BoxScore1,
+    R.Daily.Contest.BoxScore2,
+    R.Daily.Contest.BoxScore3,
+)
+
+
+def _read_contestant_scores() -> list[int | None]:
+    """OCR 三个对手的综合力分数。
+
+    :return: 由上到下每个对手的分数；识别失败的位置为 None。
+    """
+    scores: list[int | None] = []
+    for i, box in enumerate(_SCORE_BOXES, start=1):
+        try:
+            numbers = ocr.ocr(rect=box).squash().numbers()
+        except Exception:
+            logger.warning('Failed to OCR score of contestant #%d.', i, exc_info=True)
+            scores.append(None)
+            continue
+        if not numbers:
+            logger.warning('No score recognized for contestant #%d.', i)
+            scores.append(None)
+        else:
+            scores.append(min(numbers))
+    return scores
+
+
 @action('选择对手')
 def handle_pick_contestant(has_ongoing_contest: bool = False) -> tuple[bool, bool]:
     """
@@ -134,7 +163,7 @@ def handle_pick_contestant(has_ongoing_contest: bool = False) -> tuple[bool, boo
     if R.Daily.ButtonContestRanking.exists() and R.Daily.TextContestOverallStats.exists():
         # 无进行中挑战，说明要选择对手
         if not has_ongoing_contest:
-            # 随机选一个对手 [screenshots/contest/main.png]
+            # 选择对手 [screenshots/contest/main.png]
             logger.debug('Clicking on contestant.')
             contestant_list = R.Daily.TextContestOverallStats.find_all()
             if len(contestant_list) == 0:
@@ -144,14 +173,19 @@ def handle_pick_contestant(has_ongoing_contest: bool = False) -> tuple[bool, boo
             contestant_list.sort(key=lambda x: x.rect.y1)
             if len(contestant_list) != 3:
                 logger.warning('Cannot find all 3 contestants.')
-            # 选择配置文件中对应的对手顺序（1最强，3最弱）
-            target = conf().tasks.contest.select_which_contestant
-            if target >= 1 and target <= 3 and target <= len(contestant_list):
-                target -= 1  # [1, 3]映射至[0, 2]
+            # 选择最低分者
+            scores = _read_contestant_scores()
+            logger.info('Contestant scores: %s.', scores)
+            scored = [(score, i) for i, score in enumerate(scores) if score is not None]
+            if scored:
+                lowest_score, target = min(scored)
+                logger.info('Picking up contestant #%d with lowest score %d.', target + 1, lowest_score)
             else:
-                target = 0  # 出错则默认选择第一个
+                # 兜底选择最后一个
+                target = len(contestant_list) - 1
+                logger.warning('Failed to OCR all contestant scores, fallback to last contestant.')
+            target = min(target, len(contestant_list) - 1)
             contestant = contestant_list[target]
-            logger.info('Picking up contestant #%d.', target + 1)
             device.click(contestant)
             sleep(2)
             return True, True
