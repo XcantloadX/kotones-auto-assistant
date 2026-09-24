@@ -58,7 +58,7 @@ def detect_recommended_card(
 	cards = calc_card_position(card_count)
 	cards.append(SKIP_CARD_BUTTON)
 
-	img = use_screenshot(img)
+	img = use_screenshot(img).copy()
 	original_image = img.copy()
 	results: list[CardDetectResult] = []
 	for x, y, w, h, return_value in cards:
