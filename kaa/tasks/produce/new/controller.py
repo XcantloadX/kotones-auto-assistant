@@ -13,7 +13,6 @@ from .page import (
     StudyContext, OutingContext, ConsultContext, AllowanceContext,
     SkillCardEnhanceContext, SkillCardRemovalContext,
     PDrinkMaxContext, PDrinkMaxConfirmContext, DateChangeContext,
-    Flow
 )
 from kaa.tasks.common import skip
 from .consts import Scene, SceneType
@@ -28,8 +27,6 @@ class ProduceController:
         self.strategy: ProduceStrategy = strategy(self) if strategy is not None else StandardStrategy(self)
         self.running: bool = True
         self._last_scene: Scene | None = None
-        self._flow: Flow | None = None
-        self._interrupt_depth: int = 0
 
     def abort(self) -> None:
         logger.info("Aborting the produce session.")
@@ -129,28 +126,24 @@ class ProduceController:
         - 绝不调用 ProduceController.run/_update/_dispatch，因此不会递归。
         - 只处理 interrupt/dialog 类场景（包含 SELECT_DRINK/SELECT_CARD/SELECT_PITEM 等）。
         """
-        self._interrupt_depth += 1
-        try:
-            cd = Countdown(sec=timeout).start()
-            for _ in Loop():
-                if cd.expired():
-                    raise TimeoutError("Timeout waiting condition in pump_interrupts_until")
+        cd = Countdown(sec=timeout).start()
+        for _ in Loop():
+            if cd.expired():
+                raise TimeoutError("Timeout waiting condition in pump_interrupts_until")
 
-                img = device.screenshot()
-                if done():
-                    return
-                scene = self.page.check_interrupt_scene()
+            img = device.screenshot()
+            if done():
+                return
+            scene = self.page.check_interrupt_scene()
 
-                handled = False
-                if scene is not None:
-                    handled = self._handle_interrupts(scene)
-                if not handled:
-                    handled = ProduceInterrupt._check_skip_commu(img)
+            handled = False
+            if scene is not None:
+                handled = self._handle_interrupts(scene)
+            if not handled:
+                handled = ProduceInterrupt._check_skip_commu(img)
 
-                if not handled:
-                    sleep(interval)
-        finally:
-            self._interrupt_depth -= 1
+            if not handled:
+                sleep(interval)
 
 
     def _dispatch(self, scene: 'Scene', last_scene: 'Scene | None'):
@@ -162,14 +155,6 @@ class ProduceController:
 
         # 先处理全局中断/弹窗类场景（与 pump 使用同一入口，避免逻辑分叉）
         if self._handle_interrupts(scene):
-            return
-
-        # 若存在正在运行的 Flow，则优先推进它
-        if self._flow is not None:
-            done = self._flow.step(scene)
-            if done:
-                logger.debug("Flow %s completed.", type(self._flow).__name__)
-                self._flow = None
             return
 
         # 否则按当前场景分发

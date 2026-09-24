@@ -19,6 +19,7 @@ from kaa.tasks.actions.loading import loading
 from kaa.game_ui import CommuEventButtonUI, dialog, badge
 from .consts import Drink, Scene, SceneType, SelectDrinkDialog, PerformanceMetricsVal
 from kaa.tasks.produce.shared.cards import CardDetectResult, detect_recommended_card, skill_card_count
+from kaa.tasks.produce.shared.common import ProduceInterrupt
 from kaa.game_ui.skill_card_select import match_card_region
 from kaa.tasks.produce.new.owned_cards_longshot import (
     crop_rect,
@@ -94,20 +95,6 @@ def eval_once(func: Callable[_P, _R]) -> Callable[_P, _R]:
         return cast(_R, global_cached_result)
 
     return wrapper
-
-class Flow:
-    """可被 `ProduceController` 调度的多步流程。
-
-    `step` 应返回是否完成当前流程。
-    """
-
-    def step(self, scene: 'Scene') -> bool:
-        """推进一步当前 Flow。会被 ProduceController 在每一 tick 调用一次。
-
-        :param scene: 当前场景。
-        :return: 若流程全部结束，则返回 True 表示退出当前流程，否则返回 False 表示继续当前流程。
-        """
-        raise NotImplementedError # pragma: no cover
 
 
 class _SceneCheckMixin:
@@ -848,85 +835,73 @@ class OutingContext(Context):
                     logger.info("AP max out dialog closed.")
                 sleep(0.1)
 
-class _ConsultFlow(Flow):
-    def __init__(self, controller: 'ProduceController') -> None:
-        # start           -> 首次点击第一个条目，进入等待购买阶段
-        # waiting_purchase-> 等待购买确认（对话框/按钮）
-        # waiting_exit    -> 已点击结束按钮，等待退出完成
-        self.contoller = controller
-        self._phase: str = "start"
-        self._wait_purchase_cd = Countdown(sec=5)
-        self._exit_cd = Countdown(sec=5)
-        self._purchase_clicked: bool = False
-        self._purchase_confirmed: bool = False
+class ConsultContext(Context):
+    # 总超时：超时后记 warning 并返回，把控制权交还给主调度，避免死循环卡住整个培育流程。
+    OVERALL_TIMEOUT_SEC = 60.0
+    # 点击条目后等待购买 UI 出现的时长。只计时一次、不重置；
+    # 超时即视为无可购买项，直接进入结束阶段。
+    PURCHASE_WAIT_SEC = 5.0
+    # 连续多少次看不到相談标题才认定已离开页面（容忍单帧识别抖动/过场）。
+    EXIT_CONFIRM_TICKS = 2
 
-    def step(self, scene: 'Scene') -> bool:
-        """执行一次相談流程的单步。
+    def commit(self):
+        """执行相談并阻塞等待离开相談页面。
 
-        返回值:
-        - True: 本次相談流程已结束；
-        - False: 仍需在后续 tick 中继续执行。
+        结束条件（状态判定）：连续 EXIT_CONFIRM_TICKS 次看不到相談标题，即视为已离开。
+        超时则记 warning 返回，由主调度继续处理当前画面。
         """
-        # Phase: start
-        if self._phase == "start":
-            device.click(R.InProduce.PointConsultFirstItem)
-            sleep(0.3)
-            self._wait_purchase_cd.start()
-            self._phase = "waiting_purchase"
-            return False
+        overall_cd = Countdown(sec=self.OVERALL_TIMEOUT_SEC).start()
+        # 先点第一个条目，尝试触发购买
+        device.click(R.InProduce.PointConsultFirstItem)
+        sleep(0.3)
+        purchase_cd = Countdown(sec=self.PURCHASE_WAIT_SEC).start()
+        purchase_clicked = False
+        purchase_confirmed = False
+        exit_missing = 0
+        for _ in Loop():
+            if overall_cd.expired():
+                logger.warning(
+                    "Consult timed out after %ss. Returning to dispatch.",
+                    self.OVERALL_TIMEOUT_SEC,
+                )
+                return
+            img = device.screenshot()
+            # 中断处理（跳过未读交流等），与 pump_interrupts_until 保持一致
+            ProduceInterrupt._check_skip_commu(img)
 
-        # Phase: waiting_purchase
-        elif self._phase == "waiting_purchase":
-            if self._wait_purchase_cd.expired():
-                self._purchase_confirmed = True
+            if purchase_cd.expired():
+                # 等待购买确认超时：视为无可购买项，直接进入结束阶段。
+                # 注意：此处不再重置 purchase_cd，避免计时器永远到不了期的活锁。
+                purchase_confirmed = True
 
             # 购买确认对话框
             if dialog.yes():
-                # 第一次 yes：认为购买完成
-                if self._purchase_clicked:
-                    self._purchase_confirmed = True
-                return False
+                if purchase_clicked:
+                    purchase_confirmed = True
+                continue
 
             # 点击购买按钮
             if R.InProduce.ButtonIconExchange.q(enabled=True).try_click():
-                self._purchase_clicked = True
-                return False
+                purchase_clicked = True
+                continue
 
-            # 购买已确认，尝试点击结束咨询
-            if self._purchase_confirmed and R.InProduce.ButtonEndConsult.try_click():
-                self._exit_cd.start()
-                self._phase = "waiting_exit"
-                return False
+            # 已离开相談页面则结束（状态判定，需连续命中以容忍抖动）
+            if not R.InProduce.IconTitleConsult.exists():
+                exit_missing += 1
+                if exit_missing >= self.EXIT_CONFIRM_TICKS:
+                    logger.info("Consult exited.")
+                    return
+                continue
+            exit_missing = 0
 
-            # 仍未确认购买，重复点击第一个条目以触发对话框
-            if not self._purchase_confirmed:
-                device.click(R.InProduce.PointConsultFirstItem)
-                self._wait_purchase_cd.start()
-            return False
+            # 购买已确认则尝试结束相談
+            if purchase_confirmed:
+                R.InProduce.ButtonEndConsult.try_click()
+                continue
 
-        # Phase: waiting_exit
-        elif self._phase == "waiting_exit":
-            # 若再次出现确认对话框，继续点 yes
-            if dialog.yes():
-                return False
-
-            if not self._exit_cd.started:
-                self._exit_cd.start()
-                return False
-
-            if self._exit_cd.expired():
-                return True
-
-            return False
-        # 未知 phase，防御性结束
-        else:
-            return True
-
-class ConsultContext(Context):
-    def commit(self):
-        flow = _ConsultFlow(self.controller)
-        self.controller._flow = flow
-        flow.step(Scene(SceneType.CONSULT))
+            # 仍未确认购买：重复点击第一个条目以触发对话框
+            device.click(R.InProduce.PointConsultFirstItem)
+            sleep(0.3)
 
 
 class AllowanceContext(Context):
