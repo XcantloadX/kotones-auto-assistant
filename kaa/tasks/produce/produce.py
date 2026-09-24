@@ -8,10 +8,6 @@ from kaa.tasks.produce.new.strategies.standard import StandardStrategy
 from kaa.tasks.produce.session import ProduceSession, resolve_deck
 from kaa.tasks.produce.shared.common import resume_produce_pre
 from kaa.tasks.produce.new.controller import ProduceController
-from kaa.tasks.produce.legacy.in_purodyuusu import (
-    hajime_regular, hajime_pro, hajime_master,
-    resume_regular_produce, resume_pro_produce, resume_master_produce,
-)
 from kaa.tasks import R
 from kaa.config import conf
 from kaa.game_ui import dialog
@@ -126,31 +122,6 @@ def select_set(index: int):
 
     logger.error(f'Failed to navigate to set #{index} after {max_retries} retries.')
 
-@action('继续当前培育.继续培育', screenshot_mode='manual')
-def resume_produce_lst(
-    scenario: Scenario,
-    current_week: int
-):
-    """
-    继续当前培育.继续培育\n
-    该函数正常情况不应该被单独调用。
-
-    前置条件：培育中的任意一个页面\n
-    结束状态：游戏首页
-
-    :param scenario: 培育方案类型
-    :param current_week: 培育的周数
-    """
-    match scenario:
-        case HajimeScenario.REGULAR:
-            resume_regular_produce(current_week)
-        case HajimeScenario.PRO:
-            resume_pro_produce(current_week)
-        case HajimeScenario.MASTER:
-            resume_master_produce(current_week)
-        case _:
-            raise NotImplementedError(f'Unsupported resume scenario: {scenario}')
-
 @action('继续当前培育', screenshot_mode='manual')
 def resume_produce():
     """
@@ -166,16 +137,13 @@ def resume_produce():
         deck=resolve_deck(idol_card, produce_solution().data.card_deck_id))
     init_produce_session(session)
     try:
-        if conf().tasks.produce.produce_engine == 'legacy':
-            resume_produce_lst(scenario, current_week)
+        if isinstance(scenario, HajimeScenario):
+            c = ProduceController(scenario=scenario, strategy=StandardStrategy)
+        elif isinstance(scenario, HifScenario):
+            c = ProduceController(scenario=scenario, strategy=HifGrindStrategy)
         else:
-            if isinstance(scenario, HajimeScenario):
-                c = ProduceController(scenario=scenario, strategy=StandardStrategy)
-            elif isinstance(scenario, HifScenario):
-                c = ProduceController(scenario=scenario, strategy=HifGrindStrategy)
-            else:
-                raise NotImplementedError(f'Unsupported produce scenario: {scenario}')
-            c.run()
+            raise NotImplementedError(f'Unsupported produce scenario: {scenario}')
+        c.run()
     finally:
         clear_produce_session()
 
@@ -335,24 +303,13 @@ def do_produce(
         deck=resolve_deck(idol_skin_id, produce_solution().data.card_deck_id))
     init_produce_session(session)
     try:
-        if conf().tasks.produce.produce_engine == 'legacy':
-            match scenario:
-                case HajimeScenario.REGULAR:
-                    hajime_regular()
-                case HajimeScenario.PRO:
-                    hajime_pro()
-                case HajimeScenario.MASTER:
-                    hajime_master()
-                case _:
-                    raise NotImplementedError(f'Unsupported produce scenario: {scenario}')
+        if isinstance(scenario, HajimeScenario):
+            c = ProduceController(scenario=scenario, strategy=StandardStrategy)
+        elif isinstance(scenario, HifScenario):
+            c = ProduceController(scenario=scenario, strategy=HifGrindStrategy)
         else:
-            if isinstance(scenario, HajimeScenario):
-                c = ProduceController(scenario=scenario, strategy=StandardStrategy)
-            elif isinstance(scenario, HifScenario):
-                c = ProduceController(scenario=scenario, strategy=HifGrindStrategy)
-            else:
-                raise NotImplementedError(f'Unsupported produce scenario: {scenario}')
-            c.run()
+            raise NotImplementedError(f'Unsupported produce scenario: {scenario}')
+        c.run()
     finally:
         clear_produce_session()
     return True

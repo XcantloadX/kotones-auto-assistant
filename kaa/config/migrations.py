@@ -1079,7 +1079,54 @@ class ProfileV13ToV14(MigrationStep):
 # 迁移链
 # ---------------------------------------------------------------------------
 
-LATEST_VERSION: int = 14
+# ---------------------------------------------------------------------------
+# V14 → V15：移除旧版培育引擎（legacy），删除 tasks.produce.produce_engine 字段
+# ---------------------------------------------------------------------------
+
+class ProfileV14ToV15(MigrationStep):
+    """删除 tasks.produce.produce_engine 字段（旧版培育引擎已移除，新版为唯一引擎）。"""
+
+    def check_needed(self, ctx: MigrationContext) -> bool:
+        profiles_dir = ctx.config_dir / 'profiles'
+        if not profiles_dir.exists():
+            return False
+        for f in profiles_dir.glob('*.json'):
+            try:
+                data = json.loads(f.read_text(encoding='utf-8'))
+            except Exception:
+                continue
+            if data.get('version', 0) < 15:
+                return True
+        return False
+
+    def apply(self, ctx: MigrationContext) -> None:
+        profiles_dir = ctx.config_dir / 'profiles'
+        if not profiles_dir.exists():
+            return
+        cleaned = 0
+        for f in profiles_dir.glob('*.json'):
+            try:
+                data = json.loads(f.read_text(encoding='utf-8'))
+            except Exception:
+                continue
+            if data.get('version', 0) >= 15:
+                continue
+            produce = data.get('tasks', {}).get('produce', {})
+            if 'produce_engine' in produce:
+                del produce['produce_engine']
+                data.setdefault('tasks', {})['produce'] = produce
+                cleaned += 1
+            data['version'] = 15
+            f.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding='utf-8')
+        if cleaned:
+            ctx.messages.append(MigrationMessage(
+                text="旧版培育引擎已移除，现在统一使用新版培育。",
+                old_version='v14',
+                new_version='v15',
+            ))
+
+
+LATEST_VERSION: int = 15
 
 profile_migration_chain = MigrationChain(steps=[
     ProfileV1ToV2(),
@@ -1096,6 +1143,7 @@ profile_migration_chain = MigrationChain(steps=[
     ProfileV11ToV12(),
     ProfileV12ToV13(),
     ProfileV13ToV14(),
+    ProfileV14ToV15(),
 ])
 
 

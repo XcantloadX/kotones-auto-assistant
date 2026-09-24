@@ -87,13 +87,6 @@ class ProduceConfig(ConfigBaseModel):
     * off: 自动禁用
     * ignore: 不改变当前状态
     """
-    produce_engine: Literal['new', 'legacy'] = 'legacy'
-    """
-    培育引擎。
-
-    * new: 使用新版智能培育（ProduceController）
-    * legacy: 使用旧版培育（hajime_* / resume_*_produce）
-    """
 
 class MissionRewardConfig(ConfigBaseModel):
     enabled: bool = False
@@ -192,7 +185,7 @@ class IdleModeConfig(ConfigBaseModel):
 
 
 
-CONFIG_VERSION_CODE = 14
+CONFIG_VERSION_CODE = 15
 
 
 class TasksConfig(ConfigBaseModel):

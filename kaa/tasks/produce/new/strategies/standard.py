@@ -13,7 +13,7 @@ from kotonebot import logging, sleep, device, Loop
 from kotonebot.core import AnyOf
 from kotonebot.errors import UnrecoverableError
 
-from kaa.tasks.produce.legacy.in_purodyuusu import produce_end
+from kaa.tasks.produce.shared.produce_end import produce_end
 from kaa.tasks.produce.new.play_cards.bandai_strategy import BandaiStrategy
 from kaa.tasks import R
 from kaa.tasks.produce.shared.cards import CardDetectResult, do_cards
