@@ -118,6 +118,19 @@ class NoProduceSolutionSelectedError(KaaUserFriendlyError):
             'https://www.kdocs.cn/l/cetCY8mGKHLj?linkname=LasxpznR6b'
         )
 
+class UnsupportedProduceScenarioError(UserFriendlyError, KaaError):
+    """培育剧本暂不支持。
+    """
+    def __init__(self, scenario: object, display_name: str):
+        if not display_name:
+            raise ValueError('display_name must be a non-empty user-facing scenario name.')
+        self.scenario = scenario
+        self.display_name = display_name
+        super().__init__(
+            f'剧本「{display_name}」暂不支持，请更换为已支持的剧本后再运行。（你可能需要手动放弃目前已有的培育进度）',
+            [(0, '知道了', lambda: None)],
+        )
+
 class DmmGameLaunchError(KaaUserFriendlyError):
     def __init__(self, reason: str):
         self.reason = reason

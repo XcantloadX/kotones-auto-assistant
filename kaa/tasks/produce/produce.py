@@ -16,7 +16,7 @@ from kotonebot.backend.loop import Loop
 from kotonebot.util import Countdown
 from kaa.game_ui.idols_overview import locate_idol
 from kotonebot import device, ocr, task, action, sleep
-from kaa.errors import IdolCardNotFoundError
+from kaa.errors import IdolCardNotFoundError, UnsupportedProduceScenarioError
 from .prepare import prepare, prepare_hif_main
 from kotonebot.errors import UnrecoverableError
 
@@ -142,7 +142,7 @@ def resume_produce():
         elif isinstance(scenario, HifScenario):
             c = ProduceController(scenario=scenario, strategy=HifGrindStrategy)
         else:
-            raise NotImplementedError(f'Unsupported produce scenario: {scenario}')
+            raise UnsupportedProduceScenarioError(scenario, 'NIA')
         c.run()
     finally:
         clear_produce_session()
@@ -210,7 +210,7 @@ def do_produce(
     elif isinstance(scenario, HifScenario):
         target_logo = R.Produce.LogoHif
     else:
-        raise NotImplementedError(f'Unsupported produce scenario: {scenario}')
+        raise UnsupportedProduceScenarioError(scenario, 'NIA')
     for _ in Loop():
         if target_logo.exists():
             logger.info(f'Found target logo: {target_logo}.')
@@ -241,7 +241,7 @@ def do_produce(
     elif scenario == HifScenario.MAIN:
         target_buttons = [R.Produce.ButtonHifMain]
     else:
-        raise NotImplementedError(f'Unsupported produce scenario: {scenario}')
+        raise UnsupportedProduceScenarioError(scenario, 'NIA')
     find_target_button = lambda: next((b for b in target_buttons if b.find()), None)  # noqa: E731
     result = None
     for _ in Loop():
@@ -308,7 +308,7 @@ def do_produce(
         elif isinstance(scenario, HifScenario):
             c = ProduceController(scenario=scenario, strategy=HifGrindStrategy)
         else:
-            raise NotImplementedError(f'Unsupported produce scenario: {scenario}')
+            raise UnsupportedProduceScenarioError(scenario, 'NIA')
         c.run()
     finally:
         clear_produce_session()
