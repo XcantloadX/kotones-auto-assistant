@@ -344,7 +344,7 @@ def produce_end(has_live: bool = True):
                 # [kotonebot-resource\sprites\jp\produce\screenshot_produce_end_skip.png]
                 elif R.Produce.TextSkipLiveDialogTitle.exists():
                     logger.info("Confirming skip live.")
-                    R.Common.IconButtonCheck.wait().click()
+                    R.Common.IconButtonCheck.try_click()
                 elif R.InProduce.ProduceScore.TitleText.exists():
                     score = ocr.ocr(rect=R.InProduce.ProduceScore.ScoreTextArea).squash().numbers()
                     if not score:
@@ -358,12 +358,18 @@ def produce_end(has_live: bool = True):
         logger.info("Use default cover.")
         sleep(3)
         logger.debug("Click next")
-        R.InProduce.ButtonNextNoIcon.wait().click()
+        for _ in Loop(interval=0.5):
+            if (btn_next := R.InProduce.ButtonNextNoIcon.find()) is not None:
+                device.click(btn_next)
+                break
         sleep(1)
         # 确认对话框 [screenshots/produce_end/select_cover_confirm.jpg]
         # 決定
         logger.debug("Click Confirm")
-        R.Common.ButtonConfirm.q(threshold=0.8).wait().click()
+        for _ in Loop(interval=0.5):
+            if (btn_confirm := R.Common.ButtonConfirm.q(threshold=0.8).find()) is not None:
+                device.click(btn_confirm)
+                break
         sleep(1)
         # 上传图片，等待“生成”按钮
         # 注意网络可能会很慢，可能出现上传失败对话框
@@ -371,31 +377,28 @@ def produce_end(has_live: bool = True):
 
     retry_count = 0
     MAX_RETRY_COUNT = 5
-    while True:
-        img = device.screenshot()
+    for _ in Loop(interval=2):
         # 处理上传失败
-        if image.raw().find(img, R.InProduce.ButtonRetry.template):
+        if R.InProduce.ButtonRetry.find() is not None:
             logger.info("Upload failed. Retry...")
             retry_count += 1
             if retry_count >= MAX_RETRY_COUNT:
                 logger.info("Upload failed. Max retry count reached.")
                 logger.info("Cancel upload.")
-                R.InProduce.ButtonCancel.wait().click()
-                sleep(2)
+                R.InProduce.ButtonCancel.try_click()
                 continue
             device.click()
         # 记忆封面保存失败提示
-        elif image.raw().find(img, R.Common.ButtonClose.template):
+        elif R.Common.ButtonClose.find() is not None:
             logger.info("Memory cover save failed. Click to close.")
             device.click()
-        elif gen_btn := ocr.raw().find(img, contains("生成")):
+        elif gen_btn := ocr.find(contains("生成")):
             logger.info("Generate memory cover completed.")
             device.click(gen_btn)
             break
         else:
             device.click_center()
             skip() # 为了兼容has_live==False的情况
-        sleep(2)
     # 后续动画
     logger.info("Waiting for memory generation animation completed...")
     for _ in Loop(interval=1):
@@ -434,9 +437,9 @@ def produce_end(has_live: bool = True):
             device.click()
             wait(0.5, before='screenshot')
         # [screenshots/produce_end/end_complete.png]
-        elif R.InProduce.ButtonComplete.exists():
+        elif btn_complete := R.InProduce.ButtonComplete.find():
             logger.debug("Click complete")
-            R.InProduce.ButtonComplete.wait().click()
+            btn_complete.click()
             wait(0.5, before='screenshot')
             break
         # 1. P任务解锁提示
@@ -464,7 +467,7 @@ def produce_end(has_live: bool = True):
                 logger.info("Follow producer dialog found. Click to close.")
                 if produce_solution().data.follow_producer:
                     logger.info("Follow producer")
-                    R.InProduce.ButtonFollowNoIcon.wait().click()
+                    R.InProduce.ButtonFollowNoIcon.try_click()
                 else:
                     logger.info("Skip follow producer")
                     device.click()
