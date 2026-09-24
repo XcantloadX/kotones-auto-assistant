@@ -151,7 +151,7 @@ def do_cards(
             from kaa.tasks.produce.new.play_cards.page import LessonBattleContext
             ctx = LessonBattleContext()
             handled = battle_strategy.on_action(ctx)
-            if handled is False:
+            if not handled:
                 return False
             return True
         except Exception:

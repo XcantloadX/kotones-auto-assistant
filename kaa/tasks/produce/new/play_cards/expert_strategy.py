@@ -14,15 +14,18 @@ def _default(val: int | None, default: int) -> int:
 
 class ExpertSystemStrategy(AbstractBattleStrategy):
     @override
-    def on_action(self, ctx: 'LessonBattleContext'):
+    def on_action(self, ctx: 'LessonBattleContext') -> bool:
         hands = ctx.fetch_hands()
         if not hands:
-            return
-        hands = (h for h in hands if h is not None and h.available)
-        hands = filter(lambda c: c.card is not None, hands)
-        best_card = max(hands, key=lambda card: self._evaluate_card(ctx, card))
+            return False
+        playable = [h for h in hands if h is not None and h.available and h.card is not None]
+        if not playable:
+            logger.info('No playable cards available, fallback to recommended card detection.')
+            return False
+        best_card = max(playable, key=lambda card: self._evaluate_card(ctx, card))
         logger.info('Best card: %s', best_card)
         ctx.commit(best_card)
+        return True
 
     def _evaluate_card(self, ctx: 'LessonBattleContext', card: CardGameObject) -> float:
         if not card.card:
