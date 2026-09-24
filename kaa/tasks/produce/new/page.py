@@ -691,21 +691,7 @@ class ActionSelectContext(Context):
 
     def commit(self, action: 'ProduceAction'):
         _actions = self.fetch_available_actions()
-        # 首先判断 action 是否可用
-        # 对于课程的特判
-        available = True
-        if action == ProduceAction.VISUAL and ProduceAction.VISUAL_SP in _actions[0]:
-            action = ProduceAction.VISUAL_SP
-            logger.debug('Using VISUAL_SP instead of VISUAL.')
-        elif action == ProduceAction.VOCAL and ProduceAction.VOCAL_SP in _actions[0]:
-            action = ProduceAction.VOCAL_SP
-            logger.debug('Using VOCAL_SP instead of VOCAL.')
-        elif action == ProduceAction.DANCE and ProduceAction.DANCE_SP in _actions[0]:
-            action = ProduceAction.DANCE_SP
-            logger.debug('Using DANCE_SP instead of DANCE.')
-        # 其他
-        available = action in _actions[0]
-        if not available:
+        if action not in _actions[0]:
             raise ValueError(f"Action {action} is not available now.")
 
         index = _actions[0].index(action)
