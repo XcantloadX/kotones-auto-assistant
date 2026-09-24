@@ -8,11 +8,14 @@ UUID。该 ID 作为 tag 附加到 Sentry 报告，便于在 Drive 中检索对�
 现场截图；上传成功后在 UUID 前追加 ``[last]``/``[now]`` 前缀，便于在 Drive 中
 区分截图来源。
 
-截图上传覆盖两条上报路径：
+截图上传覆盖三条上报路径：
 1. 异常上报：sentry_middleware 在 capture_exception 时同步上传。
 2. 日志上报：screenshot_before_send 钩子为 error/critical/fatal 级别的纯日志事件
    上传（异常事件由 sentry_middleware 处理，这里不再重复）。已知良性的日志消息
    （见 _SKIP_UPLOAD_MESSAGE_FRAGMENTS）会跳过上传，避免刷屏 Drive。
+3. 带 exc_info 的日志上报：LoggingIntegration 会把这类 error 日志转成含
+   ``exception`` 的事件（mechanism.type 为 ``logging``），它们同样未经
+   sentry_middleware 处理截图，钩子识别后补上传。
 """
 
 import logging
@@ -65,12 +68,36 @@ def _is_skipped_log_message(message: str) -> bool:
     return any(frag in message for frag in _SKIP_UPLOAD_MESSAGE_FRAGMENTS)
 
 
+def _is_logging_mechanism_exception(data: dict) -> bool:
+    """判断是否为 LoggingIntegration 经 exc_info 生成的异常事件。
+
+    ``logger.error(..., exc_info=True)`` 产生的 Sentry 事件同样携带
+    ``exception``，但其 mechanism.type 为 ``logging``，未经
+    handle_exception/_capture_sentry 同步处理截图，需要由钩子补上传。
+    而 capture_exception 上报的事件（mechanism 为 ``generic`` 等）已由
+    上报方处理过截图，这里跳过以免重复上传。
+    """
+    try:
+        values = data.get('exception') or {}
+        values = values.get('values') or []
+        return any(
+            isinstance(v, dict)
+            and isinstance(v.get('mechanism'), dict)
+            and v['mechanism'].get('type') == 'logging'
+            for v in values
+        )
+    except Exception:
+        return False
+
+
 def screenshot_before_send(event: 'Event', hint: 'Hint') -> 'Event | None':
     """Sentry before_send 钩子：为 error 级别的纯日志事件附加截图上传。
 
     异常事件（event 含 ``exception``）已由 sentry_middleware 同步上传，此处仅覆盖
-    LoggingIntegration 上报的 error/critical/fatal 日志事件。命中免上传清单的已知
-    良性消息直接放行（不上传）。任何失败都只降级日志，不改动事件本身。
+    LoggingIntegration 上报的 error/critical/fatal 日志事件；其中经 exc_info 生成
+    的异常事件（mechanism.type 为 ``logging``）未经同步上传，同样补传截图。
+    命中免上传清单的已知良性消息直接放行（不上传）。任何失败都只降级日志，
+    不改动事件本身。
 
     :param event: Sentry 事件字典（scope tag 已合并）。
     :param hint: Sentry 事件附带元数据（此处未使用）。
@@ -79,8 +106,10 @@ def screenshot_before_send(event: 'Event', hint: 'Hint') -> 'Event | None':
     # 事件以 TypedDict 传入，统一转成普通 dict 进行读写，规避 TypedDict 的静态限制。
     data: dict = cast(dict, event)
 
-    # 异常事件由 sentry_middleware 处理截图上传，避免重复。
-    if data.get('exception'):
+    # 异常事件由 sentry_middleware 处理截图上传，避免重复；但
+    # LoggingIntegration 经 exc_info 生成的异常事件（mechanism.type == 'logging'）
+    # 未走该路径，需要在这里补上传。
+    if data.get('exception') and not _is_logging_mechanism_exception(data):
         return event
     # 仅处理 error 级及以上的日志事件。
     if data.get('level') not in ('error', 'critical', 'fatal'):

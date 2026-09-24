@@ -9,15 +9,23 @@ from kaa.util.telemetry_screenshot import (
 )
 
 
-def _log_event(message: str = 'boom', level: str = 'error', exception: bool = False) -> dict:
-    """构造一个 LoggingIntegration 风格的日志事件。"""
+def _log_event(message: str = 'boom', level: str = 'error', exception: bool = False,
+               mechanism: str | None = None) -> dict:
+    """构造一个 LoggingIntegration 风格的日志事件。
+
+    :param mechanism: exception.values[0].mechanism.type，模拟 exc_info
+        生成（'logging'）与 capture_exception 上报（'generic'）的事件形态。
+    """
     event: dict = {
         'level': level,
         'logger': 'test.logger',
         'logentry': {'message': message, 'formatted': message, 'params': []},
     }
     if exception:
-        event['exception'] = {'values': [{'type': 'RuntimeError'}]}
+        value: dict = {'type': 'RuntimeError'}
+        if mechanism is not None:
+            value['mechanism'] = {'type': mechanism, 'handled': True}
+        event['exception'] = {'values': [value]}
     return event
 
 
@@ -38,6 +46,26 @@ class TestScreenshotBeforeSend(TestCase):
         result, mock_upload = self._run(event)
         self.assertIs(result, event)
         mock_upload.assert_not_called()
+
+    def test_generic_mechanism_exception_event_untouched(self):
+        # capture_exception 上报的异常事件（mechanism 为 generic）已由上报方
+        # 同步处理截图，钩子不应重复上传
+        event = _log_event(exception=True, mechanism='generic')
+        result, mock_upload = self._run(event)
+        self.assertIs(result, event)
+        mock_upload.assert_not_called()
+
+    def test_logging_mechanism_exception_event_uploads(self):
+        # logger.error(exc_info=True) 生成的异常事件（mechanism 为 logging）
+        # 未经同步上传，钩子应补传截图并写入 tags.screenshot_id
+        event = _log_event('Action recognition hit transient state', exception=True,
+                           mechanism='logging')
+        with patch('kotonebot.device', MagicMock()):
+            with patch('kaa.util.telemetry_screenshot.upload_screenshot',
+                       return_value='abc-123') as mock_upload:
+                result = screenshot_before_send(event, {})
+        mock_upload.assert_called_once()
+        self.assertEqual(result['tags']['screenshot_id'], '[now]abc-123')
 
     def test_non_error_level_untouched(self):
         # 非 error 级日志不上传

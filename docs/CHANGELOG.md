@@ -10,6 +10,7 @@
 1. 优化了「相談」逻辑，以及由其引起的相关 bug。
 2. 修复了当所有课程都是 SP 课程时，某些情况下会报错「No available actions to execute」。
 3. 修复培育结算时弹出网络错误弹窗会卡住的问题。
+4. 尝试修复某些情况下，行动页面选择后报错「Could not find any of the following prefabs」的问题。
 
 ### v2026.9.5
 修复：

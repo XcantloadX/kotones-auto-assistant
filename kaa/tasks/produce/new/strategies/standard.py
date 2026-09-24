@@ -16,6 +16,7 @@ from kotonebot.errors import UnrecoverableError
 from kaa.tasks.produce.shared.produce_end import produce_end
 from kaa.tasks.produce.new.play_cards.bandai_strategy import BandaiStrategy
 from kaa.tasks import R
+from kaa.tasks.common import skip
 from kaa.tasks.produce.shared.cards import CardDetectResult, do_cards
 from kaa.tasks.produce.new.play_cards.expert_strategy import ExpertSystemStrategy
 from kaa.kaa_context import produce_solution
@@ -225,8 +226,19 @@ class StandardStrategy(ProduceStrategy):
         # 直接中断整个培育任务，无可用行动时等待 1s 后重试（最多 5 次）；
         # 连续多次仍无可用行动才真正抛出异常。
         for attempt in range(5):
-            recommend = ctx.fetch_sensei_tip()
-            availables = ctx.fetch_available_actions()[0]
+            try:
+                recommend = ctx.fetch_sensei_tip()
+                availables = ctx.fetch_available_actions()[0]
+            except Exception:
+                logger.error(
+                    "Action recognition hit transient state. Skipping and returning... (%d/5)",
+                    attempt + 1,
+                    exc_info=True,
+                )
+                skip()
+                skip()
+                sleep(1)
+                return
 
             # 首先处理优先 SP
             # 如果优先 SP，
