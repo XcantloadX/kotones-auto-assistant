@@ -72,6 +72,10 @@ def cli(ctx: click.Context, config: str | None, log_path: str | None, log_level:
         for handler in logging.getLogger().handlers:
             handler.setLevel(logging.DEBUG)
 
+        # 低内存预警必须在 Qt 导入前（KAA-567：可用内存过低时 QtCore DLL 加载直接失败）。
+        from kaa.util.system_memory import warn_if_low_memory
+        warn_if_low_memory()
+
         from kaa.main.qml_app import main as qml_main
         qml_main()
 
