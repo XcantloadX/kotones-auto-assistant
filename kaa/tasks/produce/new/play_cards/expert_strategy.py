@@ -242,6 +242,36 @@ class ExpertSystemStrategy(AbstractBattleStrategy):
                     score_effects += 10.0
                     if low_stamina:
                         multiplier += 0.2
+                case ProduceExamEffectType.ExamMultipleEnthusiasticLesson:
+                    # パラメータ+value1（熱意効果を2倍適用），例：手を伸ばした先に (p_card-03-ido-3_197, value1=1)
+                    # 基础分按 ExamLesson 计，热意翻倍协同按 ExamMultipleLessonBuffLesson 同档给 bonus
+                    score_effects += value1 + 200.0
+                    if late_stage:
+                        multiplier += 0.15
+                case ProduceExamEffectType.ExamLessonDependStamina:
+                    # 参数依赖体力值，例：自然体の魅力 (p_card-01-ido-3_213)，value1=10000 代表体力值的 1000%
+                    # 与 ExamLessonDependBlock (value1/50) 同口径：10000/50=200，与集中强化档相当
+                    score_effects += value1 / 50
+                    if late_stage:
+                        multiplier += 0.15
+                case ProduceExamEffectType.ExamFullPowerLessonMultipleAdditive:
+                    # 全力強化（全力效果倍率加成），value1=200 代表 +20%，多为永久 buff
+                    # 参考 ExamLessonValueMultiple / ExamAggressiveValueMultiple（倍率 setup≈1000，早打早收益）
+                    score_effects += 1000.0
+                    if early_stage:
+                        multiplier += 0.1
+                case ProduceExamEffectType.ExamReviewCountAdd:
+                    # 好印象追加発動次数，无引用卡牌
+                    # 参考 ExamReviewAdditive / ExamPlayableValueAdd（额外行动≈1000，早打早收益）
+                    score_effects += 1000.0
+                    if early_stage:
+                        multiplier += 0.1
+                case ProduceExamEffectType.ExamAggressiveAdditiveFix | ProduceExamEffectType.ExamBlockDependBlockConsumptionSum | ProduceExamEffectType.ExamForcePlayCardSearchWithCost | ProduceExamEffectType.ExamLessonBuffAdditiveFix | ProduceExamEffectType.ExamLessonBuffPerSearchCount | ProduceExamEffectType.ExamLessonDependBlockAndSearchCount | ProduceExamEffectType.ExamLessonDependBlockConsumptionSum | ProduceExamEffectType.ExamParameterBuffMultiplePerTurnReduce:
+                    # 增量 buff 系（参考 ExamLessonBuffAdditive=0，如 わたしを支える言葉/あなたがくれた夢）
+                    # 检索条件系（参考 ExamLessonPerSearchCount/ExamReviewPerSearchCount=0）
+                    # 消耗累计系（参考 ExamLessonDependPlayCardCountSum=0，如 輝きの到達点）
+                    # 自身减益系（参考 ExamParameterBuffReduce=0）及无引用卡牌，暂计 0 分避免误导排序
+                    score_effects += 0.0
                 case ProduceExamEffectType.ExamAggressiveAdditive | ProduceExamEffectType.ExamAggressiveReduce | ProduceExamEffectType.ExamBlockAddDown | ProduceExamEffectType.ExamBlockDependExamReview | ProduceExamEffectType.ExamBlockDown | ProduceExamEffectType.ExamBlockFix | ProduceExamEffectType.ExamBlockValueMultiple | ProduceExamEffectType.ExamCardCreateId | ProduceExamEffectType.ExamCardDuplicate | ProduceExamEffectType.ExamCardMove | ProduceExamEffectType.ExamEnthusiasticMultiple | ProduceExamEffectType.ExamForcePlayCardSearch | ProduceExamEffectType.ExamFullPower | ProduceExamEffectType.ExamFullPowerPointAdditive | ProduceExamEffectType.ExamFullPowerPointReduce | ProduceExamEffectType.ExamGimmickLessonDebuff | ProduceExamEffectType.ExamGimmickParameterDebuff | ProduceExamEffectType.ExamGimmickPlayCardLimit | ProduceExamEffectType.ExamGimmickSleepy | ProduceExamEffectType.ExamGimmickSlump | ProduceExamEffectType.ExamGimmickStartTurnCardDrawDown | ProduceExamEffectType.ExamItemFireLimitAdd | ProduceExamEffectType.ExamLessonBuffAdditive | ProduceExamEffectType.ExamLessonBuffDependParameterBuff | ProduceExamEffectType.ExamLessonBuffMultiple | ProduceExamEffectType.ExamLessonBuffReduce | ProduceExamEffectType.ExamLessonDependPlayCardCountSum | ProduceExamEffectType.ExamLessonDependStaminaConsumptionSum | ProduceExamEffectType.ExamLessonFix | ProduceExamEffectType.ExamLessonPerSearchCount | ProduceExamEffectType.ExamLessonValueMultipleDependReviewOrAggressive | ProduceExamEffectType.ExamLessonValueMultipleDown | ProduceExamEffectType.ExamOverPreservation | ProduceExamEffectType.ExamPanic | ProduceExamEffectType.ExamParameterBuffAdditive | ProduceExamEffectType.ExamParameterBuffDependLessonBuff | ProduceExamEffectType.ExamParameterBuffReduce | ProduceExamEffectType.ExamReviewDependExamBlock | ProduceExamEffectType.ExamReviewDependExamCardPlayAggressive | ProduceExamEffectType.ExamReviewMultiple | ProduceExamEffectType.ExamReviewPerSearchCount | ProduceExamEffectType.ExamReviewReduce | ProduceExamEffectType.ExamStaminaConsumptionAddFix | ProduceExamEffectType.ExamStaminaDamage | ProduceExamEffectType.ExamStaminaRecoverRestriction | ProduceExamEffectType.ExamStaminaReduceFix | ProduceExamEffectType.ExamStaminaReduce | ProduceExamEffectType.ExamStanceReset:
                     score_effects += 0.0
                 case _:
