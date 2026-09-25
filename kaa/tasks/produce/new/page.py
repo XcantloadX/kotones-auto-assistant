@@ -658,8 +658,9 @@ class ActionSelectContext(Context):
         else:
             raise ValueError("Unrecognized sensei tip action.")
 
-    def _read_number(self, box: Rect) -> int:
-        all_number = ocr.ocr(rect=box)
+    def _read_number(self, box: Rect, *, lang: Literal['jp', 'en'] = 'en') -> int:
+        # TODO: 实测这里的模型换成 paddle ocr en v4 效果会更好，目前还是会有误报或 miss
+        all_number = ocr.ocr(rect=box, lang=lang, only_rec=True)
         all_number = all_number.squash().numbers()
         if all_number:
             try:
@@ -674,6 +675,22 @@ class ActionSelectContext(Context):
         cur_da = self._read_number(R.InProduce.CurDaValue)
         cur_vi = self._read_number(R.InProduce.CurViValue)
         max_val = self._read_number(R.InProduce.MaxDaValue)
+
+        # 数字合法性检测
+        if max_val <= 0:
+            logger.error(
+                f"行动页上限读数不合理：max={max_val}（应为正数）。"
+                f"cur Vo/Da/Vi={cur_vo}/{cur_da}/{cur_vi}。",
+                exc_info=True
+            )
+        else:
+            for name, cur in (("Vo", cur_vo), ("Da", cur_da), ("Vi", cur_vi)):
+                if cur < 0 or cur > max_val:
+                    logger.error(
+                        f"行动页当前值读数不合理：cur_{name}={cur}，max={max_val}"
+                        f"（应满足 0<=cur<=max）。cur Vo/Da/Vi={cur_vo}/{cur_da}/{cur_vi}。",
+                        exc_info=True
+                    )
 
         return [
             PerformanceMetricsVal(current=cur_vi, max=max_val, lesson=ProduceAction.VISUAL),
