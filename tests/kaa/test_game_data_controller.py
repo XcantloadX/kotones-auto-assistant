@@ -56,7 +56,7 @@ class FakeUpdater:
         self.result = FakeUpdater.default_result
         FakeUpdater.instances.append(self)
 
-    def check_only(self, progress_cb=None):
+    def check_only(self):
         self.check_only_calls += 1
         return self.result
 

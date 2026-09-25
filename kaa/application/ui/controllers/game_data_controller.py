@@ -199,7 +199,7 @@ class GameDataUpdateController(QObject):
             self._set_progress_message("正在检查游戏资源…")
 
             updater = GameDataUpdater(cancel=self._cancel_event)
-            result = updater.check_only(progress_cb=self._set_progress_message)
+            result = updater.check_only()
 
             if result is None:
                 self._set_update_status(self.STATUS_FAILED)

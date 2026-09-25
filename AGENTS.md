@@ -39,7 +39,7 @@ Controllers 在 `kaa/application/ui/controllers/`：
 核心逻辑在 `kaa/game_data/updater.py` 的 `GameDataUpdater.check_and_update()`。
 触发方式：
 1. QML 启动时 → `_SplashBridge` 后台线程自动调用
-2. 设置页手动检查 → `SettingsController.checkGameDataAsync()`
+2. 首选项页手动更新 → `GameDataUpdateController.triggerUpdate()`
 下载路径：`resources/game_data/{game.db, idol_cards/, skill_cards/, drinks/, version.txt}`
 
 ## 配置迁移系统

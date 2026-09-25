@@ -24,9 +24,6 @@ class SettingsController(QObject):
     operationFailed = Signal(str)
     emulatorInstancesReady = Signal(str, str)
     emulatorNotInstalled = Signal(str)
-    gameDataProgress = Signal(str)
-    gameDataResult = Signal(str)
-    gameDataDone = Signal()
 
     def __init__(self, session: KaaSession, parent: QObject | None = None) -> None:
         super().__init__(parent)
@@ -248,52 +245,6 @@ class SettingsController(QObject):
         except Exception:
             logger.exception("Failed to enumerate instances for %s", emulator_type)
         return []
-
-    @Slot()
-    def checkGameDataAsync(self) -> None:
-        def _run() -> None:
-            try:
-                from kaa.game_data.updater import GameDataUpdater
-                updater = GameDataUpdater()
-
-                def progress_cb(text: str) -> None:
-                    self.gameDataProgress.emit(text)
-
-                check_result = updater.check_only(progress_cb=progress_cb)
-                if check_result is None:
-                    self.gameDataResult.emit("检查失败，无法获取游戏资源版本信息。")
-                    return
-
-                updater._mark_checked()
-
-                if not check_result.needs_update:
-                    self.gameDataResult.emit("目前已是最新版本，无需更新。")
-                    return
-
-                # 下载到 staging
-                updater.download_to_staging(
-                    check_result,
-                    file_progress_cb=None,  # 设置页不展示文件级进度
-                )
-
-                # 从 staging 构建图像索引
-                from kaa.image_db.prebuild import build_image_dbs_from_staging
-                from kaa.game_data.paths import staging_dir, staging_cache_dir
-                self.gameDataProgress.emit("正在构建图像数据索引，可能需要若干分钟")
-                build_image_dbs_from_staging(
-                    staging_dir=staging_dir(),
-                    staging_cache_dir=staging_cache_dir(),
-                )
-
-                self.gameDataResult.emit(
-                    f"游戏数据 {check_result.manifest.version[:8]} 下载完成，"
-                    "将在下次启动时自动应用。"
-                )
-            except Exception as e:
-                self.gameDataResult.emit(f"检查失败：{e}")
-            finally:
-                self.gameDataDone.emit()
-        threading.Thread(target=_run, daemon=True).start()
 
     @Slot()
     def resetGameWindow(self) -> None:
