@@ -258,9 +258,12 @@ class StandardStrategy(ProduceStrategy):
                 metrics = ctx.fetch_perf_metrics()
                 for m in metrics:
                     sp_lesson = _lesson_to_sp(m.lesson)
-                    if m.current / m.max < 0.8 and sp_lesson in availables:
-                        ctx.commit(sp_lesson)
-                        return
+                    if m.current > 0 and m.max > 0:
+                        if m.current / m.max < 0.8 and sp_lesson in availables:
+                            ctx.commit(sp_lesson)
+                            return
+                    else:
+                        logger.error('Failed to recognize metrics numbers.', exc_info=True)
 
                 # 4. 如果都 > 0.8，则选择 current 最小的课程
                 min_metric = min(metrics, key=lambda x: x.current)
