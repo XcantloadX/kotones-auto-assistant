@@ -71,3 +71,7 @@ Controllers 在 `kaa/application/ui/controllers/`：
 - `kaa/application/services/` — 服务层 (config, task, update, feedback)
 - `kaa/game_data/` — 游戏数据管理 (updater, manifest, paths)
 - `kaa/main/` — 入口 (cli, kaa, qml_app)
+
+## 测试
+一般情况，游戏脚本逻辑以及游戏画面识别相关代码无需编写单测。
+除开以上两种场景以外的（例如 UI、配置、调度等）需要编写单测。
