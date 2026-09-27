@@ -20,6 +20,7 @@ from kaa.tasks.produce.shared.common import ProduceInterrupt, acquisition_date_c
 from kaa.tasks.actions.commu import handle_unread_commu
 
 from .base import HifProduceStrategy
+from .standard import _matches
 
 if TYPE_CHECKING:
     from ..page import (
@@ -147,9 +148,10 @@ class HifGrindStrategy(HifProduceStrategy):
                 ProduceAction.CONSULT
             ]
             for action in orders:
-                if action in availables:
-                    ctx.commit(action)
-                    return
+                for available in availables:
+                    if _matches(action, available):
+                        ctx.commit(available)
+                        return
 
             # 无可用行动：等待 1s 后重试（覆盖切页动画等瞬时状态）
             if attempt < 4:
@@ -162,7 +164,12 @@ class HifGrindStrategy(HifProduceStrategy):
                 continue
             break
 
-        raise UnrecoverableError("No available actions to execute.")
+        logger.error(
+            "No available actions to execute. availables=%s, orders=%s",
+            availables if 'availables' in locals() else None,
+            orders if 'orders' in locals() else None,
+        )
+        raise UnrecoverableError("No available actions to execute (HIF).")
 
     def on_practice_entered(self, ctx: 'PracticeContext'):
         logger.error("Practice scene detected. This should not be in HIF.")
