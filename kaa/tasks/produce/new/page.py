@@ -684,13 +684,17 @@ class ActionSelectContext(Context):
                 exc_info=True
             )
         else:
-            for name, cur in (("Vo", cur_vo), ("Da", cur_da), ("Vi", cur_vi)):
-                if cur < 0 or cur > max_val:
-                    logger.error(
-                        f"行动页当前值读数不合理：cur_{name}={cur}，max={max_val}"
-                        f"（应满足 0<=cur<=max）。cur Vo/Da/Vi={cur_vo}/{cur_da}/{cur_vi}。",
-                        exc_info=True
-                    )
+            invalid = [
+                f"cur_{name}={cur}"
+                for name, cur in (("Vo", cur_vo), ("Da", cur_da), ("Vi", cur_vi))
+                if cur < 0 or cur > max_val
+            ]
+            if invalid:
+                logger.error(
+                    f"行动页当前值读数不合理：{'，'.join(invalid)}，max={max_val}"
+                    f"（应满足 0<=cur<=max）。cur Vo/Da/Vi={cur_vo}/{cur_da}/{cur_vi}。",
+                    exc_info=True
+                )
 
         return [
             PerformanceMetricsVal(current=cur_vi, max=max_val, lesson=ProduceAction.VISUAL),
