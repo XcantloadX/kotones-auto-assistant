@@ -1,16 +1,25 @@
 from unittest import TestCase
 from unittest.mock import MagicMock, patch
 
+import numpy as np
+
+from typing import TYPE_CHECKING, cast
+
 from kaa.util.telemetry_screenshot import (
     _allow_upload,
     _upload_attempt_times,
     screenshot_before_send,
     upload_report_screenshot,
+    upload_screenshot,
+    upload_video_file,
 )
+
+if TYPE_CHECKING:
+    from sentry_sdk.types import Event
 
 
 def _log_event(message: str = 'boom', level: str = 'error', exception: bool = False,
-               mechanism: str | None = None) -> dict:
+               mechanism: str | None = None) -> 'Event':
     """构造一个 LoggingIntegration 风格的日志事件。
 
     :param mechanism: exception.values[0].mechanism.type，模拟 exc_info
@@ -26,7 +35,7 @@ def _log_event(message: str = 'boom', level: str = 'error', exception: bool = Fa
         if mechanism is not None:
             value['mechanism'] = {'type': mechanism, 'handled': True}
         event['exception'] = {'values': [value]}
-    return event
+    return cast('Event', event)
 
 
 class TestScreenshotBeforeSend(TestCase):
@@ -39,6 +48,11 @@ class TestScreenshotBeforeSend(TestCase):
             with patch('kaa.util.telemetry_screenshot.upload_screenshot') as mock_upload:
                 result = screenshot_before_send(event, {})
         return result, mock_upload
+
+    @staticmethod
+    def _tags(result) -> dict:
+        """取事件的 tags 字典（实现从不返回 None，cast 仅用于静态类型）。"""
+        return cast(dict, result).get('tags', {})
 
     def test_exception_event_untouched(self):
         # 异常事件由 sentry_middleware 处理，钩子不应上传
@@ -65,7 +79,7 @@ class TestScreenshotBeforeSend(TestCase):
                        return_value='abc-123') as mock_upload:
                 result = screenshot_before_send(event, {})
         mock_upload.assert_called_once()
-        self.assertEqual(result['tags']['screenshot_id'], '[now]abc-123')
+        self.assertEqual(self._tags(result)['screenshot_id'], '[now]abc-123')
 
     def test_non_error_level_untouched(self):
         # 非 error 级日志不上传
@@ -89,7 +103,7 @@ class TestScreenshotBeforeSend(TestCase):
                        return_value='abc-123') as mock_upload:
                 result = screenshot_before_send(event, {})
         mock_upload.assert_called_once()
-        self.assertEqual(result['tags']['screenshot_id'], '[now]abc-123')
+        self.assertEqual(self._tags(result)['screenshot_id'], '[now]abc-123')
 
     def test_last_screenshot_reused_and_prefixed_with_last(self):
         # 存在上次截图数据时复用该图，并把带 [last] 前缀的 ID 写入 tags.screenshot_id
@@ -104,7 +118,7 @@ class TestScreenshotBeforeSend(TestCase):
                 result = screenshot_before_send(event, {})
         mock_upload.assert_called_once()
         self.assertIs(mock_upload.call_args.args[0], last_img)
-        self.assertEqual(result['tags']['screenshot_id'], '[last]abc-123')
+        self.assertEqual(self._tags(result)['screenshot_id'], '[last]abc-123')
 
     def test_upload_failure_leaves_event_untouched(self):
         # 上传失败（返回 None）时不写 tag，事件本身不受影响
@@ -114,7 +128,7 @@ class TestScreenshotBeforeSend(TestCase):
                        return_value=None):
                 result = screenshot_before_send(event, {})
         self.assertIs(result, event)
-        self.assertNotIn('screenshot_id', result.get('tags', {}))
+        self.assertNotIn('screenshot_id', self._tags(result))
 
 
 class TestUploadReportScreenshot(TestCase):
@@ -185,3 +199,133 @@ class TestUploadRateLimit(TestCase):
             self.assertFalse(_allow_upload())  # 第 6 次被限
             clock['t'] += 61.0  # 时间推进 61 秒
             self.assertTrue(_allow_upload())  # 窗口滑动，重新放行
+
+
+class _FakeResponse:
+    """requests.post 的最小替身：status_code + json。"""
+
+    def __init__(self, status_code, payload=None):
+        self.status_code = status_code
+        self._payload = payload or {}
+
+    def json(self):
+        return self._payload
+
+
+def _enabled():
+    """进入“ telemetry 启用 + 非开发模式”的补丁上下文。"""
+    return (
+        patch('kaa.util.telemetry_screenshot.is_dev', return_value=False),
+        patch('kaa.util.telemetry_screenshot.is_enabled', return_value=True),
+    )
+
+
+class TestUploadScreenshotPostMedia(TestCase):
+    """验证截图上传重构（经 _post_media）行为不变。"""
+
+    def tearDown(self):
+        _upload_attempt_times.clear()
+
+    def test_success_returns_id_with_png_content_type(self):
+        # PNG 编码 + POST 成功：返回 UUID，且 Content-Type 为 image/png
+        import tempfile
+
+        raw = np.zeros((10, 10, 3), dtype=np.uint8)
+        posted = {}
+
+        def _post(url, headers=None, data=None, timeout=None, proxies=None):
+            posted['headers'] = headers
+            posted['data'] = data
+            return _FakeResponse(201, {'id': 'shot-1'})
+
+        no_dev, enabled = _enabled()
+        with no_dev, enabled, patch('requests.post', side_effect=_post):
+            with tempfile.TemporaryFile():
+                self.assertEqual(upload_screenshot(raw), 'shot-1')
+        self.assertEqual(posted['headers'], {'Content-Type': 'image/png'})
+        self.assertTrue(posted['data'].startswith(b'\x89PNG'))
+
+
+class TestUploadVideoFile(TestCase):
+    """验证崩溃录屏 MP4 上传。"""
+
+    def tearDown(self):
+        _upload_attempt_times.clear()
+
+    def _write_mp4(self, tmp_path, size=64):
+        path = tmp_path / 'crash.mp4'
+        path.write_bytes(b'\x00' * size)
+        return str(path)
+
+    def test_success_returns_id_with_mp4_content_type(self):
+        # 上传成功：返回 UUID，Content-Type 为 video/mp4，body 与文件一致
+        import tempfile
+        from pathlib import Path
+
+        posted = {}
+
+        def _post(url, headers=None, data=None, timeout=None, proxies=None):
+            posted['headers'] = headers
+            posted['data'] = data
+            return _FakeResponse(201, {'id': 'vid-1'})
+
+        no_dev, enabled = _enabled()
+        with tempfile.TemporaryDirectory() as d:
+            path = self._write_mp4(Path(d))
+            with no_dev, enabled, patch('requests.post', side_effect=_post):
+                self.assertEqual(upload_video_file(path), 'vid-1')
+        self.assertEqual(posted['headers'], {'Content-Type': 'video/mp4'})
+        self.assertEqual(posted['data'], b'\x00' * 64)
+
+    def test_telemetry_disabled_returns_none_without_request(self):
+        with patch('kaa.util.telemetry_screenshot.is_dev', return_value=False):
+            with patch('kaa.util.telemetry_screenshot.is_enabled', return_value=False):
+                with patch('requests.post') as mock_post:
+                    self.assertIsNone(upload_video_file('/nonexistent.mp4'))
+        mock_post.assert_not_called()
+
+    def test_dev_mode_returns_none_without_request(self):
+        with patch('kaa.util.telemetry_screenshot.is_dev', return_value=True):
+            with patch('requests.post') as mock_post:
+                self.assertIsNone(upload_video_file('/nonexistent.mp4'))
+        mock_post.assert_not_called()
+
+    def test_missing_file_returns_none(self):
+        no_dev, enabled = _enabled()
+        with no_dev, enabled, patch('requests.post') as mock_post:
+            self.assertIsNone(upload_video_file('/nonexistent-crash.mp4'))
+        mock_post.assert_not_called()
+
+    def test_oversize_file_skipped_before_request(self):
+        # 超过 Worker 大小上限（3MiB）：不发请求
+        no_dev, enabled = _enabled()
+        with no_dev, enabled:
+            with patch('os.path.getsize', return_value=4 * 1024 * 1024):
+                with patch('requests.post') as mock_post:
+                    self.assertIsNone(upload_video_file('/fake.mp4'))
+        mock_post.assert_not_called()
+
+    def test_rejected_413_returns_none(self):
+        import tempfile
+        from pathlib import Path
+
+        no_dev, enabled = _enabled()
+        with tempfile.TemporaryDirectory() as d:
+            path = self._write_mp4(Path(d))
+            with no_dev, enabled:
+                with patch('requests.post', return_value=_FakeResponse(413)):
+                    self.assertIsNone(upload_video_file(path))
+
+    def test_rate_limited_returns_none(self):
+        import tempfile
+        from pathlib import Path
+
+        no_dev, enabled = _enabled()
+        with tempfile.TemporaryDirectory() as d:
+            path = self._write_mp4(Path(d))
+            with no_dev, enabled:
+                with patch('requests.post') as mock_post:
+                    for _ in range(5):
+                        self.assertTrue(_allow_upload())
+                    self.assertIsNone(upload_video_file(path))
+        mock_post.assert_not_called()

@@ -64,7 +64,7 @@ describe("POST /upload 校验", () => {
     env = createMockEnv();
   });
 
-  it("非图片 Content-Type 返回 415", async () => {
+  it("非图片/视频 Content-Type 返回 415", async () => {
     const res = await app.request(
       "http://localhost/upload",
       {
@@ -75,6 +75,9 @@ describe("POST /upload 校验", () => {
       env,
     );
     expect(res.status).toBe(415);
+    expect(await res.json()).toEqual({
+      error: "Only image and video uploads are allowed.",
+    });
   });
 
   it("Content-Length 超过 3MB 返回 413", async () => {
@@ -109,6 +112,33 @@ describe("POST /upload 校验", () => {
       env,
     );
     expect(res.status).toBe(413);
+  });
+
+  it("视频 Content-Length 超过 3MB 返回 413", async () => {
+    const body = new Uint8Array(MAX_UPLOAD_BYTES + 1);
+    const req = new Request("http://localhost/upload", {
+      method: "POST",
+      headers: { "content-type": "video/mp4" },
+      body,
+    });
+    const res = await app.request(req, {}, env);
+    expect(res.status).toBe(413);
+    expect(await res.json()).toEqual({
+      error: "File size exceeds the 3MB limit.",
+    });
+  });
+
+  it("非 MP4 的视频类型返回 415", async () => {
+    const res = await app.request(
+      "http://localhost/upload",
+      {
+        method: "POST",
+        headers: { "content-type": "video/webm" },
+        body: imageBody(),
+      },
+      env,
+    );
+    expect(res.status).toBe(415);
   });
 
   it("空请求体返回 400", async () => {
@@ -173,8 +203,35 @@ describe("POST /upload 成功路径", () => {
     });
   });
 
-  it("Google Drive 上传失败返回 502", async () => {
-    vi.stubGlobal(
+  it("视频上传成功，Drive 文件名为 <uuid>.mp4", async () => {
+    const fetchMock = mockDriveApi();
+    const env = createMockEnv();
+
+    const res = await app.request(
+      "http://localhost/upload",
+      {
+        method: "POST",
+        headers: { "content-type": "video/mp4" },
+        body: imageBody(),
+      },
+      env,
+    );
+
+    expect(res.status).toBe(201);
+    const data = (await res.json()) as { id: string };
+    expect(data.id).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+    );
+
+    // multipart 转发体里的元数据文件名应为 <uuid>.mp4
+    const uploadCall = fetchMock.mock.calls.find(([input]) =>
+      String(input).includes("upload/drive/v3/files"),
+    )!;
+    const sentBody = (uploadCall[1] as RequestInit).body as Blob;
+    await expect(sentBody.text()).resolves.toContain(`"${data.id}.mp4"`);
+  });
+
+  it("Google Drive 上传失败返回 502", async () => {    vi.stubGlobal(
       "fetch",
       vi.fn(async (input: RequestInfo | URL) => {
         if (String(input).includes("oauth2.googleapis.com/token")) {

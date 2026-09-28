@@ -15,6 +15,7 @@ Dialog {
         return value.substring(0, 30) || "无标题"
     }
     property string errorMessage: ""
+    property string progressMessage: ""
 
     title: "导出报告"
     modal: true
@@ -42,6 +43,7 @@ Dialog {
             }
             root.submitting = true
             root.errorMessage = ""
+            root.progressMessage = "正在准备…"
             root.feedbackCtrl.submitReport(titleField.text, descField.text, path)
         }
     }
@@ -50,17 +52,23 @@ Dialog {
         target: root.feedbackCtrl
         function onReportDone(msg) {
             root.submitting = false
+            root.progressMessage = ""
             root.close()
             root.exportSucceeded(msg)
         }
         function onReportFailed(msg) {
             root.submitting = false
+            root.progressMessage = ""
             root.errorMessage = msg
+        }
+        function onReportProgress(msg) {
+            root.progressMessage = msg
         }
     }
 
     onOpened: {
         errorMessage = ""
+        progressMessage = ""
         submitting = false
         titleField.forceActiveFocus()
     }
@@ -96,6 +104,24 @@ Dialog {
                 placeholderText: "详细描述问题发生的过程、预期结果和实际结果"
                 wrapMode: TextArea.Wrap
                 enabled: !root.submitting
+            }
+        }
+
+        ColumnLayout {
+            Layout.fillWidth: true
+            spacing: 4
+            visible: root.submitting
+
+            ProgressBar {
+                Layout.fillWidth: true
+                indeterminate: true
+            }
+
+            Label {
+                text: root.progressMessage
+                wrapMode: Text.Wrap
+                Layout.fillWidth: true
+                opacity: 0.75
             }
         }
 

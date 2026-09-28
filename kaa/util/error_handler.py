@@ -4,15 +4,37 @@
 避免中间件与 threading.excepthook 各自为战。
 """
 import logging
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from kotonebot.errors import UserFriendlyError, StopCurrentTask, UnscalableResolutionError
 from kotonebot.interop.window.model import WindowQueryError
 
+if TYPE_CHECKING:
+    from kaa.util.screen_recorder import ScreenRecorder
+
 logger = logging.getLogger(__name__)
+
+# 崩溃上报时等待后台录屏转码的最长秒数。真实游戏画面 60s 转码约 6~15s，
+# 30s 足以覆盖高动态场景，病态输入超时后降级为无 video_id tag（本地仍有落盘）。
+_CRASH_VIDEO_WAIT_TIMEOUT = 30.0
 
 # 去重：同一异常对象在多层（_initialize → run → threading.excepthook）只处理一次
 _handled_ids: set[int] = set()
+
+
+def _crash_recorder(ctx: Any | None) -> 'ScreenRecorder | None':
+    """取 ctx.bot 归属的后台录屏器。
+
+    归属 Kaa 实例（``BotContext(bot=self, …)``），多 profile 并发各归其主。
+    ctx 为空、bot 缺失或非 Kaa 实例（无 ``_recorder``）时返回 None。
+    """
+    try:
+        if ctx is None:
+            return None
+        recorder = ctx.bot._recorder
+    except AttributeError:
+        return None
+    return recorder
 
 
 def _show_bridge(message: str, buttons: list[tuple[int, str]], on_click) -> None:
@@ -27,8 +49,16 @@ def _show_bridge(message: str, buttons: list[tuple[int, str]], on_click) -> None
         logger.exception("Failed to show error dialog.", exc_info=True)
 
 
-def _capture_sentry(exc: BaseException, *, task_name: str | None) -> None:
-    """按 sentry_middleware 语义上报系统错误；友好错由调用方跳过。"""
+def _capture_sentry(exc: BaseException, *, task_name: str | None,
+                    ctx: Any | None = None) -> None:
+    """按 sentry_middleware 语义上报系统错误；友好错由调用方跳过。
+
+    截图与崩溃视频同步上传并分别打 ``screenshot_id`` / ``video_id`` tag，
+    共用 ``upload_screenshot`` consent 开关。视频转码在截图上传前启动
+    （后台线程与截图上传并行），上报前有界等待（见
+    ``_CRASH_VIDEO_WAIT_TIMEOUT``）；超时/超限/失败一律降级为无 tag，
+    不阻断上报链路。
+    """
     try:
         from kaa.util.telemetry import use_sentry, collect_report_context
         sentry_sdk = use_sentry()
@@ -52,6 +82,16 @@ def _capture_sentry(exc: BaseException, *, task_name: str | None) -> None:
                 scope.set_extra("shared_config", shared.model_dump_json())
             except Exception:
                 logger.warning("Failed to attach shared config to Sentry report.", exc_info=True)
+            # 启动崩溃录屏转码
+            recorder = _crash_recorder(ctx)
+            video_path: str | None = None
+            if recorder is not None:
+                try:
+                    video_path = recorder.dump_for_crash()
+                    if video_path is not None:
+                        logger.warning("Crash video dump started: %s", video_path)
+                except Exception:
+                    logger.warning("Failed to dump crash video.", exc_info=True)
             try:
                 from kaa.config import manager as config_manager
                 if config_manager.read_shared().telemetry.upload_screenshot is True:
@@ -61,6 +101,17 @@ def _capture_sentry(exc: BaseException, *, task_name: str | None) -> None:
                         scope.set_tag("screenshot_id", sid)
             except Exception:
                 logger.warning("Failed to upload screenshot to Sentry report.", exc_info=True)
+            try:
+                from kaa.config import manager as config_manager
+                if video_path is not None and recorder is not None \
+                        and config_manager.read_shared().telemetry.upload_screenshot is True:
+                    if recorder.wait_for_video(video_path, timeout=_CRASH_VIDEO_WAIT_TIMEOUT):
+                        from kaa.util.telemetry_screenshot import upload_video_file
+                        vid = upload_video_file(video_path)
+                        if vid:
+                            scope.set_tag("video_id", vid)
+            except Exception:
+                logger.warning("Failed to upload crash video to Sentry report.", exc_info=True)
             sentry_sdk.capture_exception(exc)
     except Exception:
         logger.warning("Failed to capture exception to Sentry.", exc_info=True)
@@ -167,7 +218,7 @@ def handle_exception(
         logger.warning(f"{prefix} System Error in {task_name}: {exc}", exc_info=True)
     else:
         logger.warning(f"{prefix} System Error: {exc}", exc_info=True)
-    _capture_sentry(exc, task_name=task_name)
+    _capture_sentry(exc, task_name=task_name, ctx=ctx)
     # 通用弹窗：避免静默失败（原 windows_gui_error_middleware 仅记日志）
     _show_bridge(
         f"发生未预期的系统错误：{exc}\n请查看日志或通过反馈功能提交报告。",

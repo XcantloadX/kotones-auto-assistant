@@ -1,12 +1,12 @@
-# 图片上传服务（Cloudflare Worker）
+# 媒体上传服务（Cloudflare Worker）
 
-部署在 Cloudflare Workers 上的图片上传接口：
+部署在 Cloudflare Workers 上的上传接口（错误上报用的截图与崩溃录屏）：
 
-1. 每个 IP 每分钟最多 **5** 次请求（IP 频率限制）
-2. 仅允许上传图片（按 `Content-Type` 校验）
-3. 单个文件必须 **小于 3 MiB**
-4. 每张图片分配一个随机 **UUID** 作为 ID
-5. 图片转发上传到 **Google Drive 指定文件夹**，文件名即 `{uuid}.{ext}`
+1. 每个 IP 每分钟最多 **5** 次请求（IP 频率限制，图片视频共用）
+2. 仅允许上传图片与视频（按 `Content-Type` 校验）
+3. 单个文件必须 **小于 3 MiB**（图片视频统一）
+4. 每个文件分配一个随机 **UUID** 作为 ID
+5. 文件转发上传到 **Google Drive 指定文件夹**，文件名即 `{uuid}.{ext}`
 6. 调用方收到 `201 { "id": "<uuid>" }`
 
 ## 技术栈
@@ -112,14 +112,14 @@ curl -X POST http://localhost:8787/upload \
 ### `POST /upload`
 
 请求：
-- `Content-Type` 必须为受支持的图片类型（`image/png`、`image/jpeg`、`image/webp`、`image/gif` 等）
-- Body 为图片二进制，大小 < 3 MiB
+- `Content-Type` 必须为受支持的类型：图片（`image/png`、`image/jpeg`、`image/webp`、`image/gif` 等）或视频（仅 `video/mp4`）
+- Body 为文件二进制，大小 < 3 MiB（图片视频统一）
 
 响应：
 - `201` → `{ "id": "<uuid>" }`
 - `400` → 请求体为空
 - `413` → 文件超过 3 MiB
-- `415` → 非图片类型
+- `415` → 非图片/视频类型
 - `429` → 超过 IP 频率限制（每分钟 5 次）
 - `502` → Google Drive 转发失败
 
@@ -133,7 +133,7 @@ curl -X POST http://localhost:8787/upload \
 [Sentry 兼容的](https://www.bugsink.com/sentry-sdk-compatible/) Bugsink：
 
 - `BUGSINK_DSN` 环境变量（`wrangler secret` / `.dev.vars`）配置 DSN
-- 异常（如 Google Drive 上传失败）自动捕获，并附带 `image_id` tag 便于定位
+- 异常（如 Google Drive 上传失败）自动捕获，并附带 `media_id` tag 便于定位
 - `tracesSampleRate: 0.1` 采集 10% 请求 trace
 - 需要 `compatibility_flags = ["nodejs_compat"]`（已在 `wrangler.jsonc` 中）
 

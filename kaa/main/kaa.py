@@ -2,11 +2,11 @@
 import sys
 import logging
 import importlib.metadata
-from typing import Any, cast
+from typing import Any, TYPE_CHECKING, cast
 from collections.abc import Callable, Iterable
 
 from kotonebot.core.bot import BotContext, KotoneBot
-from kotonebot.backend.context import Task
+from kotonebot.backend.context import Task, get_context
 from kotonebot.client.device import Device, WindowsDevice
 from kotonebot.client.host import (
     LeidianHost, Mumu12Instance,
@@ -34,6 +34,10 @@ if is_windows():
 else:
     DmmHost = DmmInstance = None
 from kotonebot.primitives.geometry import Size
+
+
+if TYPE_CHECKING:
+    from kaa.util.screen_recorder import ScreenRecorder
 
 
 logger = logging.getLogger(__name__)
@@ -305,6 +309,7 @@ class Kaa(KotoneBot):
         logger.info('Python Executable: %s', sys.executable)
 
         self.factory = KaaDeviceFactory()
+        self._recorder: 'ScreenRecorder | None' = None
 
         super().__init__(
             device_factory=self.factory,
@@ -361,6 +366,40 @@ class Kaa(KotoneBot):
 
             # 启动时预检：截图验证窗口分辨率可缩放，不兼容则友好提示并阻止任务启动。
             self._preflight_resolution(device)
+
+            # 后台录屏：started 事件后启动独立采样（device.start() 之后，Nemu 等
+            # 需连接的 impl 方可采集），stopped 事件时停止（device.stop() 之前）。
+            # 采样线程与 Loop 各采各的（实测 nemu_ipc 并发安全），互不阻塞。
+            # 暂停谓词取 runner 线程 Context 的 FlowController（跨线程读 bool 安全）；
+            # 取不到时退化为常采并记 warning（诊断缺暂停信号不断流，只是不标暂停段）。
+            from kaa.util.screen_recorder import ScreenRecorder  # noqa: PLC0415
+            flow = None
+            running_ctx = get_context()
+            if running_ctx is not None:
+                flow = running_ctx.vars.flow
+            if flow is None:
+                logger.warning('FlowController unavailable, screen recorder pause detection disabled.')
+                recorder = ScreenRecorder(device)
+            else:
+                recorder = ScreenRecorder(device, is_paused=lambda: flow.is_paused)
+            self._recorder = recorder
+
+            def _on_recorder_started() -> None:
+                self.events.started -= _on_recorder_started
+                try:
+                    recorder.start()
+                except Exception:
+                    logger.exception('Failed to start screen recorder.')
+
+            def _on_recorder_stopped(reason, exc) -> None:
+                self.events.stopped -= _on_recorder_stopped
+                try:
+                    recorder.stop()
+                except Exception:
+                    logger.exception('Failed to stop screen recorder.')
+
+            self.events.started += _on_recorder_started
+            self.events.stopped += _on_recorder_stopped
         except BaseException as e:
             # Runner 线程初始化期错误统一经 handler 处理（日志+弹窗+Sentry），避免裸 threading堆栈
             # 去重由 handler 内部 _handled_ids 保证与外层 run 守卫不重复
