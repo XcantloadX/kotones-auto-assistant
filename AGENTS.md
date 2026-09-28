@@ -75,3 +75,21 @@ Controllers 在 `kaa/application/ui/controllers/`：
 ## 测试
 一般情况，游戏脚本逻辑以及游戏画面识别相关代码无需编写单测。
 除开以上两种场景以外的（例如 UI、配置、调度等）需要编写单测。
+
+## 发版流程
+
+版本号为日期递增式 `vYYYY.M.N`（N 为当月序号，如 `v2026.9.8`），`docs/CHANGELOG.md` 顶部小节在功能开发时先写好。
+
+1. **bump**：只改两个文件各一行，改完后 `uv sync --extra dev`
+   - `pyproject.toml` → `version = "vX.Y.Z"`（带 `v` 前缀）
+   - `uv.lock` 中 `ksaa` 包条目 → `version = "X.Y.Z"`（不带 `v`）
+2. **commit**：在 `release/vYYYY.M` 分支提交，信息格式 `chore: vX.Y.Z 更新`
+3. **tag**：annotated tag，消息即 tag 名，指向 bump commit
+   - `git tag -a kaa-vX.Y.Z -m "kaa-vX.Y.Z"`
+4. **build**：`just build`（= `just package` + `just build-bootstrap`）
+   - `just package`：`tools/make_resources.py` 生成资源 → `python -m build` 打本体 sdist/wheel → 附带 `ksaa_res` 资源包
+   - `just build-bootstrap`：zipapp 打 `bootstrap.pyz` + MSBuild 编译 `kaa-wrapper` 出 `kaa.exe`（需 VS2022 + C++ 构建工具）
+   - 产物都在 `dist/`：`ksaa-<ver>.tar.gz`、`ksaa-<ver>-py3-none-any.whl`、`ksaa_res-*.tar.gz`、`bootstrap.pyz`、`kaa.exe`
+   - 构建时间长（数分钟），走 tterminal 后台跑，不要直接读全量输出（wheel 日志刷屏），轮询状态即可
+5. **push**：`git push origin release/vYYYY.M kaa-vX.Y.Z`
+   - 前置：`just` 已安装、已激活 Python 3.10 环境并 `uv sync --extra dev`
