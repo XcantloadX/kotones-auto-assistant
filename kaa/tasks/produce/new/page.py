@@ -129,6 +129,10 @@ class _SceneCheckMixin:
 
     def _check_interrupt_dialogs(self) -> Scene | None:
         """判断各种中断/弹窗场景"""
+        if R.InProduce.TextOutingStaminaMax.exists():
+            logger.debug("Scene detected: OUTING_STAMINA_MAX")
+            return Scene(SceneType.OUTING_STAMINA_MAX)
+
         # P饮料到达上限
         if R.InProduce.TextPDrinkMax.exists():
             logger.debug("Scene detected: PDRINK_MAX")

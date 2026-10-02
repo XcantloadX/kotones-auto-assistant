@@ -285,10 +285,6 @@ def enter_outing():
             break
         elif pi.handle():
             pass
-        # [screenshots\produce\outing_ap_confirm.png]
-        elif R.Common.ButtonSelect2.try_click():
-            logger.info("AP max out dialog found. Clicked continue button.")
-            sleep(0.1)
 
     logger.info("おでかけ completed.")
 

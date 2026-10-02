@@ -268,6 +268,7 @@ AcquisitionType = Literal[
     "PDrinkAcquire", # P饮料被动领取
     "PDrinkSelect", # P饮料主动领取
     "PDrinkMax", # P饮料到达上限
+    "OutingStaminaMax", # 外出时体力已满的确认弹窗
     "PSkillCardAcquire", # 技能卡领取
     "PSkillCardSelect", # 技能卡选择
     "PSkillCardEnhanced", # 技能卡强化
@@ -370,6 +371,17 @@ class ProduceInterrupt:
         return None
 
     @staticmethod
+    def _check_outing_stamina_max(img: MatLike) -> AcquisitionType | None:
+        """检查外出时体力已满的二次确认。"""
+        # [kotonebot-resource/sprites/jp/in_produce/screenshot_outing_2.png]
+        if R.InProduce.TextOutingStaminaMax.exists():
+            device.screenshot()
+            if R.InProduce.TextOutingStaminaMax.exists() and R.Common.ButtonSelect2.try_click():
+                logger.info("Outing stamina max dialog found. Clicked continue button.")
+                return "OutingStaminaMax"
+        return None
+
+    @staticmethod
     def _check_skill_card_enhance(img: MatLike) -> AcquisitionType | None:
         """检查技能卡自选强化"""
         if R.InProduce.IconTitleSkillCardEnhance.exists():
@@ -437,6 +449,7 @@ class ProduceInterrupt:
         _check_skip_commu,
         _check_pdrink_max,
         _check_pdrink_max_confirm,
+        _check_outing_stamina_max,
         _check_skill_card_enhance,
         _check_skill_card_removal,
         _check_network_error,
