@@ -37,7 +37,6 @@ dependencies = [
     "numpy<2.0",
     # For DMM version
     "pywin32==310; sys_platform == 'win32'",
-    "ahk~=1.8.3; sys_platform == 'win32'",
     "win11toast~=0.35; sys_platform == 'win32'", # For Windows Toast Notification
     "keyboard~=0.13.5",
     "kotonebot[android]==0.20.1",

@@ -3,6 +3,7 @@
 ### v2026.10.0
 修复：
 1. 尝试修复「CreateCompatibleDC failed」错误。
+2. 某些情况下启动游戏时会报错「AHKProtocolError」。
 
 ### v2026.9.8
 新增：

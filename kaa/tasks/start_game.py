@@ -210,12 +210,12 @@ def windows_launch():
                 except Exception as e:
                     logger.exception('Failed to disable Gakumas Localify: %s', e)
     
-    from ahk import AHK
-    from kaa.util.paths import get_ahk_path
-    ahk_path = get_ahk_path()
-    ahk = AHK(executable_path=ahk_path)
+    from kotonebot.interop.win import Win32Window
 
-    if ahk.find_window(title='gakumas', title_match_mode=3): # 3=精确匹配
+    def _game_window_exists() -> bool:
+        return Win32Window.find_window('title', 'gakumas') is not None
+
+    if _game_window_exists():
         logger.debug('Game already started.')
         return
     
@@ -233,7 +233,7 @@ def windows_launch():
     
     # 等待游戏窗口出现
     for _ in Loop(auto_screenshot=False):
-        if ahk.find_window(title='gakumas', title_match_mode=3):
+        if _game_window_exists():
             logger.debug('Game window found.')
             break
         logger.debug('Waiting for game window...')

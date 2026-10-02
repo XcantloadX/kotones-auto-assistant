@@ -101,7 +101,7 @@ def _attach_global_tags() -> None:
     平台名称/内存/系统版本/locale/显示器分辨率在运行期基本不变，init 时设置一次即可。
     非 Windows 上不易获取的字段（显示器分辨率）跳过，不阻塞遥测初始化。
 
-    tag 附加在进程级 global scope 上，确保任意线程（含后台/AHK 热键线程）产生的
+    tag 附加在进程级 global scope 上，确保任意线程（含后台/热键线程）产生的
     LoggingIntegration 日志事件也能携带这些字段。
     """
     from sentry_sdk import Scope  # noqa: PLC0415
