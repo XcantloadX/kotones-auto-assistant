@@ -999,10 +999,134 @@ class ProfileV12ToV13(MigrationStep):
 
 
 # ---------------------------------------------------------------------------
+# V13 → V14：移除 MuMu 12 v4.x 支持，自动升级为 v5.x；
+#           移除旧版前台挂机（windows 截图方式），自动切换为 windows_native
+# ---------------------------------------------------------------------------
+
+class ProfileV13ToV14(MigrationStep):
+    """将 lifecycle.type 为 'mumu12' 的 profile 自动升级为 'mumu12v5'，
+    并将 backend.screenshot_impl 为 'windows'（依赖 AHK 的旧实现）的 profile
+    自动切换到不依赖 AHK 的新实现 'windows_native'。"""
+
+    def check_needed(self, ctx: MigrationContext) -> bool:
+        profiles_dir = ctx.config_dir / 'profiles'
+        if not profiles_dir.exists():
+            return False
+        for f in profiles_dir.glob('*.json'):
+            try:
+                data = json.loads(f.read_text(encoding='utf-8'))
+            except Exception:
+                continue
+            if data.get('version', 0) < 14:
+                lifecycle = data.get('backend', {}).get('lifecycle', {})
+                backend = data.get('backend', {})
+                if lifecycle.get('type') == 'mumu12':
+                    return True
+                if backend.get('screenshot_impl') == 'windows':
+                    return True
+        return False
+
+    def apply(self, ctx: MigrationContext) -> None:
+        profiles_dir = ctx.config_dir / 'profiles'
+        if not profiles_dir.exists():
+            return
+        upgraded: list[str] = []
+        migrated_windows: list[str] = []
+        for f in profiles_dir.glob('*.json'):
+            try:
+                data = json.loads(f.read_text(encoding='utf-8'))
+            except Exception:
+                continue
+            if data.get('version', 0) >= 14:
+                continue
+
+            lifecycle = data.get('backend', {}).get('lifecycle', {})
+            if lifecycle.get('type') == 'mumu12':
+                lifecycle['type'] = 'mumu12v5'
+                data.setdefault('backend', {})['lifecycle'] = lifecycle
+                upgraded.append(f.stem)
+
+            backend = data.get('backend', {})
+            if backend.get('screenshot_impl') == 'windows':
+                backend['screenshot_impl'] = 'windows_native'
+                data['backend'] = backend
+                migrated_windows.append(f.stem)
+
+            data['version'] = 14
+            f.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding='utf-8')
+
+        if upgraded:
+            ctx.messages.append(MigrationMessage(
+                text=(
+                    "已将所有配置的模拟器类型从 MuMu 12 v4.x 自动升级为 v5.x。"
+                    "如果模拟器仍为旧版 v4.x，请尽快升级模拟器，否则将无法正常连接。"
+                ),
+                old_version='v13',
+                new_version='v14',
+            ))
+        if migrated_windows:
+            ctx.messages.append(MigrationMessage(
+                text=(
+                    "已将所有配置的 DMM 截图方式从旧版「windows」（依赖 AHK）"
+                    "自动切换为新版「windows_native」（不再依赖 AHK）。"
+                ),
+                old_version='v13',
+                new_version='v14',
+            ))
+
+
+# ---------------------------------------------------------------------------
 # 迁移链
 # ---------------------------------------------------------------------------
 
-LATEST_VERSION: int = 13
+# ---------------------------------------------------------------------------
+# V14 → V15：移除旧版培育引擎（legacy），删除 tasks.produce.produce_engine 字段
+# ---------------------------------------------------------------------------
+
+class ProfileV14ToV15(MigrationStep):
+    """删除 tasks.produce.produce_engine 字段（旧版培育引擎已移除，新版为唯一引擎）。"""
+
+    def check_needed(self, ctx: MigrationContext) -> bool:
+        profiles_dir = ctx.config_dir / 'profiles'
+        if not profiles_dir.exists():
+            return False
+        for f in profiles_dir.glob('*.json'):
+            try:
+                data = json.loads(f.read_text(encoding='utf-8'))
+            except Exception:
+                continue
+            if data.get('version', 0) < 15:
+                return True
+        return False
+
+    def apply(self, ctx: MigrationContext) -> None:
+        profiles_dir = ctx.config_dir / 'profiles'
+        if not profiles_dir.exists():
+            return
+        cleaned = 0
+        for f in profiles_dir.glob('*.json'):
+            try:
+                data = json.loads(f.read_text(encoding='utf-8'))
+            except Exception:
+                continue
+            if data.get('version', 0) >= 15:
+                continue
+            produce = data.get('tasks', {}).get('produce', {})
+            if 'produce_engine' in produce:
+                del produce['produce_engine']
+                data.setdefault('tasks', {})['produce'] = produce
+                cleaned += 1
+            data['version'] = 15
+            f.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding='utf-8')
+        if cleaned:
+            ctx.messages.append(MigrationMessage(
+                text="旧版培育引擎已移除，现在统一使用新版培育。",
+                old_version='v14',
+                new_version='v15',
+            ))
+
+
+LATEST_VERSION: int = 15
 
 profile_migration_chain = MigrationChain(steps=[
     ProfileV1ToV2(),
@@ -1018,6 +1142,8 @@ profile_migration_chain = MigrationChain(steps=[
     ProfileV10ToV11(),
     ProfileV11ToV12(),
     ProfileV12ToV13(),
+    ProfileV13ToV14(),
+    ProfileV14ToV15(),
 ])
 
 

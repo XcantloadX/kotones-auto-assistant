@@ -12,6 +12,7 @@ from kotonebot import logging, sleep, device, Loop
 from kotonebot.errors import UnrecoverableError
 
 from kaa.tasks import R
+from kaa.tasks.common import skip
 from kaa.tasks.produce.shared.cards import SKIP_CARD_BUTTON
 from kaa.kaa_context import produce_solution
 from kaa.config.const import ProduceAction
@@ -19,6 +20,7 @@ from kaa.tasks.produce.shared.common import ProduceInterrupt, acquisition_date_c
 from kaa.tasks.actions.commu import handle_unread_commu
 
 from .base import HifProduceStrategy
+from .standard import _matches
 
 if TYPE_CHECKING:
     from ..page import (
@@ -119,7 +121,18 @@ class HifGrindStrategy(HifProduceStrategy):
         # 直接中断整个培育任务，无可用行动时等待 1s 后重试（最多 5 次）；
         # 连续多次仍无可用行动才真正抛出异常。
         for attempt in range(5):
-            availables = ctx.fetch_available_actions()[0]
+            try:
+                availables = ctx.fetch_available_actions()[0]
+            except Exception:
+                logger.error(
+                    "Action recognition hit transient state. Skipping and returning... (%d/5)",
+                    attempt + 1,
+                    exc_info=True,
+                )
+                skip()
+                skip()
+                sleep(1)
+                return
 
             # 优先级：
             # 休息 > 差し入れ > 课程 > 授業 > 相談
@@ -135,9 +148,10 @@ class HifGrindStrategy(HifProduceStrategy):
                 ProduceAction.CONSULT
             ]
             for action in orders:
-                if action in availables:
-                    ctx.commit(action)
-                    return
+                for available in availables:
+                    if _matches(action, available):
+                        ctx.commit(available)
+                        return
 
             # 无可用行动：等待 1s 后重试（覆盖切页动画等瞬时状态）
             if attempt < 4:
@@ -150,7 +164,12 @@ class HifGrindStrategy(HifProduceStrategy):
                 continue
             break
 
-        raise UnrecoverableError("No available actions to execute.")
+        logger.error(
+            "No available actions to execute. availables=%s, orders=%s",
+            availables if 'availables' in locals() else None,
+            orders if 'orders' in locals() else None,
+        )
+        raise UnrecoverableError("No available actions to execute (HIF).")
 
     def on_practice_entered(self, ctx: 'PracticeContext'):
         logger.error("Practice scene detected. This should not be in HIF.")

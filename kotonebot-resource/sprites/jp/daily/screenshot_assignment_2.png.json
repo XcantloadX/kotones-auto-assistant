@@ -35,6 +35,50 @@
       },
       "name": "Daily.Assignment.BoxCharName",
       "displayName": "选择角色页面 名称"
+    },
+    "e71cd5a7-b87f-4645-a612-712907deec42": {
+      "type": "hint-point",
+      "name": "Daily.Assignment.PointIdol1",
+      "props": {
+        "point": {
+          "kind": "point",
+          "x": 88.90943150055048,
+          "y": 784.2290528735646
+        }
+      }
+    },
+    "d809a8fa-fab0-4a0f-99ca-1d8f6cde97ee": {
+      "type": "hint-point",
+      "name": "Daily.Assignment.PointIdol3",
+      "props": {
+        "point": {
+          "kind": "point",
+          "x": 86.65584763280756,
+          "y": 943.4042967887355
+        }
+      }
+    },
+    "349eaa5e-2876-46ec-85a0-00783a32d992": {
+      "type": "hint-point",
+      "name": "Daily.Assignment.PointIdol2",
+      "props": {
+        "point": {
+          "kind": "point",
+          "x": 245.15791299739553,
+          "y": 780.4749197623578
+        }
+      }
+    },
+    "7ac36e7c-7930-406d-9096-64e4c5981fff": {
+      "type": "hint-point",
+      "name": "Daily.Assignment.PointIdol4",
+      "props": {
+        "point": {
+          "kind": "point",
+          "x": 242.9043291296525,
+          "y": 941.1518169220113
+        }
+      }
     }
   }
 }

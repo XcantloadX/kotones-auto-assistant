@@ -38,6 +38,48 @@
         "fixed": true
       },
       "displayName": "ランキング"
+    },
+    "bd667cb6-651c-41b6-a1fe-031945f3ce89": {
+      "type": "hint-box",
+      "name": "Daily.Contest.BoxScore1",
+      "displayName": "竞赛 1 号对手综合力分数",
+      "props": {
+        "image": {
+          "kind": "rect",
+          "x1": 64.99760063982939,
+          "y1": 634.990253513049,
+          "x2": 260,
+          "y2": 690
+        }
+      }
+    },
+    "6fa9c8b9-8bfb-4e44-8490-3b118d7915a8": {
+      "type": "hint-box",
+      "name": "Daily.Contest.BoxScore2",
+      "displayName": "竞赛 2 号对手综合力分数",
+      "props": {
+        "image": {
+          "kind": "rect",
+          "x1": 64.99760063982939,
+          "y1": 830.9896037472522,
+          "x2": 260,
+          "y2": 885
+        }
+      }
+    },
+    "79a6c6cc-b060-463c-a5e9-8a8a75e140ba": {
+      "type": "hint-box",
+      "name": "Daily.Contest.BoxScore3",
+      "displayName": "竞赛 3 号对手综合力分数",
+      "props": {
+        "image": {
+          "kind": "rect",
+          "x1": 69.99680085310587,
+          "y1": 1028.9889539814556,
+          "x2": 260,
+          "y2": 1082
+        }
+      }
     }
   }
 }

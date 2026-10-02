@@ -24,12 +24,14 @@ def handle_network_error() -> bool:
     :return: 是否处理了网络错误弹窗。
     """
     # 无截图数据时跳过检测（例如 `Loop(auto_screenshot=False)` 之类未截图的上下文）
-    if vars.screenshot_data is None:
+    img = vars.screenshot_data
+    if img is None:
         logger.debug('No screenshot data available, skipping network error check.')
         return False
     # 横屏下跳过检测
-    if device.detect_orientation() == 'landscape':
-        logger.debug('Landscape orientation detected, skipping network error handling.')
+    h, w = img.shape[:2]
+    if w > h:
+        logger.debug('Landscape screenshot detected, skipping network error handling.')
         return False
     # 全屏通信エラー（加载页等）
     if R.Common.TextNetworkError.exists():

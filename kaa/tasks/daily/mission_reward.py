@@ -3,7 +3,7 @@ import logging
 
 from kaa.tasks import R
 
-from kaa.config import conf, Priority
+from kaa.config import Priority
 from ..actions.scenes import goto_home
 from kotonebot import device, task, action, sleep
 from kotonebot.backend.loop import Loop
@@ -107,9 +107,6 @@ def mission_reward():
     """
     领取任务奖励
     """
-    if not conf().tasks.mission_reward.enabled:
-        logger.info('Mission reward is disabled.')
-        return
     logger.info('Claiming mission rewards.')
 
     claim_mission_rewards()

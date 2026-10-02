@@ -232,10 +232,8 @@ def test_apply_staging_absent(fake_paths):
 
 def _make_check_result(needs_db=True, categories_missing=None, version="v3", needs_update=True):
     categories_missing = categories_missing or {"idol_cards": {"a.png"}}
-    mirror = SimpleNamespace(make_url=lambda p: f"https://mirror/{p}")
     manifest = SimpleNamespace(version=version)
     return SimpleNamespace(
-        mirror=mirror,
         manifest=manifest,
         needs_db=needs_db,
         category_missing=categories_missing,
@@ -319,8 +317,8 @@ def test_check_and_update_unified(fake_paths, fake_shared, fake_prebuild_module,
     from kaa.game_data.updater import GameDataUpdater, UpdateOutcome
 
     result = _make_check_result(needs_db=True, categories_missing={"idol_cards": {"a.png"}}, version="v3")
-    # check_only 被 mock，避免真实探测镜像 / 解析 manifest
-    monkeypatch.setattr(updater.GameDataUpdater, "check_only", lambda self, progress_cb=None: result)
+    # check_only 被 mock，避免真实下载 / 解析 manifest
+    monkeypatch.setattr(updater.GameDataUpdater, "check_only", lambda self: result)
 
     zip_buf = io.BytesIO()
     with zipfile.ZipFile(zip_buf, "w") as z:
@@ -356,7 +354,7 @@ def test_check_and_update_cancelled(fake_paths, fake_shared, fake_prebuild_modul
     from kaa.game_data.updater import GameDataUpdater, GameDataUpdateCancelled, UpdateOutcome
 
     result = _make_check_result(needs_db=True, categories_missing={"idol_cards": {"a.png"}}, version="v3")
-    monkeypatch.setattr(updater.GameDataUpdater, "check_only", lambda self, progress_cb=None: result)
+    monkeypatch.setattr(updater.GameDataUpdater, "check_only", lambda self: result)
 
     def fake_download(url, **kwargs):
         raise GameDataUpdateCancelled()
@@ -394,12 +392,10 @@ def test_check_only_version_match_db_mismatch(fake_paths, monkeypatch):
     _write_valid_sqlite(fake_paths.data / "game.db")
     (fake_paths.data / "version.txt").write_text("v1")
 
-    mirror = SimpleNamespace(make_url=lambda p: f"https://mirror/{p}")
     manifest = _FakeManifest(
         version="v1",
         files={"game.db": SimpleNamespace(md5="x" * 32, size=1)},
     )
-    monkeypatch.setattr(updater, "_select_mirror", lambda log_cb=None: mirror)
     monkeypatch.setattr(updater, "_download", lambda url, **kw: b"manifest")
     monkeypatch.setattr(updater, "parse_manifest", lambda data: manifest)
 
@@ -419,12 +415,10 @@ def test_check_only_version_match_db_ok(fake_paths, monkeypatch):
 
     # 用真实 _md5 计算本地 db 的指纹作为 manifest md5
     db_md5 = updater._md5(fake_paths.data / "game.db")
-    mirror = SimpleNamespace(make_url=lambda p: f"https://mirror/{p}")
     manifest = _FakeManifest(
         version="v1",
         files={"game.db": SimpleNamespace(md5=db_md5, size=1)},
     )
-    monkeypatch.setattr(updater, "_select_mirror", lambda log_cb=None: mirror)
     monkeypatch.setattr(updater, "_download", lambda url, **kw: b"manifest")
     monkeypatch.setattr(updater, "parse_manifest", lambda data: manifest)
 

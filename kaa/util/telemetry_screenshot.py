@@ -1,21 +1,30 @@
-"""错误上报时的截图上传模块。
+"""错误上报时的截图/视频上传模块。
 
-将截图上传到 Cloudflare Worker（转发至 Google Drive），返回服务端分配的
-UUID。该 ID 作为 tag 附加到 Sentry 报告，便于在 Drive 中检索对应图片。所有失败
-均静默降级（仅记 warning 日志并返回 None），绝不阻断错误上报链路。
+将截图或崩溃录屏上传到 Cloudflare Worker（转发至 Google Drive），返回服务端
+分配的 UUID。该 ID 作为 tag 附加到 Sentry 报告，便于在 Drive 中检索对应文件。
+所有失败均静默降级（仅记 warning 日志并返回 None），绝不阻断错误上报链路。
 
 截图来源优先复用内存中上次的截图数据（``vars.screenshot_data``），无数据时才
 现场截图；上传成功后在 UUID 前追加 ``[last]``/``[now]`` 前缀，便于在 Drive 中
 区分截图来源。
 
-截图上传覆盖两条上报路径：
-1. 异常上报：sentry_middleware 在 capture_exception 时同步上传。
+截图上传覆盖三条上报路径：
+1. 异常上报：_capture_sentry 在 capture_exception 前同步上传。
 2. 日志上报：screenshot_before_send 钩子为 error/critical/fatal 级别的纯日志事件
-   上传（异常事件由 sentry_middleware 处理，这里不再重复）。已知良性的日志消息
+   上传（异常事件由 _capture_sentry 处理，这里不再重复）。已知良性的日志消息
    （见 _SKIP_UPLOAD_MESSAGE_FRAGMENTS）会跳过上传，避免刷屏 Drive。
+3. 带 exc_info 的日志上报：LoggingIntegration 会把这类 error 日志转成含
+   ``exception`` 的事件（mechanism.type 为 ``logging``），它们同样未经
+   _capture_sentry 同步处理截图，钩子识别后补上传。
+
+崩溃视频上传仅覆盖异常上报路径：_capture_sentry 在截图上传前先启动后台录屏
+转码（与截图上传并行），随后有界等待编码完成并上传 MP4，ID 写入 Sentry 的
+``video_id`` tag。视频与截图共用 ``upload_screenshot`` consent 开关与
+每分钟上传节流（一次崩溃最多占 2 次额度）。
 """
 
 import logging
+import os
 import threading
 import time
 from collections import deque
@@ -31,7 +40,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-# Cloudflare Worker 侧单个文件大小上限（413 判定阈值）。
+# Cloudflare Worker 侧单个文件大小上限（413 判定阈值；图片视频统一 3MiB）。
 _MAX_BYTES = 3 * 1024 * 1024
 
 # 单进程内每分钟最多尝试的上传次数。与 Worker 侧 IP 限流一致，避免触发 429。
@@ -65,12 +74,36 @@ def _is_skipped_log_message(message: str) -> bool:
     return any(frag in message for frag in _SKIP_UPLOAD_MESSAGE_FRAGMENTS)
 
 
+def _is_logging_mechanism_exception(data: dict) -> bool:
+    """判断是否为 LoggingIntegration 经 exc_info 生成的异常事件。
+
+    ``logger.error(..., exc_info=True)`` 产生的 Sentry 事件同样携带
+    ``exception``，但其 mechanism.type 为 ``logging``，未经
+    handle_exception/_capture_sentry 同步处理截图，需要由钩子补上传。
+    而 capture_exception 上报的事件（mechanism 为 ``generic`` 等）已由
+    上报方处理过截图，这里跳过以免重复上传。
+    """
+    try:
+        values = data.get('exception') or {}
+        values = values.get('values') or []
+        return any(
+            isinstance(v, dict)
+            and isinstance(v.get('mechanism'), dict)
+            and v['mechanism'].get('type') == 'logging'
+            for v in values
+        )
+    except Exception:
+        return False
+
+
 def screenshot_before_send(event: 'Event', hint: 'Hint') -> 'Event | None':
     """Sentry before_send 钩子：为 error 级别的纯日志事件附加截图上传。
 
-    异常事件（event 含 ``exception``）已由 sentry_middleware 同步上传，此处仅覆盖
-    LoggingIntegration 上报的 error/critical/fatal 日志事件。命中免上传清单的已知
-    良性消息直接放行（不上传）。任何失败都只降级日志，不改动事件本身。
+    异常事件（event 含 ``exception``）已由 _capture_sentry 同步上传，此处仅覆盖
+    LoggingIntegration 上报的 error/critical/fatal 日志事件；其中经 exc_info 生成
+    的异常事件（mechanism.type 为 ``logging``）未经同步上传，同样补传截图。
+    命中免上传清单的已知良性消息直接放行（不上传）。任何失败都只降级日志，
+    不改动事件本身。
 
     :param event: Sentry 事件字典（scope tag 已合并）。
     :param hint: Sentry 事件附带元数据（此处未使用）。
@@ -79,8 +112,10 @@ def screenshot_before_send(event: 'Event', hint: 'Hint') -> 'Event | None':
     # 事件以 TypedDict 传入，统一转成普通 dict 进行读写，规避 TypedDict 的静态限制。
     data: dict = cast(dict, event)
 
-    # 异常事件由 sentry_middleware 处理截图上传，避免重复。
-    if data.get('exception'):
+    # 异常事件由 _capture_sentry 处理截图上传，避免重复；但
+    # LoggingIntegration 经 exc_info 生成的异常事件（mechanism.type == 'logging'）
+    # 未走该路径，需要在这里补上传。
+    if data.get('exception') and not _is_logging_mechanism_exception(data):
         return event
     # 仅处理 error 级及以上的日志事件。
     if data.get('level') not in ('error', 'critical', 'fatal'):
@@ -149,20 +184,53 @@ def upload_report_screenshot() -> str | None:
     return None
 
 
-def upload_screenshot(image_bgr) -> str | None:
-    """上传截图到图片上传服务，成功后返回分配的 UUID。
+def _post_media(data: bytes, content_type: str) -> str | None:
+    """向上传服务 POST 二进制并解析返回的 UUID。
 
-    :param image_bgr: OpenCV BGR 格式截图数组（cv2.imencode 可直接编码）。
-    :return: 上传成功返回服务端分配的 UUID；遥测未启用/服务不可达/超限时返回 None。
+    唯一的网络出口：遥测未启用/开发模式/触发节流时直接返回 None，
+    调用方无需各自重复门限。
+
+    :param data: 待上传的完整文件字节。
+    :param content_type: 文件 MIME 类型（服务端按此校验类型与大小上限）。
+    :return: 成功返回服务端分配的 UUID；门限拦截/超限/失败返回 None。
     """
     # 遥测未启用或开发模式下不产生任何网络请求。
     if is_dev() or not is_enabled():
         return None
     # 达到每分钟上传上限时静默跳过，避免触发 Worker 侧 429。
     if not _allow_upload():
-        logger.debug('Screenshot upload rate limit reached, skipping.')
+        logger.debug('Media upload rate limit reached, skipping.')
         return None
+    try:
+        resp = requests.post(
+            f'{SCREENSHOT_UPLOAD_URL}/upload',
+            headers={'Content-Type': content_type},
+            data=data,
+            timeout=60,
+            proxies={'http': '', 'https': ''},
+        )
+        if resp.status_code == 201:
+            payload = resp.json()
+            upload_id = payload.get('id') if isinstance(payload, dict) else None
+            if upload_id:
+                return str(upload_id)
+            logger.warning('Media upload returned 201 but missing id: %r', payload)
+        elif resp.status_code == 413:
+            logger.warning('Media upload rejected (too large): HTTP 413')
+        else:
+            logger.warning('Media upload failed: HTTP %s', resp.status_code)
+    except Exception:
+        # 网络错误/解析失败等一律降级，不影响 Sentry 上报主流程。
+        logger.warning('Failed to upload media.', exc_info=True)
+    return None
 
+
+def upload_screenshot(image_bgr) -> str | None:
+    """上传截图到图片上传服务，成功后返回分配的 UUID。
+
+    :param image_bgr: OpenCV BGR 格式截图数组（cv2.imencode 可直接编码）。
+    :return: 上传成功返回服务端分配的 UUID；遥测未启用/服务不可达/超限时返回 None。
+    """
     try:
         import cv2
 
@@ -176,22 +244,36 @@ def upload_screenshot(image_bgr) -> str | None:
             )
             data = cv2.imencode('.png', resized)[1].tobytes()
 
-        resp = requests.post(
-            f'{SCREENSHOT_UPLOAD_URL}/upload',
-            headers={'Content-Type': 'image/png'},
-            data=data,
-            timeout=10,
-            proxies={'http': '', 'https': ''},
-        )
-        if resp.status_code == 201:
-            payload = resp.json()
-            upload_id = payload.get('id') if isinstance(payload, dict) else None
-            if upload_id:
-                return str(upload_id)
-            logger.warning('Screenshot upload returned 201 but missing id: %r', payload)
-        else:
-            logger.warning('Screenshot upload failed: HTTP %s', resp.status_code)
+        return _post_media(data, 'image/png')
     except Exception:
-        # 网络错误/解析失败等一律降级，不影响 Sentry 上报主流程。
-        logger.warning('Failed to upload screenshot.', exc_info=True)
+        # 编码失败等一律降级，不影响 Sentry 上报主流程。
+        logger.warning('Failed to encode screenshot.', exc_info=True)
     return None
+
+
+def upload_video_file(path: str) -> str | None:
+    """上传崩溃录屏 MP4 到上传服务，成功后返回分配的 UUID。
+
+    与截图共用 consent 门控（``upload_screenshot`` 开关）与每分钟节流；
+    超过 Worker 大小上限（3MiB）或文件缺失时直接跳过。
+
+    :param path: ``ScreenRecorder.dump_for_crash`` 返回的本地 MP4 路径。
+    :return: 上传成功返回服务端分配的 UUID（调用方写入 Sentry ``video_id``
+        tag）；遥测未启用/文件不可用/超限/上传失败时返回 None。
+    """
+    try:
+        size = os.path.getsize(path)
+    except OSError:
+        logger.warning('Crash video file not found: %s', path)
+        return None
+    if size > _MAX_BYTES:
+        logger.warning('Crash video too large (%d bytes), skipping upload.', size)
+        return None
+
+    try:
+        with open(path, 'rb') as f:
+            data = f.read()
+    except OSError:
+        logger.warning('Failed to read crash video file: %s', path)
+        return None
+    return _post_media(data, 'video/mp4')

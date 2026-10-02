@@ -1,4 +1,4 @@
-from kotonebot import device, logging, Loop, sleep, ocr
+from kotonebot import Countdown, device, logging, Loop, sleep, ocr
 from kotonebot.errors import UnrecoverableError
 
 from kaa.tasks import R
@@ -63,26 +63,26 @@ def _select_set(index: int):
                 logger.warning('Failed to get current set number. Retrying...')
                 sleep(0.2)
         return numbers[0]
-    
+
     max_retries = 3
     retry_count = 0
-    
+
     while retry_count < max_retries:
         current = _current()
         logger.info(f'Navigate to set #{index}. Now at set #{current}.')
-        
+
         # 计算需要点击的次数
         click_count = abs(index - current)
         if click_count == 0:
             logger.info(f'Already at set #{current}.')
             return
         click_target = R.Produce.PointProduceNextSet if current < index else R.Produce.PointProducePrevSet
-        
+
         # 点击
         for _ in range(click_count):
             device.click(click_target)
             sleep(0.1)
-        
+
         # 确认
         final_current = _current()
         if final_current == index:
@@ -91,15 +91,15 @@ def _select_set(index: int):
         else:
             retry_count += 1
             logger.warning(f'Failed to navigate to set #{index}. Current set is #{final_current}. Retrying... ({retry_count}/{max_retries})')
-    
+
     logger.error(f'Failed to navigate to set #{index} after {max_retries} retries.')
-    
+
 # 选择偶像
 def step1(idol_skin_id: str) -> bool:
     if not R.Produce.TextStepIndicator1.exists():
         logger.debug('Not at step1, returning False')
         return False
-    
+
     logger.info('Target idol is %s, locating...', idol_skin_id)
 
     # 首先判断是否已选中目标偶像
@@ -111,7 +111,7 @@ def step1(idol_skin_id: str) -> bool:
         else:
             logger.info('Not selected. Trying to select.')
             return False
-    
+
     if _check_idol():
         logger.info('Idol already %s selected.', idol_skin_id)
         return True
@@ -138,15 +138,15 @@ def step2(set_number: int | None = None, auto_set: bool | None = None) -> bool:
     """
     if set_number is None and auto_set is None:
         raise ValueError("Either set_number or auto_set must be provided.")
-    
+
     if not R.Produce.TextStepIndicator2.exists():
         logger.debug('Not at step2, returning False')
         return False
-    
+
     # 无论是否 auto set，先导航到目标编成
     if set_number is not None:
         _select_set(set_number)
-    
+
     if auto_set:
         for _ in Loop():
             # 结束条件
@@ -161,7 +161,7 @@ def step2(set_number: int | None = None, auto_set: bool | None = None) -> bool:
                 R.Produce.Step2.AutoSet.ConfirmButton.try_click()
                 sleep(2)
         return True
-    
+
     if set_number is not None:
         # 配置租借
         for _ in Loop():
@@ -185,7 +185,7 @@ def step2(set_number: int | None = None, auto_set: bool | None = None) -> bool:
             elif R.Produce.Step2.Rent.ConfirmButton.try_click():
                 sleep(1)
         return True
-    
+
     assert False, 'not possible'
 
 # 选择回忆
@@ -198,15 +198,15 @@ def step3(set_number: int | None = None, auto_set: bool | None = None) -> bool:
     """
     if set_number is None and auto_set is None:
         raise ValueError("Either set_number or auto_set must be provided.")
-    
+
     if not R.Produce.TextStepIndicator3.exists():
         logger.debug('Not at step3, returning False')
         return False
-    
+
     # 无论是否 auto set，先导航到目标编成
     if set_number is not None:
         _select_set(set_number)
-    
+
     if auto_set:
         for _ in Loop():
             # 触发自动编成
@@ -230,7 +230,7 @@ def step3(set_number: int | None = None, auto_set: bool | None = None) -> bool:
 
     if set_number is not None:
         return True
-    
+
     assert False, 'not possible'
 
 #
@@ -241,7 +241,7 @@ def step4(note_boost: bool, pt_boost: bool) -> bool:
     if not R.Produce.TextStepIndicator4Or2.exists():
         logger.debug('Not at step4, returning False')
         return False
-    
+
     if chk := R.Produce.Step4.CheckboxNoteBoost.q(threshold=0.6).find():
         chk.set_checked(note_boost)
         sleep(1)
@@ -260,7 +260,7 @@ def prepare():
     if not R.Produce.TextStepIndicator1.exists():
         logger.debug('Not at step1, returning False')
         return False
-    
+
     # 选择偶像
     idol_skin_id = produce_solution().data.idol
     assert idol_skin_id is not None, "idol_skin_id is None"
@@ -274,14 +274,14 @@ def prepare():
         auto_set=produce_solution().data.auto_set_support_card,
     )
     R.Produce.Step2.ButtonNext.wait().click()
-    
+
     # 选择回忆
     R.Produce.TextStepIndicator3.wait()
     step3(
         set_number=produce_solution().data.memory_set,
         auto_set=produce_solution().data.auto_set_memory,
     )
-    
+
     # 处理没有租借时弹出的有可用次数提示
     for _ in Loop():
         # 弹窗
@@ -293,7 +293,7 @@ def prepare():
             R.Produce.Step3.ButtonNext.try_click()
         elif R.Produce.TextStepIndicator4Or2.exists():
             break
-    
+
     # 设置加成
     note_boost = produce_solution().data.use_note_boost
     pt_boost = produce_solution().data.use_pt_boost
@@ -313,7 +313,13 @@ def prepare_hif_main() -> bool:
         # 1 -> 2
         if R.Produce.TextStepIndicator1.exists():
             R.Produce.Step1.ButtonNext.try_click()
-            sleep(2)
+            # 先点一下，然后等五秒
+            result = R.Produce.TextStepIndicator4Or2.try_wait(timeout=5)
+            # 如果五秒内没有载入下一步，再重新点击
+            if result is None:
+                continue
+            else:
+                break
         elif R.Produce.TextStepIndicator4Or2.exists():
             break
 
@@ -340,7 +346,7 @@ if __name__ == "__main__":
     from kaa.config import manager
     name = '12'
     init(manager.read(name=name), name)
-    
+
     # step1(produce_solution().data.idol)
     # step2(auto_set=True)
     # step2(set_number=2)

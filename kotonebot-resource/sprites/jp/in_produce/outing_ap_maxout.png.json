@@ -1,0 +1,34 @@
+{
+  "version": 3,
+  "definitions": {
+    "2c1920c4-29f2-4f98-a293-b6f0c3126203": {
+      "type": "prefab",
+      "prefab_id": "TemplateMatchPrefab",
+      "name": "InProduce.OutingApMaxOutDialog.Title",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 51.861781858171184,
+          "y1": 914.6922780171651,
+          "x2": 129.84930518528392,
+          "y2": 962.6610892589218
+        },
+        "fixed": true
+      }
+    },
+    "a6a7efa2-cf6b-47f8-99b8-d42428c22c3b": {
+      "type": "prefab",
+      "prefab_id": "GakumasPrimaryButtonPrefab",
+      "name": "InProduce.OutingApMaxOutDialog.ButtonConfirm",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 389.8077162756599,
+          "y1": 1133.5499793076804,
+          "x2": 594.7749250199947,
+          "y2": 1188.51424218886
+        }
+      }
+    }
+  }
+}

@@ -2,14 +2,14 @@
 import sys
 import logging
 import importlib.metadata
-from typing import Any, cast
+from typing import Any, TYPE_CHECKING, cast
 from collections.abc import Callable, Iterable
 
 from kotonebot.core.bot import BotContext, KotoneBot
-from kotonebot.backend.context import Task
+from kotonebot.backend.context import Task, get_context
 from kotonebot.client.device import Device, WindowsDevice
 from kotonebot.client.host import (
-    Mumu12Host, LeidianHost, Mumu12Instance,
+    LeidianHost, Mumu12Instance,
     LeidianInstance, CustomInstance
 )
 from kotonebot.client.host.mumu12_host import Mumu12V5Host, MuMu12HostConfig
@@ -18,16 +18,16 @@ from kaa.config.schema import KaaConfig
 from kaa.config import upgrade_config
 from kaa.config import manager as config_manager
 from kotonebot.primitives.geometry import Size
-from kotonebot.ui import user
 from kotonebot.util import is_windows
-from kaa.errors import WindowsOnlyError
+from kaa.errors import ElevationRequiredError, WindowsOnlyError
 from kaa.constants import GAME_PACKAGE_NAME, PLAYCOVER_BUNDLE_ID
-from ..util.paths import get_ahk_path
+
 from ..kaa_context import _set_instance
-from kaa.tasks import POST_TASK_REGISTRY, TASK_FUNCTIONS
+from kaa.tasks import POST_TASK_REGISTRY, TASK_REGISTRY
 from kotonebot.errors import UserFriendlyError, StopCurrentTask, UnscalableResolutionError
 from kotonebot.interop.window.model import WindowQueryError
 from kotonebot.core import NextHandler
+from kaa.util.error_handler import handle_exception
 
 if is_windows():
     from .dmm_host import DmmHost, DmmInstance
@@ -36,8 +36,24 @@ else:
 from kotonebot.primitives.geometry import Size
 
 
+if TYPE_CHECKING:
+    from kaa.util.screen_recorder import ScreenRecorder
+
+
 logger = logging.getLogger(__name__)
 
+
+def _is_admin() -> bool:
+    import ctypes
+    import os
+
+    try:
+        return os.getuid() == 0  # type: ignore[attr-defined]
+    except AttributeError:
+        try:
+            return ctypes.windll.shell32.IsUserAnAdmin() != 0
+        except Exception:
+            return False
 
 def build_resolution_error_message(screen_size: tuple[int, int]) -> str:
     """构造分辨率不兼容时的用户提示文案。
@@ -53,70 +69,11 @@ def build_resolution_error_message(screen_size: tuple[int, int]) -> str:
 
 
 def windows_gui_error_middleware(ctx: BotContext, task: Task, next_handler: NextHandler):
-    """负责处理用户可预见的异常并弹出对话框、停止运行。
-
-    区分四类错误：
-    1. UserFriendlyError：业务侧主动抛出的友好错误。
-    2. WindowQueryError：游戏窗口未找到等可预期的运行态问题，同样以
-       友好提示处理并停止，而非被当作系统错误逐任务上报。
-    3. UnscalableResolutionError：游戏窗口分辨率不兼容，同样以友好提示
-       处理并停止，避免逐任务重复失败与上报。
-    4. 其余异常：真正的系统/程序缺陷，记录为 System Error。
-    """
+    """任务期统一异常处理薄包装，委托至 kaa.errors.handler.handle_exception。"""
     try:
         next_handler()
-    except UserFriendlyError as e:
-        ctx.has_error = True
-        ctx.last_exception = e
-        # 用户可预见的业务错误（如配置了不存在的偶像卡/培育方案）已被本
-        # 中间件友好处理，不应以 error 级别上报遥测刷屏，故降级为 warning。
-        logger.warning(f"Task {task.name} failed: {e.message}")
-        from kaa.application.ui.error_bridge import get_bridge
-        bridge = get_bridge()
-        if bridge is not None:
-            bridge.show(e.message, e.action_buttons, e.invoke)
-        ctx.stop()
-
-    except WindowQueryError as e:
-        # 窗口查询失败（典型如未找到游戏窗口「gakumas」）：属于可预期的
-        # 运行态问题而非程序缺陷，统一以友好提示弹出并停止，避免刷屏。
-        ctx.has_error = True
-        ctx.last_exception = e
-        logger.warning(f"Window query failed in {task.name}: {e}")
-        from kaa.application.ui.error_bridge import get_bridge
-        bridge = get_bridge()
-        if bridge is not None:
-            bridge.show(
-                '未找到游戏窗口，任务已停止。请确认游戏已启动，然后重新启动任务。',
-                [(0, '知道了')],
-                lambda _: None,
-            )
-        ctx.stop()
-
-    except UnscalableResolutionError as e:
-        # 窗口分辨率无法缩放到逻辑分辨率：属于可预期的运行态问题而非程序
-        # 缺陷，统一以友好提示处理并停止，避免逐任务重复失败与上报刷屏。
-        ctx.has_error = True
-        ctx.last_exception = e
-        w, h = e.screen_size
-        logger.warning(f"Resolution error in {task.name}: screen {w}x{h}.")
-        from kaa.application.ui.error_bridge import get_bridge
-        bridge = get_bridge()
-        message = build_resolution_error_message((w, h))
-        if bridge is not None:
-            bridge.show(message, [(0, '知道了')], lambda _: None)
-        else:
-            logger.error(message)
-        ctx.stop()
-
-    except Exception as e:
-        # 处理非用户友好错误
-        ctx.has_error = True
-        ctx.last_exception = e
-        # 真正的系统错误已由内层 sentry_middleware 上报（capture_exception），
-        # 此处无需再以 error 级别重复上报遥测（LoggingIntegration 会把 error
-        # 级日志转发为独立事件导致重复），降级为 warning 仅保留日志与面包屑。
-        logger.warning(f"System Error in {task.name}: {e}", exc_info=True)
+    except BaseException as e:
+        handle_exception(e, ctx=ctx, task=task, source="task")
 
 
 class KaaDeviceFactory:
@@ -160,7 +117,7 @@ class KaaDeviceFactory:
         """
         from kotonebot.client.host import create_custom
         from kaa.config.base_config import (  # noqa: PLC0415
-            MuMu12Device, MuMu12V5Device, LeidianDevice, DmmDevice, CustomDevice, TcpConnection,
+            MuMu12V5Device, LeidianDevice, DmmDevice, CustomDevice, TcpConnection,
         )
         lc = config.backend.lifecycle
         b_type = lc.type
@@ -190,20 +147,9 @@ class KaaDeviceFactory:
             if lc.check_and_start:
                 import os
                 if exe is None:
-                    user.error('「检查并启动模拟器」已开启但未配置「模拟器 exe 文件路径」。')
                     raise ValueError('Emulator executable path is not set.')
                 if not os.path.exists(exe):
-                    user.error('「模拟器 exe 文件路径」对应的文件不存在！请检查路径是否正确。')
                     raise FileNotFoundError(f'Emulator executable not found: {exe}')
-            return instance
-
-        elif b_type == 'mumu12':
-            assert isinstance(lc, MuMu12Device)
-            if lc.instance_id is None:
-                raise ValueError('MuMu12 instance ID is not set.')
-            instance = Mumu12Host.query(id=lc.instance_id)
-            if instance is None:
-                raise ValueError(f'MuMu12 instance not found: {lc.instance_id}')
             return instance
 
         elif b_type == 'mumu12v5':
@@ -227,6 +173,8 @@ class KaaDeviceFactory:
         elif b_type == 'dmm':
             if not is_windows():
                 raise WindowsOnlyError('DMM 版')
+            if not _is_admin():
+                raise ElevationRequiredError()
             assert DmmHost is not None
             return DmmHost.instance
 
@@ -274,7 +222,7 @@ class KaaDeviceFactory:
         """
         创建设备。
         """
-        from kaa.config.base_config import MuMu12Device, MuMu12V5Device, DmmDevice  # noqa: PLC0415
+        from kaa.config.base_config import MuMu12V5Device, DmmDevice  # noqa: PLC0415
         impl_name = config.backend.screenshot_impl
         lc = config.backend.lifecycle
 
@@ -284,13 +232,7 @@ class KaaDeviceFactory:
         if DmmInstance and isinstance(instance, DmmInstance):
             assert isinstance(lc, DmmDevice)
             d = WindowsDevice()
-            if impl_name == 'windows':
-                from kotonebot.client.implements.windows import WindowsImpl
-                from kotonebot.interop.window import WindowQuery
-                ahk_path = get_ahk_path()
-                impl = WindowsImpl(device=d, window_query=WindowQuery(title='gakumas'), ahk_exe_path=ahk_path)
-                d.setup(screenshot=impl, touch=impl)
-            elif impl_name == 'windows_native':
+            if impl_name == 'windows_native':
                 from kotonebot.client.implements.windows import WindowsNativeImpl
                 from kotonebot.interop.window import WindowQuery
                 impl = WindowsNativeImpl(device=d, window_query=WindowQuery(title='gakumas'))
@@ -310,7 +252,7 @@ class KaaDeviceFactory:
 
         elif isinstance(instance, (CustomInstance, Mumu12Instance, LeidianInstance)):
             if impl_name == 'nemu_ipc' and isinstance(instance, Mumu12Instance):
-                assert isinstance(lc, (MuMu12Device, MuMu12V5Device))
+                assert isinstance(lc, MuMu12V5Device)
                 timeout = 180
                 args = {}
                 if lc.mumu_background_mode:
@@ -331,65 +273,17 @@ class KaaDeviceFactory:
             raise TypeError(f"Unknown instance type: {type(instance)}")
 
 def sentry_middleware(ctx: BotContext, task: Task, next_handler: Callable[[], None]):
+    """保留 Sentry tag 刷新，异常统一由外层 windows_gui_error_middleware 经 handler 处理。"""
     from kaa.util.telemetry import use_sentry
     sentry_sdk = use_sentry()
-
-    # 每次任务执行前，将当前运行 profile 的动态字段刷新为当前线程的 tag，
-    # 使任务线程内产生的日志事件（LoggingIntegration 转发）也能携带这些字段。
     try:
         from kaa.util.telemetry import collect_report_context  # noqa: PLC0415
         for key, value in collect_report_context().items():
             sentry_sdk.set_tag(key, value)
     except Exception:
         logger.warning('Failed to refresh report context.', exc_info=True)
-
-    try:
-        next_handler()
-    except WindowQueryError:
-        # 窗口查询类错误（如游戏窗口未找到）属于可预期的运行态问题而非程序
-        # 缺陷，不上报 Sentry，交由外层中间件（windows_gui_error_middleware）
-        # 统一以友好提示处理。
-        raise
-    except UnscalableResolutionError:
-        # 窗口分辨率无法缩放到逻辑分辨率：同属可预期的运行态问题而非程序
-        # 缺陷，不上报 Sentry，交由外层中间件统一以友好提示处理。
-        raise
-    except UserFriendlyError:
-        # 业务侧主动抛出的友好错误（如配置错误、需要游戏本体更新等）已被外层
-        # windows_gui_error_middleware 友好处理并弹窗提示，不应上报 Sentry，
-        # 交由外层中间件统一处理，避免遥测刷屏。
-        raise
-    except Exception as e:
-        with sentry_sdk.push_scope() as scope:
-            scope.set_tag('task_name', task.name)
-            try:
-                from kaa.util.telemetry import collect_report_context  # noqa: PLC0415
-                for key, value in collect_report_context().items():
-                    scope.set_tag(key, value)
-            except Exception:
-                logger.warning('Failed to attach report context.', exc_info=True)
-            try:
-                from kaa.kaa_context import conf as get_conf  # noqa: PLC0415
-                scope.set_extra('config', get_conf().model_dump_json())  # minify：紧凑单行，减小上报体积
-            except Exception:
-                logger.warning('Failed to attach config to Sentry report.', exc_info=True)
-            try:
-                from kaa.config import manager as config_manager
-                shared = config_manager.read_shared()
-                scope.set_extra('shared_config', shared.model_dump_json())  # minify：紧凑单行，减小上报体积
-            except Exception:
-                logger.warning('Failed to attach shared config to Sentry report.', exc_info=True)
-            try:
-                from kaa.config import manager as config_manager
-                if config_manager.read_shared().telemetry.upload_screenshot is True:
-                    from kaa.util.telemetry_screenshot import upload_report_screenshot
-                    screenshot_id = upload_report_screenshot()
-                    if screenshot_id:
-                        scope.set_tag('screenshot_id', screenshot_id)
-            except Exception:
-                logger.warning('Failed to upload screenshot to Sentry report.', exc_info=True)
-            sentry_sdk.capture_exception(e)
-        raise
+    # 异常捕获与上报已统一至 handle_exception（避免双重上报），此处仅透传
+    return next_handler()
 
 class Kaa(KotoneBot):
     """
@@ -409,13 +303,14 @@ class Kaa(KotoneBot):
             self._config = manager.read(profile_name, not_exist='create')
 
         self.version = importlib.metadata.version('ksaa')
-        
+
         logger.info('Version: %s', self.version)
         logger.info('Python Version: %s', sys.version)
         logger.info('Python Executable: %s', sys.executable)
-        
+
         self.factory = KaaDeviceFactory()
-        
+        self._recorder: 'ScreenRecorder | None' = None
+
         super().__init__(
             device_factory=self.factory,
             middlewares=[
@@ -448,28 +343,73 @@ class Kaa(KotoneBot):
 
     def _initialize(self):
         from kotonebot.backend.context import init_context
-        from kotonebot.core.bot import BotContext
-        
-        logger.info("Initializing Device...")
-        device = self.device_factory()
-        self._ctx = BotContext(bot=self, device=device)
-        
-        init_context(
-            target_device=device,
-            force=True
-        )
+        from kotonebot.core.bot import BotContext, BotStopReason
 
-        if self.factory.backend_instance is None:
-            raise RuntimeError('Backend instance was not initialized.')
-        _set_instance(self.factory.backend_instance)
+        try:
+            logger.info("Initializing Device...")
+            device = self.device_factory()
+            self._ctx = BotContext(bot=self, device=device)
 
-        # 注册全局 Loop 回调：每次 Loop 迭代前自动处理网络错误等全局弹窗。
-        from kotonebot.config.config import conf
-        from kaa.tasks.globals import global_interrupt
-        conf().loop.loop_callbacks = [global_interrupt]
+            init_context(
+                target_device=device,
+                force=True
+            )
 
-        # 启动时预检：截图验证窗口分辨率可缩放，不兼容则友好提示并阻止任务启动。
-        self._preflight_resolution(device)
+            if self.factory.backend_instance is None:
+                raise RuntimeError('Backend instance was not initialized.')
+            _set_instance(self.factory.backend_instance)
+
+            # 注册全局 Loop 回调：每次 Loop 迭代前自动处理网络错误等全局弹窗。
+            from kotonebot.config.config import conf
+            from kaa.tasks.globals import global_interrupt
+            conf().loop.loop_callbacks = [global_interrupt]
+
+            # 启动时预检：截图验证窗口分辨率可缩放，不兼容则友好提示并阻止任务启动。
+            self._preflight_resolution(device)
+
+            # 后台录屏
+            try:
+                from kaa.util.screen_recorder import ScreenRecorder  # noqa: PLC0415
+            except ImportError as e:
+                logger.warning(
+                    'Screen recorder unavailable (%s). Continuing without crash video.',
+                    e,
+                )
+                self._recorder = None
+                return
+            flow = None
+            running_ctx = get_context()
+            if running_ctx is not None:
+                flow = running_ctx.vars.flow
+            if flow is None:
+                logger.warning('FlowController unavailable, screen recorder pause detection disabled.')
+                recorder = ScreenRecorder(device)
+            else:
+                recorder = ScreenRecorder(device, is_paused=lambda: flow.is_paused)
+            self._recorder = recorder
+
+            def _on_recorder_started() -> None:
+                self.events.started -= _on_recorder_started
+                try:
+                    recorder.start()
+                except Exception:
+                    logger.exception('Failed to start screen recorder.')
+
+            def _on_recorder_stopped(reason, exc) -> None:
+                self.events.stopped -= _on_recorder_stopped
+                try:
+                    recorder.stop()
+                except Exception:
+                    logger.exception('Failed to stop screen recorder.')
+
+            self.events.started += _on_recorder_started
+            self.events.stopped += _on_recorder_stopped
+        except BaseException as e:
+            # Runner 线程初始化期错误统一经 handler 处理（日志+弹窗+Sentry），避免裸 threading堆栈
+            # 去重由 handler 内部 _handled_ids 保证与外层 run 守卫不重复
+            # 事件触发由外层 Kaa.run 统一负责，此处仅处理弹窗/日志/Sentry 后透传
+            handle_exception(e, ctx=getattr(self, "_ctx", None), task=None, source="runner")
+            raise
 
     def _preflight_resolution(self, device: Device) -> None:
         """启动时用截图验证分辨率可缩放。
@@ -532,16 +472,20 @@ class Kaa(KotoneBot):
         return self._ctx is not None and self._ctx.is_running
 
     def _task_generator(self):
-        for task in (func.task for func in TASK_FUNCTIONS):
+        config = self._config
+        for info in TASK_REGISTRY.values():
+            if config is not None and not info.get_enabled(config):
+                logger.info('Skipping disabled task: %s', info.task_id)
+                continue
             try:
-                yield task
+                yield info.func.task
             except Exception:
                 break
-        yield from (func.task for func in POST_TASK_REGISTRY.values())
+        yield from (info.func.task for info in POST_TASK_REGISTRY.values())
 
     def run_all(self):
         return self.run(self._task_generator())
-    
+
     def start_all(self):
         return self.start(self._task_generator())
 
@@ -549,13 +493,25 @@ class Kaa(KotoneBot):
         """重写：在 run 前注入 kaa_context（线程安全的单点入口，覆盖 run/start 两条路径）。"""
         from kaa.kaa_context import init as kaa_init
         from kaa.config import manager as config_manager
+        from kotonebot.core.bot import BotStopReason
         assert self._profile_name is not None, \
             "Kaa not initialized. Call with a profile_name or ensure _init_config() has been called."
         self._config = config_manager.read(self._profile_name)
         kaa_init(self._config, self._profile_name)
-        return super().run(tasks)
-    
+        try:
+            return super().run(tasks)
+        except BaseException as e:
+            # Runner 线程兜底：初始化期（含 device_factory）及任务循环外错误统一处理
+            # 若 _initialize 已触发过 stopped（去重），此处 handle_exception 会因 _handled_ids 吞掉重复弹窗
+            handle_exception(e, ctx=getattr(self, "_ctx", None), task=None, source="runner")
+            # 确保 TaskService 能收到 stopped 以重置 UI 的“运行中”状态
+            # （当 _initialize 失败时 KotoneBot.run 不会自动触发 stopped）
+            try:
+                self.events.stopped.trigger(BotStopReason.ERROR, e)
+            except Exception:
+                logger.debug("Failed to trigger stopped event after run error.", exc_info=True)
+            return None
+
     def stop(self):
         if self._ctx is not None:
             self._ctx.stop()
-

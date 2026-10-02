@@ -2,7 +2,6 @@
 import os
 import re
 import json
-import ctypes
 import logging
 import subprocess
 
@@ -18,7 +17,7 @@ from .actions.commu import handle_unread_commu
 from kaa.tasks.common import skip
 from ..kaa_context import save_config
 from kaa.constants import GAME_PACKAGE_NAME, KUYO_PACKAGE_NAME, PLAYCOVER_BUNDLE_ID
-from kaa.errors import ElevationRequiredError, GameUpdateNeededError, DmmGameLaunchError
+from kaa.errors import GameUpdateNeededError, DmmGameLaunchError
 
 logger = logging.getLogger(__name__)
 
@@ -96,7 +95,7 @@ def start_windows_bypass():
         raise DmmGameLaunchError(f'Failed to start the game directly: {e}')
 
 # TODO: 这个函数功能和 kaa\tasks\actions\scenes.py 中的 goto_home 重复了，后续需要合并
-@action('启动游戏.进入首页', screenshot_mode='manual-inherit')
+@action('启动游戏.进入首页', screenshot_mode='manual')
 def wait_for_home():
     """
     前置条件：游戏已启动\n
@@ -143,7 +142,7 @@ def wait_for_home():
             skip()
             click_cd.reset()
 
-@action('启动游戏.Android', screenshot_mode='manual-inherit')
+@action('启动游戏.Android', screenshot_mode='manual')
 def android_launch():
     """
     前置条件：-
@@ -177,20 +176,12 @@ def android_launch():
         # 点击"K空间启动"
         R.Kuyo.ButtonStartGame.wait(timeout=10).click()
 
-@action('启动游戏.Windows', screenshot_mode='manual-inherit')
+@action('启动游戏.Windows', screenshot_mode='manual')
 def windows_launch():
     """
     前置条件：-
     结束状态：游戏窗口出现
     """
-    # 检查管理员权限
-    try:
-        is_admin = os.getuid() == 0 # type: ignore
-    except AttributeError:
-        is_admin = ctypes.windll.shell32.IsUserAnAdmin() != 0
-    if not is_admin:
-        raise ElevationRequiredError()
-    
     # 处理汉化插件
     if conf().tasks.start_game.disable_gakumas_localify:
         logger.info('Disabling Gakumas Localify...')
@@ -219,12 +210,12 @@ def windows_launch():
                 except Exception as e:
                     logger.exception('Failed to disable Gakumas Localify: %s', e)
     
-    from ahk import AHK
-    from kaa.util.paths import get_ahk_path
-    ahk_path = get_ahk_path()
-    ahk = AHK(executable_path=ahk_path)
+    from kotonebot.interop.win import Win32Window
 
-    if ahk.find_window(title='gakumas', title_match_mode=3): # 3=精确匹配
+    def _game_window_exists() -> bool:
+        return Win32Window.find_window('title', 'gakumas') is not None
+
+    if _game_window_exists():
         logger.debug('Game already started.')
         return
     
@@ -242,12 +233,12 @@ def windows_launch():
     
     # 等待游戏窗口出现
     for _ in Loop(auto_screenshot=False):
-        if ahk.find_window(title='gakumas', title_match_mode=3):
+        if _game_window_exists():
             logger.debug('Game window found.')
             break
         logger.debug('Waiting for game window...')
 
-@action('启动游戏.macOS', screenshot_mode='manual-inherit')
+@action('启动游戏.macOS', screenshot_mode='manual')
 def macos_launch():
     """
     前置条件：-

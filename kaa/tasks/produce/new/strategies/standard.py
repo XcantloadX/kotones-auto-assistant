@@ -13,9 +13,10 @@ from kotonebot import logging, sleep, device, Loop
 from kotonebot.core import AnyOf
 from kotonebot.errors import UnrecoverableError
 
-from kaa.tasks.produce.legacy.in_purodyuusu import produce_end
+from kaa.tasks.produce.shared.produce_end import produce_end
 from kaa.tasks.produce.new.play_cards.bandai_strategy import BandaiStrategy
 from kaa.tasks import R
+from kaa.tasks.common import skip
 from kaa.tasks.produce.shared.cards import CardDetectResult, do_cards
 from kaa.tasks.produce.new.play_cards.expert_strategy import ExpertSystemStrategy
 from kaa.kaa_context import produce_solution
@@ -46,6 +47,60 @@ def _lesson_to_sp(lesson: ProduceAction | None) -> ProduceAction | None:
             return ProduceAction.DANCE_SP
         case _:
             return None
+
+
+Family = Literal['vocal', 'dance', 'visual']
+Activity = Literal['lesson', 'study', 'other']
+
+
+def _family_of(action: ProduceAction) -> Family | None:
+    """
+    从行动反推这个行动属于哪个三维变种。如果不属于任何变种，返回 None。
+    """
+    match action:
+        case ProduceAction.VOCAL | ProduceAction.VOCAL_SP | ProduceAction.STUDY_VOCAL_HIF:
+            return 'vocal'
+        case ProduceAction.DANCE | ProduceAction.DANCE_SP | ProduceAction.STUDY_DANCE_HIF:
+            return 'dance'
+        case ProduceAction.VISUAL | ProduceAction.VISUAL_SP | ProduceAction.STUDY_VISUAL_HIF:
+            return 'visual'
+        case _:
+            return None
+
+
+def _activity_of(action: ProduceAction) -> Activity:
+    """从行动反推活动类型。"""
+    if action in (
+        ProduceAction.VOCAL, ProduceAction.DANCE, ProduceAction.VISUAL,
+        ProduceAction.VOCAL_SP, ProduceAction.DANCE_SP, ProduceAction.VISUAL_SP,
+    ):
+        return 'lesson'
+    if action in (
+        ProduceAction.STUDY,
+        ProduceAction.STUDY_VISUAL_HIF, ProduceAction.STUDY_VOCAL_HIF, ProduceAction.STUDY_DANCE_HIF,
+    ):
+        return 'study'
+    return 'other'
+
+
+def _matches(cfg: ProduceAction, avail: ProduceAction) -> bool:
+    """匹配行动
+    
+    这个函数会自动处理变种情况。例如
+    1. 如果要匹配的是 LESSON_VO，现在只有 LESSON_VO_SP，那么也会命中。
+    2. 匹配 STUDY，现在只有 STUDY_VO，也会命中。
+    """
+    if cfg == avail:
+        return True
+    # 单个 STUDY 配置项匹配 HIF 三个细分
+    if cfg == ProduceAction.STUDY and _activity_of(avail) == 'study':
+        return True
+    # 普通课程匹配同 family 的 SP（VOCAL 匹配 VOCAL_SP，以此类推）
+    if _activity_of(cfg) == 'lesson' and _activity_of(avail) == 'lesson':
+        fam_cfg = _family_of(cfg)
+        if fam_cfg is not None and fam_cfg == _family_of(avail):
+            return True
+    return False
 
 
 def _build_battle_strategy(threshold_predicate):
@@ -171,8 +226,19 @@ class StandardStrategy(ProduceStrategy):
         # 直接中断整个培育任务，无可用行动时等待 1s 后重试（最多 5 次）；
         # 连续多次仍无可用行动才真正抛出异常。
         for attempt in range(5):
-            recommend = ctx.fetch_sensei_tip()
-            availables = ctx.fetch_available_actions()[0]
+            try:
+                recommend = ctx.fetch_sensei_tip()
+                availables = ctx.fetch_available_actions()[0]
+            except Exception:
+                logger.error(
+                    "Action recognition hit transient state. Skipping and returning... (%d/5)",
+                    attempt + 1,
+                    exc_info=True,
+                )
+                skip()
+                skip()
+                sleep(1)
+                return
 
             # 首先处理优先 SP
             # 如果优先 SP，
@@ -192,25 +258,34 @@ class StandardStrategy(ProduceStrategy):
                 metrics = ctx.fetch_perf_metrics()
                 for m in metrics:
                     sp_lesson = _lesson_to_sp(m.lesson)
-                    if m.current / m.max < 0.8 and sp_lesson in availables:
-                        ctx.commit(sp_lesson)
-                        return
+                    if m.current > 0 and m.max > 0:
+                        if m.current / m.max < 0.8 and sp_lesson in availables:
+                            ctx.commit(sp_lesson)
+                            return
+                    else:
+                        logger.error('Failed to recognize metrics numbers.', exc_info=True)
 
                 # 4. 如果都 > 0.8，则选择 current 最小的课程
                 min_metric = min(metrics, key=lambda x: x.current)
-                ctx.commit(min_metric.lesson)
-                return
+                for available in availables:
+                    if _matches(min_metric.lesson, available):
+                        ctx.commit(available)
+                        return
 
             # 如果有推荐行动，优先推荐
             if recommend:
-                ctx.commit(recommend)
-                return
-            
+                for available in availables:
+                    if _matches(recommend, available):
+                        ctx.commit(available)
+                        return
+
             # 否则按照配置里的顺序来
             configured_actions = produce_solution().data.actions_order
             for ac in configured_actions:
+                if ac == ProduceAction.RECOMMENDED:
+                    continue
                 for available in availables:
-                    if ac == available:
+                    if _matches(ac, available):
                         ctx.commit(available)
                         return
 

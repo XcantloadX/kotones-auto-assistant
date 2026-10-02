@@ -17,7 +17,6 @@ Item {
     property bool _hasEnumerated: false
 
     readonly property var emulatorTypeNames: ({
-        mumu12: "MuMu 12 v4.x",
         mumu12v5: "MuMu 12 v5.x",
         leidian: "雷电",
         custom: "自定义",
@@ -26,11 +25,10 @@ Item {
     })
 
     readonly property var validScreenshotMethods: ({
-        mumu12:    [{ value: "nemu_ipc", label: "nemu_ipc" }, { value: "adb", label: "adb" }, { value: "uiautomator2", label: "uiautomator2" }],
         mumu12v5:  [{ value: "nemu_ipc", label: "nemu_ipc" }, { value: "adb", label: "adb" }, { value: "uiautomator2", label: "uiautomator2" }],
         leidian:   [{ value: "adb", label: "adb" }, { value: "uiautomator2", label: "uiautomator2" }],
         custom:    [{ value: "adb", label: "adb" }, { value: "uiautomator2", label: "uiautomator2" }],
-        dmm:       [{ value: "windows_native", label: "前台挂机" }, { value: "windows_background", label: "后台挂机" }, { value: "windows", label: "前台挂机（旧）" }],
+        dmm:       [{ value: "windows_native", label: "前台挂机" }, { value: "windows_background", label: "后台挂机" }],
         playcover: [{ value: "macos", label: "macos" }]
     })
 
@@ -53,7 +51,7 @@ Item {
 
     function onEmulatorTypeSelected(type) {
         _commit("backend.lifecycle", "type", type)
-        if (type === "mumu12" || type === "mumu12v5") {
+        if (type === "mumu12v5") {
             _commit("backend.connection", "type", "auto")
         } else if (type !== "dmm" && type !== "playcover") {
             var ip = settingsCtrl?.config?.profile?.backend?.connection?.ip ?? "127.0.0.1"
@@ -157,7 +155,6 @@ Item {
                 FormSegmentedButton {
                     label: "模拟器类型"
                     options: [
-                        { label: "MuMu 12 v4.x",    value: "mumu12" },
                         { label: "MuMu 12 v5.x",    value: "mumu12v5" },
                         { label: "雷电",              value: "leidian" },
                         { label: "自定义",            value: "custom" },
@@ -175,16 +172,9 @@ Item {
                     content: "模拟器「" + (root.emulatorTypeNames[root.emuType] ?? root.emuType) + "」未安装。如果这是 bug，请向开发者反馈。"
                 }
 
-                FormNotice {
-                    Layout.fillWidth: true
-                    visible: root.emuType === "mumu12"
-                    style: "warning"
-                    content: "MuMu 12 v4.x 已废弃，将在后续版本中移除。请升级模拟器到 MuMu 12 v5.x。"
-                }
-
-                // MuMu12 / MuMu12v5 专属
+                // MuMu12v5 专属
                 Loader {
-                    active: (root.emuType === "mumu12" || root.emuType === "mumu12v5") && !root.emulatorNotInstalled
+                    active: root.emuType === "mumu12v5" && !root.emulatorNotInstalled
                     Layout.fillWidth: true
                     Layout.preferredHeight: item ? item.implicitHeight : 0
                     sourceComponent: Component {
@@ -343,7 +333,6 @@ Item {
                         + "<b>nemu_ipc</b> — MuMu 模拟器专属（推荐）<br>"
                         + "<b>windows_native</b> — DMM 版前台挂机<br>"
                         + "<b>windows_background</b> — DMM 版后台挂机（实验性）<br>"
-                        + "<b>windows</b> — DMM 版前台挂机（旧，即将移除）<br>"
                         + "<b>macos</b> — macOS 原生窗口控制"
                     options: root.validMethods
                     binder: backend_b
@@ -352,14 +341,7 @@ Item {
 
                 FormNotice {
                     Layout.fillWidth: true
-                    visible: (root.backend.screenshot_impl ?? "") === "windows"
-                    style: "warning"
-                    title: "截图方法已废弃"
-                    content: "「windows」控制方法已废弃，将在后续版本中移除。建议使用新的「windows_native」控制方法。"
-                }
-                FormNotice {
-                    Layout.fillWidth: true
-                    visible: (root.emuType === "mumu12" || root.emuType === "mumu12v5") && (root.backend.screenshot_impl ?? "") !== "nemu_ipc"
+                    visible: root.emuType === "mumu12v5" && (root.backend.screenshot_impl ?? "") !== "nemu_ipc"
                     style: "tip"
                     title: "推荐配置"
                     content: "MuMu 模拟器推荐使用 nemu_ipc 截图方式，性能更佳且更稳定"
@@ -420,7 +402,7 @@ Item {
                     binder: startGame_b
                     field: "start_through_kuyo"
                     label: "通过Kuyo来启动游戏"
-                    enabled: root.emuType === "mumu12" || root.emuType === "mumu12v5" || root.emuType === "leidian" || root.emuType === "custom"
+                    enabled: root.emuType === "mumu12v5" || root.emuType === "leidian" || root.emuType === "custom"
                     font.strikeout: !enabled
                 }
             }

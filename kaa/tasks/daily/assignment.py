@@ -5,9 +5,10 @@ from datetime import timedelta
 
 import cv2
 from cv2.typing import MatLike
+from kaa.tasks.common import skip
 from kotonebot.core import AnyOf
 from kotonebot.backend import image as raw_image
-from kotonebot import task, device, action, ocr, contains, color, sleep, regex
+from kotonebot import task, device, action, ocr, contains, color, sleep, regex, Loop
 
 from kaa.tasks import R
 from kaa.config import conf
@@ -65,6 +66,8 @@ def assign(type: Literal['mini', 'online']) -> bool:
     logger.info('Now at assignment idol selection scene.')
     # 选择好调偶像
     selected = False
+    swipe_count = 0
+    MAX_SWIPE_COUNT = 2
     max_attempts = 4
     attempts = 0
     while not selected:
@@ -73,8 +76,19 @@ def assign(type: Literal['mini', 'online']) -> bool:
         logger.debug(f'Found {len(results)} kouchou icons.')
         if not results:
             logger.warning('No kouchou icons found. Trying again...')
+            swipe_count += 1
+            if swipe_count > MAX_SWIPE_COUNT:
+                logger.info('No kouchou idol. Using first 4 idol.')
+                results = [
+                    R.Daily.Assignment.PointIdol1,
+                    R.Daily.Assignment.PointIdol2,
+                    R.Daily.Assignment.PointIdol3,
+                    R.Daily.Assignment.PointIdol4,
+                ]
+                break
             continue
         results.sort(key=lambda r: r.rect.x1)
+        results = [x.rect.center for x in results]
 
         # 尝试点击所有目标
         for target in results:
@@ -161,9 +175,6 @@ def at_assignment():
 @task('工作')
 def assignment():
     """领取工作奖励并重新分配工作"""
-    if not conf().tasks.assignment.enabled:
-        logger.info('Assignment is disabled.')
-        return
     if not at_home():
         goto_home()
     btn_assignment = R.Daily.ButtonAssignmentPartial.wait()
@@ -191,15 +202,25 @@ def assignment():
         
     # 重新分配
     if conf().tasks.assignment.mini_live_reassign_enabled:
-        if R.Daily.IconAssignMiniLive.exists():
-            assign('mini')
+        for _ in Loop(interval=0.5):
+            if R.Daily.IconAssignMiniLive.exists():
+                break
+            else:
+                logger.debug('Waiting for mini live entry')
+                skip()
+        assign('mini')
     else:
         logger.info('MiniLive reassign is disabled.')
     while not at_assignment():
         pass
     if conf().tasks.assignment.online_live_reassign_enabled:
-        if R.Daily.IconAssignOnlineLive.exists():
-            assign('online')
+        for _ in Loop(interval=0.5):
+            if R.Daily.IconAssignOnlineLive.exists():
+                break
+            else:
+                logger.debug('Waiting for online live entry')
+                skip()
+        assign('online')
     else:
         logger.info('OnlineLive reassign is disabled.')
     # 等待动画结束

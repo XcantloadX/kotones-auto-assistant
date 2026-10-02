@@ -219,9 +219,13 @@ class RunController(QObject):
 
     def _batch_set_enabled(self, value: bool, exclude: str | None = None) -> None:
         """批量设置所有任务启用状态，可选排除某个 key。"""
-        from kaa.application.ui.models.task_enabled_model import _TASK_CONFIG_PATHS
+        from kaa.tasks import TASK_REGISTRY
         items = []
-        for key, dot_path in _TASK_CONFIG_PATHS.items():
+        for key, info in TASK_REGISTRY.items():
+            config_name = info.config_name
+            if config_name is None:
+                continue
+            dot_path = 'tasks.%s.enabled' % config_name
             if exclude is not None and key == exclude:
                 items.append((dot_path, not value))
             else:

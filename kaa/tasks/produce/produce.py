@@ -8,11 +8,6 @@ from kaa.tasks.produce.new.strategies.standard import StandardStrategy
 from kaa.tasks.produce.session import ProduceSession, resolve_deck
 from kaa.tasks.produce.shared.common import resume_produce_pre
 from kaa.tasks.produce.new.controller import ProduceController
-from kaa.tasks.produce.legacy.in_purodyuusu import (
-    hajime_regular, hajime_pro, hajime_master,
-    resume_regular_produce, resume_pro_produce, resume_master_produce,
-)
-from kotonebot.ui import user
 from kaa.tasks import R
 from kaa.config import conf
 from kaa.game_ui import dialog
@@ -21,7 +16,7 @@ from kotonebot.backend.loop import Loop
 from kotonebot.util import Countdown
 from kaa.game_ui.idols_overview import locate_idol
 from kotonebot import device, ocr, task, action, sleep
-from kaa.errors import IdolCardNotFoundError
+from kaa.errors import IdolCardNotFoundError, UnsupportedProduceScenarioError
 from .prepare import prepare, prepare_hif_main
 from kotonebot.errors import UnrecoverableError
 
@@ -48,7 +43,7 @@ def unify(arr: list[int]):
         i = j
     return result
 
-@action('选择P偶像', screenshot_mode='manual-inherit')
+@action('选择P偶像', screenshot_mode='manual')
 def select_idol(skin_id: str):
     """
     选择目标P偶像
@@ -77,7 +72,7 @@ def select_idol(skin_id: str):
         else:
             break
 
-@action('培育开始.编成翻页', screenshot_mode='manual-inherit')
+@action('培育开始.编成翻页', screenshot_mode='manual')
 def select_set(index: int):
     """
     选择指定编号的支援卡/回忆编成。
@@ -96,26 +91,26 @@ def select_set(index: int):
                 logger.warning('Failed to get current set number. Retrying...')
                 sleep(0.2)
         return numbers[0]
-    
+
     max_retries = 3
     retry_count = 0
-    
+
     while retry_count < max_retries:
         current = _current()
         logger.info(f'Navigate to set #{index}. Now at set #{current}.')
-        
+
         # 计算需要点击的次数
         click_count = abs(index - current)
         if click_count == 0:
             logger.info(f'Already at set #{current}.')
             return
         click_target = R.Produce.PointProduceNextSet if current < index else R.Produce.PointProducePrevSet
-        
+
         # 点击
         for _ in range(click_count):
             device.click(click_target)
             sleep(0.1)
-        
+
         # 确认
         final_current = _current()
         if final_current == index:
@@ -124,35 +119,10 @@ def select_set(index: int):
         else:
             retry_count += 1
             logger.warning(f'Failed to navigate to set #{index}. Current set is #{final_current}. Retrying... ({retry_count}/{max_retries})')
-    
+
     logger.error(f'Failed to navigate to set #{index} after {max_retries} retries.')
-    
-@action('继续当前培育.继续培育', screenshot_mode='manual-inherit')
-def resume_produce_lst(
-    scenario: Scenario,
-    current_week: int
-):
-    """
-    继续当前培育.继续培育\n
-    该函数正常情况不应该被单独调用。
 
-    前置条件：培育中的任意一个页面\n
-    结束状态：游戏首页
-
-    :param scenario: 培育方案类型
-    :param current_week: 培育的周数
-    """
-    match scenario:
-        case HajimeScenario.REGULAR:
-            resume_regular_produce(current_week)
-        case HajimeScenario.PRO:
-            resume_pro_produce(current_week)
-        case HajimeScenario.MASTER:
-            resume_master_produce(current_week)
-        case _:
-            raise NotImplementedError(f'Unsupported resume scenario: {scenario}')
-
-@action('继续当前培育', screenshot_mode='manual-inherit')
+@action('继续当前培育', screenshot_mode='manual')
 def resume_produce():
     """
     继续当前培育
@@ -167,20 +137,17 @@ def resume_produce():
         deck=resolve_deck(idol_card, produce_solution().data.card_deck_id))
     init_produce_session(session)
     try:
-        if conf().tasks.produce.produce_engine == 'legacy':
-            resume_produce_lst(scenario, current_week)
+        if isinstance(scenario, HajimeScenario):
+            c = ProduceController(scenario=scenario, strategy=StandardStrategy)
+        elif isinstance(scenario, HifScenario):
+            c = ProduceController(scenario=scenario, strategy=HifGrindStrategy)
         else:
-            if isinstance(scenario, HajimeScenario):
-                c = ProduceController(scenario=scenario, strategy=StandardStrategy)
-            elif isinstance(scenario, HifScenario):
-                c = ProduceController(scenario=scenario, strategy=HifGrindStrategy)
-            else:
-                raise NotImplementedError(f'Unsupported produce scenario: {scenario}')
-            c.run()
+            raise UnsupportedProduceScenarioError(scenario, 'NIA')
+        c.run()
     finally:
         clear_produce_session()
 
-@action('执行培育', screenshot_mode='manual-inherit')
+@action('执行培育', screenshot_mode='manual')
 def do_produce(
     idol_skin_id: str,
     scenario: Scenario,
@@ -216,7 +183,7 @@ def do_produce(
             if R.Produce.BreakProduceDialog.ButtonConfirm.try_click():
                 logger.info('Confirmed break produce dialog.')
                 continue
-            
+
         if (
             R.Produce.LogoHajime.exists()
             or R.Produce.LogoNia.exists()
@@ -243,7 +210,7 @@ def do_produce(
     elif isinstance(scenario, HifScenario):
         target_logo = R.Produce.LogoHif
     else:
-        raise NotImplementedError(f'Unsupported produce scenario: {scenario}')
+        raise UnsupportedProduceScenarioError(scenario, 'NIA')
     for _ in Loop():
         if target_logo.exists():
             logger.info(f'Found target logo: {target_logo}.')
@@ -274,7 +241,7 @@ def do_produce(
     elif scenario == HifScenario.MAIN:
         target_buttons = [R.Produce.ButtonHifMain]
     else:
-        raise NotImplementedError(f'Unsupported produce scenario: {scenario}')
+        raise UnsupportedProduceScenarioError(scenario, 'NIA')
     find_target_button = lambda: next((b for b in target_buttons if b.find()), None)  # noqa: E731
     result = None
     for _ in Loop():
@@ -308,7 +275,7 @@ def do_produce(
                     pass
                 elif btn := find_target_button():
                     btn.click()
-                elif R.Produce.ButtonPIdolOverview.exists():
+                elif R.Produce.TextStepIndicator1.exists():
                     break
         else:
             logger.info('AP insufficient. Exiting produce.')
@@ -336,24 +303,13 @@ def do_produce(
         deck=resolve_deck(idol_skin_id, produce_solution().data.card_deck_id))
     init_produce_session(session)
     try:
-        if conf().tasks.produce.produce_engine == 'legacy':
-            match scenario:
-                case HajimeScenario.REGULAR:
-                    hajime_regular()
-                case HajimeScenario.PRO:
-                    hajime_pro()
-                case HajimeScenario.MASTER:
-                    hajime_master()
-                case _:
-                    raise NotImplementedError(f'Unsupported produce scenario: {scenario}')
+        if isinstance(scenario, HajimeScenario):
+            c = ProduceController(scenario=scenario, strategy=StandardStrategy)
+        elif isinstance(scenario, HifScenario):
+            c = ProduceController(scenario=scenario, strategy=HifGrindStrategy)
         else:
-            if isinstance(scenario, HajimeScenario):
-                c = ProduceController(scenario=scenario, strategy=StandardStrategy)
-            elif isinstance(scenario, HifScenario):
-                c = ProduceController(scenario=scenario, strategy=HifGrindStrategy)
-            else:
-                raise NotImplementedError(f'Unsupported produce scenario: {scenario}')
-            c.run()
+            raise UnsupportedProduceScenarioError(scenario, 'NIA')
+        c.run()
     finally:
         clear_produce_session()
     return True
@@ -363,9 +319,6 @@ def produce():
     """
     培育任务
     """
-    if not conf().tasks.produce.enabled:
-        logger.info('Produce is disabled.')
-        return
     import time
     count = conf().tasks.produce.produce_count
     solution = produce_solution()
@@ -375,10 +328,10 @@ def produce():
     scenario = solution.data.mode
     # 数据验证
     if count < 0:
-        user.warning('配置有误', '培育次数不能小于 0。将跳过本次培育。')
+        logger.warning('培育次数不能小于 0。将跳过本次培育。')
         return
     if isinstance(solution.data.mode, HajimeScenario) and idol is None:
-        user.warning('配置有误', '未设置要培育的偶像。将跳过本次培育。')
+        logger.warning('未设置要培育的偶像。将跳过本次培育。')
         return
     # 业务规则校验（如编成未配置等），以友好提示替代运行时崩溃
     from kaa.config.produce import validate_produce_solution
@@ -395,7 +348,7 @@ def produce():
             f'idol: {idol}, scenario: {scenario.value}, memory_set: #{memory_set_to_use}, support_card_set: #{support_card_set_to_use}'
         )
         if not do_produce(idol, scenario, memory_set_to_use, support_card_set_to_use):
-            user.info('AP 不足', f'由于 AP 不足，跳过了 {count - i} 次培育。')
+            logger.info('AP 不足，跳过了 %d 次培育。', count - i)
             logger.info('%d produce(s) skipped because of insufficient AP.', count - i)
             break
         end_time = time.time()

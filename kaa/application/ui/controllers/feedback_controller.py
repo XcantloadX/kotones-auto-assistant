@@ -16,6 +16,7 @@ class FeedbackController(QObject):
 
     reportDone = Signal(str)
     reportFailed = Signal(str)
+    reportProgress = Signal(str)
 
     def __init__(self, session: 'KaaSession', parent: QObject | None = None) -> None:
         super().__init__(parent)
@@ -44,6 +45,8 @@ class FeedbackController(QObject):
                     description=description,
                     version=version,
                     output_path=output_path,
+                    # 后台线程 emit，Qt 自动排队到 UI 线程，线程安全。
+                    on_progress=self.reportProgress.emit,
                 )
                 self.reportDone.emit(result.message)
             except Exception as exc:

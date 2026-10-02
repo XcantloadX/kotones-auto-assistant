@@ -19,20 +19,6 @@ from kaa.tasks import TASK_REGISTRY
 
 logger = logging.getLogger(__name__)
 
-# ── 任务 key → config dot path 映射 ──────────────────────────────
-_TASK_CONFIG_PATHS: dict[str, str] = {
-    'acquire_activity_funds': 'tasks.activity_funds.enabled',
-    'acquire_presents':       'tasks.presents.enabled',
-    'assignment':             'tasks.assignment.enabled',
-    'capsule_toys':           'tasks.capsule_toys.enabled',
-    'club_reward':            'tasks.club_reward.enabled',
-    'contest':                'tasks.contest.enabled',
-    'purchase':               'tasks.purchase.enabled',
-    'upgrade_support_card':   'tasks.upgrade_support_card.enabled',
-    'produce':                'tasks.produce.enabled',
-    'mission_reward':         'tasks.mission_reward.enabled',
-}
-
 # ── 快速设置短标签 ────────────────────────────────────────────────
 _TASK_SHORT_NAMES: dict[str, str] = {
     'acquire_activity_funds': '活动费',
@@ -46,7 +32,6 @@ _TASK_SHORT_NAMES: dict[str, str] = {
     'produce':                '培育',
     'mission_reward':         '任务',
 }
-
 
 class TaskEnabledModel(QAbstractListModel):
     """任务启用模型。"""
@@ -74,18 +59,19 @@ class TaskEnabledModel(QAbstractListModel):
     def _rebuild(self):
         config = self._cs.get_config()
         items = []
-        for key, func in TASK_REGISTRY.items():
-            dot_path = _TASK_CONFIG_PATHS.get(key)
-            if dot_path is None:
+        for key, info in TASK_REGISTRY.items():
+            config_name = info.config_name
+            if config_name is None:
                 continue
-            task_obj = func.task
+            task_obj = info.func.task
             name = task_obj.name
-            enabled = bool(_get_dot_path(config, dot_path))
+            path = 'tasks.%s.enabled' % config_name
+            enabled = bool(_get_dot_path(config, path))
             items.append({
                 'key': key,
                 'name': name,
                 'shortName': _TASK_SHORT_NAMES.get(key, name),
-                'path': dot_path,
+                'path': path,
                 'enabled': enabled,
             })
         self.beginResetModel()

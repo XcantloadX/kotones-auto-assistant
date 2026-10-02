@@ -1,5 +1,4 @@
 import os
-from importlib import resources
 
 from kaa.game_data.paths import get_game_data_dir
 
@@ -16,7 +15,3 @@ def cache(path: str) -> str:
 def resource(path: str) -> str:
     """返回游戏数据文件的路径（idol_cards/skill_cards/drinks）"""
     return str(get_game_data_dir() / path)
-
-def get_ahk_path() -> str:
-    """获取 AutoHotkey 可执行文件路径"""
-    return str(resources.files('kaa.res.bin') / 'AutoHotkey.exe')

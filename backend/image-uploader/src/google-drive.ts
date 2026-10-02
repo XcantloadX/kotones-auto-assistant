@@ -28,9 +28,9 @@ export interface UploadOptions {
   name: string;
   /** 目标文件夹 ID */
   folderId: string;
-  /** 图片 MIME 类型 */
+  /** 文件 MIME 类型（图片或视频） */
   contentType: string;
-  /** 图片二进制内容 */
+  /** 文件二进制内容 */
   content: ArrayBuffer;
 }
 
@@ -66,7 +66,7 @@ export class GoogleDriveClient {
     return data.access_token;
   }
 
-  /** 将图片上传到指定文件夹（multipart/related：JSON 元数据 + 二进制内容）。 */
+  /** 将文件上传到指定文件夹（multipart/related：JSON 元数据 + 二进制内容）。 */
   async uploadFile(options: UploadOptions): Promise<void> {
     const accessToken = await this.getAccessToken();
 

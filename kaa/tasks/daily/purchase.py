@@ -213,15 +213,12 @@ def purchase_weekly_pack():
 
 @task('商店购买')
 def purchase():
-    if not conf().tasks.purchase.enabled:
-        logger.info('Purchase task is disabled in config.')
-        return
-    
     ap_enabled = conf().tasks.purchase.ap_enabled
     money_enabled = conf().tasks.purchase.money_enabled
     pack_enabled = conf().tasks.purchase.weekly_enabled
 
     if ap_enabled or money_enabled:
+        goto_home()
         goto_daily_shop()
         if money_enabled:
             purchase_money()

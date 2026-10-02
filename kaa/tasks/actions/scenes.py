@@ -2,7 +2,6 @@ import logging
 
 from kaa.tasks import R
 from kotonebot.backend.loop import Loop
-from kaa.game_ui import toolbar_home
 from kotonebot import device, action, sleep
 
 logger = logging.getLogger(__name__)
@@ -12,7 +11,7 @@ logger = logging.getLogger(__name__)
 def at_home() -> bool:
     return R.Daily.ButtonHomeCurrent.exists()
 
-@action('返回首页', screenshot_mode='manual-inherit')
+@action('返回首页', screenshot_mode='manual')
 def goto_home():
     """
     从其他场景返回首页。
@@ -28,8 +27,7 @@ def goto_home():
         if R.Common.ButtonHome.try_click():
             logger.debug("Clicked home button.")
             sleep(0.2)
-        elif home := toolbar_home():
-            device.click(home)
+        elif R.Common.ButtonToolbarHome.try_click():
             logger.debug("Clicked toolbar home button.")
             sleep(1)
         # 課題CLEAR [screenshots/go_home/quest_clear.png]
@@ -40,4 +38,3 @@ def goto_home():
 
 if __name__ == "__main__":
     goto_home()
-

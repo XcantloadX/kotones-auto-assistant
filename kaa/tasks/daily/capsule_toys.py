@@ -73,10 +73,6 @@ def capsule_toys():
     """
     扭蛋机，支持任意次数的任意扭蛋类型
     """
-    if not conf().tasks.capsule_toys.enabled:
-        logger.info('"Capsule Toys" is disabled.')
-        return
-    
     if not at_home():
         goto_home()
     

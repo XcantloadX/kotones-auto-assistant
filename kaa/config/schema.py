@@ -64,9 +64,6 @@ class ContestConfig(ConfigBaseModel):
     enabled: bool = False
     """是否启用竞赛"""
 
-    select_which_contestant: Literal[1, 2, 3] = 1
-    """选择第几个挑战者"""
-
     when_no_set: Literal['auto_set', 'skip'] = 'auto_set'
     """竞赛队伍未编成时：auto_set=自动编成，skip=跳过任务"""
 
@@ -89,13 +86,6 @@ class ProduceConfig(ConfigBaseModel):
     * on: 自动启用
     * off: 自动禁用
     * ignore: 不改变当前状态
-    """
-    produce_engine: Literal['new', 'legacy'] = 'legacy'
-    """
-    培育引擎。
-
-    * new: 使用新版智能培育（ProduceController）
-    * legacy: 使用旧版培育（hajime_* / resume_*_produce）
     """
 
 class MissionRewardConfig(ConfigBaseModel):
@@ -195,7 +185,7 @@ class IdleModeConfig(ConfigBaseModel):
 
 
 
-CONFIG_VERSION_CODE = 13
+CONFIG_VERSION_CODE = 15
 
 
 class TasksConfig(ConfigBaseModel):
@@ -236,6 +226,16 @@ class TasksConfig(ConfigBaseModel):
 
     end_game: EndGameConfig = EndGameConfig()
     """关闭游戏配置"""
+
+    def is_enabled(self, field: str) -> bool:
+        """按 config.tasks 字段名反查该任务是否启用。
+
+        启用判断集中在此处，任务自身不再自行判断。
+        """
+        task_conf = getattr(self, field, None)
+        if task_conf is None or not hasattr(task_conf, 'enabled'):
+            raise ValueError(f"Unknown or non-toggleable task: {field!r}")
+        return bool(task_conf.enabled)
 
 
 class KaaConfig(ConfigBaseModel):

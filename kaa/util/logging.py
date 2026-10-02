@@ -16,20 +16,27 @@ def _install():
             sys.__excepthook__(exc_type, exc_value, exc_traceback)
             return
 
-        logger.critical(
-            "Uncaught System Exception (Main Thread):",
-            exc_info=(exc_type, exc_value, exc_traceback)
-        )
+        try:
+            from kaa.util.error_handler import handle_global_exception
+            handle_global_exception(exc_type, exc_value, exc_traceback, thread_name="main")
+        except Exception:
+            logger.critical(
+                "Uncaught System Exception (Main Thread):",
+                exc_info=(exc_type, exc_value, exc_traceback)
+            )
 
     sys.excepthook = handle_sys_exception
 
     # 子线程
     def handle_threading_exception(args):
-        # args.thread 是线程对象，args.exc_type 是异常类型...
-        logger.critical(
-            f"Uncaught Thread Exception (Thread '{args.thread.name}'):",
-            exc_info=(args.exc_type, args.exc_value, args.exc_traceback)
-        )
+        try:
+            from kaa.util.error_handler import handle_global_exception
+            handle_global_exception(args.exc_type, args.exc_value, args.exc_traceback, thread_name=getattr(args.thread, "name", "thread"))
+        except Exception:
+            logger.critical(
+                f"Uncaught Thread Exception (Thread '{args.thread.name}'):",
+                exc_info=(args.exc_type, args.exc_value, args.exc_traceback)
+            )
 
     threading.excepthook = handle_threading_exception
 

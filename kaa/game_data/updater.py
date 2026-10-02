@@ -1,4 +1,3 @@
-import concurrent.futures
 import hashlib
 import io
 import logging
@@ -51,40 +50,16 @@ _REQUIRED_DB_TABLES = frozenset({
 _session = requests.Session()
 _session.trust_env = False
 
-# ── 镜像定义 ──────────────────────────────────────────────────────────────────
+# ── 下载地址 ──────────────────────────────────────────────────────────────────
 
+_MIRROR_BASE = "https://mirror.1ichika.de"
 _OWNER = "kotonebot"
 _REPO  = "kaa-game-data"
 _RELEASE_SUBPATH = f"{_OWNER}/{_REPO}/releases/latest/download"
 
-def _github(path: str) -> str:
-    """直连 GitHub Releases。"""
-    return f"https://github.com/{_RELEASE_SUBPATH}/{path}"
-
-def _prefix_proxy(base: str) -> Callable[[str], str]:
-    """前缀代理风格：{proxy}/https://github.com/…"""
-    def build(path: str) -> str:
-        return f"{base.rstrip('/')}/{_github(path)}"
-    return build
-
-@dataclass
-class _Mirror:
-    label: str
-    make_url: Callable[[str], str]
-
-
-# 只收录 URL 格式已知且近期可用的镜像。
-# 探测时并发测试，选延迟最低且实际返回 2xx/3xx 的那个。
-_BUILTIN_MIRRORS: list[_Mirror] = [
-    _Mirror("直连 GitHub", _github),
-    _Mirror("mirror.1ichika.de",  _prefix_proxy("https://mirror.1ichika.de")),
-    _Mirror("ghfast.top",  _prefix_proxy("https://ghfast.top")),
-]
-
-# 进程级缓存（TTL 到期后重新探测）
-_selected_mirror: Optional[_Mirror] = None
-_mirror_selected_at: float = 0.0
-_MIRROR_TTL_SECONDS = 300  # 5 分钟
+def _make_url(path: str) -> str:
+    """拼接镜像下载地址：{mirror}/https://github.com/{owner}/{repo}/…/{path}。"""
+    return f"{_MIRROR_BASE}/https://github.com/{_RELEASE_SUBPATH}/{path}"
 
 # ── 结果 / 异常 ───────────────────────────────────────────────────────────────
 
@@ -102,66 +77,11 @@ class GameDataUpdateCancelled(Exception):
 
 @dataclass
 class CheckResult:
-    mirror: _Mirror
     manifest: Manifest
     needs_update: bool
     auto_update_enabled: bool
     needs_db: bool
     category_missing: dict[str, set[str]]
-
-# ── 镜像探测 ──────────────────────────────────────────────────────────────────
-
-def _probe(mirror: _Mirror, timeout: float = 3.0) -> tuple[float, _Mirror]:
-    """
-    HEAD 请求探测镜像连通性。
-    只接受 2xx/3xx（< 400）作为"可用"；4xx（含代理返回的 422）视为不可用。
-    """
-    url = mirror.make_url("manifest.json")
-    t0 = time.monotonic()
-    try:
-        resp = _session.head(url, timeout=timeout, allow_redirects=True)
-        if resp.status_code < 400:
-            return time.monotonic() - t0, mirror
-    except Exception:
-        pass
-    return float('inf'), mirror
-
-
-def _select_mirror(log_cb: Optional[Callable[[str], None]] = None) -> Optional[_Mirror]:
-    """
-    并发探测所有内置镜像，返回延迟最低的可用镜像。
-    结果按 TTL 进程级缓存，TTL 内直接返回；None 不缓存，下次调用重新探测。
-    所有镜像均不可达时返回 None。
-    """
-    def log(msg: str):
-        logger.info(msg)
-        if log_cb:
-            log_cb(msg)
-
-    global _selected_mirror, _mirror_selected_at
-    # 缓存有效且非 None 时直接返回
-    if (_selected_mirror is not None
-            and time.monotonic() - _mirror_selected_at < _MIRROR_TTL_SECONDS):
-        return _selected_mirror
-
-    log(f"正在探测 GitHub 镜像连通性（{len(_BUILTIN_MIRRORS)} 个候选）...")
-    with concurrent.futures.ThreadPoolExecutor(max_workers=5) as pool:
-        futures = [pool.submit(_probe, m) for m in _BUILTIN_MIRRORS]
-        results = [f.result() for f in concurrent.futures.as_completed(futures)]
-
-    results.sort(key=lambda r: r[0])
-    best_latency, best_mirror = results[0]
-
-    if best_latency == float('inf'):
-        log("所有镜像均不可达，跳过更新")
-        # 不缓存 None，下次调用会重新探测
-        _selected_mirror = None
-    else:
-        log(f"选用镜像：{best_mirror.label}（延迟 {best_latency * 1000:.0f} ms）")
-        _selected_mirror = best_mirror
-        _mirror_selected_at = time.monotonic()
-
-    return _selected_mirror
 
 # ── 工具函数 ──────────────────────────────────────────────────────────────────
 
@@ -474,12 +394,9 @@ class GameDataUpdater:
     def __init__(self, cancel: Optional[threading.Event] = None) -> None:
         self._cancel = cancel
 
-    def check_only(
-        self,
-        progress_cb: Optional[Callable[[str], None]] = None,
-    ) -> Optional[CheckResult]:
+    def check_only(self) -> Optional[CheckResult]:
         """
-        Phase 1：镜像探测、拉取 manifest、版本比对、缺失文件计算。
+        Phase 1：拉取 manifest、版本比对、缺失文件计算。
         不可取消。检查失败时返回 None。
         """
         from kaa.config import manager as config_manager
@@ -489,13 +406,9 @@ class GameDataUpdater:
         def log(msg: str):
             logger.info(msg)
 
-        mirror = _select_mirror(log_cb=progress_cb)
-        if mirror is None:
-            return None
-
         log("正在获取游戏数据版本信息...")
         try:
-            manifest_bytes = _download(mirror.make_url('manifest.json'))
+            manifest_bytes = _download(_make_url('manifest.json'))
         except Exception as e:
             logger.warning("无法获取 manifest.json，跳过更新: %s", e)
             return None
@@ -515,7 +428,6 @@ class GameDataUpdater:
         if local_version == manifest.version and not needs_db:
             log("游戏数据已是最新版本")
             return CheckResult(
-                mirror=mirror,
                 manifest=manifest,
                 needs_update=False,
                 auto_update_enabled=shared.misc.game_data_auto_update,
@@ -544,7 +456,6 @@ class GameDataUpdater:
             category_missing[category] = missing
 
         return CheckResult(
-            mirror=mirror,
             manifest=manifest,
             needs_update=True,
             auto_update_enabled=shared.misc.game_data_auto_update,
@@ -586,7 +497,6 @@ class GameDataUpdater:
                 return None
             return lambda dl, total: cb(name, dl, total)
 
-        mirror = result.mirror
         manifest = result.manifest
         needs_db = result.needs_db
         category_missing = result.category_missing
@@ -609,7 +519,7 @@ class GameDataUpdater:
             _check_cancel(self._cancel)
             log("正在下载 game.db.zst ...")
             zst_bytes = _download(
-                mirror.make_url('game.db.zst'),
+                _make_url('game.db.zst'),
                 log_cb=log,
                 progress_cb=make_progress('game.db.zst'),
                 cancel=self._cancel,
@@ -635,7 +545,7 @@ class GameDataUpdater:
             _check_cancel(self._cancel)
             log(f"{category}: 正在下载 {category}.zip ...")
             zip_bytes = _download(
-                mirror.make_url(f'{category}.zip'),
+                _make_url(f'{category}.zip'),
                 log_cb=log,
                 progress_cb=make_progress(f'{category}.zip'),
                 cancel=self._cancel,
@@ -703,7 +613,7 @@ class GameDataUpdater:
         if check_started_cb:
             check_started_cb()
 
-        result = self.check_only(progress_cb=progress_cb)
+        result = self.check_only()
         if result is None:
             return UpdateOutcome.CHECK_FAILED
 

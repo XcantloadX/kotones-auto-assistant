@@ -123,15 +123,6 @@ Item {
                     ]
                 }
 
-                FormSegmentedButton {
-                    field: "produce_engine"
-                    label: "培育引擎"
-                    options: [
-                        { label: "新版", value: "new" },
-                        { label: "旧版（已废弃）", value: "legacy" }
-                    ]
-                }
-
                 Label {
                     visible: root.solutions.length > 0
                     text: "培育方案的详细编辑请前往「方案」页面"

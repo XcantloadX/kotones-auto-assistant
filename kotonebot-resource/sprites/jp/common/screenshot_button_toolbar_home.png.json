@@ -12,7 +12,10 @@
           "y1": 1186,
           "x2": 110,
           "y2": 1237
-        }
+        },
+        "fixed": true,
+        "threshold": 0.6,
+        "colored": false
       },
       "prefab_id": "TemplateMatchPrefab",
       "variant_policy": {}
