@@ -4,6 +4,7 @@
 修复：
 1. 尝试修复「CreateCompatibleDC failed」错误。
 2. 某些情况下启动游戏时会报错「AHKProtocolError」。
+3. 修复了培育中，外出体力溢出时卡在提示上。
 
 ### v2026.9.8
 新增：
