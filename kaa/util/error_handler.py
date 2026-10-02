@@ -15,8 +15,9 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 # 崩溃上报时等待后台录屏转码的最长秒数。真实游戏画面 60s 转码约 6~15s，
-# 30s 足以覆盖高动态场景，病态输入超时后降级为无 video_id tag（本地仍有落盘）。
-_CRASH_VIDEO_WAIT_TIMEOUT = 30.0
+# 但弱 CPU/高负载下曾出现超 30s 的线上案例，故放宽到 120s；超时后降级为
+# 无 video_id tag（本地仍有落盘），并记 warning 便于事后归因。
+_CRASH_VIDEO_WAIT_TIMEOUT = 240.0
 
 # 去重：同一异常对象在多层（_initialize → run → threading.excepthook）只处理一次
 _handled_ids: set[int] = set()
@@ -56,8 +57,8 @@ def _capture_sentry(exc: BaseException, *, task_name: str | None,
     截图与崩溃视频同步上传并分别打 ``screenshot_id`` / ``video_id`` tag，
     共用 ``upload_screenshot`` consent 开关。视频转码在截图上传前启动
     （后台线程与截图上传并行），上报前有界等待（见
-    ``_CRASH_VIDEO_WAIT_TIMEOUT``）；超时/超限/失败一律降级为无 tag，
-    不阻断上报链路。
+    ``_CRASH_VIDEO_WAIT_TIMEOUT``）；超时记 warning 后降级为无 tag，
+    超限/失败一律降级为无 tag，不阻断上报链路。
     """
     try:
         from kaa.util.telemetry import use_sentry, collect_report_context
@@ -110,6 +111,12 @@ def _capture_sentry(exc: BaseException, *, task_name: str | None,
                         vid = upload_video_file(video_path)
                         if vid:
                             scope.set_tag("video_id", vid)
+                    else:
+                        logger.warning(
+                            "Crash video encoding did not finish within %.0fs, "
+                            "skipping video upload: %s",
+                            _CRASH_VIDEO_WAIT_TIMEOUT, video_path,
+                        )
             except Exception:
                 logger.warning("Failed to upload crash video to Sentry report.", exc_info=True)
             sentry_sdk.capture_exception(exc)

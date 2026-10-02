@@ -94,12 +94,17 @@ class TestCaptureSentryVideo(TestCase):
         self.assertIs(sentry.captured, exc)
 
     def test_wait_timeout_skips_upload(self):
-        # 转码超时：不上传、无 tag，上报本身不受影响
+        # 转码超时：不上传、无 tag，记 warning 方便事后归因，上报本身不受影响
         rec = _FakeRecorder(wait_result=False)
-        sentry, mock_upload, exc = self._run(self._ctx_with(rec))
+        with self.assertLogs('kaa.util.error_handler', level='WARNING') as logs:
+            sentry, mock_upload, exc = self._run(self._ctx_with(rec))
         mock_upload.assert_not_called()
         self.assertNotIn('video_id', sentry.scope.tags)
         self.assertIs(sentry.captured, exc)
+        self.assertTrue(
+            any('did not finish within' in line for line in logs.output),
+            f'timeout warning missing: {logs.output}',
+        )
 
     def test_no_recorder_skips_video(self):
         # 无归属录屏（全局兜底等）：不 dump 不等不传
