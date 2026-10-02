@@ -142,6 +142,10 @@ class _SceneCheckMixin:
 
     def _check_interrupt_dialogs(self) -> Scene | None:
         """判断各种中断/弹窗场景"""
+        if R.InProduce.TextOutingStaminaMax.exists():
+            logger.debug("Scene detected: OUTING_STAMINA_MAX")
+            return Scene(SceneType.OUTING_STAMINA_MAX)
+
         # P饮料到达上限
         if R.InProduce.TextPDrinkMax.exists():
             logger.debug("Scene detected: PDRINK_MAX")
@@ -838,19 +842,6 @@ class OutingContext(Context):
         device.double_click(target_btn)
         sleep(2)
 
-
-        # pi = ProduceInterrupt()
-        # for _ in Loop():
-        #     if AnyOf[
-        #         R.InProduce.TextPDiary,
-        #         R.InProduce.ButtonFinalPracticeDance,
-        #     ].exists():
-        #         break
-        #     if pi.handle():
-        #         continue
-        #     if R.Common.ButtonSelect2.try_click():
-        #         logger.info("AP max out dialog found. Clicked continue button.")
-        #         sleep(0.1)
 
 class _ConsultFlow(Flow):
     def __init__(self, controller: 'ProduceController') -> None:

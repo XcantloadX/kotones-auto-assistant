@@ -16,6 +16,22 @@
       },
       "prefab_id": "TemplateMatchPrefab",
       "variant_policy": {}
+    },
+    "b95b45be-f1f9-4e20-a430-5dcf386ffb53": {
+      "name": "InProduce.TextOutingStaminaMax",
+      "displayName": "外出体力已满确认弹窗正文",
+      "type": "prefab",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 50,
+          "y1": 1000,
+          "x2": 540,
+          "y2": 1070
+        }
+      },
+      "prefab_id": "TemplateMatchPrefab",
+      "variant_policy": {}
     }
   }
 }

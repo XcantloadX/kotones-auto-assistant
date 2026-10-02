@@ -56,6 +56,9 @@ class SceneType(Enum):
     PDRINK_MAX_CONFIRM = auto()
     """P饮料到达上限确认弹窗"""
 
+    OUTING_STAMINA_MAX = auto()
+    """外出时体力已满确认弹窗"""
+
     PRODUCE_END = auto()
     """培育结算"""
 
