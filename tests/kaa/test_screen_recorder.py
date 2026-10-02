@@ -362,6 +362,31 @@ class TestDumpAndEncode(unittest.TestCase):
             recorder.stop()
 
 
+class TestEncodeWithoutAv(unittest.TestCase):
+    def test_encode_mp4_without_av_raises_runtime_error(self):
+        # KAA-632：av native DLL 被系统策略拦截时，编码期 fast-fail 为
+        # RuntimeError（而非 ImportError 透传），且模块顶层导入不受影响。
+        import sys
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as tmp:
+            out = os.path.join(tmp, 'x.mp4')
+            with patch.dict(sys.modules, {'av': None}):
+                with self.assertRaisesRegex(RuntimeError, 'PyAV is not available'):
+                    encode_mp4([_jpeg(1)], out, fps=10.0)
+
+    def test_module_import_does_not_require_av(self):
+        # 顶层导入 screen_recorder 不得触发 av 导入（延迟到 encode_mp4 内）。
+        import importlib
+        import sys
+        from unittest.mock import patch
+        with patch.dict(sys.modules, {'av': None}):
+            mod = importlib.reload(sys.modules['kaa.util.screen_recorder'])
+        try:
+            self.assertTrue(hasattr(mod, 'ScreenRecorder'))
+        finally:
+            importlib.reload(mod)
+
+
 class TestCrashRouting(unittest.TestCase):
     """崩溃路由走 ctx.bot._recorder：归属 Kaa 实例，无全局注册表。"""
 

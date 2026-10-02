@@ -20,8 +20,9 @@
   60-120MB）；raw 600 帧约 1.6GB，不可行。
 - x265 medium 只在崩溃后离线编码（后台线程），常驻期零编码开销；
   崩溃时自动化已停，转码再慢也不阻塞主链路。
-- ``av`` 为硬依赖（见 pyproject），顶层导入；libx265 缺失时编码期 fast-fail，
-  不静默降级。
+- ``av`` 仅在编码期按需导入（见 ``encode_mp4``）；WDAC/杀软拦截其
+  native DLL 时仅编码失败，采样与任务链路不受影响。libx265 缺失或
+  ``av`` 不可用时编码期 fast-fail，不静默降级。
 
 录屏线程自身的采集异常只记日志、不抛入主链路（诊断功能不得带崩任务，
 此处隔离是刻意设计，非 fallback）。
@@ -37,7 +38,6 @@ from datetime import datetime, timezone
 from fractions import Fraction
 from typing import Callable, cast
 
-import av
 import cv2
 import numpy as np
 import numpy.typing as npt
@@ -149,8 +149,16 @@ def encode_mp4(
     :return: output_path。
     :raises ValueError: 帧列表为空、单帧解码失败、分辨率非偶数、时间码
         格式非法时抛出。
-    :raises RuntimeError: PyAV/libx265 不可用时抛出。
+    :raises RuntimeError: PyAV 不可用（含 native DLL 被系统策略拦截）
+        或 libx265 缺失时抛出。
     """
+    try:
+        import av  # noqa: PLC0415
+    except ImportError as e:
+        raise RuntimeError(
+            'PyAV is not available (import failed, e.g. blocked by '
+            f'application control policy): {e}'
+        ) from e
     if not jpeg_frames:
         raise ValueError('jpeg_frames must be non-empty.')
     if fps <= 0:

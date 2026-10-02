@@ -367,12 +367,16 @@ class Kaa(KotoneBot):
             # 启动时预检：截图验证窗口分辨率可缩放，不兼容则友好提示并阻止任务启动。
             self._preflight_resolution(device)
 
-            # 后台录屏：started 事件后启动独立采样（device.start() 之后，Nemu 等
-            # 需连接的 impl 方可采集），stopped 事件时停止（device.stop() 之前）。
-            # 采样线程与 Loop 各采各的（实测 nemu_ipc 并发安全），互不阻塞。
-            # 暂停谓词取 runner 线程 Context 的 FlowController（跨线程读 bool 安全）；
-            # 取不到时退化为常采并记 warning（诊断缺暂停信号不断流，只是不标暂停段）。
-            from kaa.util.screen_recorder import ScreenRecorder  # noqa: PLC0415
+            # 后台录屏
+            try:
+                from kaa.util.screen_recorder import ScreenRecorder  # noqa: PLC0415
+            except ImportError as e:
+                logger.warning(
+                    'Screen recorder unavailable (%s). Continuing without crash video.',
+                    e,
+                )
+                self._recorder = None
+                return
             flow = None
             running_ctx = get_context()
             if running_ctx is not None:
