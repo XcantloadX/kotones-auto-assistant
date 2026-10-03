@@ -39,9 +39,11 @@ def confirm_purchase() -> bool:
             and not R.Daily.Shop.PurchaseConfirmDialog.ButtonConfirm.q(enabled=True).exists()
         ):
             logger.warning('Insufficient balance to purchase item.')
-            R.Daily.Shop.PurchaseConfirmDialog.ButtonCancel.click()
-            sleep(0.5)
-            return False
+            if R.Daily.Shop.PurchaseConfirmDialog.ButtonCancel.try_click():
+                sleep(0.5)
+                return False
+            else:
+                logger.error('Expected R.Daily.Shop.PurchaseConfirmDialog.ButtonCancel')
         # 点击确认购买并等待动画完成
         if R.Daily.Shop.PurchaseConfirmDialog.ButtonConfirm.q(enabled=True).try_click():
             logger.debug('Clicked purchase confirm button.')
