@@ -367,43 +367,43 @@ class Kaa(KotoneBot):
             # 启动时预检：截图验证窗口分辨率可缩放，不兼容则友好提示并阻止任务启动。
             self._preflight_resolution(device)
 
-            # 后台录屏
-            try:
-                from kaa.util.screen_recorder import ScreenRecorder  # noqa: PLC0415
-            except ImportError as e:
-                logger.warning(
-                    'Screen recorder unavailable (%s). Continuing without crash video.',
-                    e,
-                )
-                self._recorder = None
-                return
-            flow = None
-            running_ctx = get_context()
-            if running_ctx is not None:
-                flow = running_ctx.vars.flow
-            if flow is None:
-                logger.warning('FlowController unavailable, screen recorder pause detection disabled.')
-                recorder = ScreenRecorder(device)
-            else:
-                recorder = ScreenRecorder(device, is_paused=lambda: flow.is_paused)
-            self._recorder = recorder
-
-            def _on_recorder_started() -> None:
-                self.events.started -= _on_recorder_started
-                try:
-                    recorder.start()
-                except Exception:
-                    logger.exception('Failed to start screen recorder.')
-
-            def _on_recorder_stopped(reason, exc) -> None:
-                self.events.stopped -= _on_recorder_stopped
-                try:
-                    recorder.stop()
-                except Exception:
-                    logger.exception('Failed to stop screen recorder.')
-
-            self.events.started += _on_recorder_started
-            self.events.stopped += _on_recorder_stopped
+            # # 后台录屏
+            # try:
+            #     from kaa.util.screen_recorder import ScreenRecorder  # noqa: PLC0415
+            # except ImportError as e:
+            #     logger.warning(
+            #         'Screen recorder unavailable (%s). Continuing without crash video.',
+            #         e,
+            #     )
+            #     self._recorder = None
+            #     return
+            # flow = None
+            # running_ctx = get_context()
+            # if running_ctx is not None:
+            #     flow = running_ctx.vars.flow
+            # if flow is None:
+            #     logger.warning('FlowController unavailable, screen recorder pause detection disabled.')
+            #     recorder = ScreenRecorder(device)
+            # else:
+            #     recorder = ScreenRecorder(device, is_paused=lambda: flow.is_paused)
+            # self._recorder = recorder
+            #
+            # def _on_recorder_started() -> None:
+            #     self.events.started -= _on_recorder_started
+            #     try:
+            #         recorder.start()
+            #     except Exception:
+            #         logger.exception('Failed to start screen recorder.')
+            #
+            # def _on_recorder_stopped(reason, exc) -> None:
+            #     self.events.stopped -= _on_recorder_stopped
+            #     try:
+            #         recorder.stop()
+            #     except Exception:
+            #         logger.exception('Failed to stop screen recorder.')
+            #
+            # self.events.started += _on_recorder_started
+            # self.events.stopped += _on_recorder_stopped
         except BaseException as e:
             # Runner 线程初始化期错误统一经 handler 处理（日志+弹窗+Sentry），避免裸 threading堆栈
             # 去重由 handler 内部 _handled_ids 保证与外层 run 守卫不重复
