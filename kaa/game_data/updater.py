@@ -75,6 +75,14 @@ class GameDataUpdateCancelled(Exception):
     """用户主动跳过本次下载/安装。"""
 
 
+class GameDataNetworkError(Exception):
+    """游戏数据下载/检查过程中的网络错误。
+
+    属于可恢复的环境问题（镜像抖动、弱网、Cloudflare 502 等），调用方应按
+    友好提示处理，且不应上报到错误追踪平台。
+    """
+
+
 @dataclass
 class CheckResult:
     manifest: Manifest
@@ -281,11 +289,43 @@ def _check_cancel(cancel: Optional[threading.Event]) -> None:
         raise GameDataUpdateCancelled()
 
 
-_RETRYABLE = (
-    requests.exceptions.ChunkedEncodingError,
-    requests.exceptions.ConnectionError,
-    requests.exceptions.Timeout,
-)
+# 可重试的 HTTP 状态码：请求超时、限流与网关/服务端临时故障
+_RETRYABLE_STATUS = frozenset({408, 429, 500, 502, 503, 504})
+
+
+def _is_retryable(exc: requests.RequestException) -> bool:
+    """判断请求异常是否为可重试的瞬时网络/服务端故障。"""
+    if isinstance(exc, requests.exceptions.HTTPError):
+        resp = exc.response
+        return resp is not None and resp.status_code in _RETRYABLE_STATUS
+    # 配置/URL 类错误重试也不会成功
+    if isinstance(exc, (
+        requests.exceptions.TooManyRedirects,
+        requests.exceptions.InvalidURL,
+        requests.exceptions.MissingSchema,
+        requests.exceptions.InvalidSchema,
+        requests.exceptions.URLRequired,
+    )):
+        return False
+    # ConnectionError / Timeout / ChunkedEncodingError / SSLError 等
+    return isinstance(exc, requests.exceptions.RequestException)
+
+
+def _describe_network_error(exc: requests.RequestException) -> str:
+    """把请求异常转成简短的中文描述，用于日志与用户提示。"""
+    if isinstance(exc, requests.exceptions.ConnectTimeout):
+        return "连接超时"
+    if isinstance(exc, requests.exceptions.ReadTimeout):
+        return "读取超时"
+    if isinstance(exc, requests.exceptions.Timeout):
+        return "请求超时"
+    if isinstance(exc, requests.exceptions.HTTPError) and exc.response is not None:
+        return f"HTTP {exc.response.status_code}"
+    if isinstance(exc, requests.exceptions.ChunkedEncodingError):
+        return "连接中断"
+    if isinstance(exc, requests.exceptions.ConnectionError):
+        return "无法连接服务器"
+    return str(exc) or exc.__class__.__name__
 
 
 def _download(
@@ -297,6 +337,10 @@ def _download(
 ) -> bytes:
     """下载 URL 内容，支持断点续传和指数退避重试。
 
+    连接/读取超时、连接重置以及 408/429/5xx 等瞬时故障会退避重试；重试耗尽
+    后抛 :class:`GameDataNetworkError`（可恢复的环境问题，调用方不应上报）。
+    404/403 等确定性错误不重试，原样抛出。
+
     progress_cb(downloaded_bytes, total_bytes) 在每个 chunk 后调用。
     total_bytes 为完整文件大小（续传时也是全量值，不是剩余量）。
     cancel 仅在 Phase 2（安装下载）时传入；被取消时不重试。
@@ -307,9 +351,13 @@ def _download(
 
     for attempt in range(1, max_retries + 1):
         _check_cancel(cancel)
+        resp = None
         try:
             headers = {'Range': f'bytes={downloaded}-'} if downloaded > 0 else {}
-            resp = _session.get(url, stream=True, timeout=60, headers=headers)
+            resp = _session.get(
+                url, stream=True, headers=headers,
+                timeout=(15, 60),  # (连接超时, 读取超时)
+            )
 
             if resp.status_code == 206:
                 # Content-Length 是剩余量，total 需加上已下载部分
@@ -343,19 +391,28 @@ def _download(
 
         except GameDataUpdateCancelled:
             raise
-        except _RETRYABLE as e:
+        except requests.exceptions.RequestException as e:
+            if resp is not None:
+                resp.close()
             if cancel is not None and cancel.is_set():
                 raise GameDataUpdateCancelled() from e
-            if attempt == max_retries:
+            if not _is_retryable(e):
+                # 404 / 403 等确定性错误不是环境问题，原样抛出以便排查。
                 raise
+            if attempt == max_retries:
+                raise GameDataNetworkError(
+                    f"下载失败（{_describe_network_error(e)}），"
+                    f"已重试 {max_retries} 次"
+                ) from e
             wait = 2 ** attempt  # 2, 4, 8, 16 秒
             logger.warning(
-                "下载中断（第 %d/%d 次，已下载 %.1f MB），%ds 后重试: %s",
-                attempt, max_retries, downloaded / 1024 / 1024, wait, e,
+                "下载中断（第 %d/%d 次，已下载 %.1f MB，%s），%ds 后重试",
+                attempt, max_retries, downloaded / 1024 / 1024,
+                _describe_network_error(e), wait,
             )
             time.sleep(wait)
 
-    raise RuntimeError(f"下载失败，已重试 {max_retries} 次")
+    raise GameDataNetworkError(f"下载失败，已重试 {max_retries} 次")
 
 # ── 检查时机 ──────────────────────────────────────────────────────────────────
 
@@ -393,6 +450,8 @@ def should_check(misc: 'SharedMiscConfig') -> bool:
 class GameDataUpdater:
     def __init__(self, cancel: Optional[threading.Event] = None) -> None:
         self._cancel = cancel
+        # 最近一次检查失败的原因（成功时清空），供 UI 区分网络问题与真实缺陷。
+        self.last_error: Optional[Exception] = None
 
     def check_only(self) -> Optional[CheckResult]:
         """
@@ -407,9 +466,11 @@ class GameDataUpdater:
             logger.info(msg)
 
         log("正在获取游戏数据版本信息...")
+        self.last_error = None
         try:
             manifest_bytes = _download(_make_url('manifest.json'))
         except Exception as e:
+            self.last_error = e
             logger.warning("无法获取 manifest.json，跳过更新: %s", e)
             return None
 

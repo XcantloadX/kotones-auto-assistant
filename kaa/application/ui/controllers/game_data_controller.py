@@ -21,6 +21,7 @@ from PySide6.QtCore import QObject, Property, Signal, Slot
 from kaa.util.progress import ProgressAggregator
 
 if TYPE_CHECKING:
+    from kaa.application.ui.controllers.notice_backend import NoticeBackend
     from kaa.game_data.updater import CheckResult, GameDataUpdater
 
 logger = logging.getLogger(__name__)
@@ -48,8 +49,18 @@ class GameDataUpdateController(QObject):
     STATUS_READY = "ready"
     STATUS_FAILED = "failed"
 
-    def __init__(self, parent: Optional[QObject] = None):
+    # 网络类失败的统一友好提示（弱网/镜像抖动属可恢复的环境问题）
+    NETWORK_FAILED_MESSAGE = (
+        "网络连接不稳定，暂时无法获取游戏资源更新。请检查网络后重试。"
+    )
+
+    def __init__(
+        self,
+        parent: Optional[QObject] = None,
+        notice: Optional['NoticeBackend'] = None,
+    ):
         super().__init__(parent)
+        self._notice = notice
         self._update_available = False
         self._update_status = self.STATUS_IDLE
         self._available_version = ""
@@ -186,10 +197,25 @@ class GameDataUpdateController(QObject):
 
     # ── 内线程方法 ──
 
+    def _report_network_failure(self, log_message: str, exc: Exception) -> None:
+        """统一处理网络类失败：warning 日志（不上报）+ 友好提示。
+
+        弱网、镜像抖动、502 等属于可恢复的环境问题，使用 ``logger.warning``
+        而非 ``logger.exception``，避免被 LoggingIntegration 作为 issue 上报。
+        """
+        logger.warning(log_message, exc)
+        self._set_update_status(self.STATUS_FAILED)
+        self._set_progress_message(self.NETWORK_FAILED_MESSAGE)
+        if self._notice is not None:
+            self._notice.show("warning", self.NETWORK_FAILED_MESSAGE)
+
     def _background_check(self):
         try:
             from kaa.config import manager as config_manager
-            from kaa.game_data.updater import GameDataUpdateCancelled, GameDataUpdater, should_check
+            from kaa.game_data.updater import (
+                GameDataNetworkError, GameDataUpdateCancelled, GameDataUpdater,
+                should_check,
+            )
 
             shared = config_manager.read_shared()
             if not should_check(shared.misc):
@@ -202,7 +228,13 @@ class GameDataUpdateController(QObject):
             result = updater.check_only()
 
             if result is None:
-                self._set_update_status(self.STATUS_FAILED)
+                error = getattr(updater, 'last_error', None)
+                if isinstance(error, GameDataNetworkError):
+                    self._report_network_failure(
+                        "Game data check failed due to network: %s", error,
+                    )
+                else:
+                    self._set_update_status(self.STATUS_FAILED)
                 return
 
             updater._mark_checked()
@@ -225,6 +257,10 @@ class GameDataUpdateController(QObject):
             # 用户主动跳过下载（skipDownload 设置取消事件），属预期流程，非错误。
             logger.info("Background game data check cancelled by user.")
             self._set_update_status(self.STATUS_IDLE)
+        except GameDataNetworkError as e:
+            self._report_network_failure(
+                "Background game data download failed due to network: %s", e,
+            )
         except Exception:
             logger.exception("Background game data check failed.")
             self._set_update_status(self.STATUS_FAILED)
@@ -287,18 +323,29 @@ class GameDataUpdateController(QObject):
     def triggerUpdate(self):
         """用户点击通知后触发后台下载。"""
         with self._lock:
-            if self._update_status != self.STATUS_IDLE:
+            if self._update_status not in (self.STATUS_IDLE, self.STATUS_FAILED):
                 return
         t = threading.Thread(target=self._do_manual_download, daemon=True)
         t.start()
 
     def _do_manual_download(self):
         try:
-            from kaa.game_data.updater import GameDataUpdateCancelled, GameDataUpdater
+            from kaa.game_data.updater import (
+                GameDataNetworkError, GameDataUpdateCancelled, GameDataUpdater,
+            )
             self._set_update_status(self.STATUS_CHECKING)
             updater = GameDataUpdater(cancel=self._cancel_event)
             result = updater.check_only()
-            if result is None or not result.needs_update:
+            if result is None:
+                error = getattr(updater, 'last_error', None)
+                if isinstance(error, GameDataNetworkError):
+                    self._report_network_failure(
+                        "Manual game data check failed due to network: %s", error,
+                    )
+                else:
+                    self._set_update_status(self.STATUS_IDLE)
+                return
+            if not result.needs_update:
                 self._set_update_status(self.STATUS_IDLE)
                 self._set_progress_message("目前已是最新版本，无需更新。")
                 return
@@ -308,6 +355,10 @@ class GameDataUpdateController(QObject):
             logger.info("Manual game data download cancelled by user.")
             self._set_update_status(self.STATUS_IDLE)
             self._set_progress_message("已取消下载。")
+        except GameDataNetworkError as e:
+            self._report_network_failure(
+                "Manual game data download failed due to network: %s", e,
+            )
         except Exception as e:
             logger.exception("Manual game data download failed.")
             self._set_update_status(self.STATUS_FAILED)

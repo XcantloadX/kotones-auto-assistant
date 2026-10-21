@@ -54,6 +54,7 @@ class FakeUpdater:
         self.mark_checked_calls = 0
         self.download_calls = []
         self.result = FakeUpdater.default_result
+        self.last_error = None
         FakeUpdater.instances.append(self)
 
     def check_only(self):
@@ -76,11 +77,16 @@ class GameDataUpdateCancelled(Exception):
     """与真实 updater 模块同名异常，供控制器 except 分支捕获。"""
 
 
+class GameDataNetworkError(Exception):
+    """与真实 updater 模块同名异常，供控制器网络失败分支捕获。"""
+
+
 def make_fake_updater_module():
     """构建带 should_check 与 GameDataUpdater 的假 kaa.game_data.updater 模块。"""
     mod = types.ModuleType("kaa.game_data.updater")
     mod.GameDataUpdater = FakeUpdater
     mod.GameDataUpdateCancelled = GameDataUpdateCancelled
+    mod.GameDataNetworkError = GameDataNetworkError
     mod.should_check = lambda misc: True
     return mod
 
@@ -210,6 +216,49 @@ def test_background_check_failure(ctrl):
     """check_only 返回 None → FAILED。"""
     _run_check(ctrl, None)
     _wait_until(lambda: ctrl.updateStatus == ctrl.STATUS_FAILED)
+
+
+def test_background_check_network_failure(ctrl, monkeypatch):
+    """检查阶段网络失败 → FAILED + 友好提示，不暴露原始异常。"""
+
+    class NetworkFailUpdater(FakeUpdater):
+        def check_only(self):
+            self.check_only_calls += 1
+            self.last_error = GameDataNetworkError("ReadTimeout('read timed out')")
+            return None
+
+    mod = make_fake_updater_module()
+    mod.GameDataUpdater = NetworkFailUpdater
+    monkeypatch.setitem(sys.modules, "kaa.game_data.updater", mod)
+    FakeUpdater.instances.clear()
+    FakeUpdater.default_result = None
+
+    ctrl.startBackgroundCheck()
+    _wait_until(lambda: ctrl.updateStatus == ctrl.STATUS_FAILED)
+    assert ctrl.progressMessage == ctrl.NETWORK_FAILED_MESSAGE
+
+
+def test_background_download_network_failure(ctrl, monkeypatch):
+    """下载阶段网络失败 → FAILED + 友好提示，且允许再次触发。"""
+
+    class NetworkFailUpdater(FakeUpdater):
+        def download_to_staging(self, result, **kwargs):
+            self.download_calls.append((result, kwargs.get("file_progress_cb")))
+            raise GameDataNetworkError("502 Bad Gateway")
+
+    mod = make_fake_updater_module()
+    mod.GameDataUpdater = NetworkFailUpdater
+    monkeypatch.setitem(sys.modules, "kaa.game_data.updater", mod)
+    FakeUpdater.instances.clear()
+    FakeUpdater.default_result = FakeResult(auto_update_enabled=True)
+
+    ctrl.startBackgroundCheck()
+    _wait_until(lambda: ctrl.updateStatus == ctrl.STATUS_FAILED)
+    assert ctrl.progressMessage == ctrl.NETWORK_FAILED_MESSAGE
+
+    # 失败后 UI 的「立即检查并更新」应可用
+    ctrl.triggerUpdate()
+    _wait_until(lambda: len(FakeUpdater.instances) >= 2)
 
 
 def test_background_download_cancelled(ctrl, monkeypatch):
