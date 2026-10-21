@@ -34,6 +34,15 @@ def _write_config(path: Path, data: dict) -> None:
     path.write_text(json.dumps(data, ensure_ascii=False, indent=4), encoding='utf-8')
 
 
+def _read_profile_json(path: Path) -> dict | None:
+    """读取 profile JSON，无法读取或解析时记录警告并返回 None。"""
+    try:
+        return json.loads(path.read_text(encoding='utf-8'))
+    except (OSError, json.JSONDecodeError, UnicodeDecodeError) as e:
+        logger.warning("Skipping unreadable profile %s: %s", path, e)
+        return None
+
+
 # ---------------------------------------------------------------------------
 # V1 → V2：PIdol 字符串列表 → 整数枚举
 # ---------------------------------------------------------------------------
@@ -666,7 +675,9 @@ class ProfileV8ToV9(MigrationStep):
         if not profiles_dir.exists():
             return False
         for f in profiles_dir.glob('*.json'):
-            data = json.loads(f.read_text(encoding='utf-8'))
+            data = _read_profile_json(f)
+            if data is None:
+                continue
             if data.get('version', 0) < 9:
                 return True
         return False
@@ -677,7 +688,9 @@ class ProfileV8ToV9(MigrationStep):
             return
         migrated: list[str] = []
         for f in profiles_dir.glob('*.json'):
-            data = json.loads(f.read_text(encoding='utf-8'))
+            data = _read_profile_json(f)
+            if data is None:
+                continue
             if data.get('version', 0) >= 9:
                 continue
 
@@ -780,7 +793,9 @@ class ProfileV9ToV10(MigrationStep):
         if not profiles_dir.exists():
             return False
         for f in profiles_dir.glob('*.json'):
-            data = json.loads(f.read_text(encoding='utf-8'))
+            data = _read_profile_json(f)
+            if data is None:
+                continue
             if data.get('version', 0) < 10:
                 return True
         return False
@@ -791,7 +806,9 @@ class ProfileV9ToV10(MigrationStep):
             return
         migrated: list[str] = []
         for f in profiles_dir.glob('*.json'):
-            data = json.loads(f.read_text(encoding='utf-8'))
+            data = _read_profile_json(f)
+            if data is None:
+                continue
             if data.get('version', 0) >= 10:
                 continue
 
@@ -830,7 +847,9 @@ class ProfileV10ToV11(MigrationStep):
         if not profiles_dir.exists():
             return False
         for f in profiles_dir.glob('*.json'):
-            data = json.loads(f.read_text(encoding='utf-8'))
+            data = _read_profile_json(f)
+            if data is None:
+                continue
             if data.get('version', 0) < 11:
                 return True
         return False
@@ -841,7 +860,9 @@ class ProfileV10ToV11(MigrationStep):
             return
         migrated: list[str] = []
         for f in profiles_dir.glob('*.json'):
-            data = json.loads(f.read_text(encoding='utf-8'))
+            data = _read_profile_json(f)
+            if data is None:
+                continue
             if data.get('version', 0) >= 11:
                 continue
 

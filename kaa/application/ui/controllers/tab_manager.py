@@ -13,6 +13,8 @@ from typing import Callable
 from PySide6.QtCore import QObject, Property, Signal, Slot
 
 from kaa.application.ui.kaa_session import KaaSession
+from kaa.application.ui.error_bridge import get_bridge
+from kaa.config.errors import ConfigLoadError
 from .run_controller import RunController
 from .settings_controller import SettingsController
 from .progress_bridge import ProgressBridge
@@ -104,6 +106,35 @@ class TabManager(QObject):
         except Exception:
             logger.exception("Failed to destroy session for '%s'", entry.config_name)
 
+    def _remove_entry(self, entry: _TabEntry) -> None:
+        """从 tab 列表中移除失败（无法初始化）的条目。"""
+        with self._lock:
+            try:
+                index = self._tabs.index(entry)
+            except ValueError:
+                return
+            self._tabs.pop(index)
+            if self._active_index > index:
+                self._active_index -= 1
+            if self._active_index >= len(self._tabs):
+                self._active_index = max(0, len(self._tabs) - 1)
+        self._save_tabs()
+        self.tabsChanged.emit()
+        self.activeTabChanged.emit()
+
+    def _show_config_error(self, exc: ConfigLoadError, count: int = 1) -> None:
+        """向用户展示配置读取失败的提示。"""
+        message = (
+            f'配置文件 {exc.path} 无法读取：\n{exc.reason}\n\n'
+        )
+        if count > 1:
+            message += f'\n\n共有 {count} 个配置文件读取失败。'
+        bridge = get_bridge()
+        if bridge is not None:
+            bridge.show(message, [(0, '知道了')], lambda _: None, title='配置读取失败')
+        else:
+            logger.warning('Config load failed: %s', exc)
+
     def _save_tabs(self) -> None:
         try:
             from kaa.config import manager
@@ -140,11 +171,15 @@ class TabManager(QObject):
 
             names = [n for n in names if n in available]
             entries: list[_TabEntry] = []
+            config_errors: list[ConfigLoadError] = []
             for name in names:
                 try:
                     session = KaaSession(name)
                     session.initialize()
                     entries.append(_TabEntry(session=session))
+                except ConfigLoadError as e:
+                    logger.warning('Failed to restore tab %s: %s', name, e)
+                    config_errors.append(e)
                 except Exception:
                     logger.exception('Failed to restore tab: %s', name)
 
@@ -159,6 +194,9 @@ class TabManager(QObject):
 
             self.tabsChanged.emit()
             self.activeTabChanged.emit()
+
+            if config_errors:
+                self._show_config_error(config_errors[0], count=len(config_errors))
         except Exception:
             logger.exception('Failed to restore tabs')
 
@@ -201,9 +239,16 @@ class TabManager(QObject):
                     # （避免 QML 页面在初始化前已创建好，导致任务列表为空）
                     if entry.run_ctrl is not None:
                         entry.run_ctrl.tasksChanged.emit()
-                except Exception:
+                except ConfigLoadError as e:
+                    logger.warning('Failed to initialize tab %s: %s', config_name, e)
+                    self._remove_entry(entry)
+                    self.tabOpenFailed.emit(str(e))
+                    self._show_config_error(e)
+                    return
+                except Exception as e:
                     logger.exception('Failed to initialize tab: %s', config_name)
-                    self.tabOpenFailed.emit(str(config_name))
+                    self._remove_entry(entry)
+                    self.tabOpenFailed.emit(str(e))
                     return
                 self.tabsChanged.emit()
             threading.Thread(target=_init_and_notify, daemon=True).start()

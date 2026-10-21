@@ -3,10 +3,13 @@ import logging
 from pathlib import Path
 from typing import Literal, overload
 
+from pydantic import ValidationError
+
 from .schema import KaaConfig
 from .shared import SharedConfig
 from .scheduler import SchedulerConfig
 from .migration import add_deferred_messages
+from .errors import ConfigLoadError
 
 logger = logging.getLogger(__name__)
 
@@ -181,7 +184,15 @@ def read(name: str, *, not_exist: Literal['raise', 'create'] | KaaConfig | None 
         else:
             raise ValueError(f"Invalid not_exist value: {not_exist!r}")
 
-    return KaaConfig.model_validate(json.loads(config_file.read_text(encoding='utf-8')))
+    try:
+        return KaaConfig.model_validate(json.loads(config_file.read_text(encoding='utf-8')))
+    except json.JSONDecodeError as e:
+        raise ConfigLoadError(
+            config_file,
+            f'第 {e.lineno} 行第 {e.colno} 列不是合法的 JSON（{e.msg}）',
+        ) from e
+    except ValidationError as e:
+        raise ConfigLoadError(config_file, f'配置字段校验失败：{e}') from e
 
 
 def write(name: str, config: KaaConfig) -> None:
