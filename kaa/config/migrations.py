@@ -601,8 +601,13 @@ class ProfileV7ToV8(MigrationStep):
                     encoding='utf-8',
                 )
 
-        # 将原文件重命名为 .bak
-        path.rename(ctx.config_dir / 'config.json.bak')
+        # 将原文件重命名为 .bak（若已存在则追加序号，避免 Windows 上 FileExistsError）
+        backup_path = ctx.config_dir / 'config.json.bak'
+        index = 1
+        while backup_path.exists():
+            backup_path = ctx.config_dir / f'config.json.bak.{index}'
+            index += 1
+        path.rename(backup_path)
 
         ctx.messages.append(MigrationMessage(
             text=f"配置已迁移为多文件格式，共迁移 {len(user_configs)} 个 profile",
