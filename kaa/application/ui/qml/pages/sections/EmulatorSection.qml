@@ -25,10 +25,10 @@ Item {
     })
 
     readonly property var validScreenshotMethods: ({
-        mumu12v5:  [{ value: "nemu_ipc", label: "nemu_ipc" }, { value: "adb", label: "adb" }, { value: "uiautomator2", label: "uiautomator2" }],
-        leidian:   [{ value: "adb", label: "adb" }, { value: "uiautomator2", label: "uiautomator2" }],
-        custom:    [{ value: "adb", label: "adb" }, { value: "uiautomator2", label: "uiautomator2" }],
-        dmm:       [{ value: "windows_native", label: "前台挂机" }, { value: "windows_background", label: "后台挂机" }],
+        mumu12v5:  [{ value: "auto", label: "自动" }, { value: "nemu_ipc", label: "nemu_ipc" }, { value: "adb", label: "adb" }, { value: "uiautomator2", label: "uiautomator2" }],
+        leidian:   [{ value: "auto", label: "自动" }, { value: "adb", label: "adb" }, { value: "uiautomator2", label: "uiautomator2" }],
+        custom:    [{ value: "auto", label: "自动" }, { value: "adb", label: "adb" }, { value: "uiautomator2", label: "uiautomator2" }],
+        dmm:       [{ value: "windows_native", label: "前台挂机" }, { value: "windows_background", label: "后台挂机" }, { value: "windows_background_cursor", label: "后台挂机（鼠标）" }],
         playcover: [{ value: "macos", label: "macos" }]
     })
 
@@ -327,13 +327,6 @@ Item {
 
                 FormSegmentedButton {
                     label: "截图方法"
-                    help: "<b>截图方法说明</b><br>"
-                        + "<b>adb</b> — 模拟器通用<br>"
-                        + "<b>uiautomator2</b> — 模拟器通用<br>"
-                        + "<b>nemu_ipc</b> — MuMu 模拟器专属（推荐）<br>"
-                        + "<b>windows_native</b> — DMM 版前台挂机<br>"
-                        + "<b>windows_background</b> — DMM 版后台挂机（实验性）<br>"
-                        + "<b>macos</b> — macOS 原生窗口控制"
                     options: root.validMethods
                     binder: backend_b
                     field: "screenshot_impl"
@@ -341,7 +334,7 @@ Item {
 
                 FormNotice {
                     Layout.fillWidth: true
-                    visible: root.emuType === "mumu12v5" && (root.backend.screenshot_impl ?? "") !== "nemu_ipc"
+                    visible: root.emuType === "mumu12v5" && !["nemu_ipc", "auto"].includes(root.backend.screenshot_impl ?? "")
                     style: "tip"
                     title: "推荐配置"
                     content: "MuMu 模拟器推荐使用 nemu_ipc 截图方式，性能更佳且更稳定"
@@ -358,20 +351,6 @@ Item {
                         if (!isNaN(n) && n >= 0)
                             root._commit("backend", "target_screenshot_interval", n)
                     }
-                }
-
-                FormSpinBox {
-                    visible: (root.backend.screenshot_impl ?? "") === "windows_background"
-                    label: "后台挂机时光标最大速度（像素/秒）"
-                    help: "使用 DMM 版后台挂机功能时，在点击前会尝试等待光标静止，以避免发生点击偏移。"
-                        + "<br>此项规定了速度小于多少时认为光标静止，单位为像素/秒。"
-                        + "<br><br><b>-1</b> 表示使用内置默认值，<b>0</b> 表示禁用该功能。"
-                        + "<br>值越大，等待时间越短，脚本响应越快，但点击偏移风险上升。"
-                        + "<br>值越小，等待时间越长，脚本响应越慢，但稳定性更好。"
-                    labelWidth: 140
-                    from: -1; to: 10000
-                    binder: lifecycle_b
-                    field: "cursor_wait_speed"
                 }
 
                 Button {

@@ -51,10 +51,10 @@ def validate_profile_config(config: KaaConfig) -> list[ConfigIssue]:
     backend = config.backend
     lc_type = backend.lifecycle.type
     valid_screenshot_methods = {
-        'mumu12v5': ['adb', 'uiautomator2', 'nemu_ipc'],
-        'leidian': ['adb', 'uiautomator2'],
-        'custom': ['adb', 'uiautomator2'],
-        'dmm': ['windows_native', 'windows_background'],
+        'mumu12v5': ['auto', 'adb', 'uiautomator2', 'nemu_ipc'],
+        'leidian': ['auto', 'adb', 'uiautomator2'],
+        'custom': ['auto', 'adb', 'uiautomator2'],
+        'dmm': ['windows_native', 'windows_background', 'windows_background_cursor'],
         'playcover': ['macos'],
     }
     if backend.screenshot_impl not in valid_screenshot_methods.get(lc_type, []):

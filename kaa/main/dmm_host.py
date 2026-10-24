@@ -1,12 +1,14 @@
+from typing import Literal
+
 from typing_extensions import override
 
 from kotonebot.client import Device
 from kotonebot.client.host import HostProtocol, Instance
-from kotonebot.client.host.windows_common import WindowsRecipes, WindowsHostConfigs, CommonWindowsCreateDeviceMixin
+from kotonebot.client.host.windows_common import WindowsHostConfigs, CommonWindowsCreateDeviceMixin
 
 
 DmmHostConfigs = WindowsHostConfigs
-DmmRecipes = WindowsRecipes
+DmmRecipes = Literal['maa_win32']
 
 # TODO: 可能应该把 start_game 和 end_game 里对启停的操作移动到这里来
 class DmmInstance(CommonWindowsCreateDeviceMixin, Instance[DmmHostConfigs]):
@@ -57,4 +59,4 @@ class DmmHost(HostProtocol[DmmRecipes]):
 
     @staticmethod
     def recipes() -> 'list[DmmRecipes]':
-        return ['windows']
+        return ['maa_win32']

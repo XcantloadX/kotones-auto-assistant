@@ -37,13 +37,6 @@ class DmmDevice(BaseModel):
     """DMM 可执行文件路径"""
     emulator_args: str = ""
     """启动时的命令行参数"""
-    cursor_wait_speed: float = -1
-    """
-    使用 DMM 版后台挂机功能时，在点击前会尝试等待光标静止，以避免发生点击偏移。
-    此项规定了速度小于多少时认为光标静止，单位为像素/秒。
-
-    -1 表示使用内置默认值，0 表示禁用该功能。
-    """
 
 
 class PlayCoverDevice(BaseModel):
@@ -108,7 +101,7 @@ class BackendConfig(BaseModel):
     """设备生命周期配置。"""
     connection: DeviceConnection = Field(default_factory=lambda: TcpConnection(type='tcp'))
     """ADB 连接配置。"""
-    screenshot_impl: Literal['adb', 'uiautomator2', 'nemu_ipc', 'windows_native', 'windows_background', 'macos'] = 'adb'
+    screenshot_impl: Literal['auto', 'adb', 'uiautomator2', 'nemu_ipc', 'windows_native', 'windows_background', 'windows_background_cursor', 'macos'] = 'adb'
     """
     截图方法。暂时推荐使用【adb】截图方式。
 

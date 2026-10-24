@@ -7,7 +7,7 @@ from collections.abc import Callable, Iterable
 
 from kotonebot.core.bot import BotContext, KotoneBot
 from kotonebot.backend.context import Task, get_context
-from kotonebot.client.device import Device, WindowsDevice
+from kotonebot.client.device import Device
 from kotonebot.client.host import (
     LeidianHost, Mumu12Instance,
     LeidianInstance, CustomInstance
@@ -222,7 +222,7 @@ class KaaDeviceFactory:
         """
         创建设备。
         """
-        from kaa.config.base_config import MuMu12V5Device, DmmDevice  # noqa: PLC0415
+        from kaa.config.base_config import MuMu12V5Device  # noqa: PLC0415
         impl_name = config.backend.screenshot_impl
         lc = config.backend.lifecycle
 
@@ -230,25 +230,33 @@ class KaaDeviceFactory:
             return instance.create_device()
 
         if DmmInstance and isinstance(instance, DmmInstance):
+            from kaa.config.base_config import DmmDevice  # noqa: PLC0415
             assert isinstance(lc, DmmDevice)
-            d = WindowsDevice()
+            from kotonebot.client.host.protocol import MaaWin32HostConfig  # noqa: PLC0415
+            from kotonebot.interop.window import WindowQuery  # noqa: PLC0415
+            query = WindowQuery(title='gakumas')
             if impl_name == 'windows_native':
-                from kotonebot.client.implements.windows import WindowsNativeImpl
-                from kotonebot.interop.window import WindowQuery
-                impl = WindowsNativeImpl(device=d, window_query=WindowQuery(title='gakumas'))
-                d.setup(screenshot=impl, touch=impl)
+                # 前台挂机：Maa 默认即抢占式前台输入（Seize）。
+                host_conf = MaaWin32HostConfig(window_query=query)
             elif impl_name == 'windows_background':
-                from kotonebot.client.implements.windows.send_message import SendMessageImpl
-                from kotonebot.client.implements.windows.print_window import PrintWindowImpl
-                from kotonebot.interop.window import WindowQuery
-                query = WindowQuery(title='gakumas')
-                d.setup(
-                    screenshot=PrintWindowImpl(d, query),
-                    touch=SendMessageImpl(d, query, wait_cursor_idle=lc.cursor_wait_speed),
+                # 后台挂机（窗口）：Maa SendMessage 输入，不抢焦点。
+                from kotonebot.client.maa_backend import MaaWin32InputMethodEnum  # noqa: PLC0415
+                host_conf = MaaWin32HostConfig(
+                    window_query=query,
+                    mouse_method=MaaWin32InputMethodEnum.SendMessageWithWindowPos,
+                    keyboard_method=MaaWin32InputMethodEnum.SendMessage,
+                )
+            elif impl_name == 'windows_background_cursor':
+                # 后台挂机（鼠标）：Maa SendMessage 输入（携带光标位置），不抢焦点。
+                from kotonebot.client.maa_backend import MaaWin32InputMethodEnum  # noqa: PLC0415
+                host_conf = MaaWin32HostConfig(
+                    window_query=query,
+                    mouse_method=MaaWin32InputMethodEnum.SendMessageWithCursorPos,
+                    keyboard_method=MaaWin32InputMethodEnum.SendMessage,
                 )
             else:
                 raise ValueError(f"Impl of '{impl_name}' is not supported on DMM.")
-            return d
+            return instance.create_device('maa_win32', host_conf)
 
         elif isinstance(instance, (CustomInstance, Mumu12Instance, LeidianInstance)):
             if impl_name == 'nemu_ipc' and isinstance(instance, Mumu12Instance):
@@ -267,6 +275,12 @@ class KaaDeviceFactory:
             elif impl_name in ['adb', 'uiautomator2']:
                 host_conf = AdbHostConfig(timeout=180)
                 return instance.create_device(cast(Any, impl_name), host_conf)
+
+            elif impl_name == 'auto':
+                # 自动：Maa adb backend，截图/输入方式由 Maa Toolkit 自动选择。
+                from kotonebot.client.host.protocol import MaaAdbHostConfig  # noqa: PLC0415
+                host_conf = MaaAdbHostConfig(timeout=180)
+                return instance.create_device('maa_adb', host_conf)
             else:
                 raise ValueError(f"{lc.type} backend does not support implementation '{impl_name}'")
         else:
