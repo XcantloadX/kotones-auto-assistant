@@ -31,16 +31,19 @@ class ErrorDialogBridge(QObject):
         message: str,
         buttons: list[tuple[int, str]],
         on_click: Callable[[int], None],
+        *,
+        title: str = '任务执行失败',
     ) -> None:
         """从 task 线程调用，非阻塞地弹出错误对话框。
 
         :param message: 错误正文。
         :param buttons: 按钮列表，每项为 (id, 显示文本)。
         :param on_click: 用户点击后以 button_id 为参数调用的回调。
+        :param title: 对话框标题。
         """
         self._pending_invoke = on_click
         btn_list = [{"id": bid, "text": text} for bid, text in buttons]
-        self.showDialog.emit("任务执行失败", message, btn_list)
+        self.showDialog.emit(title, message, btn_list)
 
     @Slot(int)
     def onButtonClicked(self, button_id: int) -> None:

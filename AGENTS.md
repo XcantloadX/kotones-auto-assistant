@@ -1,5 +1,7 @@
 # AGENTS.md
 
+修复 Bugsink 上的 issue 时，@docs/prompts/Bugsink.md
+
 ## 项目概述
 
 Kotones Auto Assistant (ksaa, 琴音小助手) — 《学园偶像大师》(学マス) 自动化脚本。

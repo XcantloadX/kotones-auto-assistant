@@ -460,3 +460,96 @@ def test_skill_card_index_cleared_by_clear_db_caches(tmp_path, monkeypatch):
 
     # 恢复，避免影响其它测试
     paths.skill_card_index.cache_clear()
+
+
+# ── _download：瞬时网络故障重试 ──────────────────────────────────────────────
+
+class _FakeResponse:
+    def __init__(self, status_code: int, chunks: list[bytes] | None = None,
+                 headers: dict | None = None, url: str = "https://mirror.example/x"):
+        self.status_code = status_code
+        self._chunks = chunks or []
+        self.headers = headers or {}
+        self.url = url
+
+    def iter_content(self, chunk_size: int = 65536):
+        yield from self._chunks
+
+    def raise_for_status(self):
+        if self.status_code >= 400:
+            raise updater.requests.HTTPError(
+                f"{self.status_code} Error", response=self,
+            )
+
+    def close(self):
+        pass
+
+
+def _http_error_response(status_code: int) -> _FakeResponse:
+    return _FakeResponse(status_code)
+
+
+def test_download_retries_http_502(monkeypatch):
+    """502 Bad Gateway 应重试，随后成功返回内容。"""
+    responses = [
+        _http_error_response(502),
+        _FakeResponse(200, [b"hello", b" world"], {"content-length": "11"}),
+    ]
+    calls = []
+
+    def fake_get(url, **kwargs):
+        calls.append(kwargs)
+        return responses.pop(0)
+
+    monkeypatch.setattr(updater._session, "get", fake_get)
+    monkeypatch.setattr(updater.time, "sleep", lambda _s: None)
+
+    assert updater._download("https://mirror.example/manifest.json") == b"hello world"
+    assert len(calls) == 2
+    # 区分连接超时与读取超时
+    assert calls[0]["timeout"] == (15, 60)
+
+
+def test_download_retries_exhausted_raises_network_error(monkeypatch):
+    """持续 502 → 重试耗尽后抛 GameDataNetworkError（不上报的环境问题）。"""
+    attempts = []
+
+    def fake_get(url, **kwargs):
+        attempts.append(1)
+        return _http_error_response(502)
+
+    monkeypatch.setattr(updater._session, "get", fake_get)
+    monkeypatch.setattr(updater.time, "sleep", lambda _s: None)
+
+    with pytest.raises(updater.GameDataNetworkError):
+        updater._download("https://mirror.example/game.db.zst", max_retries=3)
+    assert len(attempts) == 3
+
+
+def test_download_does_not_retry_http_404(monkeypatch):
+    """404 属确定性错误，不重试且原样抛出。"""
+    attempts = []
+
+    def fake_get(url, **kwargs):
+        attempts.append(1)
+        return _http_error_response(404)
+
+    monkeypatch.setattr(updater._session, "get", fake_get)
+    monkeypatch.setattr(updater.time, "sleep", lambda _s: None)
+
+    with pytest.raises(updater.requests.HTTPError):
+        updater._download("https://mirror.example/missing.zip")
+    assert len(attempts) == 1
+
+
+def test_describe_network_error_distinguishes_timeouts():
+    """超时描述区分连接超时与读取超时，便于日志排查。"""
+    assert updater._describe_network_error(
+        updater.requests.exceptions.ConnectTimeout()
+    ) == "连接超时"
+    assert updater._describe_network_error(
+        updater.requests.exceptions.ReadTimeout()
+    ) == "读取超时"
+    assert updater._describe_network_error(
+        updater.requests.exceptions.ConnectionError()
+    ) == "无法连接服务器"

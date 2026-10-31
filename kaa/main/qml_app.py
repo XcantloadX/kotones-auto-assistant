@@ -261,7 +261,7 @@ def _startup_task(
         # 阻塞更新（增量修复，立即替换）— 数据不完整时强制
         outcome = None
         try:
-            from kaa.game_data.updater import GameDataUpdater
+            from kaa.game_data.updater import GameDataNetworkError, GameDataUpdater
             bridge.onStatusChanged("正在检查游戏资源…")
             updater = GameDataUpdater(cancel=bridge._cancel_event)
             outcome = updater.check_and_update(
@@ -272,6 +272,12 @@ def _startup_task(
             )
             bridge.onGameDataFinished()
             logger.info("Blocking game data check finished: %s", outcome.value)
+        except GameDataNetworkError as e:
+            # 弱网/镜像抖动：友好提示并继续启动（若已有可用基线仍可运行），
+            # 不上报为错误 issue。
+            logger.warning("Blocking game data update failed due to network: %s", e)
+            bridge.onStatusChanged("网络连接不稳定，暂时无法更新游戏资源，将使用本地数据启动。")
+            bridge.onGameDataFinished()
         except BaseException:
             logger.exception("Blocking game data update failed; continuing.")
             bridge.onGameDataFinished()
@@ -456,7 +462,7 @@ def main() -> None:
     engine = QQmlApplicationEngine()
 
     # ── 游戏数据后台更新控制器 ──────────────────────────────────
-    game_data_ctrl = GameDataUpdateController()
+    game_data_ctrl = GameDataUpdateController(notice=notice)
 
     # ── 创建平台相关桥接对象 ────────────────────────────────────
     max_hover_bridge = MaxHoverBridge() if sys.platform == 'win32' else None
