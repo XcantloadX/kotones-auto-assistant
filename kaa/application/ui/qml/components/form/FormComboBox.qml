@@ -12,6 +12,7 @@ ColumnLayout {
     property string help: ""
     property var options: []
     property var value: null
+    property var read: function(v) { return v }
     property var binder: null
     property string field: ""
 
@@ -65,7 +66,7 @@ ColumnLayout {
         Select {
             Layout.fillWidth: true
             model: root.options.map(function(o) { return typeof o === "object" ? o.label : String(o) })
-            currentIndex: root.indexOfValue(root._val)
+            currentIndex: root.indexOfValue(root.read(root._val))
             onActivated: {
                 var o = root.options[currentIndex]
                 var v = typeof o === "object" ? o.value : o

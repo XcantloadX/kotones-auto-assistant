@@ -92,7 +92,7 @@ class ProduceController(QObject):
     def save(self) -> bool:
         if self._dirty:
             self.saveRequested.emit()
-        return True
+        return not self._dirty
 
     @Slot()
     def discard(self) -> None:

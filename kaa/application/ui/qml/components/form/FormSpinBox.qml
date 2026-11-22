@@ -69,16 +69,31 @@ ColumnLayout {
             enabled: root.enabled
             validator: IntValidator { bottom: root.from; top: root.to }
 
+            // 输入有效时立即更新草稿，避免通过导航或快捷键保存时
+            // 因输入框尚未失焦而漏掉编辑内容。
+            onTextEdited: {
+                if (acceptableInput) writeValue(parseInt(text, 10))
+            }
             onActiveFocusChanged: { if (!activeFocus) commit() }
+
+            function writeValue(v) {
+                var out = root.write(v)
+                if (root._eb && root.field) {
+                    if (root._eb.get(root.field, null) !== out) root._eb.set(root.field, out)
+                } else if (root.value !== out) {
+                    root.value = out
+                    root.valueModified(out)
+                }
+            }
 
             function commit() {
                 var v = parseInt(text, 10)
                 if (isNaN(v)) v = root.from
                 v = Math.max(root.from, Math.min(root.to, v))
-                text = v.toString()
-                var out = root.write(v)
-                if (root._eb && root.field) root._eb.set(root.field, out)
-                else { root.value = out; root.valueModified(out) }
+                writeValue(v)
+                // 归一化后恢复数据绑定，确保切换方案等数据源变化
+                // 能同步刷新输入框。
+                text = Qt.binding(function() { return root.read(root._val).toString() })
             }
         }
     }
