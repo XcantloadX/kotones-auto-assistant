@@ -63,6 +63,11 @@ Item {
         if (root.prefsCtrl && root.prefsCtrl.isDirty()) {
             root.prefsCtrl.save()
         }
+        // 校验或保存失败时仍有未保存改动，不能继续导航。
+        if (root.isDirty()) {
+            root.unsavedChangesDialog.open()
+            return
+        }
         root.runPendingAction()
     }
 

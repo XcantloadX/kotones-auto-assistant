@@ -221,22 +221,24 @@ PageContainer {
     }
 
     function save() {
-        if (!produceCtrl || !currentSolution) return
+        if (!produceCtrl || !currentSolution) return false
         refreshValidation()
         if (root.hasValidationErrors()) {
             Notice.show("error", "存在配置错误，请修正后再保存。")
-            return
+            return false
         }
         if (root.solutionNameExists(currentSolution.name, currentSolution.id)) {
             renameConflictDialog.open()
-            return
+            return false
         }
-        if (produceCtrl.saveSolution(JSON.stringify(currentSolution))) markClean()
+        if (!produceCtrl.saveSolution(JSON.stringify(currentSolution))) return false
+        markClean()
+        return true
     }
 
     function deleteSolution(id) {
         if (!produceCtrl || !id) return
-        produceCtrl.deleteSolution(id)
+        if (!produceCtrl.deleteSolution(id)) return
         if (currentSolution && currentSolution.id === id) { currentSolution = null; markClean() }
     }
 
@@ -263,7 +265,42 @@ PageContainer {
     }
 
     // ── 未保存确认对话框 ─────────────────────────────
-    property string pendingSolutionId: ""
+    property var pendingAction: null
+
+    function requestEditorAction(action) {
+        if (root.dirty) {
+            root.pendingAction = action
+            unsavedConfirmDialog.open()
+        } else {
+            action()
+        }
+    }
+
+    function requestCreate() {
+        root.requestEditorAction(function() { createDialog.open() })
+    }
+
+    function requestDuplicate(sourceId, sourceName) {
+        // 保存可能销毁列表项，因此在页面上下文中创建回调，
+        // 避免模型重置后回调失效。
+        root.requestEditorAction(function() {
+            duplicateDialog.sourceId = sourceId
+            duplicateDialog.sourceName = sourceName
+            duplicateDialog.open()
+        })
+    }
+
+    function requestSolution(id) {
+        if (root.currentSolution && root.currentSolution.id === id) return
+        root.requestEditorAction(function() { root.selectSolution(id) })
+    }
+
+    function continueEditorAction() {
+        var action = root.pendingAction
+        root.pendingAction = null
+        unsavedConfirmDialog.close()
+        if (typeof action === "function") action()
+    }
 
     Dialog {
         id: unsavedConfirmDialog
@@ -292,28 +329,22 @@ PageContainer {
                 Button {
                     text: "继续编辑"
                     onClicked: {
-                        root.pendingSolutionId = ""
+                        root.pendingAction = null
                         unsavedConfirmDialog.close()
                     }
                 }
                 Button {
                     text: "丢弃"
                     onClicked: {
-                        var id = root.pendingSolutionId
-                        root.pendingSolutionId = ""
-                        root.selectSolution(id)
-                        unsavedConfirmDialog.close()
+                        root.selectSolution(root.currentSolution ? root.currentSolution.id : "")
+                        root.continueEditorAction()
                     }
                 }
                 Button {
                     text: "保存"
                     highlighted: true
                     onClicked: {
-                        var id = root.pendingSolutionId
-                        root.pendingSolutionId = ""
-                        root.save()
-                        root.selectSolution(id)
-                        unsavedConfirmDialog.close()
+                        if (root.save()) root.continueEditorAction()
                     }
                 }
             }
@@ -373,7 +404,11 @@ PageContainer {
             var name = createNameField.text.trim()
             if (!name || !produceCtrl) return
             var raw = produceCtrl.createSolution(name)
-            if (raw && raw !== '{}') { root.currentSolution = JSON.parse(raw); root.markClean() }
+            if (raw && raw !== '{}') {
+                root.currentSolution = JSON.parse(raw)
+                root.markClean()
+                root.refreshValidation()
+            }
         }
 
         ColumnLayout {
@@ -411,7 +446,7 @@ PageContainer {
                 enabled: duplicateNameField.text.trim().length > 0
                 onClicked: {
                     var name = duplicateNameField.text.trim()
-                    if (!produceCtrl || !root.currentSolution) return
+                    if (!produceCtrl || !duplicateDialog.sourceId) return
                     if (root.solutionNameExists(name, "")) {
                         duplicateNameError.visible = true
                         return
@@ -428,13 +463,20 @@ PageContainer {
             duplicateNameError.visible = false
         }
         onAccepted: {
-            if (!produceCtrl || !root.currentSolution) return
-            var raw = produceCtrl.duplicateSolution(root.currentSolution.id)
+            if (!produceCtrl || !duplicateDialog.sourceId) return
+            var raw = produceCtrl.duplicateSolution(duplicateDialog.sourceId)
             if (raw && raw !== '{}') {
                 var sol = JSON.parse(raw)
                 var name = duplicateNameField.text.trim()
-                if (name && name !== sol.name) { sol.name = name; produceCtrl.saveSolution(JSON.stringify(sol)) }
-                root.currentSolution = sol; root.markClean()
+                var saved = true
+                if (name && name !== sol.name) {
+                    sol.name = name
+                    saved = produceCtrl.saveSolution(JSON.stringify(sol))
+                }
+                root.currentSolution = sol
+                if (saved) root.markClean()
+                else root.markDirty()
+                root.refreshValidation()
             }
         }
 
@@ -447,7 +489,7 @@ PageContainer {
                 onTextChanged: duplicateNameError.visible = false
                 Keys.onReturnPressed: {
                     var name = duplicateNameField.text.trim()
-                    if (produceCtrl && root.currentSolution && !root.solutionNameExists(name, ""))
+                    if (produceCtrl && duplicateDialog.sourceId && !root.solutionNameExists(name, ""))
                         duplicateDialog.accept()
                 }
             }
@@ -588,8 +630,7 @@ PageContainer {
                                 let order = root._currentOrder
                                 root._dragCurrentIndex = -1
                                 root._currentOrder = []
-                                root.currentSolution.data.actions_order = order
-                                root.markDirty()
+                                sb.set("actions_order", order)
                             }
 
                             onCanceled: {
@@ -597,8 +638,7 @@ PageContainer {
                                 let order = root._currentOrder
                                 root._dragCurrentIndex = -1
                                 root._currentOrder = []
-                                root.currentSolution.data.actions_order = order
-                                root.markDirty()
+                                sb.set("actions_order", order)
                             }
                         }
                     }
@@ -611,9 +651,10 @@ PageContainer {
                     Button {
                         text: "✕"
                         onClicked: {
-                            root.currentSolution.data.actions_order.splice(delegateRoot.visualIndex, 1)
+                            var order = root.currentSolution.data.actions_order.slice()
+                            order.splice(delegateRoot.visualIndex, 1)
+                            sb.set("actions_order", order)
                             root._rebuildModel()
-                            root.markDirty()
                         }
                     }
                 }
@@ -668,6 +709,7 @@ PageContainer {
                     id: addActionCombo
                     Layout.fillWidth: true
                     model: {
+                        var revision = sb._revision
                         var current = root.currentSolution ? root.currentSolution.data.actions_order : []
                         return root.produceActions.filter(function(a) { return !current.includes(a.value) })
                     }
@@ -676,11 +718,14 @@ PageContainer {
                 }
                 Button {
                     text: "添加"
-                    enabled: addActionCombo.currentValue !== undefined
+                    enabled: addActionCombo.currentIndex >= 0 && addActionCombo.currentValue !== undefined
                     onClicked: {
-                        root.currentSolution.data.actions_order.push(addActionCombo.currentValue)
+                        var value = addActionCombo.currentValue
+                        var order = root.currentSolution.data.actions_order.slice()
+                        if (value === undefined || order.includes(value)) return
+                        order.push(value)
+                        sb.set("actions_order", order)
                         root._rebuildModel()
-                        root.markDirty()
                         addActionCombo.currentIndex = 0
                     }
                 }
@@ -708,7 +753,7 @@ PageContainer {
             Button {
                 text: "+ 新建培育方案"; highlighted: true
                 Layout.alignment: Qt.AlignHCenter; implicitWidth: 200; implicitHeight: 44
-                onClicked: createDialog.open()
+                onClicked: root.requestCreate()
             }
         }
     }
@@ -724,7 +769,7 @@ PageContainer {
             Layout.fillWidth: false; Layout.fillHeight: true
             spacing: 8
 
-            Button { text: "新建培育"; highlighted: true; Layout.fillWidth: true; onClicked: createDialog.open() }
+            Button { text: "新建培育"; highlighted: true; Layout.fillWidth: true; onClicked: root.requestCreate() }
 
             ListView {
                 id: solutionList
@@ -755,7 +800,9 @@ PageContainer {
                             ToolButton {
                                 text: "⧉"; font.pixelSize: 14; implicitWidth: 28; implicitHeight: 28
                                 ToolTip.text: "复制"; ToolTip.visible: hovered; ToolTip.delay: 500
-                                onClicked: { duplicateDialog.sourceName = model.name; duplicateDialog.open() }
+                                onClicked: {
+                                    root.requestDuplicate(model.id, model.name)
+                                }
                             }
                             ToolButton {
                                 text: "✕"; font.pixelSize: 13; implicitWidth: 28; implicitHeight: 28
@@ -769,12 +816,7 @@ PageContainer {
                         }
                     }
                     onClicked: {
-                        if (root.dirty && root.currentSolution && root.currentSolution.id !== model.id) {
-                            root.pendingSolutionId = model.id
-                            unsavedConfirmDialog.open()
-                        } else {
-                            root.selectSolution(model.id)
-                        }
+                        root.requestSolution(model.id)
                     }
                 }
             }
@@ -791,7 +833,7 @@ PageContainer {
                     anchors.centerIn: parent; spacing: 16
                     Label { text: "尚未选择培育方案"; color: palette.placeholderText; font.pixelSize: 16; Layout.alignment: Qt.AlignHCenter }
                     Label { text: "从左侧列表选择，或点击下方按钮新建"; color: palette.placeholderText; font.pixelSize: 12; Layout.alignment: Qt.AlignHCenter }
-                    Button { text: "+ 新建培育方案"; highlighted: true; Layout.alignment: Qt.AlignHCenter; onClicked: createDialog.open() }
+                    Button { text: "+ 新建培育方案"; highlighted: true; Layout.alignment: Qt.AlignHCenter; onClicked: root.requestCreate() }
                 }
             }
 
@@ -904,6 +946,7 @@ PageContainer {
                         FormComboBox {
                             field: "card_deck_id"
                             label: "技能卡组"
+                            read: function(v) { return v || "" }
                             options: {
                                 var items = [{ label: "自动", value: "" }]
                                 for (var i = 0; i < root.cardDecks.length; ++i) {
