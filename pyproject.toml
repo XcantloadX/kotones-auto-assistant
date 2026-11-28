@@ -39,8 +39,8 @@ dependencies = [
     "pywin32==310; sys_platform == 'win32'",
     "win11toast~=0.35; sys_platform == 'win32'", # For Windows Toast Notification
     "keyboard~=0.13.5",
-    "kotonebot[android]==0.21.0",
-    "kotonebot[windows]==0.21.0; sys_platform == 'win32'",
+    "kotonebot[android]==0.22.0",
+    "kotonebot[windows]==0.22.0; sys_platform == 'win32'",
     # DMM Windows 控制后端（随 kotonebot 本地工作拷贝提供 maa_backend）
     "maafw>=5.14.2; sys_platform == 'win32'",
     "sentry-sdk>=2.52.0",

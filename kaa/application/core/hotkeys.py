@@ -17,12 +17,9 @@ logger = logging.getLogger(__name__)
 class HotkeyManager:
     """全局热键管理器：Ctrl+F4 暂停/恢复，Ctrl+F3 停止任务。
 
-    `windows`（依赖 AHK 的旧实现）截图方式自带全局热键，
-    但新的 `windows_native` 截图方式不依赖 AHK，因此缺失了这一功能。
-    本管理器基于 `keyboard` 库实现等价的全局热键，无条件响应。
+    无条件响应。
 
-    通知行为与原 `WindowsImpl`（基于 AHK 的 `msg_box`）保持一致：
-    使用阻塞式原生消息框，而不是 toast 通知。
+    通知使用阻塞式原生消息框，而不是 toast 通知。
     """
 
     def __init__(

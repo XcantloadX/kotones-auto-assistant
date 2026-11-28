@@ -8,8 +8,6 @@ class MuMu12V5Device(BaseModel):
     type: Literal['mumu12v5']
     instance_id: str | None = None
     """模拟器实例 ID。"""
-    mumu_background_mode: bool = False
-    """MuMu12 模拟器后台保活模式"""
     check_and_start: bool = False
     """启动脚本时，若模拟器未运行则自动启动（通过 MuMu SDK）。"""
 
@@ -101,9 +99,9 @@ class BackendConfig(BaseModel):
     """设备生命周期配置。"""
     connection: DeviceConnection = Field(default_factory=lambda: TcpConnection(type='tcp'))
     """ADB 连接配置。"""
-    screenshot_impl: Literal['auto', 'adb', 'uiautomator2', 'nemu_ipc', 'windows_native', 'windows_background', 'windows_background_cursor', 'macos'] = 'adb'
+    screenshot_impl: Literal['auto', 'nemu_ipc', 'windows_native', 'windows_background', 'windows_background_cursor', 'macos'] = 'auto'
     """
-    截图方法。暂时推荐使用【adb】截图方式。
+    截图方法。默认使用【自动】，由 MaaFramework 选择最快的截图与输入方式。
 
     """
     target_screenshot_interval: float | None = None

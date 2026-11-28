@@ -25,9 +25,9 @@ Item {
     })
 
     readonly property var validScreenshotMethods: ({
-        mumu12v5:  [{ value: "auto", label: "自动" }, { value: "nemu_ipc", label: "nemu_ipc" }, { value: "adb", label: "adb" }, { value: "uiautomator2", label: "uiautomator2" }],
-        leidian:   [{ value: "auto", label: "自动" }, { value: "adb", label: "adb" }, { value: "uiautomator2", label: "uiautomator2" }],
-        custom:    [{ value: "auto", label: "自动" }, { value: "adb", label: "adb" }, { value: "uiautomator2", label: "uiautomator2" }],
+        mumu12v5:  [{ value: "auto", label: "自动" }, { value: "nemu_ipc", label: "nemu_ipc" } ],
+        leidian:   [{ value: "auto", label: "自动" } ],
+        custom:    [{ value: "auto", label: "自动" } ],
         dmm:       [{ value: "windows_native", label: "前台挂机" }, { value: "windows_background", label: "后台挂机" }, { value: "windows_background_cursor", label: "后台挂机（鼠标）" }],
         playcover: [{ value: "macos", label: "macos" }]
     })
@@ -39,7 +39,7 @@ Item {
     readonly property var endGame:    settingsCtrl?.config?.profile?.tasks?.end_game      ?? {}
 
     readonly property string emuType: lifecycle.type ?? "custom"
-    readonly property var validMethods: validScreenshotMethods[emuType] || [{ value: "adb", label: "adb" }]
+    readonly property var validMethods: validScreenshotMethods[emuType] || [{ value: "auto", label: "自动" }]
 
     function _commit(path, key, value) {
         if (path.startsWith("shared.")) {
@@ -191,11 +191,6 @@ Item {
                                     root.enumerationLoading = true
                                     settingsCtrl.listEmulatorInstancesAsync(root.emuType)
                                 }
-                            }
-                            FormCheckBox {
-                                binder: lifecycle_b
-                                field: "mumu_background_mode"
-                                label: "MuMu12 模拟器后台保活模式"
                             }
                             FormCheckBox {
                                 binder: lifecycle_b

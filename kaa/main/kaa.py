@@ -12,7 +12,7 @@ from kotonebot.client.host import (
     LeidianHost, Mumu12Instance,
     LeidianInstance, CustomInstance
 )
-from kotonebot.client.host.mumu12_host import Mumu12V5Host, MuMu12HostConfig
+from kotonebot.client.host.mumu12_host import Mumu12V5Host
 from kotonebot.client.host.protocol import Instance, AdbHostConfig
 from kaa.config.schema import KaaConfig
 from kaa.config import upgrade_config
@@ -20,7 +20,7 @@ from kaa.config import manager as config_manager
 from kotonebot.primitives.geometry import Size
 from kotonebot.util import is_windows
 from kaa.errors import ElevationRequiredError, WindowsOnlyError
-from kaa.constants import GAME_PACKAGE_NAME, PLAYCOVER_BUNDLE_ID
+from kaa.constants import PLAYCOVER_BUNDLE_ID
 
 from ..kaa_context import _set_instance
 from kaa.tasks import POST_TASK_REGISTRY, TASK_REGISTRY
@@ -236,11 +236,11 @@ class KaaDeviceFactory:
             from kotonebot.interop.window import WindowQuery  # noqa: PLC0415
             query = WindowQuery(title='gakumas')
             if impl_name == 'windows_native':
-                # 前台挂机：Maa 默认即抢占式前台输入（Seize）。
-                host_conf = MaaWin32HostConfig(window_query=query)
+                # 前台挂机：GDI/DXGI 截图 + 抢占式前台输入，要求窗口保持可见。
+                host_conf = MaaWin32HostConfig.foreground(window_query=query)
             elif impl_name == 'windows_background':
                 # 后台挂机（窗口）：Maa SendMessage 输入，不抢焦点。
-                from kotonebot.client.maa_backend import MaaWin32InputMethodEnum  # noqa: PLC0415
+                from kotonebot.client.implements import MaaWin32InputMethodEnum  # noqa: PLC0415
                 host_conf = MaaWin32HostConfig(
                     window_query=query,
                     mouse_method=MaaWin32InputMethodEnum.SendMessageWithWindowPos,
@@ -248,7 +248,7 @@ class KaaDeviceFactory:
                 )
             elif impl_name == 'windows_background_cursor':
                 # 后台挂机（鼠标）：Maa SendMessage 输入（携带光标位置），不抢焦点。
-                from kotonebot.client.maa_backend import MaaWin32InputMethodEnum  # noqa: PLC0415
+                from kotonebot.client.implements import MaaWin32InputMethodEnum  # noqa: PLC0415
                 host_conf = MaaWin32HostConfig(
                     window_query=query,
                     mouse_method=MaaWin32InputMethodEnum.SendMessageWithCursorPos,
@@ -261,18 +261,6 @@ class KaaDeviceFactory:
         elif isinstance(instance, (CustomInstance, Mumu12Instance, LeidianInstance)):
             if impl_name == 'nemu_ipc' and isinstance(instance, Mumu12Instance):
                 assert isinstance(lc, MuMu12V5Device)
-                timeout = 180
-                args = {}
-                if lc.mumu_background_mode:
-                    args = {
-                        "display_id": None,
-                        "target_package_name": GAME_PACKAGE_NAME,
-                        "app_index": 0
-                    }
-                host_conf = MuMu12HostConfig(timeout=timeout, **args)
-                return instance.create_device(cast(Any, impl_name), host_conf)
-
-            elif impl_name in ['adb', 'uiautomator2']:
                 host_conf = AdbHostConfig(timeout=180)
                 return instance.create_device(cast(Any, impl_name), host_conf)
 

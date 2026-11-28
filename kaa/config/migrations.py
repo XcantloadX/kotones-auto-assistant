@@ -1152,7 +1152,61 @@ class ProfileV14ToV15(MigrationStep):
             ))
 
 
-LATEST_VERSION: int = 15
+class ProfileV15ToV16(MigrationStep):
+    """对齐 MaaFramework 控制器迁移。
+
+    - 删除 ``backend.lifecycle.mumu_background_mode``：Maa 控制器不支持按虚拟屏定位，
+      该模式已无对应实现。
+    - 将 ``backend.screenshot_impl`` 为 ``uiautomator2`` 或 ``adb`` 的配置改为 ``auto``：
+      这两种实现已随 MaaFramework 迁移移除，``auto`` 即 Maa ADB 后端。
+    """
+
+    def check_needed(self, ctx: MigrationContext) -> bool:
+        profiles_dir = ctx.config_dir / 'profiles'
+        if not profiles_dir.exists():
+            return False
+        for f in profiles_dir.glob('*.json'):
+            try:
+                data = json.loads(f.read_text(encoding='utf-8'))
+            except Exception:
+                continue
+            if data.get('version', 0) < 16:
+                return True
+        return False
+
+    def apply(self, ctx: MigrationContext) -> None:
+        profiles_dir = ctx.config_dir / 'profiles'
+        if not profiles_dir.exists():
+            return
+        cleaned = 0
+        for f in profiles_dir.glob('*.json'):
+            try:
+                data = json.loads(f.read_text(encoding='utf-8'))
+            except Exception:
+                continue
+            if data.get('version', 0) >= 16:
+                continue
+            backend = data.get('backend', {})
+            lifecycle = backend.get('lifecycle', {})
+            if 'mumu_background_mode' in lifecycle:
+                del lifecycle['mumu_background_mode']
+                backend['lifecycle'] = lifecycle
+                data['backend'] = backend
+            if backend.get('screenshot_impl') in ('uiautomator2', 'adb'):
+                backend['screenshot_impl'] = 'auto'
+                data['backend'] = backend
+                cleaned += 1
+            data['version'] = 16
+            f.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding='utf-8')
+        if cleaned:
+            ctx.messages.append(MigrationMessage(
+                text="已自动迁移到新的控制方式。",
+                old_version='v15',
+                new_version='v16',
+            ))
+
+
+LATEST_VERSION: int = 16
 
 profile_migration_chain = MigrationChain(steps=[
     ProfileV1ToV2(),
@@ -1170,6 +1224,7 @@ profile_migration_chain = MigrationChain(steps=[
     ProfileV12ToV13(),
     ProfileV13ToV14(),
     ProfileV14ToV15(),
+    ProfileV15ToV16(),
 ])
 
 

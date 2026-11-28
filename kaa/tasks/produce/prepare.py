@@ -334,10 +334,10 @@ def prepare_hif_main() -> bool:
 if __name__ == "__main__":
     from kotonebot.backend.context import manual_context, init_context
     from kotonebot.client.host import Mumu12V5Host
-    from kotonebot.client.host.mumu12_host import MuMu12HostConfig
+    from kotonebot.client.host.protocol import AdbHostConfig
     from logging import basicConfig, DEBUG
     basicConfig(level=DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    d = Mumu12V5Host.list()[0].create_device('nemu_ipc', MuMu12HostConfig())
+    d = Mumu12V5Host.list()[0].create_device('nemu_ipc', AdbHostConfig())
     d.start()
     init_context(target_device=d)
     manual_context().begin()
